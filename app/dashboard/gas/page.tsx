@@ -114,7 +114,7 @@ export default function Home() {
   const [openModal, setOpenModal] = useState(false);
   const [filterType, setFilterType] = useState<string | null>("Pemasok");
   const [contractActive, setContractActive] = useState<string | null>(
-    "001/PKS-PROJECT/PLN/I/2026"
+    "001/PKS-PROJECT/PLN/I/2026",
   );
 
   const openModalFunction = () => {
@@ -151,7 +151,7 @@ export default function Home() {
               <h2 className="text-xl font-semibold text-gray-900">
                 Monitoring Gas Pipa PLN EPI
               </h2>
-              <div className="flex gap-4 items-center text-gray-800 font-bold">
+              {/* <div className="flex gap-4 items-center text-gray-800 font-bold">
                 <p>Kontrak Aktif</p>
                 <div className="w-[300px]">
                   <FilterAutocomplete
@@ -162,7 +162,7 @@ export default function Home() {
                     placeholder="Pilih Kontrak Aktif"
                   />
                 </div>
-              </div>
+              </div> */}
             </div>
 
             <div className="mb-8">

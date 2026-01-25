@@ -14,8 +14,9 @@ import {
 } from "recharts";
 import { X } from "lucide-react";
 
-import { ListFilter } from "lucide-react";
 import FilterAutocomplete from "./FilterAutocomplete";
+import SupplierResumeTable from "./SupplierResumeTable";
+import { FormControlLabel, Switch } from "@mui/material";
 
 const filterTypeOptions = ["Pemasok", "Pembangkit"];
 const pemasokOptions = ["Pemasok A", "Pemasok B"];
@@ -323,15 +324,15 @@ export default function RealtimeChart() {
   const [filterType, setFilterType] = useState<string | null>("Pemasok");
   const [pemasok, setPemasok] = useState<string | null>("Pemasok A");
   const [pembangkit, setPembangkit] = useState<string | null>(null);
-  const [filterOpen, setFilterOpen] = useState(false);
   const [chartData, setChartData] = useState<ChartItem[]>(dataJamA);
   const [openModal, setOpenModal] = useState(false);
   const [note, setNote] = useState("");
-  const [chartDataMean, setChartDataMean] =
-    useState<Record<string, number>>(dataJamAMean);
+  const [topLineActive, setTopLineActive] = useState<boolean | null>(true);
+  const [jphLineActive, setJphLineActive] = useState(true);
+  const [meanLineActive, setMeanLineActive] = useState(true);
 
   const [selectedPoint, setSelectedPoint] = useState<SelectedPoint | null>(
-    null
+    null,
   );
 
   const today = new Date();
@@ -348,190 +349,241 @@ export default function RealtimeChart() {
     return [];
   }, [pemasok]);
 
+  if (topLineActive === null) return null;
+
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6">
-      <div className="flex justify-between mb-6">
-        <h3 className="text-lg font-semibold text-gray-900">
-          Grafik Penyaluran Gas - {pemasok}{" "}
-          {filterType == "Pemasok" ? (pembangkit ? " Ke " : "") : " Dari "}{" "}
-          {pembangkit ?? pembangkit}
-        </h3>
+    <div className="bg-white rounded-xl border border-gray-200 p-6 grid grid-cols-12 gap-6 divide-x divide-gray-200">
+      <div className="col-span-12 lg:col-span-9 pr-6">
         <div>
-          <p className="text-gray-700 font-bold">{formattedDate}</p>
-        </div>
-        <div className="flex gap-10">
-          <div className="flex gap-6">
-            <button
-              className={`text-[#115d72] ${
-                period == "1D" ? "bg-[#14a2bb92] w-[45px] rounded-md" : ""
-              } cursor-pointer`}
-              onClick={() => {
-                setPeriod("1D");
-                if (pemasok == "Pemasok A") setChartData(dataJamA);
-                if (pemasok == "Pemasok B") setChartData(dataJamB);
-              }}
-            >
-              1D
-            </button>
-            <button
-              className={`text-[#115d72] ${
-                period == "1W" ? "bg-[#14a2bb92] w-[45px] rounded-md" : ""
-              } cursor-pointer`}
-              onClick={() => {
-                setPeriod("1W");
-                if (pemasok == "Pemasok A") setChartData(data1MingguA);
-                if (pemasok == "Pemasok B") setChartData(data1MingguB);
-              }}
-            >
-              1W
-            </button>
-            <button
-              className={`text-[#115d72] ${
-                period == "3M" ? "bg-[#14a2bb92] w-[45px] rounded-md" : ""
-              } cursor-pointer`}
-              onClick={() => {
-                setPeriod("3M");
-                if (pemasok == "Pemasok A") setChartData(data3BulanA);
-                if (pemasok == "Pemasok B") setChartData(data3BulanB);
-              }}
-            >
-              3M
-            </button>
-            <button
-              className={`text-[#115d72] ${
-                period == "6M" ? "bg-[#14a2bb92] w-[45px] rounded-md" : ""
-              } cursor-pointer`}
-              onClick={() => {
-                setPeriod("6M");
-                if (pemasok == "Pemasok A") setChartData(data6BulanA);
-                if (pemasok == "Pemasok B") setChartData(data6BulanB);
-              }}
-            >
-              6M
-            </button>
-            <button
-              className={`text-[#115d72] ${
-                period == "1Y" ? "bg-[#14a2bb92] w-[45px] rounded-md" : ""
-              } cursor-pointer`}
-              onClick={() => {
-                setPeriod("1Y");
-                if (pemasok == "Pemasok A") setChartData(data1TahunA);
-                if (pemasok == "Pemasok B") setChartData(data1TahunB);
-              }}
-            >
-              1Y
-            </button>
+          <div className="flex justify-between mb-6">
+            <h3 className="text-lg font-semibold text-gray-900">
+              Grafik Penyaluran Gas - {pemasok}{" "}
+              {filterType == "Pemasok" ? (pembangkit ? " Ke " : "") : " Dari "}{" "}
+              {pembangkit ?? pembangkit}
+            </h3>
+            <div>
+              <p className="text-gray-700 font-bold">{formattedDate}</p>
+            </div>
           </div>
-          <div className="relative">
-            <button
-              className={`cursor-pointer`}
-              onClick={() => setFilterOpen(!filterOpen)}
-            >
-              <ListFilter
-                className={`w-5 ${
-                  filterOpen ? "text-[#14a2bb92]" : "text-gray-500"
-                }`}
-              />
-            </button>
-            {filterOpen && (
-              <div className="absolute z-20 bg-white text-gray-500 right-0 w-3xs shadow-lg p-6 rounded-xl flex flex-col gap-3">
-                <FilterAutocomplete
-                  label="Filter Berdasar"
-                  options={filterTypeOptions}
-                  value={filterType}
-                  onChange={setFilterType}
-                  placeholder="Pilih Filter"
-                />
-                {(filterType == "Pemasok" || pembangkit) && (
-                  <FilterAutocomplete
-                    label="Pemasok"
-                    options={pemasokOptions}
-                    value={pemasok}
-                    onChange={setPemasok}
-                    placeholder="Pilih Pemasok"
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={chartData}>
+              <CartesianGrid stroke="#eee" strokeDasharray="5 5" />
+              <XAxis dataKey="label" />
+              <YAxis domain={[0, 100]} />
+              <Legend className="z-0" />
+              <Tooltip content={<CustomTooltip />} />
+              {Object.keys(chartData[0].values)
+                .filter((key) => {
+                  if (!pembangkit) return true;
+
+                  return key.toLowerCase().includes(pembangkit.toLowerCase());
+                })
+                .map((key) => (
+                  <Line
+                    key={key}
+                    type="monotone"
+                    dataKey={`values.${key}`}
+                    name={key.toUpperCase()}
+                    stroke={COLORS[key]}
+                    strokeWidth={2}
+                    dot={(props) => {
+                      const { cx, cy, payload, value } = props;
+
+                      return (
+                        <circle
+                          cx={cx}
+                          cy={cy}
+                          r={20}
+                          fill="transparent"
+                          style={{ cursor: "pointer" }}
+                          onClick={() => {
+                            setSelectedPoint({
+                              label: payload.label,
+                              series: key,
+                              value,
+                            });
+
+                            setOpenModal(true);
+                          }}
+                        />
+                      );
+                    }}
                   />
-                )}
-                {(filterType == "Pembangkit" || pemasok) && (
-                  <FilterAutocomplete
-                    label="Pembangkit"
-                    options={pembangkitOptions}
-                    value={pembangkit}
-                    onChange={setPembangkit}
-                    placeholder="Pilih Pembangkit"
-                  />
-                )}
+                ))}
+
+              {meanLineActive &&
+                Object.keys(dataJamAMean)
+                  .filter((key) => {
+                    if (!pembangkit) return true;
+
+                    return key.toLowerCase().includes(pembangkit.toLowerCase());
+                  })
+                  .map((key) => (
+                    <ReferenceLine
+                      key={`mean-${key}`}
+                      y={dataJamAMean[key]}
+                      stroke={COLORS[`Mean ${key}`]}
+                      strokeDasharray="6 6"
+                      label={`Mean ${key}`}
+                    />
+                  ))}
+              {/* Garis JPH */}
+              {jphLineActive && (
+                <ReferenceLine y={34.8} stroke={"#008BFF"} label={`JPH`} />
+              )}
+
+              {/* Garis JPH */}
+              {topLineActive && (
+                <ReferenceLine y={24.36} stroke={"#08CB00"} label={`TOP`} />
+              )}
+            </LineChart>
+          </ResponsiveContainer>
+          {/* <p className="text-xs text-gray-500 mt-4 pt-4 border-t border-gray-200">
+            Visualisasi data realtime perbandingan pemasok dan pembangkit harian
+            24 jam
+          </p> */}
+        </div>
+        <div className=" mt-4 border-t border-gray-200 pt-6">
+          <SupplierResumeTable />
+        </div>
+      </div>
+      <div className="col-span-12 lg:col-span-3">
+        <div>
+          <p className="text-lg font-semibold text-gray-900 mb-6">
+            Filter Grafik
+          </p>
+        </div>
+        <div className="flex flex-col gap-3">
+          <div>
+            <p className="block text-sm font-medium text-gray-700 mb-2">
+              Filter Periode
+            </p>
+            <div className="flex gap-10">
+              <div className="flex gap-6">
+                <button
+                  className={`text-[#115d72] ${
+                    period == "1D" ? "bg-[#14a2bb92] w-[45px] rounded-md" : ""
+                  } cursor-pointer`}
+                  onClick={() => {
+                    setPeriod("1D");
+                    if (pemasok == "Pemasok A") setChartData(dataJamA);
+                    if (pemasok == "Pemasok B") setChartData(dataJamB);
+                  }}
+                >
+                  1D
+                </button>
+                <button
+                  className={`text-[#115d72] ${
+                    period == "1W" ? "bg-[#14a2bb92] w-[45px] rounded-md" : ""
+                  } cursor-pointer`}
+                  onClick={() => {
+                    setPeriod("1W");
+                    if (pemasok == "Pemasok A") setChartData(data1MingguA);
+                    if (pemasok == "Pemasok B") setChartData(data1MingguB);
+                  }}
+                >
+                  1W
+                </button>
+                <button
+                  className={`text-[#115d72] ${
+                    period == "3M" ? "bg-[#14a2bb92] w-[45px] rounded-md" : ""
+                  } cursor-pointer`}
+                  onClick={() => {
+                    setPeriod("3M");
+                    if (pemasok == "Pemasok A") setChartData(data3BulanA);
+                    if (pemasok == "Pemasok B") setChartData(data3BulanB);
+                  }}
+                >
+                  3M
+                </button>
+                <button
+                  className={`text-[#115d72] ${
+                    period == "6M" ? "bg-[#14a2bb92] w-[45px] rounded-md" : ""
+                  } cursor-pointer`}
+                  onClick={() => {
+                    setPeriod("6M");
+                    if (pemasok == "Pemasok A") setChartData(data6BulanA);
+                    if (pemasok == "Pemasok B") setChartData(data6BulanB);
+                  }}
+                >
+                  6M
+                </button>
+                <button
+                  className={`text-[#115d72] ${
+                    period == "1Y" ? "bg-[#14a2bb92] w-[45px] rounded-md" : ""
+                  } cursor-pointer`}
+                  onClick={() => {
+                    setPeriod("1Y");
+                    if (pemasok == "Pemasok A") setChartData(data1TahunA);
+                    if (pemasok == "Pemasok B") setChartData(data1TahunB);
+                  }}
+                >
+                  1Y
+                </button>
               </div>
-            )}
+            </div>
+          </div>
+          <FilterAutocomplete
+            label="Filter Berdasar"
+            options={filterTypeOptions}
+            value={filterType}
+            onChange={setFilterType}
+            placeholder="Pilih Filter"
+          />
+          {(filterType == "Pemasok" || pembangkit) && (
+            <FilterAutocomplete
+              label="Pemasok"
+              options={pemasokOptions}
+              value={pemasok}
+              onChange={setPemasok}
+              placeholder="Pilih Pemasok"
+            />
+          )}
+          {(filterType == "Pembangkit" || pemasok) && (
+            <FilterAutocomplete
+              label="Pembangkit"
+              options={pembangkitOptions}
+              value={pembangkit}
+              onChange={setPembangkit}
+              placeholder="Pilih Pembangkit"
+            />
+          )}
+          <div>
+            <p className="block text-sm font-medium text-gray-700 mb-2 mt-4">
+              Tampilkan Garis
+            </p>
+            <div className="border border-gray-200 p-3 rounded-lg">
+              <div className="text-gray-700 flex justify-between items-center">
+                <p>Rata-rata</p>
+                <div>
+                  <Switch
+                    checked={meanLineActive}
+                    onChange={(e) => setMeanLineActive(e.target.checked)}
+                  />
+                </div>
+              </div>
+              <div className="text-gray-700 flex justify-between items-center">
+                <p>TOP</p>
+                <div>
+                  <Switch
+                    checked={topLineActive}
+                    onChange={(e) => setTopLineActive(e.target.checked)}
+                  />
+                </div>
+              </div>
+              <div className="text-gray-700 flex justify-between items-center">
+                <p>JPH</p>
+                <div>
+                  <Switch
+                    checked={jphLineActive}
+                    onChange={(e) => setJphLineActive(e.target.checked)}
+                  />
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-      <ResponsiveContainer width="100%" height={300}>
-        <LineChart data={chartData}>
-          <CartesianGrid stroke="#eee" strokeDasharray="5 5" />
-          <XAxis dataKey="label" />
-          <YAxis domain={[0, 100]} />
-          <Legend className="z-0" />
-          <Tooltip content={<CustomTooltip />} />
-          {Object.keys(chartData[0].values)
-            .filter((key) => {
-              if (!pembangkit) return true;
-
-              return key.toLowerCase().includes(pembangkit.toLowerCase());
-            })
-            .map((key) => (
-              <Line
-                key={key}
-                type="monotone"
-                dataKey={`values.${key}`}
-                name={key.toUpperCase()}
-                stroke={COLORS[key]}
-                strokeWidth={2}
-                dot={(props) => {
-                  const { cx, cy, payload, value } = props;
-
-                  return (
-                    <circle
-                      cx={cx}
-                      cy={cy}
-                      r={20}
-                      fill="transparent"
-                      style={{ cursor: "pointer" }}
-                      onClick={() => {
-                        setSelectedPoint({
-                          label: payload.label,
-                          series: key,
-                          value,
-                        });
-
-                        setOpenModal(true);
-                      }}
-                    />
-                  );
-                }}
-              />
-            ))}
-
-          {Object.keys(dataJamAMean)
-            .filter((key) => {
-              if (!pembangkit) return true;
-
-              return key.toLowerCase().includes(pembangkit.toLowerCase());
-            })
-            .map((key) => (
-              <ReferenceLine
-                key={`mean-${key}`}
-                y={dataJamAMean[key]}
-                stroke={COLORS[`Mean ${key}`]}
-                strokeDasharray="6 6"
-                label={`Mean ${key}`}
-              />
-            ))}
-        </LineChart>
-      </ResponsiveContainer>
-      <p className="text-xs text-gray-500 mt-4 pt-4 border-t border-gray-200">
-        Visualisasi data realtime perbandingan pemasok dan pembangkit harian 24
-        jam
-      </p>
       {openModal && (
         <div className="fixed inset-0 z-100 flex items-center justify-center">
           <div

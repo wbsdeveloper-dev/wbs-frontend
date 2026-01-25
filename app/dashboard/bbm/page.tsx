@@ -10,7 +10,7 @@ import RealtimeChart from "../../components/RealtimeChart";
 
 import dynamic from "next/dynamic";
 import RealizationChart from "@/app/components/RealizationChart";
-import BBMMonitoringTable from "@/app/components/BBMMonitoringTable";
+import BBMMonitoringTable from "@/app/components/EditDataTable";
 
 const Map = dynamic(() => import("../../components/Map"), { ssr: false });
 

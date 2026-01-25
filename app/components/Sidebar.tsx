@@ -8,12 +8,50 @@ import {
   LogOut,
   Bot,
   Home,
+  LucideIcon,
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { usePathname } from "next/navigation";
 
 export default function Sidebar() {
   const router = useRouter();
+  const pathname = usePathname();
+
+  type MenuType = {
+    title: string;
+    path: string;
+    icon?: LucideIcon;
+  };
+
+  const menus: MenuType[] = [
+    {
+      title: "Beranda",
+      path: "/dashboard/gas",
+      icon: LayoutDashboard,
+    },
+    {
+      title: "Edit Data",
+      path: "/edit",
+      icon: FileText,
+    },
+    {
+      title: "Manajemen Data",
+      path: "/manajemendata",
+      icon: Database,
+    },
+    {
+      title: "Whatsapp Bot",
+      path: "/whatsappbot",
+      icon: Bot,
+    },
+  ];
+
+  const menuActive =
+    "flex items-center gap-3 px-3 py-2 text-sm font-medium text-[#14a1bb] bg-blue-50 rounded-lg w-full cursor-pointer";
+  const menuNonActive =
+    "flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg w-full cursor-pointer";
 
   return (
     <aside className="w-64 bg-white border-r border-gray-200 h-screen flex flex-col">
@@ -36,36 +74,24 @@ export default function Sidebar() {
           </p>
         </div>
         <nav className="space-y-1 px-2">
-          <a
-            href="#"
-            className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-[#14a1bb] bg-blue-50 rounded-lg"
-            onClick={() => router.push("/")}
-          >
-            <LayoutDashboard className="w-5 h-5" />
-            Dashboard
-          </a>
-          <a
-            href="#"
-            className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg"
-          >
-            <FileText className="w-5 h-5" />
-            Entry Data
-          </a>
-          <a
-            href="#"
-            className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg"
-          >
-            <Database className="w-5 h-5" />
-            Database
-          </a>
-          <a
-            href="WhatsappBot"
-            className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg"
-            onClick={() => router.push("/WhatsappBot")}
-          >
-            <Bot className="w-5 h-5" />
-            Whatsapp Bot
-          </a>
+          {menus.map((value, index) => {
+            const Icon = value.icon;
+            const isActive = pathname.startsWith(value.path);
+
+            return (
+              <button
+                key={index}
+                onClick={() => {
+                  router.push(value.path);
+                }}
+                className={isActive ? menuActive : menuNonActive}
+              >
+                {Icon && <Icon className="w-5 h-5" />}
+                {value.title}
+              </button>
+            );
+          })}
+
           <a
             className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg mt-4 cursor-pointer"
             onClick={() => router.push("/landingpage")}
