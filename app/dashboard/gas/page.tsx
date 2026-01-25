@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import FuelTypeDonutChart from "../../components/FuelTypeDonutChart";
 import TopVolumeList from "../../components/TopVolumeList";
 import RealtimeChart from "../../components/RealtimeChart";
 import dynamic from "next/dynamic";
 import { X } from "lucide-react";
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import FilterAutocomplete from "../../components/FilterAutocomplete";
 
 const Map = dynamic(() => import("../../components/Map"), { ssr: false });
@@ -104,18 +104,9 @@ const detailDataPieChartPemasok: DataPieChart[] = [
   { name: "ROSNEFT", value: 50 },
 ];
 
-const daftarKontrakOptions = [
-  "001/PKS-PROJECT/PLN/I/2026",
-  "CTR-PLN-ENERGI-012/01/2025",
-  "SPK/PROJ/045-ENRG/2024",
-];
-
 export default function Home() {
   const [openModal, setOpenModal] = useState(false);
   const [filterType, setFilterType] = useState<string | null>("Pemasok");
-  const [contractActive, setContractActive] = useState<string | null>(
-    "001/PKS-PROJECT/PLN/I/2026",
-  );
 
   const openModalFunction = () => {
     setOpenModal(true);
@@ -151,18 +142,6 @@ export default function Home() {
               <h2 className="text-xl font-semibold text-gray-900">
                 Monitoring Gas Pipa PLN EPI
               </h2>
-              {/* <div className="flex gap-4 items-center text-gray-800 font-bold">
-                <p>Kontrak Aktif</p>
-                <div className="w-[300px]">
-                  <FilterAutocomplete
-                    label=""
-                    options={daftarKontrakOptions}
-                    value={contractActive}
-                    onChange={setContractActive}
-                    placeholder="Pilih Kontrak Aktif"
-                  />
-                </div>
-              </div> */}
             </div>
 
             <div className="mb-8">

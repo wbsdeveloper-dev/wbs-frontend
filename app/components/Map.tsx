@@ -271,7 +271,7 @@ export default function Map() {
         </MapContainer>
 
         {/* LEGEND */}
-        <div className="absolute bottom-4 left-4 z-[1000] bg-white/90 backdrop-blur rounded-lg shadow-md px-3 py-2 text-xs space-y-2">
+        <div className="absolute bottom-4 left-4 z-1000 bg-white/90 backdrop-blur rounded-lg shadow-md px-3 py-2 text-xs space-y-2">
           <div className="text-gray-700">Keterangan Map</div>
           <div className="flex items-center gap-2">
             <span className="w-3 h-3 rounded-full bg-[#6FCF97] ring-4 ring-[#6FCF9733]" />

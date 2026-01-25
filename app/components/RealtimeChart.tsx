@@ -16,7 +16,7 @@ import { X } from "lucide-react";
 
 import FilterAutocomplete from "./FilterAutocomplete";
 import SupplierResumeTable from "./SupplierResumeTable";
-import { FormControlLabel, Switch } from "@mui/material";
+import { Switch } from "@mui/material";
 
 const filterTypeOptions = ["Pemasok", "Pembangkit"];
 const pemasokOptions = ["Pemasok A", "Pemasok B"];

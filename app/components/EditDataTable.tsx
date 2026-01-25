@@ -1,8 +1,6 @@
-import React from "react";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import { Box, IconButton } from "@mui/material";
 import { Pencil, Trash2, Download } from "lucide-react";
-import FilterAutocomplete from "./FilterAutocomplete";
 
 const rows = [
   {
