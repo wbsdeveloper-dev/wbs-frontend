@@ -72,7 +72,7 @@ export default function DashboardSelection() {
                 w-full
                 px-6 py-2
                 rounded-xl
-                bg-gradient-to-r from-[#2abfda78] to-white
+                bg-linear-to-r from-[#2abfda78] to-white
                 text-gray-800 font-medium
                 shadow-sm
                 border border-transparent
