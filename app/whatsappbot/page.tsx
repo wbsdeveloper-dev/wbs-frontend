@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Search, X } from "lucide-react";
 import { Switch } from "@mui/material";
+import Image from "next/image";
 
 // Mock base64 QR code (valid sample QR code image)
 const MOCK_QR_BASE64 =
@@ -43,7 +44,7 @@ const BotStatusCard: React.FC<BotStatusProps> = ({
           <p className="text-xs text-gray-500">Last Updated: {lastUpdated}</p>
           <div className="mt-2 w-full bg-gray-200 rounded-full h-1.5">
             <div
-              className={`h-1.5 rounded-full ${status === "online" ? "bg-gradient-to-r from-green-400 to-green-600" : "bg-gradient-to-r from-yellow-400 to-yellow-600"}`}
+              className={`h-1.5 rounded-full ${status === "online" ? "bg-linear-to-r from-green-400 to-green-600" : "bg-linear-to-r from-yellow-400 to-yellow-600"}`}
               style={{ width: "75%" }}
             ></div>
           </div>
@@ -163,9 +164,11 @@ const ManajemenBot: React.FC = () => {
 
               <div className="flex flex-col items-center py-4">
                 <div className="bg-white p-4 rounded-lg border-2 border-gray-200 mb-4">
-                  <img
+                  <Image
                     src={qrCode}
                     alt="WhatsApp QR Code"
+                    width={192}
+                    height={192}
                     className="w-48 h-48"
                   />
                 </div>
@@ -212,9 +215,11 @@ const ManajemenBot: React.FC = () => {
 
               <div className="flex flex-col items-center py-4">
                 <div className="bg-white p-4 rounded-lg border-2 border-gray-200 mb-4">
-                  <img
+                  <Image
                     src={qrCode}
                     alt="WhatsApp QR Code"
+                    width={192}
+                    height={192}
                     className="w-48 h-48"
                   />
                 </div>

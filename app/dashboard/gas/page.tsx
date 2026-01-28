@@ -7,7 +7,6 @@ import RealtimeChart from "../../components/RealtimeChart";
 import dynamic from "next/dynamic";
 import { X } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
-import FilterAutocomplete from "../../components/FilterAutocomplete";
 
 const Map = dynamic(() => import("../../components/Map"), { ssr: false });
 
@@ -44,8 +43,6 @@ const COLORS = [
   "#F43F5E", // soft rose strong
   "#7C3AED", // soft violet strong
 ];
-
-const filterTypeOptions = ["Pemasok", "Pembangkit"];
 
 const topVolumePemasok = [
   { name: "PHE ONWJ", volume: "95" },

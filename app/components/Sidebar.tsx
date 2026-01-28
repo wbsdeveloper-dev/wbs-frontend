@@ -198,7 +198,7 @@ export default function Sidebar() {
                 {menu.children && (isSubmenuOpen || subMenuOpen) && (
                   <div className={submenuWrapper}>
                     {menu.children.map((child, index) => {
-                      const isActive = pathname.startsWith(child.path);
+                      // const isActive = pathname.startsWith(child.path);
 
                       return (
                         <button
