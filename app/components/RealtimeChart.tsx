@@ -11,15 +11,19 @@ import {
   Legend,
   Tooltip,
   ReferenceLine,
+  ReferenceDot,
 } from "recharts";
-import { X } from "lucide-react";
 
 import FilterAutocomplete from "./FilterAutocomplete";
 import SupplierResumeTable from "./SupplierResumeTable";
 import { Switch } from "@mui/material";
+import NoteSection from "./NoteSection";
+import ModalNote from "./ModalNote";
+import DateRangeFilter from "./DateRangeFilter";
 
 const filterTypeOptions = ["Pemasok", "Pembangkit"];
 const pemasokOptions = ["Pemasok A", "Pemasok B"];
+const transportirOptions = ["Transportir X", "Transportir Y"];
 const pembangkitOptionsA = ["Pembangkit 1", "Pembangkit 2", "Pembangkir 3"];
 const pembangkitOptionsB = ["Pembangkir 3", "Pembangkit 4"];
 
@@ -324,16 +328,18 @@ export default function RealtimeChart() {
   const [filterType, setFilterType] = useState<string | null>("Pemasok");
   const [pemasok, setPemasok] = useState<string | null>("Pemasok A");
   const [pembangkit, setPembangkit] = useState<string | null>(null);
+  const [transportir, setTransportir] = useState<string | null>(null);
   const [chartData, setChartData] = useState<ChartItem[]>(dataJamA);
   const [openModal, setOpenModal] = useState(false);
   const [note, setNote] = useState("");
   const [topLineActive, setTopLineActive] = useState<boolean | null>(true);
   const [jphLineActive, setJphLineActive] = useState(true);
   const [meanLineActive, setMeanLineActive] = useState(true);
-
   const [selectedPoint, setSelectedPoint] = useState<SelectedPoint | null>(
     null,
   );
+  const [startDate, setStartDate] = useState<string | null>(null);
+  const [endDate, setEndDate] = useState<string | null>(null);
 
   const today = new Date();
 
@@ -348,6 +354,8 @@ export default function RealtimeChart() {
     if (pemasok === "Pemasok B") return pembangkitOptionsB;
     return [];
   }, [pemasok]);
+
+  const submitNote = () => {};
 
   if (topLineActive === null) return null;
 
@@ -436,6 +444,29 @@ export default function RealtimeChart() {
               {topLineActive && (
                 <ReferenceLine y={24.36} stroke={"#08CB00"} label={`TOP`} />
               )}
+
+              <ReferenceDot
+                x="04.00"
+                y={10}
+                shape={({ cx, cy }) => (
+                  <g style={{ cursor: "pointer" }}>
+                    <polygon
+                      points={`${cx},${cy - 10} ${cx - 10},${cy + 8} ${cx + 10},${cy + 8}`}
+                      fill="#f59e0b"
+                    />
+                    <text
+                      x={cx}
+                      y={cy + 6}
+                      textAnchor="middle"
+                      fontSize={12}
+                      fill="white"
+                    >
+                      !
+                    </text>
+                  </g>
+                )}
+                strokeWidth={2}
+              />
             </LineChart>
           </ResponsiveContainer>
           {/* <p className="text-xs text-gray-500 mt-4 pt-4 border-t border-gray-200">
@@ -446,6 +477,9 @@ export default function RealtimeChart() {
         <div className=" mt-4 border-t border-gray-200 pt-6">
           <SupplierResumeTable />
         </div>
+        <div className=" mt-4 border-t border-gray-200 pt-6">
+          <NoteSection />
+        </div>
       </div>
       <div className="col-span-12 lg:col-span-3">
         <div>
@@ -454,75 +488,6 @@ export default function RealtimeChart() {
           </p>
         </div>
         <div className="flex flex-col gap-3">
-          <div>
-            <p className="block text-sm font-medium text-gray-700 mb-2">
-              Filter Periode
-            </p>
-            <div className="flex gap-10">
-              <div className="flex gap-6">
-                <button
-                  className={`text-[#115d72] ${
-                    period == "1D" ? "bg-[#14a2bb92] w-[45px] rounded-md" : ""
-                  } cursor-pointer`}
-                  onClick={() => {
-                    setPeriod("1D");
-                    if (pemasok == "Pemasok A") setChartData(dataJamA);
-                    if (pemasok == "Pemasok B") setChartData(dataJamB);
-                  }}
-                >
-                  1D
-                </button>
-                <button
-                  className={`text-[#115d72] ${
-                    period == "1W" ? "bg-[#14a2bb92] w-[45px] rounded-md" : ""
-                  } cursor-pointer`}
-                  onClick={() => {
-                    setPeriod("1W");
-                    if (pemasok == "Pemasok A") setChartData(data1MingguA);
-                    if (pemasok == "Pemasok B") setChartData(data1MingguB);
-                  }}
-                >
-                  1W
-                </button>
-                <button
-                  className={`text-[#115d72] ${
-                    period == "3M" ? "bg-[#14a2bb92] w-[45px] rounded-md" : ""
-                  } cursor-pointer`}
-                  onClick={() => {
-                    setPeriod("3M");
-                    if (pemasok == "Pemasok A") setChartData(data3BulanA);
-                    if (pemasok == "Pemasok B") setChartData(data3BulanB);
-                  }}
-                >
-                  3M
-                </button>
-                <button
-                  className={`text-[#115d72] ${
-                    period == "6M" ? "bg-[#14a2bb92] w-[45px] rounded-md" : ""
-                  } cursor-pointer`}
-                  onClick={() => {
-                    setPeriod("6M");
-                    if (pemasok == "Pemasok A") setChartData(data6BulanA);
-                    if (pemasok == "Pemasok B") setChartData(data6BulanB);
-                  }}
-                >
-                  6M
-                </button>
-                <button
-                  className={`text-[#115d72] ${
-                    period == "1Y" ? "bg-[#14a2bb92] w-[45px] rounded-md" : ""
-                  } cursor-pointer`}
-                  onClick={() => {
-                    setPeriod("1Y");
-                    if (pemasok == "Pemasok A") setChartData(data1TahunA);
-                    if (pemasok == "Pemasok B") setChartData(data1TahunB);
-                  }}
-                >
-                  1Y
-                </button>
-              </div>
-            </div>
-          </div>
           <FilterAutocomplete
             label="Filter Berdasar"
             options={filterTypeOptions}
@@ -548,8 +513,92 @@ export default function RealtimeChart() {
               placeholder="Pilih Pembangkit"
             />
           )}
+          <FilterAutocomplete
+            label="Transportir"
+            options={transportirOptions}
+            value={transportir}
+            onChange={setTransportir}
+            placeholder="Pilih Transportir"
+          />
+          <div className="mt-2">
+            <div className="border border-gray-200 p-3 rounded-lg">
+              <p className="block text-sm font-medium text-gray-700 mb-2">
+                Filter Periode
+              </p>
+              <div className="flex gap-10">
+                <div className="flex gap-4 mb-3">
+                  <button
+                    className={`text-[#115d72] ${
+                      period == "1D" ? "bg-[#14a2bb92] w-[45px] rounded-md" : ""
+                    } cursor-pointer`}
+                    onClick={() => {
+                      setPeriod("1D");
+                      if (pemasok == "Pemasok A") setChartData(dataJamA);
+                      if (pemasok == "Pemasok B") setChartData(dataJamB);
+                    }}
+                  >
+                    1D
+                  </button>
+                  <button
+                    className={`text-[#115d72] ${
+                      period == "1W" ? "bg-[#14a2bb92] w-[45px] rounded-md" : ""
+                    } cursor-pointer`}
+                    onClick={() => {
+                      setPeriod("1W");
+                      if (pemasok == "Pemasok A") setChartData(data1MingguA);
+                      if (pemasok == "Pemasok B") setChartData(data1MingguB);
+                    }}
+                  >
+                    1W
+                  </button>
+                  <button
+                    className={`text-[#115d72] ${
+                      period == "3M" ? "bg-[#14a2bb92] w-[45px] rounded-md" : ""
+                    } cursor-pointer`}
+                    onClick={() => {
+                      setPeriod("3M");
+                      if (pemasok == "Pemasok A") setChartData(data3BulanA);
+                      if (pemasok == "Pemasok B") setChartData(data3BulanB);
+                    }}
+                  >
+                    3M
+                  </button>
+                  <button
+                    className={`text-[#115d72] ${
+                      period == "6M" ? "bg-[#14a2bb92] w-[45px] rounded-md" : ""
+                    } cursor-pointer`}
+                    onClick={() => {
+                      setPeriod("6M");
+                      if (pemasok == "Pemasok A") setChartData(data6BulanA);
+                      if (pemasok == "Pemasok B") setChartData(data6BulanB);
+                    }}
+                  >
+                    6M
+                  </button>
+                  <button
+                    className={`text-[#115d72] ${
+                      period == "1Y" ? "bg-[#14a2bb92] w-[45px] rounded-md" : ""
+                    } cursor-pointer`}
+                    onClick={() => {
+                      setPeriod("1Y");
+                      if (pemasok == "Pemasok A") setChartData(data1TahunA);
+                      if (pemasok == "Pemasok B") setChartData(data1TahunB);
+                    }}
+                  >
+                    1Y
+                  </button>
+                </div>
+              </div>
+              <DateRangeFilter
+                startDate={startDate}
+                endDate={endDate}
+                setStartDate={setStartDate}
+                setEndDate={setEndDate}
+              />
+            </div>
+          </div>
           <div>
-            <p className="block text-sm font-medium text-gray-700 mb-2 mt-4">
+            <p className="block text-sm font-medium text-gray-700 mb-2 mt-2">
               Tampilkan Garis
             </p>
             <div className="border border-gray-200 p-3 rounded-lg">
@@ -559,6 +608,15 @@ export default function RealtimeChart() {
                   <Switch
                     checked={meanLineActive}
                     onChange={(e) => setMeanLineActive(e.target.checked)}
+                    sx={{
+                      "& .MuiSwitch-switchBase.Mui-checked": {
+                        color: "#14a1bb",
+                      },
+                      "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
+                        {
+                          backgroundColor: "#14a1bb",
+                        },
+                    }}
                   />
                 </div>
               </div>
@@ -568,6 +626,15 @@ export default function RealtimeChart() {
                   <Switch
                     checked={topLineActive}
                     onChange={(e) => setTopLineActive(e.target.checked)}
+                    sx={{
+                      "& .MuiSwitch-switchBase.Mui-checked": {
+                        color: "#14a1bb",
+                      },
+                      "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
+                        {
+                          backgroundColor: "#14a1bb",
+                        },
+                    }}
                   />
                 </div>
               </div>
@@ -577,6 +644,15 @@ export default function RealtimeChart() {
                   <Switch
                     checked={jphLineActive}
                     onChange={(e) => setJphLineActive(e.target.checked)}
+                    sx={{
+                      "& .MuiSwitch-switchBase.Mui-checked": {
+                        color: "#14a1bb",
+                      },
+                      "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
+                        {
+                          backgroundColor: "#14a1bb",
+                        },
+                    }}
                   />
                 </div>
               </div>
@@ -585,79 +661,15 @@ export default function RealtimeChart() {
         </div>
       </div>
       {openModal && (
-        <div className="fixed inset-0 z-100 flex items-center justify-center">
-          <div
-            className="absolute inset-0 bg-black/40"
-            onClick={() => setOpenModal(false)}
-          />
-          <div className="relative bg-white w-full max-w-5xl rounded-xl shadow-lg p-6 z-10">
-            <div className="text-right text-gray-900">
-              <button
-                onClick={() => setOpenModal(false)}
-                className="cursor-pointer"
-              >
-                <X />
-              </button>
-            </div>
-            <div>
-              <div className="grid grid-cols-2 text-gray-900 gap-8">
-                <div>
-                  <div className="flex justify-between">
-                    <h3 className="font-bold mb-2">
-                      Catatan {selectedPoint?.series}
-                    </h3>
-                    <p className="font-bold mb-2">
-                      {selectedPoint?.label}, {formattedDate}
-                    </p>
-                  </div>
-                  <div className="border border-gray-200 p-3 rounded-lg">
-                    <div className="mt-1">
-                      <p>
-                        Lorem ipsum dolor, sit amet consectetur adipisicing
-                        elit. Animi consectetur laborum odio sapiente
-                        exercitationem maiores inventore. Eligendi saepe dolorem
-                        enim perferendis dolorum sint! Facilis officia, ea dolor
-                        architecto enim, inventore, quae dolores earum
-                        perspiciatis at ipsa repudiandae! Neque quibusdam
-                        laboriosam fugit distinctio blanditiis? Vitae et
-                        quisquam commodi sed nobis. Quaerat repellendus ducimus
-                        quae perspiciatis veritatis eos mollitia aut alias
-                        dignissimos dicta, fuga, minima maxime doloremque porro
-                        temporibus qui blanditiis eum itaque sequi facilis, esse
-                        eligendi neque. Minus debitis officia, ut laboriosam
-                        fuga animi quaerat placeat error? Facere error similique
-                        odit, in beatae temporibus qui quasi alias esse officia
-                        officiis rerum?
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                <div>
-                  <h3 className="font-bold mb-2">Tambah Catatan Baru</h3>
-                  <div>
-                    <textarea
-                      id="message"
-                      rows={4}
-                      value={note}
-                      onChange={(e) => setNote(e.target.value)}
-                      placeholder="Tulis catatan di sini..."
-                      className="
-                        w-full rounded-lg border border-gray-200
-                        px-4 py-2 text-sm
-                        focus:outline-none focus:ring-2 focus:ring-blue-500
-                        focus:border-blue-500
-                        resize-none
-                      "
-                    />
-                    <button className="w-[100] bg-[#14a1bb] hover:bg-[#115d72] text-white font-medium py-2 rounded-lg transition-colors cursor-pointer">
-                      Simpan
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <ModalNote
+          setOpenModal={setOpenModal}
+          setNote={setNote}
+          supplier={selectedPoint?.series}
+          time={selectedPoint?.label}
+          date={formattedDate}
+          note={note}
+          submitNote={submitNote}
+        />
       )}
     </div>
   );

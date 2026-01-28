@@ -23,26 +23,26 @@ interface DataPieChart {
 }
 
 const COLORS = [
-  "#2563EB", // blue-600
-  "#16A34A", // green-600
-  "#DC2626", // red-600
-  "#F59E0B", // amber-500
-  "#7C3AED", // violet-600
-  "#0EA5E9", // sky-500
-  "#22C55E", // green-500
-  "#EF4444", // red-500
-  "#EAB308", // yellow-500
-  "#6366F1", // indigo-500
-  "#14B8A6", // teal-500
-  "#F97316", // orange-500
-  "#84CC16", // lime-500
-  "#06B6D4", // cyan-500
-  "#A855F7", // purple-500
-  "#FB7185", // rose-400
-  "#10B981", // emerald-500
-  "#3B82F6", // blue-500
-  "#F43F5E", // rose-500
-  "#8B5CF6", // violet-500
+  "#4F8EF7", // soft blue
+  "#34C77B", // soft green
+  "#F87171", // soft red
+  "#FBBF24", // soft amber
+  "#8B7CF6", // soft violet
+  "#38BDF8", // soft sky
+  "#4ADE80", // soft mint
+  "#FB7185", // soft rose
+  "#FACC15", // soft yellow
+  "#6366F1", // soft indigo
+  "#2DD4BF", // soft teal
+  "#FB923C", // soft orange
+  "#A3E635", // soft lime
+  "#22D3EE", // soft cyan
+  "#A78BFA", // soft purple
+  "#F472B6", // soft pink
+  "#34D399", // soft emerald
+  "#60A5FA", // soft blue light
+  "#F43F5E", // soft rose strong
+  "#7C3AED", // soft violet strong
 ];
 
 const filterTypeOptions = ["Pemasok", "Pembangkit"];
@@ -129,7 +129,7 @@ export default function Home() {
           <div className="mb-8 flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">
-                Dashboard Pipa Gas
+                Dashboard Gas Pipa
               </h1>
               <p className="text-gray-600 mt-1">
                 Dashboard untuk monitoring data realtime pipa gas
@@ -177,7 +177,7 @@ export default function Home() {
       </main>
 
       {openModal && (
-        <div className="fixed inset-0 z-100 flex items-center justify-center">
+        <div className="fixed inset-0 flex items-center justify-center z-1000">
           <div
             className="absolute inset-0 bg-black/40"
             onClick={() => setOpenModal(false)}
@@ -197,14 +197,23 @@ export default function Home() {
                   <h3 className="text-lg font-semibold text-gray-900">
                     Konsumsi Gas
                   </h3>
-                  <div className="w-[200px]">
-                    <FilterAutocomplete
-                      label=""
-                      options={filterTypeOptions}
-                      value={filterType}
-                      onChange={setFilterType}
-                      placeholder="Pilih Filter Berdasar"
-                    />
+                  <div className="flex items-center justify-center">
+                    <button
+                      className={`text-[#115d72] ${filterType == "Pemasok" ? "bg-[#14a2bb92]" : ""} px-2 rounded-md cursor-pointer`}
+                      onClick={() => {
+                        changeFilterType("Pemasok");
+                      }}
+                    >
+                      Pemasok
+                    </button>
+                    <button
+                      className={`text-[#115d72] ${filterType == "Pembangkit" ? "bg-[#14a2bb92]" : ""} px-2 rounded-md cursor-pointer`}
+                      onClick={() => {
+                        changeFilterType("Pembangkit");
+                      }}
+                    >
+                      Pembangkit
+                    </button>
                   </div>
                 </div>
                 <ResponsiveContainer width="100%" height={350}>

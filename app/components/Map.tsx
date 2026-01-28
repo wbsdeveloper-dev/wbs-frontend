@@ -259,10 +259,10 @@ export default function Map() {
               key={jalur.id}
               positions={jalur.path}
               pathOptions={{
-                color: "#38BDF8", // soft slate
+                color: "#38BDF8",
                 weight: 3,
                 opacity: 0.8,
-                dashArray: "1 5", // kesan pipa
+                dashArray: "1 5",
               }}
             >
               <Tooltip sticky>{jalur.name}</Tooltip>

@@ -1,5 +1,7 @@
 "use client";
 
+import { ListFilter } from "lucide-react";
+
 interface TopVolumeList {
   name: string;
   volume: string;
@@ -19,11 +21,14 @@ export default function TopVolumeList({
   description,
 }: TopVolumeListProps) {
   return (
-    <div className="bg-white rounded-xl p-1 h-[400px] flex flex-col pb-4">
-      <div>
+    <div className="bg-white rounded-xl p-1 flex flex-col pb-4 border border-gray-200">
+      <div className="flex justify-between pr-5">
         <h3 className="text-lg font-semibold text-gray-900 py-4 px-6">
           {title}
         </h3>
+        <button className="cursor-pointer">
+          <ListFilter className="text-gray-900" />
+        </button>
       </div>
 
       <div className="overflow-auto flex-1 p-5">

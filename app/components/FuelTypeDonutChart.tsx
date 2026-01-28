@@ -1,31 +1,29 @@
 "use client";
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from "recharts";
-import FilterAutocomplete from "./FilterAutocomplete";
-import { X } from "lucide-react";
 import { Expand } from "lucide-react";
 
 const COLORS = [
-  "#2563EB", // blue-600
-  "#16A34A", // green-600
-  "#DC2626", // red-600
-  "#F59E0B", // amber-500
-  "#7C3AED", // violet-600
-  "#0EA5E9", // sky-500
-  "#22C55E", // green-500
-  "#EF4444", // red-500
-  "#EAB308", // yellow-500
-  "#6366F1", // indigo-500
-  "#14B8A6", // teal-500
-  "#F97316", // orange-500
-  "#84CC16", // lime-500
-  "#06B6D4", // cyan-500
-  "#A855F7", // purple-500
-  "#FB7185", // rose-400
-  "#10B981", // emerald-500
-  "#3B82F6", // blue-500
-  "#F43F5E", // rose-500
-  "#8B5CF6", // violet-500
+  "#4F8EF7", // soft blue
+  "#34C77B", // soft green
+  "#F87171", // soft red
+  "#FBBF24", // soft amber
+  "#8B7CF6", // soft violet
+  "#38BDF8", // soft sky
+  "#4ADE80", // soft mint
+  "#FB7185", // soft rose
+  "#FACC15", // soft yellow
+  "#6366F1", // soft indigo
+  "#2DD4BF", // soft teal
+  "#FB923C", // soft orange
+  "#A3E635", // soft lime
+  "#22D3EE", // soft cyan
+  "#A78BFA", // soft purple
+  "#F472B6", // soft pink
+  "#34D399", // soft emerald
+  "#60A5FA", // soft blue light
+  "#F43F5E", // soft rose strong
+  "#7C3AED", // soft violet strong
 ];
 
 interface DataPieChart {
@@ -40,8 +38,6 @@ type Props = {
   filterType: string | null;
 };
 
-const filterTypeOptions = ["Pemasok", "Pembangkit"];
-
 export default function FuelTypeDonutChart({
   openModalFunction,
   data,
@@ -49,9 +45,9 @@ export default function FuelTypeDonutChart({
   filterType,
 }: Props) {
   return (
-    <div className="bg-white rounded-xl p-6">
+    <div className="bg-white rounded-xl p-6 border border-gray-200">
       <div className="flex justify-between items-center mb-">
-        <div className="flex gap-2 items-center">
+        <div className="flex gap-2 items-center justify-between w-full">
           <h3 className="text-lg font-semibold text-gray-900">Konsumsi Gas</h3>
           <button
             onClick={() => {
@@ -59,18 +55,27 @@ export default function FuelTypeDonutChart({
             }}
             className="cursor-pointer"
           >
-            <Expand className="text-[#14a2bb92]" />
+            <Expand className="text-gray-900" />
           </button>
         </div>
-        <div className="w-[200px]">
-          <FilterAutocomplete
-            label=""
-            options={filterTypeOptions}
-            value={filterType}
-            onChange={changeFilterType}
-            placeholder="Pilih Filter Berdasar"
-          />
-        </div>
+      </div>
+      <div className="flex items-center mt-4 mb-2 justify-center">
+        <button
+          className={`text-[#115d72] ${filterType == "Pemasok" ? "bg-[#14a2bb92]" : ""} px-2 rounded-md cursor-pointer`}
+          onClick={() => {
+            changeFilterType("Pemasok");
+          }}
+        >
+          Pemasok
+        </button>
+        <button
+          className={`text-[#115d72] ${filterType == "Pembangkit" ? "bg-[#14a2bb92]" : ""} px-2 rounded-md cursor-pointer`}
+          onClick={() => {
+            changeFilterType("Pembangkit");
+          }}
+        >
+          Pembangkit
+        </button>
       </div>
       <ResponsiveContainer width="100%" height={250}>
         <PieChart>
