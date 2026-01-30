@@ -27,4 +27,13 @@ export const pembangkitData: Pembangkit[] = [
     long: "106.72648089843521",
     kapasitas: "10 BBTU",
   },
+  {
+    id: "2367178387y12yhd72",
+    name: "PLTGU Riau",
+    jenis: "PLTGU",
+    region: "-",
+    lat: "-6.1706103269971955",
+    long: "106.72648089843521",
+    kapasitas: "10 BBTU",
+  },
 ];
