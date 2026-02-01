@@ -209,12 +209,12 @@ const jalurPipa: PipaJalur[] = [
 
 export default function Map() {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6 mt-4">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">
+    <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6 mt-4">
+      <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-4">
         Lokasi Gas Pipa
       </h3>
 
-      <div className="relative h-[400px] w-full">
+      <div className="relative h-[250px] sm:h-[300px] md:h-[350px] lg:h-[400px] w-full">
         <MapContainer
           center={[-2.5, 118]}
           zoom={5}
@@ -271,16 +271,16 @@ export default function Map() {
         </MapContainer>
 
         {/* LEGEND */}
-        <div className="absolute bottom-4 left-4 z-1000 bg-white/90 backdrop-blur rounded-lg shadow-md px-3 py-2 text-xs space-y-2">
-          <div className="text-gray-700">Keterangan Map</div>
+        <div className="absolute bottom-2 left-2 sm:bottom-4 sm:left-4 z-1000 bg-white/90 backdrop-blur rounded-lg shadow-md px-2 py-1.5 sm:px-3 sm:py-2 text-xs space-y-1 sm:space-y-2">
+          <div className="text-gray-700 text-xs">Keterangan Map</div>
           <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-[#6FCF97] ring-4 ring-[#6FCF9733]" />
-            <span className="text-gray-700">Pemasok</span>
+            <span className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-[#6FCF97] ring-2 sm:ring-4 ring-[#6FCF9733]" />
+            <span className="text-gray-700 text-xs">Pemasok</span>
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-[#F2A65A] ring-4 ring-[#F2A65A33]" />
-            <span className="text-gray-700">Pembangkit</span>
+            <span className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-[#F2A65A] ring-2 sm:ring-4 ring-[#F2A65A33]" />
+            <span className="text-gray-700 text-xs">Pembangkit</span>
           </div>
         </div>
       </div>

@@ -13,11 +13,13 @@ import {
   ChevronUp,
   ChevronRight,
   ChevronLeft,
+  Menu,
+  X,
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function Sidebar() {
   const router = useRouter();
@@ -25,6 +27,24 @@ export default function Sidebar() {
 
   const [subMenuOpen, setSubMenuOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+
+  // Close mobile sidebar when route changes
+  useEffect(() => {
+    setIsMobileOpen(false);
+  }, [pathname]);
+
+  // Prevent body scroll when mobile sidebar is open
+  useEffect(() => {
+    if (isMobileOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isMobileOpen]);
 
   type MenuType = {
     title: string;
@@ -71,25 +91,23 @@ export default function Sidebar() {
   const menuNonActive =
     "flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-teal-50 rounded-lg w-full cursor-pointer justify-center";
 
-  // const submenuActive =
-  //   "block px-3 py-2 text-sm text-[#14a1bb] bg-teal-50 rounded-md w-full";
-
-  // const submenuNonActive =
-  //   "px-3 py-2 text-sm text-gray-600 hover:bg-teal-50 rounded-md cursor-pointer w-full text-left";
-
   const submenuWrapper = "ml-8 mt-1 space-y-1 border-l border-gray-200 pl-3";
 
   const chevronBase = "ml-auto transition-transform duration-200";
 
   const chevronOpen = "rotate-90";
 
-  return (
-    <aside
-      className={`${
-        isCollapsed ? "w-20" : "w-64"
-      } bg-white border-r h-screen flex flex-col transition-[width] duration-300 ease-in-out`}
-    >
+  const SidebarContent = ({ isMobile = false }: { isMobile?: boolean }) => (
+    <>
       <div className="p-6 border-b border-gray-200 flex justify-between items-center">
+        {isMobile && (
+          <button
+            onClick={() => setIsMobileOpen(false)}
+            className="lg:hidden p-2 rounded-full hover:bg-gray-100 absolute right-4 top-4"
+          >
+            <X size={24} className="text-gray-700" />
+          </button>
+        )}
         {!isCollapsed && (
           <div className="flex items-center gap-10">
             <Image
@@ -101,19 +119,21 @@ export default function Sidebar() {
                 isCollapsed ? "opacity-0" : "opacity-100"
               }`}
             />
-            <button
-              onClick={() => setIsCollapsed(!isCollapsed)}
-              className="p-2 rounded-full hover:bg-[#14a1bb] bg-[#13a5bf87]"
-            >
-              {isCollapsed ? (
-                <ChevronRight size={18} />
-              ) : (
-                <ChevronLeft size={18} />
-              )}
-            </button>
+            {!isMobile && (
+              <button
+                onClick={() => setIsCollapsed(!isCollapsed)}
+                className="p-2 rounded-full hover:bg-[#14a1bb] bg-[#13a5bf87] hidden lg:block"
+              >
+                {isCollapsed ? (
+                  <ChevronRight size={18} />
+                ) : (
+                  <ChevronLeft size={18} />
+                )}
+              </button>
+            )}
           </div>
         )}
-        {isCollapsed && (
+        {isCollapsed && !isMobile && (
           <div className="relative flex items-center h-10">
             <Image
               src="/logos/pln.png"
@@ -141,7 +161,7 @@ export default function Sidebar() {
 
       <div className="flex-1 py-6">
         <div className="px-4 mb-2">
-          {!isCollapsed && (
+          {(!isCollapsed || isMobile) && (
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
               OVERVIEW
             </p>
@@ -171,12 +191,12 @@ export default function Sidebar() {
                   }
                 >
                   {Icon && <Icon className="w-5 h-5" />}
-                  {!isCollapsed && (
+                  {(!isCollapsed || isMobile) && (
                     <span className="flex-1 text-left">{menu.title}</span>
                   )}
 
                   {/* Chevron */}
-                  {menu.children && subMenuOpen && !isCollapsed && (
+                  {menu.children && subMenuOpen && (!isCollapsed || isMobile) && (
                     <ChevronUp
                       className={`${chevronBase} ${
                         isSubmenuOpen ? chevronOpen : ""
@@ -184,7 +204,7 @@ export default function Sidebar() {
                       size={18}
                     />
                   )}
-                  {menu.children && !subMenuOpen && !isCollapsed && (
+                  {menu.children && !subMenuOpen && (!isCollapsed || isMobile) && (
                     <ChevronDown
                       className={`${chevronBase} ${
                         isSubmenuOpen ? chevronOpen : ""
@@ -198,13 +218,11 @@ export default function Sidebar() {
                 {menu.children && (isSubmenuOpen || subMenuOpen) && (
                   <div className={submenuWrapper}>
                     {menu.children.map((child, index) => {
-                      // const isActive = pathname.startsWith(child.path);
-
                       return (
                         <button
                           key={index}
                           onClick={() =>
-                            menu.children && !isCollapsed
+                            menu.children && (!isCollapsed || isMobile)
                               ? setSubMenuOpen(!subMenuOpen)
                               : menu.path && router.push(menu.path)
                           }
@@ -214,7 +232,7 @@ export default function Sidebar() {
                               ? "text-[#14a1bb] bg-teal-50"
                               : "text-gray-700 hover:bg-teal-50"
                           }
-                          ${isCollapsed ? "justify-center" : ""}
+                          ${isCollapsed && !isMobile ? "justify-center" : ""}
                         `}
                         >
                           {child.title}
@@ -233,27 +251,65 @@ export default function Sidebar() {
         <div className="px-4 py-2"></div>
         <nav className="space-y-1 px-2 pb-4">
           <button
-            className={`flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-teal-50 rounded-lg mt-4 cursor-pointer w-full ${isCollapsed ? "justify-center" : ""}`}
+            className={`flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-teal-50 rounded-lg mt-4 cursor-pointer w-full ${isCollapsed && !isMobile ? "justify-center" : ""}`}
             onClick={() => router.push("/landingpage")}
           >
             <Reply className="w-5 h-5" />
-            {!isCollapsed && <span>Pilih Dashboard</span>}
+            {(!isCollapsed || isMobile) && <span>Pilih Dashboard</span>}
           </button>
           <button
-            className={`flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-teal-50 rounded-lg mt-4 cursor-pointer w-full ${isCollapsed ? "justify-center" : ""}`}
+            className={`flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-teal-50 rounded-lg mt-4 cursor-pointer w-full ${isCollapsed && !isMobile ? "justify-center" : ""}`}
           >
             <Settings className="w-5 h-5" />
-            {!isCollapsed && <span>Pengaturan</span>}
+            {(!isCollapsed || isMobile) && <span>Pengaturan</span>}
           </button>
           <a
             href="#"
             className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg"
           >
             <LogOut className="w-5 h-5" />
-            {!isCollapsed && <span>Logout</span>}
+            {(!isCollapsed || isMobile) && <span>Logout</span>}
           </a>
         </nav>
       </div>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* Mobile hamburger button */}
+      <button
+        onClick={() => setIsMobileOpen(true)}
+        className="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-lg bg-white shadow-md hover:bg-gray-50"
+      >
+        <Menu size={24} className="text-gray-700" />
+      </button>
+
+      {/* Mobile overlay */}
+      {isMobileOpen && (
+        <div
+          className="lg:hidden fixed inset-0 bg-black/50 z-40"
+          onClick={() => setIsMobileOpen(false)}
+        />
+      )}
+
+      {/* Mobile sidebar */}
+      <aside
+        className={`lg:hidden fixed top-0 left-0 h-full w-64 bg-white z-50 transform transition-transform duration-300 ease-in-out flex flex-col ${
+          isMobileOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <SidebarContent isMobile={true} />
+      </aside>
+
+      {/* Desktop sidebar */}
+      <aside
+        className={`${
+          isCollapsed ? "w-20" : "w-64"
+        } bg-white border-r h-screen hidden lg:flex flex-col transition-[width] duration-300 ease-in-out`}
+      >
+        <SidebarContent isMobile={false} />
+      </aside>
+    </>
   );
 }

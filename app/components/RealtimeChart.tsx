@@ -360,8 +360,8 @@ export default function RealtimeChart() {
   if (topLineActive === null) return null;
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6 grid grid-cols-12 gap-6 divide-x divide-gray-200">
-      <div className="col-span-12 lg:col-span-9 pr-6">
+    <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:divide-x divide-gray-200">
+      <div className="lg:col-span-9 lg:pr-6">
         <div>
           <div className="flex justify-between mb-6">
             <h3 className="text-lg font-semibold text-gray-900">
@@ -481,7 +481,7 @@ export default function RealtimeChart() {
           <NoteSection />
         </div>
       </div>
-      <div className="col-span-12 lg:col-span-3">
+      <div className="lg:col-span-3 lg:pl-6 pt-6 lg:pt-0 border-t lg:border-t-0 lg:border-l border-gray-200">
         <div>
           <p className="text-lg font-semibold text-gray-900 mb-6">
             Filter Grafik

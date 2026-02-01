@@ -122,30 +122,30 @@ export default function Home() {
   return (
     <div className="flex h-screen bg-gray-50">
       <main className="flex-1 overflow-auto">
-        <div className="p-8">
-          <div className="mb-8 flex items-center justify-between">
+        <div className="p-4 md:p-6 lg:p-8">
+          <div className="mb-6 md:mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
                 Dashboard Gas Pipa
               </h1>
-              <p className="text-gray-600 mt-1">
+              <p className="text-gray-600 mt-1 text-sm md:text-base">
                 Dashboard untuk monitoring data realtime pipa gas
               </p>
             </div>
           </div>
 
-          <div className="mb-8">
+          <div className="mb-6 md:mb-8">
             <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold text-gray-900">
+              <h2 className="text-lg md:text-xl font-semibold text-gray-900">
                 Monitoring Gas Pipa PLN EPI
               </h2>
             </div>
 
-            <div className="mb-8">
+            <div className="mb-6 md:mb-8">
               <Map />
             </div>
 
-            <div className="grid grid-cols-3 gap-4 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
               <FuelTypeDonutChart
                 openModalFunction={openModalFunction}
                 data={dataPieChart}
@@ -174,12 +174,12 @@ export default function Home() {
       </main>
 
       {openModal && (
-        <div className="fixed inset-0 flex items-center justify-center z-1000">
+        <div className="fixed inset-0 flex items-center justify-center z-1000 p-4">
           <div
             className="absolute inset-0 bg-black/40"
             onClick={() => setOpenModal(false)}
           />
-          <div className="relative bg-white w-full max-w-5xl rounded-xl shadow-lg p-6 z-10">
+          <div className="relative bg-white w-full max-w-5xl rounded-xl shadow-lg p-4 md:p-6 z-10 max-h-[90vh] overflow-auto">
             <div className="text-right text-gray-900">
               <button
                 onClick={() => setOpenModal(false)}
@@ -188,9 +188,9 @@ export default function Home() {
                 <X />
               </button>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-white rounded-xl px-6">
-                <div className="flex justify-between items-center">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-white rounded-xl px-4 md:px-6">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                   <h3 className="text-lg font-semibold text-gray-900">
                     Konsumsi Gas
                   </h3>
@@ -213,14 +213,14 @@ export default function Home() {
                     </button>
                   </div>
                 </div>
-                <ResponsiveContainer width="100%" height={350}>
+                <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
                     <Pie
                       data={dataPieChart}
                       cx="50%"
                       cy="50%"
-                      innerRadius={100}
-                      outerRadius={150}
+                      innerRadius={80}
+                      outerRadius={120}
                       paddingAngle={2}
                       dataKey="value"
                     >
@@ -239,7 +239,7 @@ export default function Home() {
                 <p className="text-lg font-semibold text-gray-900 mb-4">
                   Detail List Pembangkit
                 </p>
-                <div className="p-8 text-gray-900 h-[400px] overflow-auto border border-gray-200 rounded-lg">
+                <div className="p-4 md:p-8 text-gray-900 h-[300px] md:h-[400px] overflow-auto border border-gray-200 rounded-lg">
                   {dataPieChart.map((value, index) => {
                     return (
                       <div key={index} className="flex justify-between">
@@ -248,9 +248,9 @@ export default function Home() {
                             className={`w-3 h-3 bg-[#CCCCCC] rounded-full`}
                             style={{ backgroundColor: COLORS[index] }}
                           ></div>
-                          <p className="font-medium">{value.name}</p>
+                          <p className="font-medium text-sm md:text-base">{value.name}</p>
                         </div>
-                        <div>{value.value} MMBTU</div>
+                        <div className="text-sm md:text-base">{value.value} MMBTU</div>
                       </div>
                     );
                   })}
