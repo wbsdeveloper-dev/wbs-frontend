@@ -87,11 +87,11 @@ export default function Sidebar() {
   ];
 
   const menuActive =
-    "flex items-center gap-3 px-3 py-2 text-sm font-medium text-[#14a1bb] bg-teal-50 rounded-lg w-full cursor-pointer justify-center";
+    "flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-white bg-white/20 rounded-xl w-full cursor-pointer justify-center backdrop-blur-sm";
   const menuNonActive =
-    "flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-teal-50 rounded-lg w-full cursor-pointer justify-center";
+    "flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 rounded-xl w-full cursor-pointer justify-center transition-all duration-200";
 
-  const submenuWrapper = "ml-8 mt-1 space-y-1 border-l border-gray-200 pl-3";
+  const submenuWrapper = "ml-8 mt-1 space-y-1 border-l border-white/20 pl-3";
 
   const chevronBase = "ml-auto transition-transform duration-200";
 
@@ -99,42 +99,45 @@ export default function Sidebar() {
 
   const SidebarContent = ({ isMobile = false }: { isMobile?: boolean }) => (
     <>
-      <div className="p-6 border-b border-gray-200 flex justify-between items-center">
+      {/* Header with gradient */}
+      <div className="p-5 flex justify-between items-center">
         {isMobile && (
           <button
             onClick={() => setIsMobileOpen(false)}
-            className="lg:hidden p-2 rounded-full hover:bg-gray-100 absolute right-4 top-4"
+            className="lg:hidden p-2 rounded-full hover:bg-white/20 absolute right-3 top-3"
           >
-            <X size={24} className="text-gray-700" />
+            <X size={24} className="text-white" />
           </button>
         )}
         {!isCollapsed && (
-          <div className="flex items-center gap-10">
-            <Image
-              src="/logos/pln-epi.png"
-              alt="PLN logo"
-              width={140}
-              height={30}
-              className={`transition-none ${
-                isCollapsed ? "opacity-0" : "opacity-100"
-              }`}
-            />
+          <div className="flex items-center gap-6">
+            <div className="bg-white p-2 rounded-md">
+              <Image
+                src="/logos/pln-epi.png"
+                alt="PLN logo"
+                width={130}
+                height={30}
+                className={`transition-none ${
+                  isCollapsed ? "opacity-0" : "opacity-100"
+                }`}
+              />
+            </div>
             {!isMobile && (
               <button
                 onClick={() => setIsCollapsed(!isCollapsed)}
-                className="p-2 rounded-full hover:bg-[#14a1bb] bg-[#13a5bf87] hidden lg:block"
+                className="p-1.5 rounded-full bg-white/20 hover:bg-white/30 hidden lg:block transition-colors"
               >
                 {isCollapsed ? (
-                  <ChevronRight size={18} />
+                  <ChevronRight size={16} className="text-white" />
                 ) : (
-                  <ChevronLeft size={18} />
+                  <ChevronLeft size={16} className="text-white" />
                 )}
               </button>
             )}
           </div>
         )}
         {isCollapsed && !isMobile && (
-          <div className="relative flex items-center h-10">
+          <div className="relative flex items-center h-10 w-full justify-center">
             <Image
               src="/logos/pln.png"
               alt="PLN logo"
@@ -147,22 +150,25 @@ export default function Sidebar() {
 
             <button
               onClick={() => setIsCollapsed(!isCollapsed)}
-              className="absolute z-100 p-2 rounded-full hover:bg-gray-100 bg-[#13a5bf87] -right-10"
+              className="absolute z-100 p-1.5 rounded-full bg-white/20 hover:bg-white/30 -right-8 transition-colors"
             >
               {isCollapsed ? (
-                <ChevronRight size={18} />
+                <ChevronRight size={16} className="text-white" />
               ) : (
-                <ChevronLeft size={18} />
+                <ChevronLeft size={16} className="text-white" />
               )}
             </button>
           </div>
         )}
       </div>
 
-      <div className="flex-1 py-6">
-        <div className="px-4 mb-2">
+      {/* Decorative line */}
+      <div className="mx-4 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+
+      <div className="flex-1 py-4">
+        <div className="px-4 mb-3">
           {(!isCollapsed || isMobile) && (
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+            <p className="text-xs font-semibold text-white/50 uppercase tracking-wider">
               OVERVIEW
             </p>
           )}
@@ -229,8 +235,8 @@ export default function Sidebar() {
                           className={`flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg w-full cursor-pointer
                           ${
                             isParentActive || isSubmenuOpen
-                              ? "text-[#14a1bb] bg-teal-50"
-                              : "text-gray-700 hover:bg-teal-50"
+                              ? "text-white bg-white/10"
+                              : "text-white/70 hover:text-white hover:bg-white/10"
                           }
                           ${isCollapsed && !isMobile ? "justify-center" : ""}
                         `}
@@ -247,29 +253,30 @@ export default function Sidebar() {
         </nav>
       </div>
 
-      <div className="border-t border-gray-200">
-        <div className="px-4 py-2"></div>
-        <nav className="space-y-1 px-2 pb-4">
+      {/* Footer */}
+      <div className="mx-4 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+      <div className="py-2">
+        <nav className="space-y-1 px-2 pb-3">
           <button
-            className={`flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-teal-50 rounded-lg mt-4 cursor-pointer w-full ${isCollapsed && !isMobile ? "justify-center" : ""}`}
+            className={`flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 rounded-xl mt-2 cursor-pointer w-full transition-all ${isCollapsed && !isMobile ? "justify-center" : ""}`}
             onClick={() => router.push("/landingpage")}
           >
             <Reply className="w-5 h-5" />
             {(!isCollapsed || isMobile) && <span>Pilih Dashboard</span>}
           </button>
           <button
-            className={`flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-teal-50 rounded-lg mt-4 cursor-pointer w-full ${isCollapsed && !isMobile ? "justify-center" : ""}`}
+            className={`flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 rounded-xl cursor-pointer w-full transition-all ${isCollapsed && !isMobile ? "justify-center" : ""}`}
           >
             <Settings className="w-5 h-5" />
             {(!isCollapsed || isMobile) && <span>Pengaturan</span>}
           </button>
-          <a
-            href="#"
-            className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg"
+          <button
+            onClick={() => router.push("/auth/login")}
+            className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-red-300 hover:text-red-200 hover:bg-red-500/20 rounded-xl cursor-pointer w-full transition-all"
           >
             <LogOut className="w-5 h-5" />
             {(!isCollapsed || isMobile) && <span>Logout</span>}
-          </a>
+          </button>
         </nav>
       </div>
     </>
@@ -280,22 +287,22 @@ export default function Sidebar() {
       {/* Mobile hamburger button */}
       <button
         onClick={() => setIsMobileOpen(true)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-lg bg-white shadow-md hover:bg-gray-50"
+        className="lg:hidden fixed top-4 left-4 z-50 p-2.5 rounded-xl bg-gradient-to-br from-[#115d72] to-[#0e4d5f] shadow-lg shadow-[#115d72]/30 hover:shadow-xl transition-all"
       >
-        <Menu size={24} className="text-gray-700" />
+        <Menu size={22} className="text-white" />
       </button>
 
       {/* Mobile overlay */}
       {isMobileOpen && (
         <div
-          className="lg:hidden fixed inset-0 bg-black/50 z-40"
+          className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
           onClick={() => setIsMobileOpen(false)}
         />
       )}
 
       {/* Mobile sidebar */}
       <aside
-        className={`lg:hidden fixed top-0 left-0 h-full w-64 bg-white z-50 transform transition-transform duration-300 ease-in-out flex flex-col ${
+        className={`lg:hidden fixed top-0 left-0 h-full w-72 bg-gradient-to-b from-[#115d72] via-[#115d72] to-[#0e4d5f] z-50 transform transition-transform duration-300 ease-in-out flex flex-col shadow-2xl ${
           isMobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -306,7 +313,7 @@ export default function Sidebar() {
       <aside
         className={`${
           isCollapsed ? "w-20" : "w-64"
-        } bg-white border-r h-screen hidden lg:flex flex-col transition-[width] duration-300 ease-in-out`}
+        } bg-gradient-to-b from-[#115d72] via-[#115d72] to-[#0e4d5f] h-screen hidden lg:flex flex-col transition-[width] duration-300 ease-in-out shadow-xl shadow-[#115d72]/20`}
       >
         <SidebarContent isMobile={false} />
       </aside>

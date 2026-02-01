@@ -44,21 +44,21 @@ export default function DashboardSelection() {
               alt="Danantara logo"
               width={100}
               height={30}
-              className="object-contain w-[60px] md:w-[80px] lg:w-[100px] brightness-0 invert opacity-90"
+              className="object-contain w-[60px] md:w-[80px] lg:w-[100px] opacity-90"
             />
             <Image
               src="/logos/SucofindoIdSurvey.png"
               alt="Sucofindo logo"
               width={60}
               height={25}
-              className="object-contain w-[40px] md:w-[50px] lg:w-[60px] brightness-0 invert opacity-90"
+              className="object-contain w-[40px] md:w-[50px] lg:w-[60px] opacity-90 mb-3"
             />
             <Image
               src="/logos/pln-epi.png"
               alt="PLN EPI logo"
               width={100}
               height={30}
-              className="object-contain w-[60px] md:w-[80px] lg:w-[100px] brightness-0 invert opacity-90"
+              className="object-contain w-[60px] md:w-[80px] lg:w-[100px] opacity-90"
             />
           </div>
         </div>
