@@ -64,7 +64,7 @@ export default function LoginPage() {
                 Selamat Datang!
               </h1>
               <p className="text-gray-600 text-sm md:text-base leading-relaxed">
-                Sistem monitoring <span className="font-semibold text-[#115d72]">Pipa Gas</span> dan{" "}
+                Sistem monitoring <span className="font-semibold text-[#115d72]">Gas Pipa</span> dan{" "}
                 <span className="font-semibold text-[#115d72]">BBM</span> berbasis website
               </p>
             </div>
