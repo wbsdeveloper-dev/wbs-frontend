@@ -68,25 +68,22 @@ export default function Home() {
   return (
     <div className="flex h-screen bg-gray-50">
       <main className="flex-1 overflow-auto">
-        <div className="p-8">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">Dashboard BBM</h1>
-            {/* <p className="text-gray-600 mt-1">
-              Menampilkan visualisasi data BBM 
-            </p> */}
+        <div className="p-4 md:p-6 lg:p-8">
+          <div className="mb-6 md:mb-8">
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Dashboard BBM</h1>
           </div>
 
-          <div className="mb-8">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+          <div className="mb-6 md:mb-8">
+            <h2 className="text-lg md:text-xl font-semibold text-gray-900 mb-4">
               Monitoring BBM PLN EPI
             </h2>
-            <div className="mb-8">
+            <div className="mb-6 md:mb-8">
               <Map />
             </div>
 
-            <div className="grid grid-cols-3 gap-4 mb-6">
-              <div className="bg-white rounded-xl p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+              <div className="bg-white rounded-xl p-4 md:p-6">
+                <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-4">
                   Filter Data Dashboard
                 </h3>
                 <div className="flex flex-col gap-2">

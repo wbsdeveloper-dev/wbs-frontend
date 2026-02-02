@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Filter, X } from "lucide-react";
 import {
   CartesianGrid,
   Line,
@@ -340,6 +341,7 @@ export default function RealtimeChart() {
   );
   const [startDate, setStartDate] = useState<string | null>(null);
   const [endDate, setEndDate] = useState<string | null>(null);
+  const [filterOpen, setFilterOpen] = useState(false);
 
   const today = new Date();
 
@@ -360,8 +362,8 @@ export default function RealtimeChart() {
   if (topLineActive === null) return null;
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6 grid grid-cols-12 gap-6 divide-x divide-gray-200">
-      <div className="col-span-12 lg:col-span-9 pr-6">
+    <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:divide-x divide-gray-200">
+      <div className="lg:col-span-9 lg:pr-6">
         <div>
           <div className="flex justify-between mb-6">
             <h3 className="text-lg font-semibold text-gray-900">
@@ -374,7 +376,7 @@ export default function RealtimeChart() {
             </div>
           </div>
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={chartData}>
+            <LineChart data={chartData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
               <CartesianGrid stroke="#eee" strokeDasharray="5 5" />
               <XAxis dataKey="label" />
               <YAxis domain={[0, 100]} />
@@ -481,12 +483,35 @@ export default function RealtimeChart() {
           <NoteSection />
         </div>
       </div>
-      <div className="col-span-12 lg:col-span-3">
-        <div>
-          <p className="text-lg font-semibold text-gray-900 mb-6">
+      {/* Mobile Filter Button */}
+      <button
+        onClick={() => setFilterOpen(!filterOpen)}
+        className="lg:hidden fixed bottom-4 right-4 z-50 bg-gradient-to-r from-[#115d72] to-[#14a1bb] text-white p-3 rounded-full shadow-lg hover:shadow-xl transition-all"
+      >
+        {filterOpen ? <X size={22} /> : <Filter size={22} />}
+      </button>
+
+      {/* Filter Panel - Desktop always visible, Mobile as overlay */}
+      <div className={`
+        lg:col-span-3 lg:pl-6 pt-6 lg:pt-0 border-t lg:border-t-0 lg:border-l border-gray-200
+        fixed lg:relative inset-0 lg:inset-auto z-40 lg:z-auto
+        bg-white lg:bg-transparent
+        transform transition-transform duration-300 ease-in-out
+        ${filterOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}
+        lg:block overflow-y-auto
+      `}>
+        {/* Mobile Filter Header */}
+        <div className="lg:hidden flex items-center justify-between p-4 border-b border-gray-200">
+          <p className="text-lg font-semibold text-gray-900">Filter Grafik</p>
+          <button onClick={() => setFilterOpen(false)} className="p-2 hover:bg-gray-100 rounded-full">
+            <X size={20} className="text-gray-600" />
+          </button>
+        </div>
+        
+        <div className="p-4 lg:p-0">
+          <p className="hidden lg:block text-lg font-semibold text-gray-900 mb-6">
             Filter Grafik
           </p>
-        </div>
         <div className="flex flex-col gap-3">
           <FilterAutocomplete
             label="Filter Berdasar"
@@ -659,7 +684,16 @@ export default function RealtimeChart() {
             </div>
           </div>
         </div>
+        </div>
       </div>
+
+      {/* Mobile Filter Overlay */}
+      {filterOpen && (
+        <div 
+          className="lg:hidden fixed inset-0 bg-black/50 z-30"
+          onClick={() => setFilterOpen(false)}
+        />
+      )}
       {openModal && (
         <ModalNote
           setOpenModal={setOpenModal}

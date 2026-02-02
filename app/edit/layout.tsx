@@ -30,7 +30,7 @@ export default function RootLayout({
       className={`${redditSans.variable} ${geistMono.variable} antialiased flex h-screen bg-gray-50`}
     >
       <Sidebar />
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-auto pt-16 lg:pt-0">
         <Providers>{children}</Providers>
       </main>
     </div>
