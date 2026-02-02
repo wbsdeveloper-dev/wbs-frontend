@@ -2,7 +2,7 @@
 
 export default function SupplierResumeTable() {
   return (
-    <div className="w-full text-sm text-gray-800 grid grid-cols-2 gap-6">
+    <div className="w-full text-sm text-gray-800 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
       <div>
         <div className="grid grid-cols-1 md:grid-cols-[120px_1fr] border-b border-gray-300 mb-1 border-dashed">
           <div className="bg-white font-semibold px-2">Jenis Kontrak</div>

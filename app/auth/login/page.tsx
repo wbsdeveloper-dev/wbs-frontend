@@ -165,7 +165,7 @@ export default function LoginPage() {
 
             {/* Footer Text */}
             <p className="text-center text-gray-500 text-xs mt-8">
-              © 2026 PLN Energi Primer Indonesia. All rights reserved.
+              © 2026 Sucofindo. All rights reserved.
             </p>
           </div>
         </div>
