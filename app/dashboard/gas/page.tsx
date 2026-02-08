@@ -17,6 +17,7 @@ import {
 import FuelTypeDonutChart from "@/app/components/FuelTypeDonutChart";
 import TopVolumeList from "@/app/components/TopVolumeList";
 import RealtimeChart from "@/app/components/RealtimeChart";
+import SCurveProgressChart from "@/app/components/SCurveProgressChart";
 import { Modal } from "@/app/components/ui";
 
 const Map = dynamic(() => import("@/app/components/Map"), { ssr: false });
@@ -82,6 +83,11 @@ export default function GasDashboard() {
 
             <div className="mb-6">
               <RealtimeChart />
+            </div>
+
+            {/* S-Curve Progress Chart */}
+            <div className="mb-6">
+              <SCurveProgressChart />
             </div>
           </div>
         </div>

@@ -176,7 +176,7 @@ export default function Sidebar() {
             </div>
             {/* User Info */}
             <div className="flex-1 min-w-0">
-              <p className="text-slate-800 font-semibold text-sm truncate">Ivan Pratama</p>
+              <p className="text-slate-800 font-semibold text-sm truncate">Ivan Fabriano</p>
               <p className="text-slate-500 text-xs truncate">Admin · IT Division</p>
             </div>
           </div>
