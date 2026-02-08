@@ -12,6 +12,7 @@ import {
 import "leaflet/dist/leaflet.css";
 import L, { LatLngTuple } from "leaflet";
 import { Eye, EyeOff, ChevronDown, ChevronUp, Layers } from "lucide-react";
+import FilterAutocomplete from "./FilterAutocomplete";
 
 type LeafletIconPrototype = {
   _getIconUrl?: () => string;
@@ -136,6 +137,29 @@ const jalurPipa: PipaJalur[] = [
   { id: 20, pemasokId: 1, pembangkitId: 12, name: "PHE ONWJ → PLTGU Muara Tawar", path: [[-6.2, 106.8], [-6.2, 107.0], [-6.2, 107.1]] },
 ];
 
+// Transportir data
+const transportirData = [
+  "PGN (Perusahaan Gas Negara)",
+  "Pertamina Gas",
+  "Medco Energi",
+  "Pertagas Niaga",
+  "Transportir X",
+  "Transportir Y",
+];
+
+// Region/Wilayah options
+const wilayahOptions = [
+  "Jawa Bagian Barat",
+  "Jawa Timur",
+  "Jawa Tengah",
+  "Sumatera Tengah",
+  "Jambi",
+  "Sumatera Selatan",
+  "Kalimantan",
+  "Sulawesi",
+  "Papua",
+];
+
 // Helper function to get connected pembangkit for a pemasok
 const getConnectedPembangkit = (pemasokId: number): Pembangkit[] => {
   const connectedIds = jalurPipa
@@ -150,11 +174,61 @@ export default function Map() {
   const [showRute, setShowRute] = useState(true);
   const [legendExpanded, setLegendExpanded] = useState(false);
 
+  // Filter states
+  const [selectedWilayah, setSelectedWilayah] = useState<string | null>(null);
+  const [selectedPemasok, setSelectedPemasok] = useState<string | null>(null);
+  const [selectedPembangkit, setSelectedPembangkit] = useState<string | null>(null);
+  const [selectedTransportir, setSelectedTransportir] = useState<string | null>(null);
+
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6 mt-4">
-      <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-4">
-        Lokasi Gas Pipa
-      </h3>
+      {/* Header with title and filters */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4">
+        <h3 className="text-base md:text-lg font-semibold text-gray-900">
+          Lokasi Gas Pipa
+        </h3>
+        
+        {/* Filters */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 lg:gap-3">
+          <div className="min-w-[140px]">
+            <FilterAutocomplete
+              label=""
+              options={wilayahOptions}
+              value={selectedWilayah}
+              onChange={setSelectedWilayah}
+              placeholder="Wilayah"
+            />
+          </div>
+          <div className="min-w-[140px]">
+            <FilterAutocomplete
+              label=""
+              options={pemasokData.map((p) => p.name)}
+              value={selectedPemasok}
+              onChange={setSelectedPemasok}
+              placeholder="Pemasok"
+            />
+          </div>
+          <div className="min-w-[140px]">
+            <FilterAutocomplete
+              label=""
+              options={pembangkitData.map((p) => p.name)}
+              value={selectedPembangkit}
+              onChange={setSelectedPembangkit}
+              placeholder="Pembangkit"
+            />
+          </div>
+          <div className="min-w-[140px]">
+            <FilterAutocomplete
+              label=""
+              options={transportirData}
+              value={selectedTransportir}
+              onChange={setSelectedTransportir}
+              placeholder="Transportir"
+            />
+          </div>
+        </div>
+      </div>
+
 
       <div className="relative h-[250px] sm:h-[300px] md:h-[350px] lg:h-[400px] w-full">
         <MapContainer
