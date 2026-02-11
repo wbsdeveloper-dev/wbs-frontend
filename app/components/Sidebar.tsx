@@ -81,6 +81,7 @@ export default function Sidebar() {
         { title: "Manajemen Lokasi", path: "/konfigurasi/lokasi" },
         { title: "Template Grup", path: "/konfigurasi/template-grup" },
         { title: "Manajemen Kontrak", path: "/konfigurasi/kontrak" },
+        { title: "Email Ingest", path: "/konfigurasi/email-ingest" },
       ],
     },
     {
@@ -255,22 +256,18 @@ export default function Sidebar() {
                       />
                     )}
                 </button>
-
                 {/* Submenu (auto open only when active) */}
                 {menu.children && (isSubmenuOpen || subMenuOpen) && (
                   <div className={submenuWrapper}>
-                    {menu.children.map((child, index) => {
+                    {menu.children.map((child, idx) => {
+                      const isChildActive = pathname === child.path;
                       return (
                         <button
-                          key={index}
-                          onClick={() =>
-                            menu.children && (!isCollapsed || isMobile)
-                              ? setSubMenuOpen(!subMenuOpen)
-                              : menu.path && router.push(menu.path)
-                          }
+                          key={idx}
+                          onClick={() => router.push(child.path)}
                           className={`flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg w-full cursor-pointer
                           ${
-                            isParentActive || isSubmenuOpen
+                            isChildActive
                               ? "text-[#115d72] bg-[#115d72]/10"
                               : "text-slate-600 hover:text-[#115d72] hover:bg-slate-100"
                           }
