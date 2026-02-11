@@ -31,9 +31,12 @@ export default function Sidebar() {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   // Close mobile sidebar when route changes
-  useEffect(() => {
+  const [prevPathname, setPrevPathname] = useState(pathname);
+
+  if (pathname !== prevPathname) {
+    setPrevPathname(pathname);
     setIsMobileOpen(false);
-  }, [pathname]);
+  }
 
   // Prevent body scroll when mobile sidebar is open
   useEffect(() => {
@@ -98,7 +101,7 @@ export default function Sidebar() {
 
   const chevronOpen = "rotate-90";
 
-  const SidebarContent = ({ isMobile = false }: { isMobile?: boolean }) => (
+  const sidebarContent = (isMobile = false) => (
     <>
       {/* Header with gradient */}
       <div className="p-5 flex justify-between items-center">
@@ -168,7 +171,7 @@ export default function Sidebar() {
 
       {/* User Profile Card - Light Style */}
       <div className="px-3 py-3">
-        {(!isCollapsed || isMobile) ? (
+        {!isCollapsed || isMobile ? (
           <div className="bg-slate-50 rounded-xl p-2.5 border border-slate-200 flex items-center gap-3">
             {/* Avatar */}
             <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#115d72] to-[#14a2bb] flex items-center justify-center flex-shrink-0">
@@ -176,8 +179,12 @@ export default function Sidebar() {
             </div>
             {/* User Info */}
             <div className="flex-1 min-w-0">
-              <p className="text-slate-800 font-semibold text-sm truncate">Ivan Fabriano</p>
-              <p className="text-slate-500 text-xs truncate">Admin · IT Division</p>
+              <p className="text-slate-800 font-semibold text-sm truncate">
+                Ivan Fabriano
+              </p>
+              <p className="text-slate-500 text-xs truncate">
+                Admin · IT Division
+              </p>
             </div>
           </div>
         ) : (
@@ -227,22 +234,26 @@ export default function Sidebar() {
                   )}
 
                   {/* Chevron */}
-                  {menu.children && subMenuOpen && (!isCollapsed || isMobile) && (
-                    <ChevronUp
-                      className={`${chevronBase} ${
-                        isSubmenuOpen ? chevronOpen : ""
-                      }`}
-                      size={18}
-                    />
-                  )}
-                  {menu.children && !subMenuOpen && (!isCollapsed || isMobile) && (
-                    <ChevronDown
-                      className={`${chevronBase} ${
-                        isSubmenuOpen ? chevronOpen : ""
-                      }`}
-                      size={18}
-                    />
-                  )}
+                  {menu.children &&
+                    subMenuOpen &&
+                    (!isCollapsed || isMobile) && (
+                      <ChevronUp
+                        className={`${chevronBase} ${
+                          isSubmenuOpen ? chevronOpen : ""
+                        }`}
+                        size={18}
+                      />
+                    )}
+                  {menu.children &&
+                    !subMenuOpen &&
+                    (!isCollapsed || isMobile) && (
+                      <ChevronDown
+                        className={`${chevronBase} ${
+                          isSubmenuOpen ? chevronOpen : ""
+                        }`}
+                        size={18}
+                      />
+                    )}
                 </button>
 
                 {/* Submenu (auto open only when active) */}
@@ -331,7 +342,7 @@ export default function Sidebar() {
           isMobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <SidebarContent isMobile={true} />
+        {sidebarContent(true)}
       </aside>
 
       {/* Desktop sidebar */}
@@ -340,7 +351,7 @@ export default function Sidebar() {
           isCollapsed ? "w-20" : "w-64"
         } bg-white border-r border-slate-200 h-screen hidden lg:flex flex-col transition-[width] duration-300 ease-in-out shadow-sm`}
       >
-        <SidebarContent isMobile={false} />
+        {sidebarContent(false)}
       </aside>
     </>
   );
