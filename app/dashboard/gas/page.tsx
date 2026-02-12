@@ -1,35 +1,148 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
+import { Loader2 } from "lucide-react";
 
 // Shared imports
 import { CHART_COLORS } from "@/app/_constants";
 import { useModal } from "@/app/_hooks";
+
+// API hooks
 import {
-  topVolumePemasok,
-  topVolumePembangkit,
-  getPieChartDataByType,
-} from "@/app/_data/chartData";
+  useDistribution,
+  useTopSuppliers,
+  useTopPlants,
+  useChartFlow,
+  useFilters,
+  useContractInfo,
+  useEvents,
+} from "@/hooks/service/dashboard-api";
+import type { Granularity } from "@/app/components/RealtimeChart";
 
 // Components
 import FuelTypeDonutChart from "@/app/components/FuelTypeDonutChart";
 import TopVolumeList from "@/app/components/TopVolumeList";
 import RealtimeChart from "@/app/components/RealtimeChart";
-import SCurveProgressChart from "@/app/components/SCurveProgressChart";
 import { Modal } from "@/app/components/ui";
 
 const Map = dynamic(() => import("@/app/components/Map"), { ssr: false });
+
+// Helper to get current month date range
+function getCurrentMonthRange() {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), 1);
+  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  return {
+    startDate: start.toISOString().split("T")[0],
+    endDate: end.toISOString().split("T")[0],
+  };
+}
 
 export default function GasDashboard() {
   const { isOpen, open, close } = useModal();
   const [filterType, setFilterType] = useState<string | null>("Pemasok");
 
-  const dataPieChart = useMemo(
-    () => getPieChartDataByType(filterType),
-    [filterType]
+  const { startDate, endDate } = useMemo(() => getCurrentMonthRange(), []);
+  const todayDate = useMemo(() => new Date().toISOString().split("T")[0], []);
+
+  // Chart flow state
+  const [granularity, setGranularity] = useState<Granularity>("hour");
+  const [chartBy] = useState<"supplier" | "plant">("plant");
+  const [selectedPemasokId, setSelectedPemasokId] = useState<
+    string | undefined
+  >(undefined);
+  const [selectedPembangkitId, setSelectedPembangkitId] = useState<
+    string | undefined
+  >(undefined);
+
+  // Fetch distribution data based on filter type
+  const distributionBy = filterType === "Pemasok" ? "supplier" : "plant";
+  const { data: distributionData, isLoading: isDistLoading } = useDistribution(
+    todayDate,
+    distributionBy as "supplier" | "plant",
   );
+
+  // Fetch top suppliers and plants
+  const { data: topSuppliersData, isLoading: isSuppliersLoading } =
+    useTopSuppliers(startDate, endDate, 5);
+  const { data: topPlantsData, isLoading: isPlantsLoading } = useTopPlants(
+    startDate,
+    endDate,
+    5,
+  );
+
+  // Fetch chart flow data
+  const { data: chartFlowData, isLoading: isChartLoading } = useChartFlow(
+    todayDate,
+    todayDate,
+    granularity,
+    chartBy,
+    selectedPemasokId,
+    selectedPembangkitId,
+  );
+
+  // Fetch filter options
+  const { data: filtersData } = useFilters();
+
+  // Fetch contract info — always fetch, optionally filter by selected pemasok
+  const { data: contractData, isLoading: isContractLoading } = useContractInfo(
+    selectedPemasokId,
+    selectedPembangkitId,
+  );
+
+  // Fetch events — always fetch
+  const { data: eventsData, isLoading: isEventsLoading } = useEvents(
+    startDate,
+    endDate,
+    10,
+  );
+
+  // Chart flow callbacks
+  const handlePeriodChange = useCallback((newGranularity: Granularity) => {
+    setGranularity(newGranularity);
+  }, []);
+
+  const handlePemasokChange = useCallback((pemasokId: string | null) => {
+    setSelectedPemasokId(pemasokId ?? undefined);
+  }, []);
+
+  const handlePembangkitChange = useCallback((pembangkitId: string | null) => {
+    setSelectedPembangkitId(pembangkitId ?? undefined);
+  }, []);
+
+  // Transform distribution data for pie chart component
+  const dataPieChart = useMemo(() => {
+    if (!distributionData) return [];
+    const items = Array.isArray(distributionData)
+      ? distributionData
+      : distributionData.items;
+    if (!Array.isArray(items)) return [];
+    return items.map((item: { name: string; value: number }) => ({
+      name: item.name,
+      value: item.value,
+    }));
+  }, [distributionData]);
+
+  // Transform top data for list components
+  const topPemasokList = useMemo(() => {
+    if (!topSuppliersData?.items) return [];
+    return topSuppliersData.items.map(
+      (item: { name: string; percentage: number }) => ({
+        name: item.name,
+        volume: `${item.percentage.toFixed(1)}`,
+      }),
+    );
+  }, [topSuppliersData]);
+
+  const topPembangkitList = useMemo(() => {
+    if (!topPlantsData?.items) return [];
+    return topPlantsData.items.map((item: { name: string; value: number }) => ({
+      name: item.name,
+      volume: `${item.value.toFixed(0)}`,
+    }));
+  }, [topPlantsData]);
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -61,33 +174,207 @@ export default function GasDashboard() {
 
             {/* Cards Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-              <FuelTypeDonutChart
-                openModalFunction={open}
-                data={dataPieChart}
-                changeFilterType={setFilterType}
-                filterType={filterType}
-              />
-              <TopVolumeList
-                title="Top 5 Volume Pemasok"
-                list={topVolumePemasok}
-                unit="%"
-                description="List top 5 performa pemasok dengan perhitungan Realisasi/TOP"
-              />
-              <TopVolumeList
-                title="Top 5 Volume Pembangkit"
-                list={topVolumePembangkit}
-                unit="MMBTU"
-                description="List top 5 performa pembangkit dengan satuan MMBTU"
-              />
+              {isDistLoading ? (
+                <div className="bg-white rounded-xl p-6 flex items-center justify-center">
+                  <Loader2 className="animate-spin text-[#14a2bb]" size={32} />
+                </div>
+              ) : (
+                <FuelTypeDonutChart
+                  openModalFunction={open}
+                  data={dataPieChart}
+                  changeFilterType={setFilterType}
+                  filterType={filterType}
+                />
+              )}
+              {isSuppliersLoading ? (
+                <div className="bg-white rounded-xl p-6 flex items-center justify-center">
+                  <Loader2 className="animate-spin text-[#14a2bb]" size={32} />
+                </div>
+              ) : (
+                <TopVolumeList
+                  title="Top 5 Volume Pemasok"
+                  list={topPemasokList}
+                  unit="%"
+                  description="List top 5 performa pemasok dengan perhitungan Realisasi/TOP"
+                />
+              )}
+              {isPlantsLoading ? (
+                <div className="bg-white rounded-xl p-6 flex items-center justify-center">
+                  <Loader2 className="animate-spin text-[#14a2bb]" size={32} />
+                </div>
+              ) : (
+                <TopVolumeList
+                  title="Top 5 Volume Pembangkit"
+                  list={topPembangkitList}
+                  unit="MMBTU"
+                  description="List top 5 performa pembangkit dengan satuan MMBTU"
+                />
+              )}
             </div>
 
             <div className="mb-6">
-              <RealtimeChart />
+              <RealtimeChart
+                contractData={contractData ?? null}
+                chartFlowData={chartFlowData ?? null}
+                filtersData={filtersData ?? null}
+                isLoading={isChartLoading}
+                onPeriodChange={handlePeriodChange}
+                onPemasokChange={handlePemasokChange}
+                onPembangkitChange={handlePembangkitChange}
+              />
             </div>
 
-            {/* S-Curve Progress Chart */}
-            <div className="mb-6">
-              <SCurveProgressChart />
+            {/* Contract Info Section */}
+            <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6 mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Detail Kontrak
+              </h3>
+              {isContractLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="animate-spin text-[#14a2bb]" size={32} />
+                </div>
+              ) : contractData?.contract ? (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div>
+                      <p className="text-sm text-gray-500">Jenis Kontrak</p>
+                      <p className="font-medium text-gray-900">
+                        {contractData.contract.jenisKontrak}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Nomor Kontrak</p>
+                      <p className="font-medium text-gray-900">
+                        {contractData.contract.nomorKontrak}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Jangka Waktu</p>
+                      <p className="font-medium text-gray-900">
+                        {contractData.contract.jangkaWaktu.start} s/d{" "}
+                        {contractData.contract.jangkaWaktu.end}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Volume JPH</p>
+                      <p className="font-medium text-gray-900">
+                        {contractData.contract.volumeJph.value}{" "}
+                        {contractData.contract.volumeJph.unit}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Volume TOP</p>
+                      <p className="font-medium text-gray-900">
+                        {contractData.contract.volumeTop.value} (
+                        {contractData.contract.volumeTop.percentage}%)
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Harga PJBG</p>
+                      <p className="font-medium text-gray-900">
+                        {contractData.contract.hargaPjbg.value}{" "}
+                        {contractData.contract.hargaPjbg.unit}
+                      </p>
+                    </div>
+                  </div>
+                  {contractData.contract.unitYangDipasok?.length > 0 && (
+                    <div className="mt-4">
+                      <p className="text-sm text-gray-500 mb-2">
+                        Unit Yang Dipasok
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {contractData.contract.unitYangDipasok.map(
+                          (unit: {
+                            siteId: string;
+                            name: string;
+                            siteType: string;
+                          }) => (
+                            <span
+                              key={unit.siteId}
+                              className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm"
+                            >
+                              {unit.name} ({unit.siteType})
+                            </span>
+                          ),
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <p className="text-gray-500 text-sm py-4 text-center">
+                  Belum ada data kontrak.
+                </p>
+              )}
+            </div>
+
+            {/* Events Section */}
+            <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6 mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Catatan Kejadian
+              </h3>
+              {isEventsLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="animate-spin text-[#14a2bb]" size={32} />
+                </div>
+              ) : eventsData?.events && eventsData.events.length > 0 ? (
+                <div className="space-y-3">
+                  {eventsData.events.map(
+                    (event: {
+                      id: string;
+                      siteName: string;
+                      occurredAt: string;
+                      title: string;
+                      description: string;
+                      severity: string;
+                    }) => (
+                      <div
+                        key={event.id}
+                        className="flex items-start gap-3 p-3 rounded-lg border border-gray-100 hover:bg-gray-50 transition-colors"
+                      >
+                        <div
+                          className={`mt-1 w-2 h-2 rounded-full flex-shrink-0 ${
+                            event.severity === "CRITICAL"
+                              ? "bg-red-500"
+                              : event.severity === "WARNING"
+                                ? "bg-yellow-500"
+                                : "bg-blue-500"
+                          }`}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-gray-900 text-sm">
+                              {event.title}
+                            </p>
+                            <span
+                              className={`text-xs px-2 py-0.5 rounded-full ${
+                                event.severity === "CRITICAL"
+                                  ? "bg-red-100 text-red-700"
+                                  : event.severity === "WARNING"
+                                    ? "bg-yellow-100 text-yellow-700"
+                                    : "bg-blue-100 text-blue-700"
+                              }`}
+                            >
+                              {event.severity}
+                            </span>
+                          </div>
+                          <p className="text-gray-500 text-xs mt-0.5">
+                            {event.siteName} •{" "}
+                            {new Date(event.occurredAt).toLocaleString("id-ID")}
+                          </p>
+                          <p className="text-gray-600 text-sm mt-1">
+                            {event.description}
+                          </p>
+                        </div>
+                      </div>
+                    ),
+                  )}
+                </div>
+              ) : (
+                <p className="text-gray-500 text-sm py-4 text-center">
+                  Belum ada catatan kejadian.
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -132,9 +419,11 @@ export default function GasDashboard() {
                   paddingAngle={2}
                   dataKey="value"
                 >
-                  {dataPieChart.map((_, index) => (
-                    <Cell key={`cell-${index}`} fill={CHART_COLORS[index]} />
-                  ))}
+                  {dataPieChart.map(
+                    (_: { name: string; value: number }, index: number) => (
+                      <Cell key={`cell-${index}`} fill={CHART_COLORS[index]} />
+                    ),
+                  )}
                 </Pie>
               </PieChart>
             </ResponsiveContainer>
@@ -149,20 +438,24 @@ export default function GasDashboard() {
               Detail List {filterType}
             </p>
             <div className="p-4 md:p-8 text-gray-900 h-[300px] md:h-[400px] overflow-auto border border-gray-200 rounded-lg">
-              {dataPieChart.map((item, index) => (
-                <div key={index} className="flex justify-between">
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: CHART_COLORS[index] }}
-                    />
-                    <p className="font-medium text-sm md:text-base">
-                      {item.name}
-                    </p>
+              {dataPieChart.map(
+                (item: { name: string; value: number }, index: number) => (
+                  <div key={index} className="flex justify-between">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: CHART_COLORS[index] }}
+                      />
+                      <p className="font-medium text-sm md:text-base">
+                        {item.name}
+                      </p>
+                    </div>
+                    <div className="text-sm md:text-base">
+                      {item.value} MMBTU
+                    </div>
                   </div>
-                  <div className="text-sm md:text-base">{item.value} MMBTU</div>
-                </div>
-              ))}
+                ),
+              )}
             </div>
           </div>
         </div>

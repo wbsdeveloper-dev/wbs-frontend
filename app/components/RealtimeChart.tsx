@@ -21,12 +21,34 @@ import { Switch } from "@mui/material";
 import NoteSection from "./NoteSection";
 import ModalNote from "./ModalNote";
 import DateRangeFilter from "./DateRangeFilter";
+import type {
+  ChartFlowResponse,
+  ContractInfoResponse,
+  DashboardFilters,
+  FilterOption,
+} from "@/hooks/service/dashboard-api";
+import { Loader2 } from "lucide-react";
 
 const filterTypeOptions = ["Pemasok", "Pembangkit"];
-const pemasokOptions = ["Pemasok A", "Pemasok B"];
-const transportirOptions = ["Transportir X", "Transportir Y"];
-const pembangkitOptionsA = ["Pembangkit 1", "Pembangkit 2", "Pembangkir 3"];
-const pembangkitOptionsB = ["Pembangkir 3", "Pembangkit 4"];
+
+export type Granularity = "hour" | "day" | "month";
+export type FilterBy = "supplier" | "plant";
+
+export interface RealtimeChartProps {
+  chartFlowData?: ChartFlowResponse | null;
+  filtersData?: DashboardFilters | null;
+  contractData?: ContractInfoResponse | null;
+  isLoading?: boolean;
+  isContractLoading?: boolean;
+  onPeriodChange?: (granularity: Granularity) => void;
+  onFilterByChange?: (by: FilterBy) => void;
+  onPemasokChange?: (pemasokId: string | null) => void;
+  onPembangkitChange?: (pembangkitId: string | null) => void;
+  onDateRangeChange?: (
+    startDate: string | null,
+    endDate: string | null,
+  ) => void;
+}
 
 type ChartItem = {
   label: string;
@@ -324,13 +346,23 @@ const CustomTooltip = ({
   );
 };
 
-export default function RealtimeChart() {
+export default function RealtimeChart({
+  chartFlowData,
+  filtersData,
+  contractData,
+  isLoading,
+  isContractLoading,
+  onPeriodChange,
+  onFilterByChange,
+  onPemasokChange,
+  onPembangkitChange,
+  onDateRangeChange,
+}: RealtimeChartProps = {}) {
   const [period, setPeriod] = useState("1D");
   const [filterType, setFilterType] = useState<string | null>("Pemasok");
-  const [pemasok, setPemasok] = useState<string | null>("Pemasok A");
+  const [pemasok, setPemasok] = useState<string | null>(null);
   const [pembangkit, setPembangkit] = useState<string | null>(null);
   const [transportir, setTransportir] = useState<string | null>(null);
-  const [chartData, setChartData] = useState<ChartItem[]>(dataJamA);
   const [openModal, setOpenModal] = useState(false);
   const [note, setNote] = useState("");
   const [topLineActive, setTopLineActive] = useState<boolean | null>(true);
@@ -351,15 +383,112 @@ export default function RealtimeChart() {
     year: "numeric",
   }).format(today);
 
+  // Derive filter options from API data or fallback to hardcoded
+  const pemasokOptions = useMemo(() => {
+    if (filtersData?.pemasok)
+      return filtersData.pemasok.map((p: FilterOption) => p.name);
+    return ["Pemasok A", "Pemasok B"];
+  }, [filtersData]);
+
   const pembangkitOptions = useMemo(() => {
-    if (pemasok === "Pemasok A") return pembangkitOptionsA;
-    if (pemasok === "Pemasok B") return pembangkitOptionsB;
-    return [];
-  }, [pemasok]);
+    if (filtersData?.pembangkit)
+      return filtersData.pembangkit.map((p: FilterOption) => p.name);
+    return ["Pembangkit 1", "Pembangkit 2"];
+  }, [filtersData]);
+
+  const transportirOptions = useMemo(() => {
+    if (filtersData?.transportir)
+      return filtersData.transportir.map((t: FilterOption) => t.name);
+    return ["Transportir X", "Transportir Y"];
+  }, [filtersData]);
+
+  // Transform API chart flow data into component's ChartItem format
+  const apiChartData: ChartItem[] = useMemo(() => {
+    if (!chartFlowData?.series?.length) return [];
+    // Get all timestamps from the first series
+    const timestamps = chartFlowData.series[0].dataPoints.map((dp) => {
+      if (chartFlowData.granularity === "hour") {
+        const d = new Date(dp.timestamp);
+        return `${d.getHours().toString().padStart(2, "0")}.00`;
+      }
+      if (chartFlowData.granularity === "day") {
+        const d = new Date(dp.timestamp);
+        return d.toLocaleDateString("id-ID", {
+          day: "2-digit",
+          month: "short",
+        });
+      }
+      // month
+      const d = new Date(dp.timestamp + "-01");
+      return d.toLocaleDateString("id-ID", { month: "short" });
+    });
+
+    return timestamps.map((label, idx) => {
+      const values: Record<string, number> = {};
+      chartFlowData.series.forEach((series) => {
+        values[series.name] = series.dataPoints[idx]?.value ?? 0;
+      });
+      return { label, values };
+    });
+  }, [chartFlowData]);
+
+  // Calculate mean values from API data
+  const apiMeanValues: Record<string, number> = useMemo(() => {
+    if (!chartFlowData?.series?.length) return {};
+    const means: Record<string, number> = {};
+    chartFlowData.series.forEach((series) => {
+      const total = series.dataPoints.reduce((sum, dp) => sum + dp.value, 0);
+      means[series.name] = total / (series.dataPoints.length || 1);
+    });
+    return means;
+  }, [chartFlowData]);
+
+  // Use API data if available, otherwise keep fallback for backward compatibility
+  const [fallbackChartData, setFallbackChartData] =
+    useState<ChartItem[]>(dataJamA);
+  const chartData = apiChartData.length > 0 ? apiChartData : fallbackChartData;
+  const meanValues =
+    Object.keys(apiMeanValues).length > 0 ? apiMeanValues : dataJamAMean;
+
+  // Dynamic colors for API series
+  const DYNAMIC_COLORS = [
+    "#f87171",
+    "#fb923c",
+    "#facc15",
+    "#60a5fa",
+    "#34d399",
+    "#a78bfa",
+    "#f472b6",
+  ];
+  const seriesColors: Record<string, string> = useMemo(() => {
+    if (!chartFlowData?.series?.length) return COLORS;
+    const colors: Record<string, string> = {};
+    chartFlowData.series.forEach((s, i) => {
+      colors[s.name] = DYNAMIC_COLORS[i % DYNAMIC_COLORS.length];
+      colors[`Mean ${s.name}`] = DYNAMIC_COLORS[i % DYNAMIC_COLORS.length];
+    });
+    return colors;
+  }, [chartFlowData]);
+
+  // Reference line values from API
+  const jphValue = chartFlowData?.referenceLines?.jph ?? 34.8;
+  const topValue = chartFlowData?.referenceLines?.top ?? 24.36;
 
   const submitNote = () => {};
 
   if (topLineActive === null) return null;
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="bg-white rounded-xl border border-gray-200 p-6 flex items-center justify-center min-h-[400px]">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="animate-spin text-[#14a2bb]" size={40} />
+          <p className="text-gray-500">Memuat data grafik...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:divide-x divide-gray-200">
@@ -376,53 +505,57 @@ export default function RealtimeChart() {
             </div>
           </div>
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={chartData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
+            <LineChart
+              data={chartData}
+              margin={{ top: 5, right: 10, left: -10, bottom: 5 }}
+            >
               <CartesianGrid stroke="#eee" strokeDasharray="5 5" />
               <XAxis dataKey="label" />
-              <YAxis domain={[0, 100]} />
+              <YAxis />
               <Legend className="z-0" />
               <Tooltip content={<CustomTooltip />} />
-              {Object.keys(chartData[0].values)
-                .filter((key) => {
-                  if (!pembangkit) return true;
+              {chartData.length > 0 &&
+                Object.keys(chartData[0].values)
+                  .filter((key) => {
+                    if (!pembangkit) return true;
 
-                  return key.toLowerCase().includes(pembangkit.toLowerCase());
-                })
-                .map((key) => (
-                  <Line
-                    key={key}
-                    type="monotone"
-                    dataKey={`values.${key}`}
-                    name={key.toUpperCase()}
-                    stroke={COLORS[key]}
-                    strokeWidth={2}
-                    dot={(props) => {
-                      const { cx, cy, payload, value } = props;
+                    return key.toLowerCase().includes(pembangkit.toLowerCase());
+                  })
+                  .map((key: string) => (
+                    <Line
+                      key={key}
+                      type="monotone"
+                      dataKey={`values.${key}`}
+                      name={key.toUpperCase()}
+                      stroke={seriesColors[key] || COLORS[key] || "#999"}
+                      strokeWidth={2}
+                      dot={(props) => {
+                        const { cx, cy, payload, value } = props;
 
-                      return (
-                        <circle
-                          cx={cx}
-                          cy={cy}
-                          r={20}
-                          fill="transparent"
-                          style={{ cursor: "pointer" }}
-                          onClick={() => {
-                            setSelectedPoint({
-                              label: payload.label,
-                              series: key,
-                              value,
-                            });
+                        return (
+                          <circle
+                            cx={cx}
+                            cy={cy}
+                            r={20}
+                            fill="transparent"
+                            style={{ cursor: "pointer" }}
+                            onClick={() => {
+                              setSelectedPoint({
+                                label: payload.label,
+                                series: key,
+                                value,
+                              });
 
-                            setOpenModal(true);
-                          }}
-                        />
-                      );
-                    }}
-                  />
-                ))}
+                              setOpenModal(true);
+                            }}
+                          />
+                        );
+                      }}
+                    />
+                  ))}
 
               {meanLineActive &&
-                Object.keys(dataJamAMean)
+                Object.keys(meanValues)
                   .filter((key) => {
                     if (!pembangkit) return true;
 
@@ -431,20 +564,24 @@ export default function RealtimeChart() {
                   .map((key) => (
                     <ReferenceLine
                       key={`mean-${key}`}
-                      y={dataJamAMean[key]}
-                      stroke={COLORS[`Mean ${key}`]}
+                      y={meanValues[key]}
+                      stroke={
+                        seriesColors[`Mean ${key}`] ||
+                        COLORS[`Mean ${key}`] ||
+                        "#999"
+                      }
                       strokeDasharray="6 6"
                       label={`Mean ${key}`}
                     />
                   ))}
               {/* Garis JPH */}
               {jphLineActive && (
-                <ReferenceLine y={34.8} stroke={"#008BFF"} label={`JPH`} />
+                <ReferenceLine y={jphValue} stroke={"#008BFF"} label={`JPH`} />
               )}
 
-              {/* Garis JPH */}
+              {/* Garis TOP */}
               {topLineActive && (
-                <ReferenceLine y={24.36} stroke={"#08CB00"} label={`TOP`} />
+                <ReferenceLine y={topValue} stroke={"#08CB00"} label={`TOP`} />
               )}
 
               <ReferenceDot
@@ -477,7 +614,10 @@ export default function RealtimeChart() {
           </p> */}
         </div>
         <div className=" mt-4 border-t border-gray-200 pt-6">
-          <SupplierResumeTable />
+          <SupplierResumeTable
+            contractData={contractData}
+            isLoading={isContractLoading}
+          />
         </div>
         <div className=" mt-4 border-t border-gray-200 pt-6">
           <NoteSection />
@@ -492,204 +632,265 @@ export default function RealtimeChart() {
       </button>
 
       {/* Filter Panel - Desktop always visible, Mobile as overlay */}
-      <div className={`
+      <div
+        className={`
         lg:col-span-3 lg:pl-6 pt-6 lg:pt-0 border-t lg:border-t-0 lg:border-l border-gray-200
         fixed lg:relative inset-0 lg:inset-auto z-40 lg:z-auto
         bg-white lg:bg-transparent
         transform transition-transform duration-300 ease-in-out
-        ${filterOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}
+        ${filterOpen ? "translate-x-0" : "translate-x-full lg:translate-x-0"}
         lg:block overflow-y-auto
-      `}>
+      `}
+      >
         {/* Mobile Filter Header */}
         <div className="lg:hidden flex items-center justify-between p-4 border-b border-gray-200">
           <p className="text-lg font-semibold text-gray-900">Filter Grafik</p>
-          <button onClick={() => setFilterOpen(false)} className="p-2 hover:bg-gray-100 rounded-full">
+          <button
+            onClick={() => setFilterOpen(false)}
+            className="p-2 hover:bg-gray-100 rounded-full"
+          >
             <X size={20} className="text-gray-600" />
           </button>
         </div>
-        
+
         <div className="p-4 lg:p-0">
           <p className="hidden lg:block text-lg font-semibold text-gray-900 mb-6">
             Filter Grafik
           </p>
-        <div className="flex flex-col gap-3">
-          <FilterAutocomplete
-            label="Filter Berdasar"
-            options={filterTypeOptions}
-            value={filterType}
-            onChange={setFilterType}
-            placeholder="Pilih Filter"
-          />
-          {(filterType == "Pemasok" || pembangkit) && (
+          <div className="flex flex-col gap-3">
             <FilterAutocomplete
-              label="Pemasok"
-              options={pemasokOptions}
-              value={pemasok}
-              onChange={setPemasok}
-              placeholder="Pilih Pemasok"
+              label="Filter Berdasar"
+              options={filterTypeOptions}
+              value={filterType}
+              onChange={setFilterType}
+              placeholder="Pilih Filter"
             />
-          )}
-          {(filterType == "Pembangkit" || pemasok) && (
-            <FilterAutocomplete
-              label="Pembangkit"
-              options={pembangkitOptions}
-              value={pembangkit}
-              onChange={setPembangkit}
-              placeholder="Pilih Pembangkit"
-            />
-          )}
-          <FilterAutocomplete
-            label="Transportir"
-            options={transportirOptions}
-            value={transportir}
-            onChange={setTransportir}
-            placeholder="Pilih Transportir"
-          />
-          <div className="mt-2">
-            <div className="border border-gray-200 p-3 rounded-lg">
-              <p className="block text-sm font-medium text-gray-700 mb-2">
-                Filter Periode
-              </p>
-              <div className="flex gap-10">
-                <div className="flex gap-4 mb-3">
-                  <button
-                    className={`text-[#115d72] ${
-                      period == "1D" ? "bg-[#14a2bb92] w-[45px] rounded-md" : ""
-                    } cursor-pointer`}
-                    onClick={() => {
-                      setPeriod("1D");
-                      if (pemasok == "Pemasok A") setChartData(dataJamA);
-                      if (pemasok == "Pemasok B") setChartData(dataJamB);
-                    }}
-                  >
-                    1D
-                  </button>
-                  <button
-                    className={`text-[#115d72] ${
-                      period == "1W" ? "bg-[#14a2bb92] w-[45px] rounded-md" : ""
-                    } cursor-pointer`}
-                    onClick={() => {
-                      setPeriod("1W");
-                      if (pemasok == "Pemasok A") setChartData(data1MingguA);
-                      if (pemasok == "Pemasok B") setChartData(data1MingguB);
-                    }}
-                  >
-                    1W
-                  </button>
-                  <button
-                    className={`text-[#115d72] ${
-                      period == "3M" ? "bg-[#14a2bb92] w-[45px] rounded-md" : ""
-                    } cursor-pointer`}
-                    onClick={() => {
-                      setPeriod("3M");
-                      if (pemasok == "Pemasok A") setChartData(data3BulanA);
-                      if (pemasok == "Pemasok B") setChartData(data3BulanB);
-                    }}
-                  >
-                    3M
-                  </button>
-                  <button
-                    className={`text-[#115d72] ${
-                      period == "6M" ? "bg-[#14a2bb92] w-[45px] rounded-md" : ""
-                    } cursor-pointer`}
-                    onClick={() => {
-                      setPeriod("6M");
-                      if (pemasok == "Pemasok A") setChartData(data6BulanA);
-                      if (pemasok == "Pemasok B") setChartData(data6BulanB);
-                    }}
-                  >
-                    6M
-                  </button>
-                  <button
-                    className={`text-[#115d72] ${
-                      period == "1Y" ? "bg-[#14a2bb92] w-[45px] rounded-md" : ""
-                    } cursor-pointer`}
-                    onClick={() => {
-                      setPeriod("1Y");
-                      if (pemasok == "Pemasok A") setChartData(data1TahunA);
-                      if (pemasok == "Pemasok B") setChartData(data1TahunB);
-                    }}
-                  >
-                    1Y
-                  </button>
-                </div>
-              </div>
-              <DateRangeFilter
-                startDate={startDate}
-                endDate={endDate}
-                setStartDate={setStartDate}
-                setEndDate={setEndDate}
+            {(filterType == "Pemasok" || pembangkit) && (
+              <FilterAutocomplete
+                label="Pemasok"
+                options={pemasokOptions}
+                value={pemasok}
+                onChange={(val) => {
+                  setPemasok(val);
+                  if (onPemasokChange) {
+                    const found = filtersData?.pemasok?.find(
+                      (p: FilterOption) => p.name === val,
+                    );
+                    onPemasokChange(found?.id ?? null);
+                  }
+                }}
+                placeholder="Pilih Pemasok"
               />
+            )}
+            {(filterType == "Pembangkit" || pemasok) && (
+              <FilterAutocomplete
+                label="Pembangkit"
+                options={pembangkitOptions}
+                value={pembangkit}
+                onChange={(val) => {
+                  setPembangkit(val);
+                  if (onPembangkitChange) {
+                    const found = filtersData?.pembangkit?.find(
+                      (p: FilterOption) => p.name === val,
+                    );
+                    onPembangkitChange(found?.id ?? null);
+                  }
+                }}
+                placeholder="Pilih Pembangkit"
+              />
+            )}
+            <FilterAutocomplete
+              label="Transportir"
+              options={transportirOptions}
+              value={transportir}
+              onChange={setTransportir}
+              placeholder="Pilih Transportir"
+            />
+            <div className="mt-2">
+              <div className="border border-gray-200 p-3 rounded-lg">
+                <p className="block text-sm font-medium text-gray-700 mb-2">
+                  Filter Periode
+                </p>
+                <div className="flex gap-10">
+                  <div className="flex gap-4 mb-3">
+                    <button
+                      className={`text-[#115d72] ${
+                        period == "1D"
+                          ? "bg-[#14a2bb92] w-[45px] rounded-md"
+                          : ""
+                      } cursor-pointer`}
+                      onClick={() => {
+                        setPeriod("1D");
+                        if (onPeriodChange) {
+                          onPeriodChange("hour");
+                        } else {
+                          if (pemasok == "Pemasok A")
+                            setFallbackChartData(dataJamA);
+                          if (pemasok == "Pemasok B")
+                            setFallbackChartData(dataJamB);
+                        }
+                      }}
+                    >
+                      1D
+                    </button>
+                    <button
+                      className={`text-[#115d72] ${
+                        period == "1W"
+                          ? "bg-[#14a2bb92] w-[45px] rounded-md"
+                          : ""
+                      } cursor-pointer`}
+                      onClick={() => {
+                        setPeriod("1W");
+                        if (onPeriodChange) {
+                          onPeriodChange("day");
+                        } else {
+                          if (pemasok == "Pemasok A")
+                            setFallbackChartData(data1MingguA);
+                          if (pemasok == "Pemasok B")
+                            setFallbackChartData(data1MingguB);
+                        }
+                      }}
+                    >
+                      1W
+                    </button>
+                    <button
+                      className={`text-[#115d72] ${
+                        period == "3M"
+                          ? "bg-[#14a2bb92] w-[45px] rounded-md"
+                          : ""
+                      } cursor-pointer`}
+                      onClick={() => {
+                        setPeriod("3M");
+                        if (onPeriodChange) {
+                          onPeriodChange("month");
+                        } else {
+                          if (pemasok == "Pemasok A")
+                            setFallbackChartData(data3BulanA);
+                          if (pemasok == "Pemasok B")
+                            setFallbackChartData(data3BulanB);
+                        }
+                      }}
+                    >
+                      3M
+                    </button>
+                    <button
+                      className={`text-[#115d72] ${
+                        period == "6M"
+                          ? "bg-[#14a2bb92] w-[45px] rounded-md"
+                          : ""
+                      } cursor-pointer`}
+                      onClick={() => {
+                        setPeriod("6M");
+                        if (onPeriodChange) {
+                          onPeriodChange("month");
+                        } else {
+                          if (pemasok == "Pemasok A")
+                            setFallbackChartData(data6BulanA);
+                          if (pemasok == "Pemasok B")
+                            setFallbackChartData(data6BulanB);
+                        }
+                      }}
+                    >
+                      6M
+                    </button>
+                    <button
+                      className={`text-[#115d72] ${
+                        period == "1Y"
+                          ? "bg-[#14a2bb92] w-[45px] rounded-md"
+                          : ""
+                      } cursor-pointer`}
+                      onClick={() => {
+                        setPeriod("1Y");
+                        if (onPeriodChange) {
+                          onPeriodChange("month");
+                        } else {
+                          if (pemasok == "Pemasok A")
+                            setFallbackChartData(data1TahunA);
+                          if (pemasok == "Pemasok B")
+                            setFallbackChartData(data1TahunB);
+                        }
+                      }}
+                    >
+                      1Y
+                    </button>
+                  </div>
+                </div>
+                <DateRangeFilter
+                  startDate={startDate}
+                  endDate={endDate}
+                  setStartDate={setStartDate}
+                  setEndDate={setEndDate}
+                />
+              </div>
+            </div>
+            <div>
+              <p className="block text-sm font-medium text-gray-700 mb-2 mt-2">
+                Tampilkan Garis
+              </p>
+              <div className="border border-gray-200 p-3 rounded-lg">
+                <div className="text-gray-700 flex justify-between items-center">
+                  <p>Rata-rata</p>
+                  <div>
+                    <Switch
+                      checked={meanLineActive}
+                      onChange={(e) => setMeanLineActive(e.target.checked)}
+                      sx={{
+                        "& .MuiSwitch-switchBase.Mui-checked": {
+                          color: "#14a1bb",
+                        },
+                        "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
+                          {
+                            backgroundColor: "#14a1bb",
+                          },
+                      }}
+                    />
+                  </div>
+                </div>
+                <div className="text-gray-700 flex justify-between items-center">
+                  <p>TOP</p>
+                  <div>
+                    <Switch
+                      checked={topLineActive}
+                      onChange={(e) => setTopLineActive(e.target.checked)}
+                      sx={{
+                        "& .MuiSwitch-switchBase.Mui-checked": {
+                          color: "#14a1bb",
+                        },
+                        "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
+                          {
+                            backgroundColor: "#14a1bb",
+                          },
+                      }}
+                    />
+                  </div>
+                </div>
+                <div className="text-gray-700 flex justify-between items-center">
+                  <p>JPH</p>
+                  <div>
+                    <Switch
+                      checked={jphLineActive}
+                      onChange={(e) => setJphLineActive(e.target.checked)}
+                      sx={{
+                        "& .MuiSwitch-switchBase.Mui-checked": {
+                          color: "#14a1bb",
+                        },
+                        "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
+                          {
+                            backgroundColor: "#14a1bb",
+                          },
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-          <div>
-            <p className="block text-sm font-medium text-gray-700 mb-2 mt-2">
-              Tampilkan Garis
-            </p>
-            <div className="border border-gray-200 p-3 rounded-lg">
-              <div className="text-gray-700 flex justify-between items-center">
-                <p>Rata-rata</p>
-                <div>
-                  <Switch
-                    checked={meanLineActive}
-                    onChange={(e) => setMeanLineActive(e.target.checked)}
-                    sx={{
-                      "& .MuiSwitch-switchBase.Mui-checked": {
-                        color: "#14a1bb",
-                      },
-                      "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
-                        {
-                          backgroundColor: "#14a1bb",
-                        },
-                    }}
-                  />
-                </div>
-              </div>
-              <div className="text-gray-700 flex justify-between items-center">
-                <p>TOP</p>
-                <div>
-                  <Switch
-                    checked={topLineActive}
-                    onChange={(e) => setTopLineActive(e.target.checked)}
-                    sx={{
-                      "& .MuiSwitch-switchBase.Mui-checked": {
-                        color: "#14a1bb",
-                      },
-                      "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
-                        {
-                          backgroundColor: "#14a1bb",
-                        },
-                    }}
-                  />
-                </div>
-              </div>
-              <div className="text-gray-700 flex justify-between items-center">
-                <p>JPH</p>
-                <div>
-                  <Switch
-                    checked={jphLineActive}
-                    onChange={(e) => setJphLineActive(e.target.checked)}
-                    sx={{
-                      "& .MuiSwitch-switchBase.Mui-checked": {
-                        color: "#14a1bb",
-                      },
-                      "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
-                        {
-                          backgroundColor: "#14a1bb",
-                        },
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
         </div>
       </div>
 
       {/* Mobile Filter Overlay */}
       {filterOpen && (
-        <div 
+        <div
           className="lg:hidden fixed inset-0 bg-black/50 z-30"
           onClick={() => setFilterOpen(false)}
         />
