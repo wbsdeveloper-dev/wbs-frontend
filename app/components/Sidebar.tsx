@@ -73,11 +73,10 @@ export default function Sidebar() {
       path: "/konfigurasi",
       icon: Database,
       children: [
-        { title: "Manajemen Pembangkit", path: "/konfigurasi/pembangkit" },
-        { title: "Manajemen Pemasok", path: "/konfigurasi/pemasok" },
-        { title: "Manajemen Lokasi", path: "/konfigurasi/lokasi" },
-        { title: "Template Grup", path: "/konfigurasi/template-grup" },
-        { title: "Manajemen Kontrak", path: "/konfigurasi/kontrak" },
+        { title: "Manajemen Site", path: "/konfigurasi/site" },
+        { title: "Kontrak & Dokumen", path: "/konfigurasi/kontrak" },
+        { title: "Email Ingest", path: "/konfigurasi/email" },
+        { title: "Template Grup", path: "/konfigurasi/template-grup" }
       ],
     },
     {
@@ -118,9 +117,8 @@ export default function Sidebar() {
                 alt="PLN logo"
                 width={110}
                 height={30}
-                className={`transition-none ${
-                  isCollapsed ? "opacity-0" : "opacity-100"
-                }`}
+                className={`transition-none ${isCollapsed ? "opacity-0" : "opacity-100"
+                  }`}
               />
             </div>
             {!isMobile && (
@@ -144,9 +142,8 @@ export default function Sidebar() {
               alt="PLN logo"
               width={30}
               height={30}
-              className={`transition-none ${
-                !isCollapsed ? "opacity-0" : "opacity-100"
-              }`}
+              className={`transition-none ${!isCollapsed ? "opacity-0" : "opacity-100"
+                }`}
             />
 
             <button
@@ -229,17 +226,15 @@ export default function Sidebar() {
                   {/* Chevron */}
                   {menu.children && subMenuOpen && (!isCollapsed || isMobile) && (
                     <ChevronUp
-                      className={`${chevronBase} ${
-                        isSubmenuOpen ? chevronOpen : ""
-                      }`}
+                      className={`${chevronBase} ${isSubmenuOpen ? chevronOpen : ""
+                        }`}
                       size={18}
                     />
                   )}
                   {menu.children && !subMenuOpen && (!isCollapsed || isMobile) && (
                     <ChevronDown
-                      className={`${chevronBase} ${
-                        isSubmenuOpen ? chevronOpen : ""
-                      }`}
+                      className={`${chevronBase} ${isSubmenuOpen ? chevronOpen : ""
+                        }`}
                       size={18}
                     />
                   )}
@@ -258,11 +253,10 @@ export default function Sidebar() {
                               : menu.path && router.push(menu.path)
                           }
                           className={`flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg w-full cursor-pointer
-                          ${
-                            isParentActive || isSubmenuOpen
+                          ${isParentActive || isSubmenuOpen
                               ? "text-white bg-white/10"
                               : "text-white/70 hover:text-white hover:bg-white/10"
-                          }
+                            }
                           ${isCollapsed && !isMobile ? "justify-center" : ""}
                         `}
                         >
@@ -327,18 +321,16 @@ export default function Sidebar() {
 
       {/* Mobile sidebar */}
       <aside
-        className={`lg:hidden fixed top-0 left-0 h-full w-72 bg-gradient-to-b from-[#115d72] via-[#115d72] to-[#0e4d5f] z-50 transform transition-transform duration-300 ease-in-out flex flex-col shadow-2xl ${
-          isMobileOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
+        className={`lg:hidden fixed top-0 left-0 h-full w-72 bg-gradient-to-b from-[#115d72] via-[#115d72] to-[#0e4d5f] z-50 transform transition-transform duration-300 ease-in-out flex flex-col shadow-2xl ${isMobileOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
       >
         <SidebarContent isMobile={true} />
       </aside>
 
       {/* Desktop sidebar */}
       <aside
-        className={`${
-          isCollapsed ? "w-20" : "w-64"
-        } bg-gradient-to-b from-[#115d72] via-[#115d72] to-[#0e4d5f] h-screen hidden lg:flex flex-col transition-[width] duration-300 ease-in-out shadow-xl shadow-[#115d72]/20`}
+        className={`${isCollapsed ? "w-20" : "w-64"
+          } bg-gradient-to-b from-[#115d72] via-[#115d72] to-[#0e4d5f] h-screen hidden lg:flex flex-col transition-[width] duration-300 ease-in-out shadow-xl shadow-[#115d72]/20`}
       >
         <SidebarContent isMobile={false} />
       </aside>
