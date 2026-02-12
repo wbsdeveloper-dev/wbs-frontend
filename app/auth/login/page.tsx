@@ -1,27 +1,37 @@
 "use client";
 
 import { useState } from "react";
-import { Eye, EyeOff, LogIn, Loader2 } from "lucide-react";
+import { Eye, EyeOff, LogIn, Loader2, AlertCircle } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { login } from "@/hooks/service/auth-api";
+import { setTokens } from "@/lib/auth";
 
 export default function LoginPage() {
   const router = useRouter();
 
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
-    // Simulate login
-    setTimeout(() => {
+    setError(null);
+
+    try {
+      const data = await login(email, password);
+      setTokens(data.accessToken, data.refreshToken);
+      router.push("/dashboard/gas");
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Login gagal. Silakan coba lagi.",
+      );
+    } finally {
       setIsLoading(false);
-      router.push("/landingpage");
-    }, 1000);
+    }
   };
 
   return (
@@ -64,24 +74,34 @@ export default function LoginPage() {
                 Selamat Datang!
               </h1>
               <p className="text-gray-600 text-sm md:text-base leading-relaxed">
-                Sistem monitoring <span className="font-semibold text-[#115d72]">Gas Pipa</span> dan{" "}
-                <span className="font-semibold text-[#115d72]">BBM</span> berbasis website
+                Sistem monitoring{" "}
+                <span className="font-semibold text-[#115d72]">Gas Pipa</span>{" "}
+                dan <span className="font-semibold text-[#115d72]">BBM</span>{" "}
+                berbasis website
               </p>
             </div>
 
+            {/* Error Display */}
+            {error && (
+              <div className="flex items-center gap-3 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm mb-2">
+                <AlertCircle size={18} className="flex-shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
+
             {/* Login Form */}
             <form onSubmit={handleSubmit} className="space-y-5">
-              {/* Username Field */}
+              {/* Email Field */}
               <div className="space-y-2">
                 <label className="block text-gray-700 text-sm font-medium">
-                  Username
+                  Email
                 </label>
                 <div className="relative group">
                   <input
-                    type="text"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    placeholder="Masukkan username"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Masukkan email"
                     className="w-full px-4 py-3.5 rounded-xl bg-white text-gray-900 placeholder-gray-400
                       border-2 border-gray-200 
                       focus:border-[#14a2bb] focus:ring-4 focus:ring-[#14a2bb]/10
@@ -182,11 +202,14 @@ export default function LoginPage() {
       >
         {/* Gradient Overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-[#115d72]/90 via-[#115d72]/70 to-slate-900/50" />
-        
+
         {/* Animated Pattern Overlay */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-20 left-20 w-72 h-72 bg-white/20 rounded-full blur-3xl animate-pulse" />
-          <div className="absolute bottom-20 right-20 w-96 h-96 bg-[#14a2bb]/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
+          <div
+            className="absolute bottom-20 right-20 w-96 h-96 bg-[#14a2bb]/20 rounded-full blur-3xl animate-pulse"
+            style={{ animationDelay: "1s" }}
+          />
         </div>
 
         {/* Content */}
@@ -200,7 +223,8 @@ export default function LoginPage() {
                 <span className="text-[#7dd3fc]">Pipa Gas & BBM</span>
               </h2>
               <p className="text-white/80 text-lg leading-relaxed">
-                Pantau distribusi energi secara real-time dengan dashboard yang modern dan intuitif
+                Pantau distribusi energi secara real-time dengan dashboard yang
+                modern dan intuitif
               </p>
             </div>
 
