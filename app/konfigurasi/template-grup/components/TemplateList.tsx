@@ -11,7 +11,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import Card from "@/app/components/ui/Card";
-import { Template } from "../page";
+import type { Template } from "@/hooks/service/config-api";
 
 interface TemplateListProps {
   templates: Template[];
@@ -107,7 +107,9 @@ export default function TemplateList({
               <h4 className="text-sm font-semibold text-gray-900 line-clamp-1">
                 {template.name}
               </h4>
-              <span className="text-xs text-gray-400 shrink-0">v{template.version}</span>
+              <span className="text-xs text-gray-400 shrink-0">
+                v{template.version}
+              </span>
             </div>
 
             {/* Badges */}
@@ -129,7 +131,7 @@ export default function TemplateList({
             {/* Footer */}
             <div className="flex items-center justify-between pt-2 border-t border-gray-100">
               <span className="text-xs text-gray-400">
-                {template.lastUpdated.split(" ")[0]}
+                {new Date(template.updatedAt).toLocaleDateString("id-ID")}
               </span>
               <div className="flex items-center gap-1">
                 <button

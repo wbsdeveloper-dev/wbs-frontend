@@ -11,120 +11,30 @@ import {
   Clock,
   AlertCircle,
   X,
+  Loader2,
 } from "lucide-react";
-import Card, { CardHeader } from "@/app/components/ui/Card";
+import Card from "@/app/components/ui/Card";
 import { Modal } from "@/app/components/ui";
 import TemplateList from "./components/TemplateList";
 import TemplateEditor from "./components/TemplateEditor";
+import {
+  useTemplates,
+  useGroups,
+  useCreateTemplate,
+  useUpdateTemplate,
+  useDuplicateTemplate,
+  useDeprecateTemplate,
+  useCreateGroup,
+  useActivateTemplate,
+  type Template,
+  type TemplateField,
+  type TemplateListFilters,
+} from "@/hooks/service/config-api";
 
-// Types
-export interface TemplateField {
-  id: string;
-  orderNo: number;
-  fieldKey: string;
-  sourceKind: "SHEET_COLUMN" | "WA_REGEX" | "WA_FIXED" | "AI_JSON_PATH";
-  sourceRef: string;
-  transform?: string;
-  isRequired: boolean;
-}
+// Re-export types so downstream components can import from page.tsx if needed
+export type { Template, TemplateField };
 
-export interface Template {
-  id: string;
-  name: string;
-  scope: "WA_GROUP" | "SPREADSHEET_SOURCE";
-  status: "DRAFT" | "ACTIVE" | "DEPRECATED";
-  parserMode: "RULE_BASED" | "AI_ASSISTED";
-  version: number;
-  isDefault: boolean;
-  groupConfigId?: string;
-  spreadsheetSourceId?: string;
-  waKeywordHint?: string;
-  waSenderHint?: string;
-  sheetTabHint?: string;
-  sheetHeaderRow?: number;
-  aiModel?: string;
-  aiPromptTemplate?: string;
-  aiOutputSchema?: string;
-  lastUpdated: string;
-  fields: TemplateField[];
-}
-
-// Mock data
-const MOCK_TEMPLATES: Template[] = [
-  {
-    id: "1",
-    name: "Template Report Harian",
-    scope: "WA_GROUP",
-    status: "ACTIVE",
-    parserMode: "RULE_BASED",
-    version: 3,
-    isDefault: true,
-    waKeywordHint: "LAPORAN HARIAN",
-    waSenderHint: "PLN",
-    lastUpdated: "2026-02-08 14:30:00",
-    fields: [
-      { id: "f1", orderNo: 1, fieldKey: "site_name", sourceKind: "WA_REGEX", sourceRef: "Site:\\s*(.+)", isRequired: true },
-      { id: "f2", orderNo: 2, fieldKey: "metric_type", sourceKind: "WA_FIXED", sourceRef: "gas_consumption", isRequired: true },
-      { id: "f3", orderNo: 3, fieldKey: "value", sourceKind: "WA_REGEX", sourceRef: "Volume:\\s*(\\d+\\.?\\d*)", isRequired: true },
-      { id: "f4", orderNo: 4, fieldKey: "unit", sourceKind: "WA_FIXED", sourceRef: "MMBTU", isRequired: true },
-      { id: "f5", orderNo: 5, fieldKey: "period_value", sourceKind: "WA_REGEX", sourceRef: "Tanggal:\\s*(\\d{2}/\\d{2}/\\d{4})", isRequired: true },
-    ],
-  },
-  {
-    id: "2",
-    name: "Template Gas Pipa",
-    scope: "SPREADSHEET_SOURCE",
-    status: "ACTIVE",
-    parserMode: "RULE_BASED",
-    version: 2,
-    isDefault: false,
-    sheetTabHint: "Gas Pipa",
-    sheetHeaderRow: 1,
-    lastUpdated: "2026-02-07 10:00:00",
-    fields: [
-      { id: "f6", orderNo: 1, fieldKey: "site_name", sourceKind: "SHEET_COLUMN", sourceRef: "A", isRequired: true },
-      { id: "f7", orderNo: 2, fieldKey: "value", sourceKind: "SHEET_COLUMN", sourceRef: "B", isRequired: true },
-      { id: "f8", orderNo: 3, fieldKey: "unit", sourceKind: "SHEET_COLUMN", sourceRef: "C", isRequired: true },
-    ],
-  },
-  {
-    id: "3",
-    name: "Template AI Parsing",
-    scope: "WA_GROUP",
-    status: "DRAFT",
-    parserMode: "AI_ASSISTED",
-    version: 1,
-    isDefault: false,
-    aiModel: "gpt-4",
-    aiPromptTemplate: "Extract the following fields from this message:\n- site_name\n- metric_type\n- value\n- unit\n- period\n\nMessage:\n{{message}}",
-    aiOutputSchema: '{"type": "object", "properties": {"site_name": {"type": "string"}}}',
-    lastUpdated: "2026-02-06 16:45:00",
-    fields: [
-      { id: "f9", orderNo: 1, fieldKey: "site_name", sourceKind: "AI_JSON_PATH", sourceRef: "$.site_name", isRequired: true },
-      { id: "f10", orderNo: 2, fieldKey: "value", sourceKind: "AI_JSON_PATH", sourceRef: "$.value", isRequired: true },
-    ],
-  },
-  {
-    id: "4",
-    name: "Template BBM",
-    scope: "SPREADSHEET_SOURCE",
-    status: "DEPRECATED",
-    parserMode: "RULE_BASED",
-    version: 5,
-    isDefault: false,
-    sheetTabHint: "BBM Data",
-    sheetHeaderRow: 2,
-    lastUpdated: "2026-01-15 09:00:00",
-    fields: [],
-  },
-];
-
-const MOCK_GROUP_CONFIGS = [
-  { id: "gc1", name: "PLN Jakarta Group" },
-  { id: "gc2", name: "PLN Gresik Group" },
-  { id: "gc3", name: "PLN Surabaya Group" },
-];
-
+// Spreadsheet sources are not yet from API — keep as static for now
 const MOCK_SPREADSHEET_SOURCES = [
   { id: "ss1", name: "Gas Report Sheet" },
   { id: "ss2", name: "BBM Daily Report" },
@@ -132,16 +42,51 @@ const MOCK_SPREADSHEET_SOURCES = [
 ];
 
 export default function TemplateGrupPage() {
-  const [templates, setTemplates] = useState<Template[]>(MOCK_TEMPLATES);
-  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(
+    null,
+  );
   const [searchQuery, setSearchQuery] = useState("");
   const [scopeFilter, setScopeFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [notification, setNotification] = useState<{ type: "success" | "error" | "info"; message: string } | null>(null);
+  const [notification, setNotification] = useState<{
+    type: "success" | "error" | "info";
+    message: string;
+  } | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [newTemplateName, setNewTemplateName] = useState("");
-  const [newTemplateScope, setNewTemplateScope] = useState<"WA_GROUP" | "SPREADSHEET_SOURCE">("WA_GROUP");
-  const [groupConfigs, setGroupConfigs] = useState(MOCK_GROUP_CONFIGS);
+  const [newTemplateScope, setNewTemplateScope] = useState<
+    "WA_GROUP" | "SPREADSHEET_SOURCE"
+  >("WA_GROUP");
+
+  // ---------------------------------------------------------------------------
+  // API queries
+  // ---------------------------------------------------------------------------
+  const filters: TemplateListFilters = useMemo(
+    () => ({
+      scope: scopeFilter !== "all" ? scopeFilter : undefined,
+      status: statusFilter !== "all" ? statusFilter : undefined,
+      search: searchQuery || undefined,
+    }),
+    [scopeFilter, statusFilter, searchQuery],
+  );
+
+  const {
+    data: templates = [],
+    isLoading: isLoadingTemplates,
+    isError: isErrorTemplates,
+  } = useTemplates(filters);
+
+  const { data: groupConfigs = [] } = useGroups();
+
+  // ---------------------------------------------------------------------------
+  // API mutations
+  // ---------------------------------------------------------------------------
+  const createTemplateMutation = useCreateTemplate();
+  const updateTemplateMutation = useUpdateTemplate();
+  const duplicateTemplateMutation = useDuplicateTemplate();
+  const deprecateTemplateMutation = useDeprecateTemplate();
+  const activateTemplateMutation = useActivateTemplate();
+  const createGroupMutation = useCreateGroup();
 
   // Show notification helper
   const showNotification = (
@@ -152,65 +97,110 @@ export default function TemplateGrupPage() {
     setTimeout(() => setNotification(null), 3000);
   };
 
-  // Filter templates
-  const filteredTemplates = useMemo(() => {
-    return templates.filter((t) => {
-      const matchesSearch = t.name
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase());
-      const matchesScope = scopeFilter === "all" || t.scope === scopeFilter;
-      const matchesStatus = statusFilter === "all" || t.status === statusFilter;
-      return matchesSearch && matchesScope && matchesStatus;
-    });
-  }, [templates, searchQuery, scopeFilter, statusFilter]);
+  // Filter templates client-side when the API doesn't support search
+  // (the API query params handle filtering server-side,
+  //  but we keep the useMemo for safety if the API doesn't filter)
+  const filteredTemplates = templates;
 
   const handleSelectTemplate = (template: Template) => {
     setSelectedTemplate(template);
   };
 
   const handleUpdateTemplate = (updatedTemplate: Template) => {
-    setTemplates(
-      templates.map((t) => (t.id === updatedTemplate.id ? updatedTemplate : t)),
+    updateTemplateMutation.mutate(
+      {
+        id: updatedTemplate.id,
+        payload: {
+          name: updatedTemplate.name,
+          scope: updatedTemplate.scope,
+          parserMode: updatedTemplate.parserMode,
+          groupConfigId: updatedTemplate.groupConfigId,
+          spreadsheetSourceId: updatedTemplate.spreadsheetSourceId,
+          waKeywordHint: updatedTemplate.waKeywordHint,
+          waSenderHint: updatedTemplate.waSenderHint,
+          sheetTabHint: updatedTemplate.sheetTabHint,
+          sheetHeaderRow: updatedTemplate.sheetHeaderRow,
+          aiModel: updatedTemplate.aiModel,
+          aiPromptTemplate: updatedTemplate.aiPromptTemplate,
+          aiOutputSchema: updatedTemplate.aiOutputSchema,
+          fields: updatedTemplate.fields.map((f, i) => ({
+            fieldKey: f.fieldKey,
+            sourceKind: f.sourceKind,
+            sourceRef: f.sourceRef,
+            isRequired: f.isRequired,
+            orderNo: i + 1,
+          })),
+        },
+      },
+      {
+        onSuccess: (data) => {
+          setSelectedTemplate(data);
+          showNotification("success", "Template berhasil diperbarui");
+        },
+        onError: (err) => {
+          showNotification(
+            "error",
+            `Gagal memperbarui template: ${err.message}`,
+          );
+        },
+      },
     );
-    setSelectedTemplate(updatedTemplate);
-    showNotification("success", "Template berhasil diperbarui");
+  };
+
+  const handleActivateTemplate = (template: Template) => {
+    activateTemplateMutation.mutate(template.id, {
+      onSuccess: (data) => {
+        setSelectedTemplate(data);
+        showNotification(
+          "success",
+          `Template "${template.name}" berhasil diaktifkan`,
+        );
+      },
+      onError: (err) => {
+        showNotification(
+          "error",
+          `Gagal mengaktifkan template: ${err.message}`,
+        );
+      },
+    });
   };
 
   const handleDuplicateTemplate = (template: Template) => {
-    const duplicated: Template = {
-      ...template,
-      id: crypto.randomUUID(),
-      name: `${template.name} (Copy)`,
-      status: "DRAFT",
-      version: 1,
-      isDefault: false,
-      lastUpdated: new Date().toISOString().replace("T", " ").slice(0, 19),
-      fields: template.fields.map((f) => ({
-        ...f,
-        id: `${f.id}-copy-${crypto.randomUUID()}`,
-      })),
-    };
-    setTemplates([...templates, duplicated]);
-    setSelectedTemplate(duplicated);
-    showNotification(
-      "success",
-      `Template "${template.name}" berhasil diduplikasi`,
-    );
+    duplicateTemplateMutation.mutate(template.id, {
+      onSuccess: (data) => {
+        setSelectedTemplate(data);
+        showNotification(
+          "success",
+          `Template "${template.name}" berhasil diduplikasi`,
+        );
+      },
+      onError: (err) => {
+        showNotification(
+          "error",
+          `Gagal menduplikasi template: ${err.message}`,
+        );
+      },
+    });
   };
 
   const handleArchiveTemplate = (template: Template) => {
-    setTemplates(
-      templates.map((t) =>
-        t.id === template.id ? { ...t, status: "DEPRECATED" as const } : t,
-      ),
-    );
-    if (selectedTemplate?.id === template.id) {
-      setSelectedTemplate({ ...template, status: "DEPRECATED" });
-    }
-    showNotification(
-      "success",
-      `Template "${template.name}" berhasil diarsipkan`,
-    );
+    deprecateTemplateMutation.mutate(template.id, {
+      onSuccess: (data) => {
+        if (selectedTemplate?.id === template.id) {
+          setSelectedTemplate(data);
+        }
+        showNotification(
+          "success",
+          `Template "${template.name}" berhasil diarsipkan`,
+        );
+      },
+      onError: (err) => {
+        showNotification(
+          "error",
+          `Gagal mengarsipkan template: ${err.message}`,
+        );
+      },
+    });
   };
 
   const handleCreateTemplate = () => {
@@ -219,24 +209,25 @@ export default function TemplateGrupPage() {
       return;
     }
 
-    const newTemplate: Template = {
-      id: crypto.randomUUID(),
-      name: newTemplateName,
-      scope: newTemplateScope,
-      status: "DRAFT",
-      parserMode: "RULE_BASED",
-      version: 1,
-      isDefault: false,
-      lastUpdated: new Date().toISOString().replace("T", " ").slice(0, 19),
-      fields: [],
-    };
-    setTemplates([...templates, newTemplate]);
-    setSelectedTemplate(newTemplate);
-    setIsCreateModalOpen(false);
-    setNewTemplateName("");
-    showNotification(
-      "success",
-      `Template "${newTemplateName}" berhasil dibuat`,
+    createTemplateMutation.mutate(
+      {
+        name: newTemplateName,
+        scope: newTemplateScope,
+      },
+      {
+        onSuccess: (data) => {
+          setSelectedTemplate(data);
+          setIsCreateModalOpen(false);
+          setNewTemplateName("");
+          showNotification(
+            "success",
+            `Template "${newTemplateName}" berhasil dibuat`,
+          );
+        },
+        onError: (err) => {
+          showNotification("error", `Gagal membuat template: ${err.message}`);
+        },
+      },
     );
   };
 
@@ -257,10 +248,24 @@ export default function TemplateGrupPage() {
   };
 
   const handleAddGroup = (name: string) => {
-    const newGroup = { id: `gc-${crypto.randomUUID()}`, name };
-    setGroupConfigs((prev) => [...prev, newGroup]);
-    showNotification("success", `Group "${name}" berhasil ditambahkan`);
+    createGroupMutation.mutate(
+      { groupId: name.toLowerCase().replace(/\s+/g, "-"), name },
+      {
+        onSuccess: () => {
+          showNotification("success", `Group "${name}" berhasil ditambahkan`);
+        },
+        onError: (err) => {
+          showNotification("error", `Gagal menambahkan group: ${err.message}`);
+        },
+      },
+    );
   };
+
+  // Map GroupConfig[] to the shape TemplateEditor expects
+  const groupConfigsForEditor = groupConfigs.map((g) => ({
+    id: g.id,
+    name: g.name,
+  }));
 
   return (
     <div className="min-h-screen p-4 md:p-6 lg:p-8">
@@ -375,13 +380,32 @@ export default function TemplateGrupPage() {
       >
         {/* Left Panel - Template List (30%) */}
         <div className="lg:col-span-3">
-          <TemplateList
-            templates={filteredTemplates}
-            selectedTemplate={selectedTemplate}
-            onSelect={handleSelectTemplate}
-            onDuplicate={handleDuplicateTemplate}
-            onArchive={handleArchiveTemplate}
-          />
+          {isLoadingTemplates ? (
+            <Card className="h-full min-h-[400px] flex items-center justify-center">
+              <div className="text-center text-gray-500">
+                <Loader2 className="w-8 h-8 mx-auto mb-3 animate-spin text-[#14a2bb]" />
+                <p className="text-sm">Memuat template...</p>
+              </div>
+            </Card>
+          ) : isErrorTemplates ? (
+            <Card className="h-full min-h-[400px] flex items-center justify-center">
+              <div className="text-center text-red-500">
+                <AlertCircle className="w-8 h-8 mx-auto mb-3" />
+                <p className="text-sm">Gagal memuat template</p>
+                <p className="text-xs mt-1 text-gray-400">
+                  Periksa koneksi API Anda
+                </p>
+              </div>
+            </Card>
+          ) : (
+            <TemplateList
+              templates={filteredTemplates}
+              selectedTemplate={selectedTemplate}
+              onSelect={handleSelectTemplate}
+              onDuplicate={handleDuplicateTemplate}
+              onArchive={handleArchiveTemplate}
+            />
+          )}
         </div>
 
         {/* Right Panel - Template Editor (70%) */}
@@ -391,8 +415,9 @@ export default function TemplateGrupPage() {
               key={selectedTemplate.id}
               template={selectedTemplate}
               onUpdate={handleUpdateTemplate}
+              onActivate={handleActivateTemplate}
               onAddGroup={handleAddGroup}
-              groupConfigs={groupConfigs}
+              groupConfigs={groupConfigsForEditor}
               spreadsheetSources={MOCK_SPREADSHEET_SOURCES}
             />
           ) : (
@@ -464,9 +489,17 @@ export default function TemplateGrupPage() {
             </button>
             <button
               onClick={handleCreateTemplate}
-              className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
+              disabled={createTemplateMutation.isPending}
+              className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Buat
+              {createTemplateMutation.isPending ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Loader2 size={14} className="animate-spin" />
+                  Membuat...
+                </span>
+              ) : (
+                "Buat"
+              )}
             </button>
           </div>
         </div>

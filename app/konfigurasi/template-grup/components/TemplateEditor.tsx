@@ -16,11 +16,13 @@ import {
 } from "lucide-react";
 import Card, { CardHeader } from "@/app/components/ui/Card";
 import { Modal } from "@/app/components/ui";
-import { Template, TemplateField } from "../page";
+import type { Template, TemplateField } from "@/hooks/service/config-api";
+import { useAiModels } from "@/hooks/service/config-api";
 
 interface TemplateEditorProps {
   template: Template;
   onUpdate: (template: Template) => void;
+  onActivate?: (template: Template) => void;
   onAddGroup?: (name: string) => void;
   groupConfigs: { id: string; name: string }[];
   spreadsheetSources: { id: string; name: string }[];
@@ -51,11 +53,16 @@ const SOURCE_KIND_OPTIONS: {
 export default function TemplateEditor({
   template,
   onUpdate,
+  onActivate,
   onAddGroup,
   groupConfigs,
   spreadsheetSources,
 }: TemplateEditorProps) {
-  const [formData, setFormData] = useState<Template>(template);
+  const [formData, setFormData] = useState<Template>({
+    ...template,
+    fields: template.fields ?? [],
+  });
+  const { data: aiModels = [], isLoading: isLoadingModels } = useAiModels();
   const [isFieldModalOpen, setIsFieldModalOpen] = useState(false);
   const [editingField, setEditingField] = useState<TemplateField | null>(null);
   const [testInput, setTestInput] = useState("");
@@ -84,25 +91,28 @@ export default function TemplateEditor({
   const handleSaveDraft = () => {
     onUpdate({
       ...formData,
-      lastUpdated: new Date().toISOString().replace("T", " ").slice(0, 19),
+      fields: formData.fields.map((f, i) => ({ ...f, orderNo: i + 1 })),
     });
   };
 
   const handleActivate = () => {
     if (formData.parserMode === "AI_ASSISTED" && formData.aiOutputSchema) {
-      try {
-        JSON.parse(formData.aiOutputSchema);
-      } catch {
+      // aiOutputSchema is already an object from the API; validate it's truthy
+      if (typeof formData.aiOutputSchema !== "object") {
         alert("AI Output Schema harus valid JSON");
         return;
       }
     }
-    onUpdate({
-      ...formData,
-      status: "ACTIVE",
-      version: formData.version + 1,
-      lastUpdated: new Date().toISOString().replace("T", " ").slice(0, 19),
-    });
+    if (onActivate) {
+      onActivate(formData);
+    } else {
+      // Fallback: use onUpdate
+      onUpdate({
+        ...formData,
+        status: "ACTIVE",
+        version: formData.version + 1,
+      });
+    }
   };
 
   const handleAddField = () => {
@@ -133,7 +143,7 @@ export default function TemplateEditor({
                 fieldKey: key,
                 sourceKind: fieldForm.sourceKind,
                 sourceRef: fieldForm.sourceRef,
-                transform: fieldForm.transform || undefined,
+                transform: fieldForm.transform || null,
                 isRequired: fieldForm.isRequired,
               }
             : f,
@@ -143,12 +153,15 @@ export default function TemplateEditor({
       // Add new field
       const newField: TemplateField = {
         id: crypto.randomUUID(),
+        ingestionTemplateId: formData.id,
         orderNo: formData.fields.length + 1,
         fieldKey: key,
         sourceKind: fieldForm.sourceKind,
         sourceRef: fieldForm.sourceRef,
-        transform: fieldForm.transform || undefined,
+        transform: fieldForm.transform || null,
         isRequired: fieldForm.isRequired,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       };
       setFormData({
         ...formData,
@@ -357,7 +370,7 @@ export default function TemplateEditor({
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        groupConfigId: e.target.value || undefined,
+                        groupConfigId: e.target.value || null,
                       })
                     }
                     className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white cursor-pointer pr-10"
@@ -397,7 +410,7 @@ export default function TemplateEditor({
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      spreadsheetSourceId: e.target.value || undefined,
+                      spreadsheetSourceId: e.target.value || null,
                     })
                   }
                   className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white cursor-pointer pr-10"
@@ -497,7 +510,7 @@ export default function TemplateEditor({
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        sheetHeaderRow: parseInt(e.target.value) || undefined,
+                        sheetHeaderRow: parseInt(e.target.value) || null,
                       })
                     }
                     placeholder="1"
@@ -529,16 +542,16 @@ export default function TemplateEditor({
                     className="w-full appearance-none px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white cursor-pointer pr-10"
                   >
                     <option value="">Pilih Model</option>
-                    <option value="gpt-4">GPT-4</option>
-                    <option value="gpt-4-turbo">GPT-4 Turbo</option>
-                    <option value="gpt-4o">GPT-4o</option>
-                    <option value="gpt-4o-mini">GPT-4o Mini</option>
-                    <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
-                    <option value="claude-3-opus">Claude 3 Opus</option>
-                    <option value="claude-3-sonnet">Claude 3 Sonnet</option>
-                    <option value="claude-3-haiku">Claude 3 Haiku</option>
-                    <option value="gemini-pro">Gemini Pro</option>
-                    <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                    {isLoadingModels ? (
+                      <option disabled>Memuat model...</option>
+                    ) : (
+                      aiModels.map((model) => (
+                        <option key={model.id} value={model.id}>
+                          {model.name}
+                          {model.isDefault ? " (Default)" : ""}
+                        </option>
+                      ))
+                    )}
                   </select>
                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                 </div>
@@ -565,10 +578,28 @@ export default function TemplateEditor({
                   AI Output Schema (JSON)
                 </label>
                 <textarea
-                  value={formData.aiOutputSchema || ""}
-                  onChange={(e) =>
-                    setFormData({ ...formData, aiOutputSchema: e.target.value })
+                  value={
+                    formData.aiOutputSchema
+                      ? JSON.stringify(formData.aiOutputSchema, null, 2)
+                      : ""
                   }
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    try {
+                      const parsed = raw ? JSON.parse(raw) : null;
+                      setFormData({ ...formData, aiOutputSchema: parsed });
+                    } catch {
+                      // Allow typing invalid JSON mid-edit; store raw as-is
+                      // by wrapping in a simple object so it doesn't break the type
+                      setFormData({
+                        ...formData,
+                        aiOutputSchema: { __raw: raw } as Record<
+                          string,
+                          unknown
+                        >,
+                      });
+                    }
+                  }}
                   rows={3}
                   placeholder='{"type": "object", "properties": {...}}'
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] resize-none font-mono"
