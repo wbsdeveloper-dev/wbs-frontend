@@ -141,9 +141,13 @@ export default function TemplateGrupPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [newTemplateName, setNewTemplateName] = useState("");
   const [newTemplateScope, setNewTemplateScope] = useState<"WA_GROUP" | "SPREADSHEET_SOURCE">("WA_GROUP");
+  const [groupConfigs, setGroupConfigs] = useState(MOCK_GROUP_CONFIGS);
 
   // Show notification helper
-  const showNotification = (type: "success" | "error" | "info", message: string) => {
+  const showNotification = (
+    type: "success" | "error" | "info",
+    message: string,
+  ) => {
     setNotification({ type, message });
     setTimeout(() => setNotification(null), 3000);
   };
@@ -151,7 +155,9 @@ export default function TemplateGrupPage() {
   // Filter templates
   const filteredTemplates = useMemo(() => {
     return templates.filter((t) => {
-      const matchesSearch = t.name.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesSearch = t.name
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase());
       const matchesScope = scopeFilter === "all" || t.scope === scopeFilter;
       const matchesStatus = statusFilter === "all" || t.status === statusFilter;
       return matchesSearch && matchesScope && matchesStatus;
@@ -163,7 +169,9 @@ export default function TemplateGrupPage() {
   };
 
   const handleUpdateTemplate = (updatedTemplate: Template) => {
-    setTemplates(templates.map((t) => (t.id === updatedTemplate.id ? updatedTemplate : t)));
+    setTemplates(
+      templates.map((t) => (t.id === updatedTemplate.id ? updatedTemplate : t)),
+    );
     setSelectedTemplate(updatedTemplate);
     showNotification("success", "Template berhasil diperbarui");
   };
@@ -171,29 +179,38 @@ export default function TemplateGrupPage() {
   const handleDuplicateTemplate = (template: Template) => {
     const duplicated: Template = {
       ...template,
-      id: String(Date.now()),
+      id: crypto.randomUUID(),
       name: `${template.name} (Copy)`,
       status: "DRAFT",
       version: 1,
       isDefault: false,
       lastUpdated: new Date().toISOString().replace("T", " ").slice(0, 19),
-      fields: template.fields.map((f) => ({ ...f, id: `${f.id}-copy-${Date.now()}` })),
+      fields: template.fields.map((f) => ({
+        ...f,
+        id: `${f.id}-copy-${crypto.randomUUID()}`,
+      })),
     };
     setTemplates([...templates, duplicated]);
     setSelectedTemplate(duplicated);
-    showNotification("success", `Template "${template.name}" berhasil diduplikasi`);
+    showNotification(
+      "success",
+      `Template "${template.name}" berhasil diduplikasi`,
+    );
   };
 
   const handleArchiveTemplate = (template: Template) => {
     setTemplates(
       templates.map((t) =>
-        t.id === template.id ? { ...t, status: "DEPRECATED" as const } : t
-      )
+        t.id === template.id ? { ...t, status: "DEPRECATED" as const } : t,
+      ),
     );
     if (selectedTemplate?.id === template.id) {
       setSelectedTemplate({ ...template, status: "DEPRECATED" });
     }
-    showNotification("success", `Template "${template.name}" berhasil diarsipkan`);
+    showNotification(
+      "success",
+      `Template "${template.name}" berhasil diarsipkan`,
+    );
   };
 
   const handleCreateTemplate = () => {
@@ -203,7 +220,7 @@ export default function TemplateGrupPage() {
     }
 
     const newTemplate: Template = {
-      id: String(Date.now()),
+      id: crypto.randomUUID(),
       name: newTemplateName,
       scope: newTemplateScope,
       status: "DRAFT",
@@ -217,7 +234,10 @@ export default function TemplateGrupPage() {
     setSelectedTemplate(newTemplate);
     setIsCreateModalOpen(false);
     setNewTemplateName("");
-    showNotification("success", `Template "${newTemplateName}" berhasil dibuat`);
+    showNotification(
+      "success",
+      `Template "${newTemplateName}" berhasil dibuat`,
+    );
   };
 
   const handleExportJSON = () => {
@@ -236,6 +256,12 @@ export default function TemplateGrupPage() {
     showNotification("success", "Template berhasil diexport");
   };
 
+  const handleAddGroup = (name: string) => {
+    const newGroup = { id: `gc-${crypto.randomUUID()}`, name };
+    setGroupConfigs((prev) => [...prev, newGroup]);
+    showNotification("success", `Group "${name}" berhasil ditambahkan`);
+  };
+
   return (
     <div className="min-h-screen p-4 md:p-6 lg:p-8">
       {/* Notification Toast */}
@@ -245,15 +271,18 @@ export default function TemplateGrupPage() {
             notification.type === "success"
               ? "bg-green-50 text-green-800 border border-green-200"
               : notification.type === "error"
-              ? "bg-red-50 text-red-800 border border-red-200"
-              : "bg-blue-50 text-blue-800 border border-blue-200"
+                ? "bg-red-50 text-red-800 border border-red-200"
+                : "bg-blue-50 text-blue-800 border border-blue-200"
           }`}
         >
           {notification.type === "success" && <CheckCircle size={18} />}
           {notification.type === "error" && <AlertCircle size={18} />}
           {notification.type === "info" && <Clock size={18} />}
           <span className="text-sm font-medium">{notification.message}</span>
-          <button onClick={() => setNotification(null)} className="ml-2 hover:opacity-70">
+          <button
+            onClick={() => setNotification(null)}
+            className="ml-2 hover:opacity-70"
+          >
             <X size={16} />
           </button>
         </div>
@@ -268,9 +297,12 @@ export default function TemplateGrupPage() {
           <span className="text-gray-400">/</span>
           <span className="text-[#115d72] font-medium">Template Grup</span>
         </div>
-        <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Template Grup</h1>
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+          Template Grup
+        </h1>
         <p className="text-gray-600 mt-1 text-sm md:text-base">
-          Buat dan kelola template parsing untuk WA group atau Spreadsheet source.
+          Buat dan kelola template parsing untuk WA group atau Spreadsheet
+          source.
         </p>
       </div>
 
@@ -337,7 +369,10 @@ export default function TemplateGrupPage() {
       </Card>
 
       {/* Main Content - Split Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-10 gap-6 animate-fadeIn" style={{ animationDelay: "200ms" }}>
+      <div
+        className="grid grid-cols-1 lg:grid-cols-10 gap-6 animate-fadeIn"
+        style={{ animationDelay: "200ms" }}
+      >
         {/* Left Panel - Template List (30%) */}
         <div className="lg:col-span-3">
           <TemplateList
@@ -353,16 +388,20 @@ export default function TemplateGrupPage() {
         <div className="lg:col-span-7">
           {selectedTemplate ? (
             <TemplateEditor
+              key={selectedTemplate.id}
               template={selectedTemplate}
               onUpdate={handleUpdateTemplate}
-              groupConfigs={MOCK_GROUP_CONFIGS}
+              onAddGroup={handleAddGroup}
+              groupConfigs={groupConfigs}
               spreadsheetSources={MOCK_SPREADSHEET_SOURCES}
             />
           ) : (
             <Card className="h-full min-h-[400px] flex items-center justify-center">
               <div className="text-center text-gray-500">
                 <FileText className="w-12 h-12 mx-auto mb-3 opacity-40" />
-                <p className="text-sm">Pilih template dari daftar untuk mengedit</p>
+                <p className="text-sm">
+                  Pilih template dari daftar untuk mengedit
+                </p>
                 <p className="text-xs mt-1">atau buat template baru</p>
               </div>
             </Card>
@@ -400,7 +439,11 @@ export default function TemplateGrupPage() {
             <div className="relative">
               <select
                 value={newTemplateScope}
-                onChange={(e) => setNewTemplateScope(e.target.value as "WA_GROUP" | "SPREADSHEET_SOURCE")}
+                onChange={(e) =>
+                  setNewTemplateScope(
+                    e.target.value as "WA_GROUP" | "SPREADSHEET_SOURCE",
+                  )
+                }
                 className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white cursor-pointer pr-10"
               >
                 <option value="WA_GROUP">WA Group</option>
@@ -441,7 +484,7 @@ export default function TemplateGrupPage() {
             transform: translateY(0);
           }
         }
-        
+
         @keyframes slideIn {
           from {
             opacity: 0;
@@ -452,11 +495,11 @@ export default function TemplateGrupPage() {
             transform: translateX(0);
           }
         }
-        
+
         .animate-fadeIn {
           animation: fadeIn 0.4s ease-out forwards;
         }
-        
+
         .animate-slideIn {
           animation: slideIn 0.3s ease-out forwards;
         }
