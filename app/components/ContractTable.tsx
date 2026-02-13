@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { DataGrid, GridColDef, GridColumnGroupingModel } from "@mui/x-data-grid";
-import { Box, Button, IconButton } from "@mui/material";
+import { Box, Button, IconButton, ToggleButton, ToggleButtonGroup } from "@mui/material";
 import { Pencil, Trash2, Plus, FileText } from "lucide-react";
 
 // Sample data based on the design
@@ -35,6 +35,7 @@ const initialRows = [
         volumeJumlah2030: "7.00",
         volumeHargaJGB8: "30.00",
         hbot: "6,068/MMETU",
+        satuanSwitch: "BBTUD",
     },
     {
         id: 2,
@@ -64,6 +65,7 @@ const initialRows = [
         volumeJumlah2030: "7.00",
         volumeHargaJGB8: "30.00",
         hbot: "6,068/MMETU",
+        satuanSwitch: "BBTUD",
     },
     {
         id: 3,
@@ -93,6 +95,7 @@ const initialRows = [
         volumeJumlah2030: "",
         volumeHargaJGB8: "",
         hbgt: "",
+        satuanSwitch: "BBTUD",
     },
 ];
 
@@ -223,6 +226,33 @@ const baseColumns: GridColDef[] = [
         field: "akhirPerjanjian",
         headerName: "Akhir Perjanjian",
         width: 140,
+        headerAlign: "center",
+        align: "center",
+        editable: true,
+        renderCell: renderInputCell,
+    },
+    {
+        field: "hargaPJBG",
+        headerName: "Harga PJBG",
+        width: 100,
+        headerAlign: "center",
+        align: "center",
+        editable: true,
+        renderCell: renderInputCell,
+    },
+    {
+        field: "hbgt",
+        headerName: "HBGT",
+        width: 100,
+        headerAlign: "center",
+        align: "center",
+        editable: true,
+        renderCell: renderInputCell,
+    },
+    {
+        field: "volumeJPMH",
+        headerName: "Volume JPMH (BBTUD)",
+        width: 100,
         headerAlign: "center",
         align: "center",
         editable: true,
@@ -363,33 +393,6 @@ const baseColumns: GridColDef[] = [
         editable: true,
         renderCell: renderInputCell,
     },
-    {
-        field: "volumeJPMH",
-        headerName: "Volume JPMH (BBTUD)",
-        width: 100,
-        headerAlign: "center",
-        align: "center",
-        editable: true,
-        renderCell: renderInputCell,
-    },
-    {
-        field: "hargaPJBG",
-        headerName: "Harga PJBG",
-        width: 100,
-        headerAlign: "center",
-        align: "center",
-        editable: true,
-        renderCell: renderInputCell,
-    },
-    {
-        field: "hbgt",
-        headerName: "HBGT",
-        width: 100,
-        headerAlign: "center",
-        align: "center",
-        editable: true,
-        renderCell: renderInputCell,
-    },
 ];
 
 const columnGroupingModel: GridColumnGroupingModel = [
@@ -449,9 +452,66 @@ export default function ContractTable() {
         setRows(updatedRows);
     };
 
-    // Build full columns with the action column that can access handleDeleteRow
+    // Build full columns: insert satuanSwitch between hbgt and volumeJPMH
+    const handleSatuanToggle = (id: number, newValue: string | null) => {
+        if (newValue !== null) {
+            setRows(rows.map((row) =>
+                row.id === id ? { ...row, satuanSwitch: newValue } : row
+            ));
+        }
+    };
+
+    const satuanColumn: GridColDef = {
+        field: "satuanSwitch",
+        headerName: "Unit",
+        width: 170,
+        headerAlign: "center",
+        align: "center",
+        editable: false,
+        sortable: false,
+        renderCell: (params) => (
+            <ToggleButtonGroup
+                value={params.value}
+                exclusive
+                onChange={(_, newValue) => handleSatuanToggle(params.row.id, newValue)}
+                size="small"
+                sx={{
+                    height: "30px",
+                    "& .MuiToggleButton-root": {
+                        fontSize: "0.6rem",
+                        fontWeight: 600,
+                        px: 1.5,
+                        py: 0.3,
+                        textTransform: "none",
+                        border: "1px solid #e5e7eb",
+                        color: "#9ca3af",
+                        "&.Mui-selected": {
+                            backgroundColor: "#115d72",
+                            color: "#fff",
+                            border: "1px solid #115d72",
+                            "&:hover": {
+                                backgroundColor: "#0d4a5c",
+                            },
+                        },
+                    },
+                }}
+            >
+                <ToggleButton value="BBTUD">BBTUD</ToggleButton>
+                <ToggleButton value="MMSCFD">MMSCFD</ToggleButton>
+            </ToggleButtonGroup>
+        ),
+    };
+
+    // Insert satuanSwitch after hbgt
+    const hbgtIndex = baseColumns.findIndex((col) => col.field === "hbgt");
+    const columnsWithSwitch = [
+        ...baseColumns.slice(0, hbgtIndex + 1),
+        satuanColumn,
+        ...baseColumns.slice(hbgtIndex + 1),
+    ];
+
     const allColumns: GridColDef[] = [
-        ...baseColumns,
+        ...columnsWithSwitch,
         {
             field: "action",
             headerName: "Action",
@@ -497,14 +557,14 @@ export default function ContractTable() {
                     variant="outlined"
                     startIcon={<FileText size={18} />}
                     sx={{
-                        borderColor: "#3b82f6",
-                        color: "#3b82f6",
+                        borderColor: "#115d72",
+                        color: "#115d72",
                         textTransform: "none",
                         borderRadius: 2,
                         px: 3,
                         "&:hover": {
-                            borderColor: "#2563eb",
-                            backgroundColor: "#eff6ff",
+                            borderColor: "#0d4a5c",
+                            backgroundColor: "#115d72/20",
                         },
                     }}
                 >
@@ -515,12 +575,12 @@ export default function ContractTable() {
                     startIcon={<Plus size={18} />}
                     onClick={handleAddRow}
                     sx={{
-                        backgroundColor: "#0ea5e9",
+                        backgroundColor: "#115d72",
                         textTransform: "none",
                         borderRadius: 2,
                         px: 3,
                         "&:hover": {
-                            backgroundColor: "#0284c7",
+                            backgroundColor: "#0d4a5c",
                         },
                     }}
                 >
@@ -605,12 +665,12 @@ export default function ContractTable() {
                 <Button
                     variant="contained"
                     sx={{
-                        backgroundColor: "#0ea5e9",
+                        backgroundColor: "#115d72",
                         textTransform: "none",
                         borderRadius: 2,
                         px: 4,
                         "&:hover": {
-                            backgroundColor: "#0284c7",
+                            backgroundColor: "#0d4a5c",
                         },
                     }}
                 >
