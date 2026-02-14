@@ -35,7 +35,7 @@ const initialRows = [
         volumeJumlah2030: "7.00",
         volumeHargaJGB8: "30.00",
         hbot: "6,068/MMETU",
-        satuanSwitch: "BBTUD",
+        unitSwitch: "BBTUD",
     },
     {
         id: 2,
@@ -65,7 +65,7 @@ const initialRows = [
         volumeJumlah2030: "7.00",
         volumeHargaJGB8: "30.00",
         hbot: "6,068/MMETU",
-        satuanSwitch: "BBTUD",
+        unitSwitch: "BBTUD",
     },
     {
         id: 3,
@@ -95,7 +95,7 @@ const initialRows = [
         volumeJumlah2030: "",
         volumeHargaJGB8: "",
         hbgt: "",
-        satuanSwitch: "BBTUD",
+        unitSwitch: "BBTUD",
     },
 ];
 
@@ -251,7 +251,7 @@ const baseColumns: GridColDef[] = [
     },
     {
         field: "volumeJPMH",
-        headerName: "Volume JPMH (BBTUD)",
+        headerName: "Volume JPMH",
         width: 100,
         headerAlign: "center",
         align: "center",
@@ -278,7 +278,7 @@ const baseColumns: GridColDef[] = [
     },
     {
         field: "jumlahKontrakTahunan",
-        headerName: "JUMLAH KONTRAK TAHUNAN 2024 (BBTU)",
+        headerName: "JUMLAH KONTRAK TAHUNAN 2024",
         width: 240,
         headerAlign: "center",
         align: "center",
@@ -398,19 +398,19 @@ const baseColumns: GridColDef[] = [
 const columnGroupingModel: GridColumnGroupingModel = [
     {
         groupId: "volume2024",
-        headerName: "Volume 2024 (BBTUD)",
+        headerName: "Volume 2024",
         headerAlign: "center",
         children: [{ field: "volume2024JPH" }, { field: "volume2024TOP" }],
     },
     {
         groupId: "volume2025",
-        headerName: "Volume 2025 (BBTUD)",
+        headerName: "Volume 2025",
         headerAlign: "center",
         children: [{ field: "volume2025JPH" }, { field: "volume2025TOP" }, { field: "volume2025%TOP" }],
     },
     {
         groupId: "volumeJumlahPH",
-        headerName: "Volume Jumlah Penyerahan Harian (BBTUD)",
+        headerName: "Volume Jumlah Penyerahan Harian",
         headerAlign: "center",
         children: [
             { field: "volumeJumlah2023" },
@@ -435,7 +435,7 @@ export default function ContractTable() {
 
     const handleAddRow = () => {
         const newId = rows.length > 0 ? Math.max(...rows.map((r) => r.id)) + 1 : 1;
-        const newRow: any = { id: newId, no: rows.length + 1 };
+        const newRow: any = { id: newId, no: rows.length + 1, unitSwitch: "BBTUD" };
         // Initialize all editable fields as empty strings
         baseColumns.forEach((col) => {
             if (col.field !== "no" && col.field !== "action") {
@@ -452,17 +452,17 @@ export default function ContractTable() {
         setRows(updatedRows);
     };
 
-    // Build full columns: insert satuanSwitch between hbgt and volumeJPMH
-    const handleSatuanToggle = (id: number, newValue: string | null) => {
+    // Build full columns: insert unitSwitch between hbgt and volumeJPMH
+    const handleUnitToggle = (id: number, newValue: string | null) => {
         if (newValue !== null) {
             setRows(rows.map((row) =>
-                row.id === id ? { ...row, satuanSwitch: newValue } : row
+                row.id === id ? { ...row, unitSwitch: newValue } : row
             ));
         }
     };
 
-    const satuanColumn: GridColDef = {
-        field: "satuanSwitch",
+    const unitColumn: GridColDef = {
+        field: "unitSwitch",
         headerName: "Unit",
         width: 170,
         headerAlign: "center",
@@ -473,7 +473,7 @@ export default function ContractTable() {
             <ToggleButtonGroup
                 value={params.value}
                 exclusive
-                onChange={(_, newValue) => handleSatuanToggle(params.row.id, newValue)}
+                onChange={(_, newValue) => handleUnitToggle(params.row.id, newValue)}
                 size="small"
                 sx={{
                     height: "30px",
@@ -502,11 +502,11 @@ export default function ContractTable() {
         ),
     };
 
-    // Insert satuanSwitch after hbgt
+    // Insert unitSwitch after hbgt
     const hbgtIndex = baseColumns.findIndex((col) => col.field === "hbgt");
     const columnsWithSwitch = [
         ...baseColumns.slice(0, hbgtIndex + 1),
-        satuanColumn,
+        unitColumn,
         ...baseColumns.slice(hbgtIndex + 1),
     ];
 
