@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Filter, X } from "lucide-react";
+import { Filter, X, Info } from "lucide-react";
 import {
   CartesianGrid,
   Line,
@@ -31,7 +31,13 @@ import { Loader2 } from "lucide-react";
 
 const filterTypeOptions = ["Pemasok", "Pembangkit"];
 
-export type Granularity = "hour" | "day" | "month";
+export type Granularity =
+  | "hour"
+  | "day"
+  | "month"
+  | "three_month"
+  | "six_month"
+  | "one_year";
 export type FilterBy = "supplier" | "plant";
 
 export interface RealtimeChartProps {
@@ -41,7 +47,7 @@ export interface RealtimeChartProps {
   isLoading?: boolean;
   isContractLoading?: boolean;
   onPeriodChange?: (granularity: Granularity) => void;
-  onFilterByChange?: (by: FilterBy) => void;
+  onFilterByChange?: (by: FilterBy | null) => void;
   onPemasokChange?: (pemasokId: string | null) => void;
   onPembangkitChange?: (pembangkitId: string | null) => void;
   onDateRangeChange?: (
@@ -304,41 +310,22 @@ const CustomTooltip = ({
 
       <ul className="space-y-1">
         {payload.map((item, index) => (
-          <li key={index} className="flex items-center justify-between gap-3">
-            <span className="flex items-center gap-2">
-              <span
-                className="w-2 h-2 rounded-full"
+          <div key={index} className="flex items-center justify-between">
+            <div className="flex items-center gap-2 w-[300px]">
+              <div
+                className="w-2 h-3 rounded-full"
                 style={{ backgroundColor: item.color }}
               />
-              <span>{item.name}</span>
-            </span>
+              <div>{item.name}</div>
+            </div>
 
-            <span className="font-medium">{item.value} MMBTU</span>
-          </li>
+            <div className="font-medium w-[150px] text-right">
+              {item.value} MMBTU
+            </div>
+          </div>
         ))}
       </ul>
-
-      <div className="flex justify-between mt-2">
-        <p>JPH</p>
-        <p>100</p>
-      </div>
-      <div className="flex justify-between">
-        <p>TOP</p>
-        <p>200</p>
-      </div>
-      <div className="flex justify-between">
-        <p>JPMH</p>
-        <p>170</p>
-      </div>
-      <div className="flex justify-between">
-        <p>Harga PJBG</p>
-        <p>Rp.2,000,000,000</p>
-      </div>
-      <div className="flex justify-between mt-2">
-        <p>Realisasi</p>
-        <p>98</p>
-      </div>
-      <div className="flex justify-between ">
+      <div className="flex justify-between mt-4">
         <p>Flowrate</p>
         <p>80</p>
       </div>
@@ -383,6 +370,12 @@ export default function RealtimeChart({
     year: "numeric",
   }).format(today);
 
+  useMemo(() => {
+    if (startDate && endDate) {
+      onDateRangeChange?.(startDate, endDate);
+    }
+  }, [startDate, endDate, onDateRangeChange]);
+
   // Derive filter options from API data or fallback to hardcoded
   const pemasokOptions = useMemo(() => {
     if (filtersData?.pemasok)
@@ -405,6 +398,7 @@ export default function RealtimeChart({
   // Transform API chart flow data into component's ChartItem format
   const apiChartData: ChartItem[] = useMemo(() => {
     if (!chartFlowData?.series?.length) return [];
+
     // Get all timestamps from the first series
     const timestamps = chartFlowData.series[0].dataPoints.map((dp) => {
       if (chartFlowData.granularity === "hour") {
@@ -446,7 +440,7 @@ export default function RealtimeChart({
   // Use API data if available, otherwise keep fallback for backward compatibility
   const [fallbackChartData, setFallbackChartData] =
     useState<ChartItem[]>(dataJamA);
-  const chartData = apiChartData.length > 0 ? apiChartData : fallbackChartData;
+  const chartData = apiChartData;
   const meanValues =
     Object.keys(apiMeanValues).length > 0 ? apiMeanValues : dataJamAMean;
 
@@ -492,137 +486,165 @@ export default function RealtimeChart({
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:divide-x divide-gray-200">
-      <div className="lg:col-span-9 lg:pr-6">
-        <div>
-          <div className="flex justify-between mb-6">
-            <h3 className="text-lg font-semibold text-gray-900">
-              Grafik Penyaluran Gas - {pemasok}{" "}
-              {filterType == "Pemasok" ? (pembangkit ? " Ke " : "") : " Dari "}{" "}
-              {pembangkit ?? pembangkit}
-            </h3>
-            <div>
-              <p className="text-gray-700 font-bold">{formattedDate}</p>
+      {pemasok || pembangkit ? (
+        <div className="lg:col-span-9 lg:pr-6">
+          <div>
+            <div className="flex justify-between mb-6">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Grafik Penyaluran Gas - {pemasok}{" "}
+                {filterType == "Pemasok"
+                  ? pembangkit
+                    ? " Ke "
+                    : ""
+                  : " Dari "}{" "}
+                {pembangkit ?? pembangkit}
+              </h3>
+              <div>
+                <p className="text-gray-700 font-bold">{formattedDate}</p>
+              </div>
             </div>
-          </div>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart
-              data={chartData}
-              margin={{ top: 5, right: 10, left: -10, bottom: 5 }}
-            >
-              <CartesianGrid stroke="#eee" strokeDasharray="5 5" />
-              <XAxis dataKey="label" />
-              <YAxis />
-              <Legend className="z-0" />
-              <Tooltip content={<CustomTooltip />} />
-              {chartData.length > 0 &&
-                Object.keys(chartData[0].values)
-                  .filter((key) => {
-                    if (!pembangkit) return true;
+            {chartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart
+                  data={chartData}
+                  margin={{ top: 5, right: 10, left: -10, bottom: 5 }}
+                >
+                  <CartesianGrid stroke="#eee" strokeDasharray="5 5" />
+                  <XAxis dataKey="label" />
+                  <YAxis />
+                  <Legend className="z-0" />
+                  <Tooltip content={<CustomTooltip />} />
+                  {chartData.length > 0 &&
+                    Object.keys(chartData[0].values).map((key: string) => (
+                      <Line
+                        key={key}
+                        type="monotone"
+                        dataKey={`values.${key}`}
+                        name={key.toUpperCase()}
+                        stroke={seriesColors[key] || COLORS[key] || "#999"}
+                        strokeWidth={2}
+                        dot={(props) => {
+                          const { cx, cy, payload, value } = props;
 
-                    return key.toLowerCase().includes(pembangkit.toLowerCase());
-                  })
-                  .map((key: string) => (
-                    <Line
-                      key={key}
-                      type="monotone"
-                      dataKey={`values.${key}`}
-                      name={key.toUpperCase()}
-                      stroke={seriesColors[key] || COLORS[key] || "#999"}
-                      strokeWidth={2}
-                      dot={(props) => {
-                        const { cx, cy, payload, value } = props;
+                          return (
+                            <circle
+                              cx={cx}
+                              cy={cy}
+                              r={20}
+                              fill="transparent"
+                              style={{ cursor: "pointer" }}
+                              onClick={() => {
+                                setSelectedPoint({
+                                  label: payload.label,
+                                  series: key,
+                                  value,
+                                });
 
-                        return (
-                          <circle
-                            cx={cx}
-                            cy={cy}
-                            r={20}
-                            fill="transparent"
-                            style={{ cursor: "pointer" }}
-                            onClick={() => {
-                              setSelectedPoint({
-                                label: payload.label,
-                                series: key,
-                                value,
-                              });
+                                setOpenModal(true);
+                              }}
+                            />
+                          );
+                        }}
+                      />
+                    ))}
 
-                              setOpenModal(true);
-                            }}
-                          />
-                        );
-                      }}
-                    />
-                  ))}
+                  {meanLineActive &&
+                    Object.keys(meanValues)
+                      .filter((key) => {
+                        if (!pembangkit) return true;
 
-              {meanLineActive &&
-                Object.keys(meanValues)
-                  .filter((key) => {
-                    if (!pembangkit) return true;
-
-                    return key.toLowerCase().includes(pembangkit.toLowerCase());
-                  })
-                  .map((key) => (
+                        return key
+                          .toLowerCase()
+                          .includes(pembangkit.toLowerCase());
+                      })
+                      .map((key) => (
+                        <ReferenceLine
+                          key={`mean-${key}`}
+                          y={meanValues[key]}
+                          stroke={
+                            seriesColors[`Mean ${key}`] ||
+                            COLORS[`Mean ${key}`] ||
+                            "#999"
+                          }
+                          strokeDasharray="6 6"
+                          label={`Mean ${key}`}
+                        />
+                      ))}
+                  {/* Garis JPH */}
+                  {jphLineActive && (
                     <ReferenceLine
-                      key={`mean-${key}`}
-                      y={meanValues[key]}
-                      stroke={
-                        seriesColors[`Mean ${key}`] ||
-                        COLORS[`Mean ${key}`] ||
-                        "#999"
-                      }
-                      strokeDasharray="6 6"
-                      label={`Mean ${key}`}
+                      y={jphValue}
+                      stroke={"#008BFF"}
+                      label={`JPH`}
                     />
-                  ))}
-              {/* Garis JPH */}
-              {jphLineActive && (
-                <ReferenceLine y={jphValue} stroke={"#008BFF"} label={`JPH`} />
-              )}
+                  )}
 
-              {/* Garis TOP */}
-              {topLineActive && (
-                <ReferenceLine y={topValue} stroke={"#08CB00"} label={`TOP`} />
-              )}
-
-              <ReferenceDot
-                x="04.00"
-                y={10}
-                shape={({ cx, cy }) => (
-                  <g style={{ cursor: "pointer" }}>
-                    <polygon
-                      points={`${cx},${cy - 10} ${cx - 10},${cy + 8} ${cx + 10},${cy + 8}`}
-                      fill="#f59e0b"
+                  {/* Garis TOP */}
+                  {topLineActive && (
+                    <ReferenceLine
+                      y={topValue}
+                      stroke={"#08CB00"}
+                      label={`TOP`}
                     />
-                    <text
-                      x={cx}
-                      y={cy + 6}
-                      textAnchor="middle"
-                      fontSize={12}
-                      fill="white"
-                    >
-                      !
-                    </text>
-                  </g>
-                )}
-                strokeWidth={2}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-          {/* <p className="text-xs text-gray-500 mt-4 pt-4 border-t border-gray-200">
+                  )}
+
+                  <ReferenceDot
+                    x="04.00"
+                    y={10}
+                    shape={({ cx, cy }) => (
+                      <g style={{ cursor: "pointer" }}>
+                        <polygon
+                          points={`${cx},${cy - 10} ${cx - 10},${cy + 8} ${cx + 10},${cy + 8}`}
+                          fill="#f59e0b"
+                        />
+                        <text
+                          x={cx}
+                          y={cy + 6}
+                          textAnchor="middle"
+                          fontSize={12}
+                          fill="white"
+                        >
+                          !
+                        </text>
+                      </g>
+                    )}
+                    strokeWidth={2}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex justify-center items-center w-full h-[300px] text-gray-500 text-xl font-semibold">
+                Data chart belum tersedia
+              </div>
+            )}
+            {/* <p className="text-xs text-gray-500 mt-4 pt-4 border-t border-gray-200">
             Visualisasi data realtime perbandingan pemasok dan pembangkit harian
             24 jam
           </p> */}
+          </div>
+          <div className=" mt-4 border-t border-gray-200 pt-6">
+            <SupplierResumeTable
+              contractData={contractData}
+              isLoading={isContractLoading}
+            />
+          </div>
+          <div className=" mt-4 border-t border-gray-200 pt-6">
+            <NoteSection />
+          </div>
         </div>
-        <div className=" mt-4 border-t border-gray-200 pt-6">
-          <SupplierResumeTable
-            contractData={contractData}
-            isLoading={isContractLoading}
-          />
+      ) : (
+        <div className="lg:col-span-9 lg:pr-6">
+          <div className="flex justify-center items-center text-center mb-6 text-gray-500 text-xl p-4 rounded-lg font-semibold h-[300px] gap-4">
+            <div className="flex justify-center items-center">
+              <Info className="w-8 h-8 text-gray-500" />
+            </div>
+            <p>
+              Mohon pilih {filterType == "Pemasok" ? "Pemasok" : "Pembangkit"}{" "}
+              Terlebih Dahulu
+            </p>
+          </div>
         </div>
-        <div className=" mt-4 border-t border-gray-200 pt-6">
-          <NoteSection />
-        </div>
-      </div>
+      )}
       {/* Mobile Filter Button */}
       <button
         onClick={() => setFilterOpen(!filterOpen)}
@@ -662,10 +684,13 @@ export default function RealtimeChart({
               label="Filter Berdasar"
               options={filterTypeOptions}
               value={filterType}
-              onChange={setFilterType}
+              onChange={(val) => {
+                setFilterType(val);
+                onFilterByChange?.(val as FilterBy | null);
+              }}
               placeholder="Pilih Filter"
             />
-            {(filterType == "Pemasok" || pembangkit) && (
+            {filterType == "Pemasok" && (
               <FilterAutocomplete
                 label="Pemasok"
                 options={pemasokOptions}
@@ -697,6 +722,23 @@ export default function RealtimeChart({
                   }
                 }}
                 placeholder="Pilih Pembangkit"
+              />
+            )}
+            {pembangkit && (
+              <FilterAutocomplete
+                label="Pemasok"
+                options={pemasokOptions}
+                value={pemasok}
+                onChange={(val) => {
+                  setPemasok(val);
+                  if (onPemasokChange) {
+                    const found = filtersData?.pemasok?.find(
+                      (p: FilterOption) => p.name === val,
+                    );
+                    onPemasokChange(found?.id ?? null);
+                  }
+                }}
+                placeholder="Pilih Pemasok"
               />
             )}
             <FilterAutocomplete
@@ -762,7 +804,7 @@ export default function RealtimeChart({
                       onClick={() => {
                         setPeriod("3M");
                         if (onPeriodChange) {
-                          onPeriodChange("month");
+                          onPeriodChange("three_month");
                         } else {
                           if (pemasok == "Pemasok A")
                             setFallbackChartData(data3BulanA);
@@ -782,7 +824,7 @@ export default function RealtimeChart({
                       onClick={() => {
                         setPeriod("6M");
                         if (onPeriodChange) {
-                          onPeriodChange("month");
+                          onPeriodChange("six_month");
                         } else {
                           if (pemasok == "Pemasok A")
                             setFallbackChartData(data6BulanA);
@@ -802,7 +844,7 @@ export default function RealtimeChart({
                       onClick={() => {
                         setPeriod("1Y");
                         if (onPeriodChange) {
-                          onPeriodChange("month");
+                          onPeriodChange("one_year");
                         } else {
                           if (pemasok == "Pemasok A")
                             setFallbackChartData(data1TahunA);

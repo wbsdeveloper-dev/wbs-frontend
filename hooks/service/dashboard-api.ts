@@ -247,6 +247,8 @@ export const dashboardKeys = {
     endDate: string,
     granularity: string,
     by: string,
+    pemasokId?: string,
+    pembangkitId?: string,
   ) =>
     [
       ...dashboardKeys.all,
@@ -255,6 +257,8 @@ export const dashboardKeys = {
       endDate,
       granularity,
       by,
+      pemasokId,
+      pembangkitId,
     ] as const,
   contractInfo: (pemasokId: string) =>
     [...dashboardKeys.all, "contract-info", pemasokId] as const,
@@ -317,7 +321,13 @@ export async function getTopPlants(
 export async function getChartFlow(
   startDate: string,
   endDate: string,
-  granularity: "hour" | "day" | "month",
+  granularity:
+    | "hour"
+    | "day"
+    | "month"
+    | "three_month"
+    | "six_month"
+    | "one_year",
   by: "supplier" | "plant",
   pemasokId?: string,
   pembangkitId?: string,
@@ -416,14 +426,27 @@ export function useTopPlants(
 export function useChartFlow(
   startDate: string,
   endDate: string,
-  granularity: "hour" | "day" | "month",
+  granularity:
+    | "hour"
+    | "day"
+    | "month"
+    | "three_month"
+    | "six_month"
+    | "one_year",
   by: "supplier" | "plant",
   pemasokId?: string,
   pembangkitId?: string,
   options?: Partial<UseQueryOptions<ChartFlowResponse>>,
 ) {
   return useQuery({
-    queryKey: dashboardKeys.chartFlow(startDate, endDate, granularity, by),
+    queryKey: dashboardKeys.chartFlow(
+      startDate,
+      endDate,
+      granularity,
+      by,
+      pemasokId,
+      pembangkitId,
+    ),
     queryFn: () =>
       getChartFlow(
         startDate,
