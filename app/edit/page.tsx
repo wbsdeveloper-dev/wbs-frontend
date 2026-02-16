@@ -2,13 +2,21 @@
 
 import { useState, useCallback } from "react";
 import EditDataTable from "../components/EditDataTable";
-import { useMonitoringRecords } from "@/hooks/service/monitoring-api";
+import {
+  useMonitoringRecords,
+  type MonitoringParams,
+} from "@/hooks/service/monitoring-api";
 
 export default function Home() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [filters, setFilters] = useState<MonitoringParams>({});
 
-  const { data, isLoading } = useMonitoringRecords({ page, limit: pageSize });
+  const { data, isLoading } = useMonitoringRecords({
+    page,
+    limit: pageSize,
+    ...filters,
+  });
 
   const handlePageChange = useCallback(
     (newPage: number, newPageSize: number) => {
@@ -17,6 +25,11 @@ export default function Home() {
     },
     [],
   );
+
+  const handleFilterChange = useCallback((newFilters: MonitoringParams) => {
+    setFilters(newFilters);
+    setPage(1); // Reset to first page on filter change
+  }, []);
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -48,6 +61,8 @@ export default function Home() {
                 }
                 isLoading={isLoading}
                 onPageChange={handlePageChange}
+                filters={filters}
+                onFilterChange={handleFilterChange}
               />
             </div>
           </div>

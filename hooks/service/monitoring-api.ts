@@ -1,7 +1,13 @@
 // Monitoring API service — reconciliation / monitoring record endpoints.
 
-import { dashboardFetch, DASHBOARD_API_HOST } from "./dashboard-api";
-import { useQuery, type UseQueryOptions } from "@tanstack/react-query";
+import { DASHBOARD_API_HOST } from "./dashboard-api";
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  type UseQueryOptions,
+  type UseMutationOptions,
+} from "@tanstack/react-query";
 
 // ---------------------------------------------------------------------------
 // Response types
@@ -12,6 +18,7 @@ export interface MonitoringRecord {
   reportDate: string;
   siteId: string;
   siteName: string;
+  supplierName: string | null;
   metricType: string;
   periodType: string;
   periodValue: string;
@@ -44,7 +51,10 @@ export interface MonitoringPagination {
 export interface MonitoringParams {
   page?: number;
   limit?: number;
+  id?: string;
   siteId?: string;
+  siteName?: string;
+  supplierName?: string;
   status?: string;
   metricType?: string;
   periodType?: string;
@@ -60,7 +70,23 @@ export const monitoringKeys = {
   all: ["monitoring"] as const,
   records: (params?: MonitoringParams) =>
     [...monitoringKeys.all, "records", params] as const,
+  record: (id: string) => [...monitoringKeys.all, "record", id] as const,
 };
+
+// ---------------------------------------------------------------------------
+// Update payload
+// ---------------------------------------------------------------------------
+
+export interface UpdateMonitoringPayload {
+  waValue?: number | null;
+  plnValue?: number | null;
+  sheetValue?: number | null;
+  finalValue?: number | null;
+  finalSource?: string | null;
+  resolution?: string | null;
+  status?: string;
+  reason?: string | null;
+}
 
 // ---------------------------------------------------------------------------
 // Helper
@@ -121,7 +147,60 @@ export async function getMonitoringRecords(
 }
 
 // ---------------------------------------------------------------------------
-// React Query hook
+// API function — single record
+// ---------------------------------------------------------------------------
+
+export async function getMonitoringRecord(
+  id: string,
+): Promise<MonitoringRecord> {
+  const url = `${DASHBOARD_API_HOST}/monitoring/records/${id}`;
+  const res = await fetch(url, {
+    headers: { "Content-Type": "application/json" },
+  });
+
+  if (!res.ok) {
+    throw new Error(`Monitoring API error: ${res.statusText}`);
+  }
+
+  const body = await res.json();
+
+  if (!body.success) {
+    throw new Error(body.message || "Unknown monitoring API error");
+  }
+
+  return body.data as MonitoringRecord;
+}
+
+// ---------------------------------------------------------------------------
+// API function — update record (PATCH)
+// ---------------------------------------------------------------------------
+
+export async function updateMonitoringRecord(
+  id: string,
+  payload: UpdateMonitoringPayload,
+): Promise<MonitoringRecord> {
+  const url = `${DASHBOARD_API_HOST}/monitoring/records/${id}`;
+  const res = await fetch(url, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    throw new Error(`Monitoring API error: ${res.statusText}`);
+  }
+
+  const body = await res.json();
+
+  if (!body.success) {
+    throw new Error(body.message || "Unknown monitoring API error");
+  }
+
+  return body.data as MonitoringRecord;
+}
+
+// ---------------------------------------------------------------------------
+// React Query hooks
 // ---------------------------------------------------------------------------
 
 export function useMonitoringRecords(
@@ -132,5 +211,84 @@ export function useMonitoringRecords(
     queryKey: monitoringKeys.records(params),
     queryFn: () => getMonitoringRecords(params),
     ...options,
+  });
+}
+
+export function useMonitoringRecord(
+  id: string,
+  options?: Partial<UseQueryOptions<MonitoringRecord>>,
+) {
+  return useQuery({
+    queryKey: monitoringKeys.record(id),
+    queryFn: () => getMonitoringRecord(id),
+    enabled: !!id,
+    ...options,
+  });
+}
+
+export function useUpdateMonitoringRecord(
+  options?: Partial<
+    UseMutationOptions<
+      MonitoringRecord,
+      Error,
+      { id: string; payload: UpdateMonitoringPayload }
+    >
+  >,
+) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: UpdateMonitoringPayload;
+    }) => updateMonitoringRecord(id, payload),
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: monitoringKeys.records() });
+      qc.invalidateQueries({ queryKey: monitoringKeys.record(variables.id) });
+    },
+    ...options,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// API function — delete record (DELETE)
+// ---------------------------------------------------------------------------
+
+export async function deleteMonitoringRecord(
+  id: string,
+): Promise<{ deleted: boolean }> {
+  const url = `${DASHBOARD_API_HOST}/monitoring/records/${id}`;
+  const res = await fetch(url, {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+  });
+
+  if (!res.ok) {
+    throw new Error(`Monitoring API error: ${res.statusText}`);
+  }
+
+  const body = await res.json();
+
+  if (!body.success) {
+    throw new Error(body.message || "Unknown monitoring API error");
+  }
+
+  return { deleted: true };
+}
+
+// ---------------------------------------------------------------------------
+// React Query hook — delete
+// ---------------------------------------------------------------------------
+
+export function useDeleteMonitoringRecord() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteMonitoringRecord(id),
+    onSuccess: () => {
+      // Invalidate all monitoring queries so the table auto-refreshes
+      qc.invalidateQueries({ queryKey: monitoringKeys.all });
+    },
   });
 }
