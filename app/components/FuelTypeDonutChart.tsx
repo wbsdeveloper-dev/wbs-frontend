@@ -1,6 +1,13 @@
 "use client";
 
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from "recharts";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  Legend,
+  Tooltip,
+} from "recharts";
 import { Expand } from "lucide-react";
 
 const COLORS = [
@@ -92,6 +99,25 @@ export default function FuelTypeDonutChart({
               <Cell key={`cell-${index}`} fill={COLORS[index]} />
             ))}
           </Pie>
+          <Tooltip
+            content={({ active, payload }) => {
+              if (active && payload && payload.length) {
+                const item = payload[0];
+                const total = data.reduce((sum, d) => sum + d.value, 0);
+                const pct =
+                  total > 0
+                    ? (((item.value as number) / total) * 100).toFixed(1)
+                    : "0.0";
+                return (
+                  <div className="bg-white px-3 py-2 rounded-lg shadow-lg border border-gray-200 text-sm">
+                    <p className="font-medium text-gray-900">{item.name}</p>
+                    <p className="text-gray-600">{pct}%</p>
+                  </div>
+                );
+              }
+              return null;
+            }}
+          />
           <Legend
             verticalAlign="bottom"
             height={50}
@@ -99,6 +125,15 @@ export default function FuelTypeDonutChart({
             wrapperStyle={{
               maxHeight: 80,
               overflowY: "auto",
+            }}
+            formatter={(value: string) => {
+              const total = data.reduce((sum, d) => sum + d.value, 0);
+              const entry = data.find((d) => d.name === value);
+              const pct =
+                entry && total > 0
+                  ? ((entry.value / total) * 100).toFixed(1)
+                  : "0.0";
+              return `${value} (${pct}%)`;
             }}
           />
         </PieChart>
