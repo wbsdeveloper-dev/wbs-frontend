@@ -1,8 +1,23 @@
 "use client";
 
+import { useState, useCallback } from "react";
 import EditDataTable from "../components/EditDataTable";
+import { useMonitoringRecords } from "@/hooks/service/monitoring-api";
 
 export default function Home() {
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  const { data, isLoading } = useMonitoringRecords({ page, limit: pageSize });
+
+  const handlePageChange = useCallback(
+    (newPage: number, newPageSize: number) => {
+      setPage(newPage);
+      setPageSize(newPageSize);
+    },
+    [],
+  );
+
   return (
     <div className="flex h-screen bg-gray-50">
       <main className="flex-1 overflow-auto">
@@ -21,7 +36,19 @@ export default function Home() {
 
           <div className="mb-6 md:mb-8">
             <div className="mb-6 md:mb-8">
-              <EditDataTable />
+              <EditDataTable
+                records={data?.records ?? []}
+                pagination={
+                  data?.pagination ?? {
+                    page,
+                    limit: pageSize,
+                    total: 0,
+                    totalPages: 0,
+                  }
+                }
+                isLoading={isLoading}
+                onPageChange={handlePageChange}
+              />
             </div>
           </div>
         </div>
