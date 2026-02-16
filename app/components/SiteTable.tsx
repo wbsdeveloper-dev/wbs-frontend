@@ -1,389 +1,738 @@
 "use client";
 
-import { DataGrid, GridColDef } from "@mui/x-data-grid";
-import { Box, IconButton, Chip, TextField, InputAdornment, Typography } from "@mui/material";
-import { Pencil, Trash2, Search, Menu } from "lucide-react";
+import { useState, useCallback, useEffect } from "react";
+import {
+  Pencil,
+  Trash2,
+  Search,
+  Menu,
+  AlertTriangle,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  useSites,
+  useRelations,
+  useDeleteSite,
+  useDeleteRelation,
+  siteKeys,
+  type Site,
+  type SiteRelation,
+  type DeleteSiteResponse,
+  type DeleteRelationResponse,
+} from "@/hooks/service/site-api";
 
-// Sample data for Site Table based on the design
-const siteRows = [
-    {
-        id: 1,
-        namaSite: "PN PLN Gresik",
-        jenisSite: "Pembangkit",
-        pembangkit: "PN PLN Gresik",
-        lokasi: "Gresik",
-        status: "Aktif",
-    },
-    {
-        id: 2,
-        namaSite: "Terminal Gas A",
-        jenisSite: "Pemasok",
-        pembangkit: "-",
-        lokasi: "Bali",
-        status: "Aktif",
-    },
-];
-
-// Sample data for Relasi Table based on the design
-const relasiRows = [
-    {
-        id: 1,
-        siteSumber: "Pemasok Gas A",
-        jenisRelasi: "Menyuplai",
-        siteTujuan: "PN PLN Gresik",
-        keterangan: "Gas Utama",
-        status: "Aktif",
-    },
-    {
-        id: 2,
-        siteSumber: "Transportir B",
-        jenisRelasi: "Mengangkut",
-        siteTujuan: "Pemasok Gas A",
-        keterangan: "Jalur laut",
-        status: "Aktif",
-    },
-];
-
-// Status chip component
-const StatusChip = ({ status }: { status: string }) => (
-    <Chip
-        icon={
-            <Box
-                sx={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: "50%",
-                    backgroundColor: status === "Aktif" ? "#22c55e" : "#ef4444",
-                    ml: 1,
-                }}
-            />
-        }
-        label={status}
-        size="small"
-        sx={{
-            backgroundColor: status === "Aktif" ? "#dcfce7" : "#fee2e2",
-            color: status === "Aktif" ? "#16a34a" : "#dc2626",
-            fontWeight: 500,
-            fontSize: "0.75rem",
-            height: 28,
-            "& .MuiChip-icon": {
-                marginLeft: "8px",
-            },
-        }}
+// Status badge component
+const StatusBadge = ({
+  status,
+  isEnabled,
+}: {
+  status: string;
+  isEnabled: boolean;
+}) => (
+  <span
+    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
+      isEnabled ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"
+    }`}
+  >
+    <span
+      className={`w-1.5 h-1.5 rounded-full ${
+        isEnabled ? "bg-green-500" : "bg-red-500"
+      }`}
     />
+    {isEnabled ? "Aktif" : "Nonaktif"}
+  </span>
 );
 
 // Action buttons component
-const ActionButtons = ({ id, onEdit, onDelete }: { id: number; onEdit: (id: number) => void; onDelete: (id: number) => void }) => (
-    <Box
-        sx={{
-            display: "flex",
-            gap: 0.5,
-            alignItems: "center",
-            justifyContent: "center",
-            height: "100%",
-        }}
+const ActionButtons = ({
+  id,
+  onEdit,
+  onDelete,
+}: {
+  id: string;
+  onEdit: (id: string) => void;
+  onDelete: (id: string) => void;
+}) => (
+  <div className="flex items-center justify-center gap-1">
+    <button
+      onClick={() => onEdit(id)}
+      className="p-1.5 text-[#115d72] hover:bg-[#115d72]/10 rounded-lg transition-colors"
+      title="Edit"
     >
-        <IconButton
-            size="small"
-            sx={{ color: "#3b82f6", "&:hover": { color: "#2563eb", backgroundColor: "#eff6ff" } }}
-            onClick={() => onEdit(id)}
-        >
-            <Pencil size={16} />
-        </IconButton>
-        <IconButton
-            size="small"
-            sx={{ color: "#ef4444", "&:hover": { color: "#dc2626", backgroundColor: "#fef2f2" } }}
-            onClick={() => onDelete(id)}
-        >
-            <Trash2 size={16} />
-        </IconButton>
-    </Box>
+      <Pencil size={16} />
+    </button>
+    <button
+      onClick={() => onDelete(id)}
+      className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+      title="Hapus"
+    >
+      <Trash2 size={16} />
+    </button>
+  </div>
 );
 
-// Site table columns
-const siteColumns: GridColDef[] = [
-    {
-        field: "namaSite",
-        headerName: "Nama Site",
-        flex: 1,
-        minWidth: 120,
-        headerAlign: "center",
-        align: "center",
-        renderHeader: () => (
-            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                <span>Nama Site</span>
-            </Box>
-        ),
-    },
-    {
-        field: "jenisSite",
-        headerName: "Jenis Site",
-        flex: 1,
-        minWidth: 100,
-        headerAlign: "center",
-        align: "center",
-    },
-    {
-        field: "pembangkit",
-        headerName: "Pembangkit",
-        flex: 1,
-        minWidth: 120,
-        headerAlign: "center",
-        align: "center",
-    },
-    {
-        field: "lokasi",
-        headerName: "Lokasi",
-        flex: 1,
-        minWidth: 100,
-        headerAlign: "center",
-        align: "center",
-    },
-    {
-        field: "status",
-        headerName: "Status",
-        flex: 1,
-        minWidth: 100,
-        headerAlign: "center",
-        align: "center",
-        renderCell: (params) => <StatusChip status={params.value} />,
-    },
-    {
-        field: "aksi",
-        headerName: "Aksi",
-        flex: 1,
-        minWidth: 100,
-        headerAlign: "center",
-        align: "center",
-        sortable: false,
-        renderCell: (params) => (
-            <ActionButtons
-                id={params.row.id}
-                onEdit={(id) => console.log("Edit site", id)}
-                onDelete={(id) => console.log("Delete site", id)}
-            />
-        ),
-    },
-];
-
-// Relasi table columns
-const relasiColumns: GridColDef[] = [
-    {
-        field: "siteSumber",
-        headerName: "Site Sumber",
-        flex: 1,
-        minWidth: 120,
-        headerAlign: "center",
-        align: "center",
-    },
-    {
-        field: "jenisRelasi",
-        headerName: "Jenis Relasi",
-        flex: 1,
-        minWidth: 100,
-        headerAlign: "center",
-        align: "center",
-    },
-    {
-        field: "siteTujuan",
-        headerName: "Site Tujuan",
-        flex: 1,
-        minWidth: 120,
-        headerAlign: "center",
-        align: "center",
-    },
-    {
-        field: "keterangan",
-        headerName: "Keterangan",
-        flex: 1,
-        minWidth: 100,
-        headerAlign: "center",
-        align: "center",
-    },
-    {
-        field: "status",
-        headerName: "Status",
-        flex: 1,
-        minWidth: 100,
-        headerAlign: "center",
-        align: "center",
-        renderCell: (params) => <StatusChip status={params.value} />,
-    },
-    {
-        field: "aksi",
-        headerName: "Aksi",
-        flex: 1,
-        minWidth: 100,
-        headerAlign: "center",
-        align: "center",
-        sortable: false,
-        renderCell: (params) => (
-            <ActionButtons
-                id={params.row.id}
-                onEdit={(id) => console.log("Edit relasi", id)}
-                onDelete={(id) => console.log("Delete relasi", id)}
-            />
-        ),
-    },
-];
-
-// Common DataGrid styles
-const dataGridStyles = {
-    border: "none",
-    fontSize: "0.875rem",
-    "& .MuiDataGrid-cell": {
-        borderColor: "#f3f4f6",
-        py: 1.5,
-    },
-    "& .MuiDataGrid-columnHeaders": {
-        backgroundColor: "#f8fafc",
-        borderColor: "#e5e7eb",
-        fontSize: "0.875rem",
-        fontWeight: 600,
-    },
-    "& .MuiDataGrid-columnHeaderTitle": {
-        fontWeight: 600,
-        color: "#374151",
-    },
-    "& .MuiDataGrid-row": {
-        "&:hover": {
-            backgroundColor: "#f8fafc",
-        },
-    },
-    "& .MuiDataGrid-cell:focus": {
-        outline: "none",
-    },
-    "& .MuiDataGrid-cell:focus-within": {
-        outline: "none",
-    },
-    "& .MuiDataGrid-footerContainer": {
-        borderTop: "1px solid #e5e7eb",
-    },
-};
-
-interface TableCardProps {
-    title: string;
-    searchPlaceholder: string;
-    rows: typeof siteRows | typeof relasiRows;
-    columns: GridColDef[];
+// Delete Confirmation Modal
+interface DeleteConfirmModalProps {
+  open: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  itemName: string;
 }
 
-// Reusable Table Card component
-const TableCard = ({ title, searchPlaceholder, rows, columns }: TableCardProps) => (
-    <Box
-        sx={{
-            bgcolor: "white",
-            borderRadius: 3,
-            overflow: "hidden",
-            boxShadow: "0 1px 3px 0 rgb(0 0 0 / 0.1)",
-            border: "1px solid #e5e7eb",
-        }}
-    >
-        {/* Table Header */}
-        <Box
-            sx={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                px: 3,
-                py: 2,
-                borderBottom: "1px solid #e5e7eb",
-            }}
-        >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                <Menu size={20} color="#6b7280" />
-                <Typography
-                    sx={{
-                        fontSize: "0.875rem",
-                        fontWeight: 500,
-                        color: "#374151",
-                    }}
+function DeleteConfirmModal({
+  open,
+  onClose,
+  onConfirm,
+  itemName,
+}: DeleteConfirmModalProps) {
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+        {/* Header */}
+        <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-200">
+          <Trash2 className="w-6 h-6 text-red-500" />
+          <h2 className="text-lg font-semibold text-gray-900">
+            Konfirmasi Hapus
+          </h2>
+        </div>
+
+        {/* Content */}
+        <div className="p-6">
+          <p className="text-sm text-gray-700 mb-4">
+            Apakah Anda yakin ingin menghapus{" "}
+            <span className="font-semibold text-gray-900">{itemName}</span>?
+          </p>
+          <p className="text-sm text-gray-600">
+            Tindakan ini tidak dapat dibatalkan.
+          </p>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-gray-200">
+          <button
+            onClick={onClose}
+            className="px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-all duration-200"
+          >
+            Batal
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-4 py-2.5 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-all duration-200 hover:shadow-md active:scale-95"
+          >
+            Ya, Hapus
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Delete Warning Modal
+interface DeleteWarningModalProps {
+  open: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  warnedSites?: string[];
+}
+
+function DeleteWarningModal({
+  open,
+  onClose,
+  onConfirm,
+  warnedSites,
+}: DeleteWarningModalProps) {
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+        {/* Header */}
+        <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-200">
+          <AlertTriangle className="w-6 h-6 text-amber-500" />
+          <h2 className="text-lg font-semibold text-gray-900">
+            Peringatan: Entitas Terkait
+          </h2>
+        </div>
+
+        {/* Content */}
+        <div className="p-6">
+          <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+            <p className="text-sm text-amber-800">
+              Entitas ini direferensikan oleh objek lain dalam sistem.
+            </p>
+          </div>
+
+          <p className="text-sm text-gray-700 mb-3">
+            Objek berikut mereferensikan entitas yang akan dihapus:
+          </p>
+
+          {warnedSites && warnedSites.length > 0 && (
+            <ul className="mb-4 space-y-2">
+              {warnedSites.map((site, index) => (
+                <li
+                  key={index}
+                  className="flex items-center gap-2 text-sm text-gray-700"
                 >
-                    {title}
-                </Typography>
-            </Box>
-            <TextField
-                placeholder={searchPlaceholder}
-                size="small"
-                sx={{
-                    width: 200,
-                    "& .MuiOutlinedInput-root": {
-                        borderRadius: 2,
-                        backgroundColor: "#f9fafb",
-                        "& fieldset": {
-                            borderColor: "#e5e7eb",
-                        },
-                        "&:hover fieldset": {
-                            borderColor: "#d1d5db",
-                        },
-                        "&.Mui-focused fieldset": {
-                            borderColor: "#3b82f6",
-                        },
-                    },
-                    "& .MuiInputBase-input": {
-                        fontSize: "0.875rem",
-                        py: 1,
-                    },
-                }}
-                InputProps={{
-                    startAdornment: (
-                        <InputAdornment position="start">
-                            <Search size={16} color="#9ca3af" />
-                        </InputAdornment>
-                    ),
-                }}
-            />
-        </Box>
+                  <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />
+                  {site}
+                </li>
+              ))}
+            </ul>
+          )}
 
-        {/* Data Table */}
-        <Box sx={{ height: 300, width: "100%", px: 2, pb: 2 }}>
-            <DataGrid
-                rows={rows}
-                columns={columns}
-                initialState={{
-                    pagination: {
-                        paginationModel: { page: 0, pageSize: 5 },
-                    },
-                }}
-                pageSizeOptions={[5, 10, 25]}
-                disableRowSelectionOnClick
-                sx={dataGridStyles}
-            />
-        </Box>
-    </Box>
-);
+          <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-sm text-red-800">
+              Menghapus entitas ini dapat menyebabkan masalah pada data yang
+              terkait. Apakah Anda yakin ingin melanjutkan?
+            </p>
+          </div>
+        </div>
 
-// Export Site Table component
-export function DaftarSiteTable() {
-    return (
-        <TableCard
-            title="Tabel Daftar Site"
-            searchPlaceholder="Cari site..."
-            rows={siteRows}
-            columns={siteColumns}
-        />
-    );
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-gray-200">
+          <button
+            onClick={onClose}
+            className="px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-all duration-200"
+          >
+            Batal
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-4 py-2.5 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-all duration-200 hover:shadow-md active:scale-95"
+          >
+            Ya, Hapus
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
-// Export Relasi Table component
-export function RelasiOperasionalTable() {
-    return (
-        <TableCard
-            title="Tabel Daftar Relasi"
-            searchPlaceholder="Cari relasi..."
-            rows={relasiRows}
-            columns={relasiColumns}
-        />
-    );
+// Site Table Component
+interface SiteTableProps {
+  onEdit?: (id: string) => void;
+  onDelete?: (id: string) => void;
+}
+
+export function DaftarSiteTable({ onEdit, onDelete }: SiteTableProps) {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(0);
+  const [itemsPerPage] = useState(5);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleteWarningOpen, setDeleteWarningOpen] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [pendingDeleteName, setPendingDeleteName] = useState<string>("");
+  const [warnedSites, setWarnedSites] = useState<string[]>([]);
+  const queryClient = useQueryClient();
+
+  const { data: sites, isLoading } = useSites({ search: debouncedSearch });
+  const deleteSiteMutation = useDeleteSite({
+    onSuccess: (data: DeleteSiteResponse) => {
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: siteKeys.sites() });
+      queryClient.invalidateQueries({ queryKey: siteKeys.dropdowns() });
+      
+      if (data.warned_sites && data.warned_sites.length > 0) {
+        setWarnedSites(data.warned_sites);
+        setDeleteWarningOpen(true);
+        setDeleteConfirmOpen(false);
+      } else {
+        setDeleteConfirmOpen(false);
+        setDeleteWarningOpen(false);
+        setWarnedSites([]);
+        setPendingDeleteId(null);
+        setPendingDeleteName("");
+      }
+    },
+    onError: () => {
+      setDeleteConfirmOpen(false);
+      setDeleteWarningOpen(false);
+      setPendingDeleteId(null);
+      setPendingDeleteName("");
+    },
+  });
+
+  // Debounced search effect (2-second delay for performance optimization)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      setCurrentPage(0);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  const handleDeleteClick = (id: string, name: string) => {
+    setPendingDeleteId(id);
+    setPendingDeleteName(name);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (pendingDeleteId) {
+      deleteSiteMutation.mutate(pendingDeleteId);
+    }
+  };
+
+  const handleForceDelete = () => {
+    if (pendingDeleteId) {
+      // If your API supports force delete, pass a force parameter
+      // deleteSiteMutation.mutate({ id: pendingDeleteId, force: true });
+      deleteSiteMutation.mutate(pendingDeleteId);
+    }
+    setDeleteWarningOpen(false);
+    setPendingDeleteId(null);
+    setPendingDeleteName("");
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteConfirmOpen(false);
+    setDeleteWarningOpen(false);
+    setPendingDeleteId(null);
+    setPendingDeleteName("");
+    setWarnedSites([]);
+  };
+
+  const handleEdit = (id: string) => {
+    if (onEdit) {
+      onEdit(id);
+    }
+  };
+
+  // Pagination logic
+  const totalPages = Math.ceil((sites?.length || 0) / itemsPerPage);
+  const startIndex = currentPage * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedSites = sites?.slice(startIndex, endIndex) || [];
+
+  return (
+    <>
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+        {/* Table Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+          <div className="flex items-center gap-1.5">
+            <Menu size={20} className="text-gray-500" />
+            <span className="text-sm font-medium text-gray-700">
+              Tabel Daftar Site
+            </span>
+          </div>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Cari site..."
+              className="w-48 md:w-56 pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200"
+            />
+          </div>
+        </div>
+
+        {/* Table Body */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  Nama Site
+                </th>
+                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  Jenis Site
+                </th>
+                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  Lokasi
+                </th>
+                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  Aksi
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {isLoading ? (
+                <tr>
+                  <td
+                    colSpan={5}
+                    className="px-4 py-8 text-center text-gray-500"
+                  >
+                    Memuat data...
+                  </td>
+                </tr>
+              ) : paginatedSites.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={5}
+                    className="px-4 py-8 text-center text-gray-500"
+                  >
+                    {searchTerm
+                      ? "Tidak ada hasil pencarian"
+                      : "Tidak ada data site"}
+                  </td>
+                </tr>
+              ) : (
+                paginatedSites.map((site) => (
+                  <tr
+                    key={site.id}
+                    className="hover:bg-gray-50 transition-colors"
+                  >
+                    <td className="px-4 py-3 text-gray-900">{site.name}</td>
+                    <td className="px-4 py-3 text-center text-gray-700">
+                      {site.site_type === "PEMBANGKIT"
+                        ? "Pembangkit"
+                        : "Pemasok"}
+                    </td>
+                    <td className="px-4 py-3 text-center text-gray-700">
+                      {site.region}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <StatusBadge
+                        status={site.site_type}
+                        isEnabled={site.is_enabled}
+                      />
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <ActionButtons
+                        id={site.id}
+                        onEdit={handleEdit}
+                        onDelete={() => handleDeleteClick(site.id, site.name)}
+                      />
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Pagination */}
+        {!isLoading && totalPages > 1 && (
+          <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200">
+            <div className="text-sm text-gray-600">
+              Menampilkan {startIndex + 1}-
+              {Math.min(endIndex, sites?.length || 0)} dari {sites?.length || 0}{" "}
+              data
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
+                disabled={currentPage === 0}
+                className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <span className="text-sm text-gray-700">
+                Halaman {currentPage + 1} dari {totalPages}
+              </span>
+              <button
+                onClick={() =>
+                  setCurrentPage((p) => Math.min(totalPages - 1, p + 1))
+                }
+                disabled={currentPage === totalPages - 1}
+                className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <DeleteConfirmModal
+        open={deleteConfirmOpen}
+        onClose={handleCancelDelete}
+        onConfirm={handleConfirmDelete}
+        itemName={pendingDeleteName}
+      />
+
+      <DeleteWarningModal
+        open={deleteWarningOpen}
+        onClose={handleCancelDelete}
+        onConfirm={handleForceDelete}
+        warnedSites={warnedSites}
+      />
+    </>
+  );
+}
+
+// Relations Table Component
+export function RelasiOperasionalTable({ onEdit, onDelete }: SiteTableProps) {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(0);
+  const [itemsPerPage] = useState(5);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleteWarningOpen, setDeleteWarningOpen] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [pendingDeleteName, setPendingDeleteName] = useState<string>("");
+  const [warnedSites, setWarnedSites] = useState<string[]>([]);
+  const queryClient = useQueryClient();
+
+  const { data: relations, isLoading } = useRelations(true);
+  const deleteRelationMutation = useDeleteRelation({
+    onSuccess: (data: DeleteRelationResponse) => {
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: siteKeys.relations() });
+      
+      if (data.warned_sites && data.warned_sites.length > 0) {
+        setWarnedSites(data.warned_sites);
+        setDeleteWarningOpen(true);
+        setDeleteConfirmOpen(false);
+      } else {
+        setDeleteConfirmOpen(false);
+        setDeleteWarningOpen(false);
+        setWarnedSites([]);
+        setPendingDeleteId(null);
+        setPendingDeleteName("");
+      }
+    },
+    onError: () => {
+      setDeleteConfirmOpen(false);
+      setDeleteWarningOpen(false);
+      setPendingDeleteId(null);
+      setPendingDeleteName("");
+    },
+  });
+
+  // Debounced search effect (2-second delay for performance optimization)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      setCurrentPage(0);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Filter relations based on search term
+  const filteredRelations =
+    relations?.filter((relation) => {
+      if (!debouncedSearch) return true;
+      const searchLower = debouncedSearch.toLowerCase();
+      return (
+        relation.source_site_name.toLowerCase().includes(searchLower) ||
+        relation.target_site_name.toLowerCase().includes(searchLower) ||
+        relation.relation_type.toLowerCase().includes(searchLower) ||
+        relation.commodity.toLowerCase().includes(searchLower)
+      );
+    }) || [];
+
+  const handleDeleteClick = (id: string, name: string) => {
+    setPendingDeleteId(id);
+    setPendingDeleteName(name);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (pendingDeleteId) {
+      deleteRelationMutation.mutate(pendingDeleteId);
+    }
+  };
+
+  const handleForceDelete = () => {
+    if (pendingDeleteId) {
+      // If your API supports force delete, pass a force parameter
+      // deleteRelationMutation.mutate({ id: pendingDeleteId, force: true });
+      deleteRelationMutation.mutate(pendingDeleteId);
+    }
+    setDeleteWarningOpen(false);
+    setPendingDeleteId(null);
+    setPendingDeleteName("");
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteConfirmOpen(false);
+    setDeleteWarningOpen(false);
+    setPendingDeleteId(null);
+    setPendingDeleteName("");
+    setWarnedSites([]);
+  };
+
+  const handleEdit = (id: string) => {
+    if (onEdit) {
+      onEdit(id);
+    }
+  };
+
+  // Pagination logic
+  const totalPages = Math.ceil((filteredRelations?.length || 0) / itemsPerPage);
+  const startIndex = currentPage * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedRelations =
+    filteredRelations?.slice(startIndex, endIndex) || [];
+
+  return (
+    <>
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+        {/* Table Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+          <div className="flex items-center gap-1.5">
+            <Menu size={20} className="text-gray-500" />
+            <span className="text-sm font-medium text-gray-700">
+              Tabel Daftar Relasi
+            </span>
+          </div>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Cari relasi..."
+              className="w-48 md:w-56 pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200"
+            />
+          </div>
+        </div>
+
+        {/* Table Body */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  Site Sumber
+                </th>
+                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  Jenis Relasi
+                </th>
+                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  Site Tujuan
+                </th>
+                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  Komoditas
+                </th>
+                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  Aksi
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {isLoading ? (
+                <tr>
+                  <td
+                    colSpan={6}
+                    className="px-4 py-8 text-center text-gray-500"
+                  >
+                    Memuat data...
+                  </td>
+                </tr>
+              ) : paginatedRelations.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={6}
+                    className="px-4 py-8 text-center text-gray-500"
+                  >
+                    {debouncedSearch
+                      ? "Tidak ada hasil pencarian"
+                      : "Tidak ada data relasi"}
+                  </td>
+                </tr>
+              ) : (
+                paginatedRelations.map((relation) => (
+                  <tr
+                    key={relation.id}
+                    className="hover:bg-gray-50 transition-colors"
+                  >
+                    <td className="px-4 py-3 text-gray-900">
+                      {relation.source_site_name}
+                    </td>
+                    <td className="px-4 py-3 text-center text-gray-700">
+                      {relation.relation_type}
+                    </td>
+                    <td className="px-4 py-3 text-center text-gray-700">
+                      {relation.target_site_name}
+                    </td>
+                    <td className="px-4 py-3 text-center text-gray-700">
+                      {relation.commodity}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <StatusBadge
+                        status={relation.relation_type}
+                        isEnabled={relation.status === "ACTIVE"}
+                      />
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <ActionButtons
+                        id={relation.id}
+                        onEdit={handleEdit}
+                        onDelete={() =>
+                          handleDeleteClick(
+                            relation.id,
+                            relation.source_site_name,
+                          )
+                        }
+                      />
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Pagination */}
+        {!isLoading && totalPages > 1 && (
+          <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200">
+            <div className="text-sm text-gray-600">
+              Menampilkan {startIndex + 1}-
+              {Math.min(endIndex, filteredRelations?.length || 0)} dari{" "}
+              {filteredRelations?.length || 0} data
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
+                disabled={currentPage === 0}
+                className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <span className="text-sm text-gray-700">
+                Halaman {currentPage + 1} dari {totalPages}
+              </span>
+              <button
+                onClick={() =>
+                  setCurrentPage((p) => Math.min(totalPages - 1, p + 1))
+                }
+                disabled={currentPage === totalPages - 1}
+                className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <DeleteConfirmModal
+        open={deleteConfirmOpen}
+        onClose={handleCancelDelete}
+        onConfirm={handleConfirmDelete}
+        itemName={pendingDeleteName}
+      />
+
+      <DeleteWarningModal
+        open={deleteWarningOpen}
+        onClose={handleCancelDelete}
+        onConfirm={handleForceDelete}
+        warnedSites={warnedSites}
+      />
+    </>
+  );
 }
 
 // Default export for backward compatibility
 export default function SiteTable() {
-    return (
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-            <DaftarSiteTable />
-            <RelasiOperasionalTable />
-        </Box>
-    );
+  return (
+    <div className="space-y-6">
+      <DaftarSiteTable />
+      <RelasiOperasionalTable />
+    </div>
+  );
 }

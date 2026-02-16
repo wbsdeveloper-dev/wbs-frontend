@@ -1,142 +1,182 @@
 "use client";
 
 import { useState } from "react";
-import { Box, Button, Tabs, Tab } from "@mui/material";
-import { Plus } from "lucide-react";
-import { DaftarSiteTable, RelasiOperasionalTable } from "../../components/SiteTable";
+import { Plus, MapPin, ArrowRightLeft, Map } from "lucide-react";
+import {
+  DaftarSiteTable,
+  RelasiOperasionalTable,
+} from "../../components/SiteTable";
+import { AddSiteModal } from "./components/AddSiteModal";
+import { AddRelationModal } from "./components/AddRelationModal";
+import SiteMap from "./components/SiteMap";
+import { useQueryClient } from "@tanstack/react-query";
+import { siteKeys } from "@/hooks/service/site-api";
 
-interface TabPanelProps {
-    children?: React.ReactNode;
-    index: number;
-    value: number;
-}
-
-function TabPanel({ children, value, index, ...other }: TabPanelProps) {
-    return (
-        <div
-            role="tabpanel"
-            hidden={value !== index}
-            id={`site-tabpanel-${index}`}
-            aria-labelledby={`site-tab-${index}`}
-            {...other}
-        >
-            {value === index && <Box sx={{ pt: 3 }}>{children}</Box>}
-        </div>
-    );
-}
+const tabs = [
+  { label: "Daftar Site", icon: MapPin },
+  { label: "Relasi Operasional", icon: ArrowRightLeft },
+  { label: "Peta Lokasi", icon: Map },
+];
 
 export default function SitePage() {
-    const [activeTab, setActiveTab] = useState(0);
+  const [activeTab, setActiveTab] = useState(0);
+  const [addSiteModalOpen, setAddSiteModalOpen] = useState(false);
+  const [addRelationModalOpen, setAddRelationModalOpen] = useState(false);
+  const [editingSiteId, setEditingSiteId] = useState<string | null>(null);
+  const [editingRelationId, setEditingRelationId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-    const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-        setActiveTab(newValue);
-    };
+  const handleAddSiteSuccess = () => {
+    queryClient.invalidateQueries({ queryKey: siteKeys.sites() });
+    queryClient.invalidateQueries({ queryKey: siteKeys.dropdowns() });
+  };
 
-    return (
-        <div className="flex h-screen bg-gray-50">
-            <main className="flex-1 overflow-auto">
-                <div className="p-4 md:p-6 lg:p-8">
-                    {/* Breadcrumb */}
-                    <div className="text-sm text-gray-500 mb-2">
-                        <span>Konfigurasi Sistem</span>
-                        <span className="mx-2">&gt;</span>
-                        <span className="text-gray-900">Manajemen Site</span>
-                    </div>
+  const handleAddRelationSuccess = () => {
+    queryClient.invalidateQueries({ queryKey: siteKeys.relations() });
+  };
 
-                    {/* Header */}
-                    <div className="mb-6 md:mb-8">
-                        <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-                            Manajemen Site
-                        </h1>
-                        <p className="text-gray-600 mt-1 text-sm md:text-base">
-                            Kelola lokasi operasional beserta keterhubungan pembangkit, pemasok, dan transportir
-                        </p>
-                    </div>
+  const handleAddButtonClick = () => {
+    if (activeTab === 0) {
+      setAddSiteModalOpen(true);
+      setEditingSiteId(null);
+    } else if (activeTab === 1) {
+      setAddRelationModalOpen(true);
+      setEditingRelationId(null);
+    }
+  };
 
-                    {/* Tabs and Button Container */}
-                    <Box
-                        sx={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                            mb: 3,
-                            borderBottom: "1px solid #e5e7eb",
-                        }}
-                    >
-                        <Tabs
-                            value={activeTab}
-                            onChange={handleTabChange}
-                            sx={{
-                                "& .MuiTabs-indicator": {
-                                    backgroundColor: "#3b82f6",
-                                    height: 3,
-                                },
-                                "& .MuiTab-root": {
-                                    textTransform: "none",
-                                    fontSize: "0.875rem",
-                                    fontWeight: 500,
-                                    color: "#6b7280",
-                                    minHeight: 48,
-                                    px: 3,
-                                    "&.Mui-selected": {
-                                        color: "#3b82f6",
-                                    },
-                                },
-                            }}
-                        >
-                            <Tab label="Daftar Site" />
-                            <Tab label="Relasi Operasional" />
-                            <Tab label="Peta Lokasi" />
-                        </Tabs>
+  const handleEditSite = (id: string) => {
+    setEditingSiteId(id);
+    setAddSiteModalOpen(true);
+  };
 
-                        <Button
-                            variant="contained"
-                            startIcon={<Plus size={18} />}
-                            sx={{
-                                backgroundColor: "#0ea5e9",
-                                textTransform: "none",
-                                borderRadius: 2,
-                                px: 3,
-                                py: 1,
-                                fontWeight: 500,
-                                fontSize: "0.875rem",
-                                boxShadow: "none",
-                                "&:hover": {
-                                    backgroundColor: "#0284c7",
-                                    boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-                                },
-                            }}
-                        >
-                            {activeTab === 0 ? "Tambah Site" : activeTab === 1 ? "Tambah Relasi" : "Tambah Lokasi"}
-                        </Button>
-                    </Box>
+  const handleEditRelation = (id: string) => {
+    setEditingRelationId(id);
+    setAddRelationModalOpen(true);
+  };
 
-                    {/* Tab Panels */}
-                    <TabPanel value={activeTab} index={0}>
-                        <DaftarSiteTable />
-                    </TabPanel>
+  return (
+    <div className="min-h-screen p-4 md:p-6 lg:p-8">
+      {/* Breadcrumb */}
+      <div className="flex items-center gap-2 text-sm text-gray-500 mb-2 animate-fadeIn">
+        <span>Dashboard</span>
+        <span className="text-gray-400">/</span>
+        <span>Konfigurasi Sistem</span>
+        <span className="text-gray-400">/</span>
+        <span className="text-[#115d72] font-medium">Manajemen Site</span>
+      </div>
 
-                    <TabPanel value={activeTab} index={1}>
-                        <RelasiOperasionalTable />
-                    </TabPanel>
+      {/* Header */}
+      <div className="mb-6 md:mb-8 animate-fadeIn">
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+          Manajemen Site
+        </h1>
+        <p className="text-gray-600 mt-1 text-sm md:text-base">
+          Kelola lokasi operasional beserta keterhubungan pembangkit, pemasok,
+          dan transportir
+        </p>
+      </div>
 
-                    <TabPanel value={activeTab} index={2}>
-                        <Box
-                            sx={{
-                                height: 400,
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                backgroundColor: "white",
-                                borderRadius: 3,
-                                border: "1px solid #e5e7eb",
-                            }}
-                        >
-                            <p className="text-gray-500">Peta Lokasi akan ditampilkan di sini</p>
-                        </Box>
-                    </TabPanel>
-                </div>
-            </main>
+      {/* Tab bar + Action buttons */}
+      <div
+        className="flex items-center justify-between border-b border-gray-200 mb-6 animate-fadeIn"
+        style={{ animationDelay: "100ms" }}
+      >
+        <div className="flex">
+          {tabs.map((tab, idx) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === idx;
+            return (
+              <button
+                key={idx}
+                onClick={() => setActiveTab(idx)}
+                className={`relative flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all duration-200 cursor-pointer ${
+                  isActive
+                    ? "text-[#115d72]"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                <Icon size={16} />
+                {tab.label}
+                {isActive && (
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#115d72] rounded-full" />
+                )}
+              </button>
+            );
+          })}
         </div>
-    );
+
+        <div className="flex gap-2 mb-2">
+          <button
+            onClick={handleAddButtonClick}
+            className="flex items-center gap-2 px-4 py-2.5 bg-[#115d72] text-white text-sm font-medium rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
+          >
+            <Plus size={18} />
+            {activeTab === 0
+              ? "Tambah Site"
+              : activeTab === 1
+                ? "Tambah Relasi"
+                : "Tambah Lokasi"}
+          </button>
+        </div>
+      </div>
+
+      {/* Tab Panels */}
+      <div className="animate-fadeIn" style={{ animationDelay: "200ms" }}>
+        {activeTab === 0 && (
+          <DaftarSiteTable
+            onEdit={handleEditSite}
+            onDelete={(id) => console.log("Delete site", id)}
+          />
+        )}
+
+        {activeTab === 1 && (
+          <RelasiOperasionalTable
+            onEdit={handleEditRelation}
+            onDelete={(id) => console.log("Delete relasi", id)}
+          />
+        )}
+
+        {activeTab === 2 && <SiteMap />}
+      </div>
+
+      {/* Modals */}
+      <AddSiteModal
+        open={addSiteModalOpen}
+        onClose={() => {
+          setAddSiteModalOpen(false);
+          setEditingSiteId(null);
+        }}
+        onSuccess={handleAddSiteSuccess}
+        editingId={editingSiteId}
+      />
+
+      <AddRelationModal
+        open={addRelationModalOpen}
+        onClose={() => {
+          setAddRelationModalOpen(false);
+          setEditingRelationId(null);
+        }}
+        onSuccess={handleAddRelationSuccess}
+        editingId={editingRelationId}
+      />
+
+      {/* CSS Animations */}
+      <style jsx global>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.4s ease-out forwards;
+        }
+      `}</style>
+    </div>
+  );
 }

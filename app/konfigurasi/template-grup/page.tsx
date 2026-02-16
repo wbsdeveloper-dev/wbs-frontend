@@ -19,6 +19,7 @@ import TemplateList from "./components/TemplateList";
 import TemplateEditor from "./components/TemplateEditor";
 import {
   useTemplates,
+  useTemplate,
   useGroups,
   useCreateTemplate,
   useUpdateTemplate,
@@ -30,6 +31,61 @@ import {
   type TemplateField,
   type TemplateListFilters,
 } from "@/hooks/service/config-api";
+
+// Wrapper component to fetch full details
+function TemplateEditorWrapper({
+  templateId,
+  //  initialData, // Removed to force loading state
+  onUpdate,
+  onActivate,
+  onAddGroup,
+  groupConfigs,
+  spreadsheetSources,
+}: {
+  templateId: string;
+  //  initialData: Template; // Removed
+  onUpdate: (t: Template) => void;
+  onActivate: (t: Template) => void;
+  onAddGroup: (name: string) => void;
+  groupConfigs: { id: string; name: string }[];
+  spreadsheetSources: { id: string; name: string }[];
+}) {
+  const { data: fullTemplate, isLoading, isError } = useTemplate(templateId); // No initialData
+
+  if (isLoading) {
+    return (
+      <Card className="h-full min-h-[400px] flex items-center justify-center">
+        <div className="text-center text-gray-500">
+          <Loader2 className="w-8 h-8 mx-auto mb-3 animate-spin text-[#14a2bb]" />
+          <p className="text-sm">Memuat detail template...</p>
+        </div>
+      </Card>
+    );
+  }
+
+  if (isError || !fullTemplate) {
+    return (
+      <Card className="h-full min-h-[400px] flex items-center justify-center">
+        <div className="text-center text-red-500">
+          <AlertCircle className="w-8 h-8 mx-auto mb-3" />
+          <p className="text-sm">Gagal memuat detail template</p>
+        </div>
+      </Card>
+    );
+  }
+
+  return (
+    <TemplateEditor
+      key={fullTemplate.id} // Re-mount when ID changes (or data loads if strict)
+      template={fullTemplate}
+      onUpdate={onUpdate}
+      onActivate={onActivate}
+      onAddGroup={onAddGroup}
+      groupConfigs={groupConfigs}
+      spreadsheetSources={spreadsheetSources}
+    />
+  );
+}
 
 // Re-export types so downstream components can import from page.tsx if needed
 export type { Template, TemplateField };
@@ -411,9 +467,8 @@ export default function TemplateGrupPage() {
         {/* Right Panel - Template Editor (70%) */}
         <div className="lg:col-span-7">
           {selectedTemplate ? (
-            <TemplateEditor
-              key={selectedTemplate.id}
-              template={selectedTemplate}
+            <TemplateEditorWrapper
+              templateId={selectedTemplate.id}
               onUpdate={handleUpdateTemplate}
               onActivate={handleActivateTemplate}
               onAddGroup={handleAddGroup}

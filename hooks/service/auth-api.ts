@@ -4,7 +4,7 @@
 import { ApiError, type ApiResponse } from "./bot-api";
 import { getAccessToken, getRefreshToken } from "@/lib/auth";
 
-export const AUTH_API_HOST = "http://localhost:3001/api";
+export const AUTH_API_HOST = "http://localhost:3005/api";
 
 // ---------------------------------------------------------------------------
 // Response types

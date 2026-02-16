@@ -78,8 +78,8 @@ export default function Sidebar() {
       children: [
         { title: "Manajemen Site", path: "/konfigurasi/site" },
         { title: "Kontrak & Dokumen", path: "/konfigurasi/kontrak" },
-        { title: "Email Ingest", path: "/konfigurasi/email" },
-        { title: "Template Grup", path: "/konfigurasi/template-grup" }
+        { title: "Email Ingest", path: "/konfigurasi/email-ingest" },
+        { title: "Template Grup", path: "/konfigurasi/template-grup" },
       ],
     },
     {
@@ -89,50 +89,48 @@ export default function Sidebar() {
     },
   ];
 
+  // ─── Dark-mode-compatible styles ───────────────────────────────────
   const menuActive =
-    "flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-white bg-[#115d72] rounded-xl w-full cursor-pointer justify-center shadow-md shadow-[#115d72]/20 transition-transform duration-200 ease-out hover:scale-[1.02]";
+    "flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-white bg-white/15 backdrop-blur-sm rounded-xl w-full cursor-pointer shadow-inner transition-all duration-200 ease-out";
   const menuNonActive =
-    "flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-slate-700 hover:text-[#115d72] hover:bg-slate-100 rounded-xl w-full cursor-pointer justify-center transition-all duration-200 ease-out hover:scale-[1.02]";
+    "flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-white/70 hover:text-white hover:bg-white/10 rounded-xl w-full cursor-pointer transition-all duration-200 ease-out";
 
-  const submenuWrapper = "ml-8 mt-1 space-y-1 border-l border-slate-200 pl-3";
+  const submenuWrapper = "ml-8 mt-1 space-y-1 border-l border-white/15 pl-3";
 
-  const chevronBase = "ml-auto transition-transform duration-200";
-
-  const chevronOpen = "rotate-90";
+  const chevronBase = "ml-auto transition-transform duration-200 text-white/50";
 
   const sidebarContent = (isMobile = false) => (
     <>
-      {/* Header with gradient */}
+      {/* Header */}
       <div className="p-5 flex justify-between items-center">
         {isMobile && (
           <button
             onClick={() => setIsMobileOpen(false)}
-            className="lg:hidden p-2 rounded-full hover:bg-slate-100 absolute right-3 top-3"
+            className="lg:hidden p-2 rounded-full hover:bg-white/10 absolute right-3 top-3 transition-colors"
           >
-            <X size={24} className="text-slate-600" />
+            <X size={24} className="text-white/70" />
           </button>
         )}
         {!isCollapsed && (
           <div className="flex items-center gap-6">
-            <div className="">
+            <div>
               <Image
                 src="/logos/pln-epi.png"
                 alt="PLN logo"
                 width={110}
                 height={30}
-                className={`transition-none ${isCollapsed ? "opacity-0" : "opacity-100"
-                  }`}
+                className={`transition-none brightness-0 invert ${isCollapsed ? "opacity-0" : "opacity-100"}`}
               />
             </div>
             {!isMobile && (
               <button
                 onClick={() => setIsCollapsed(!isCollapsed)}
-                className="p-1.5 rounded-full bg-slate-100 hover:bg-slate-200 hidden lg:block transition-colors"
+                className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 hidden lg:block transition-colors"
               >
                 {isCollapsed ? (
-                  <ChevronRight size={16} className="text-slate-600" />
+                  <ChevronRight size={16} className="text-white/70" />
                 ) : (
-                  <ChevronLeft size={16} className="text-slate-600" />
+                  <ChevronLeft size={16} className="text-white/70" />
                 )}
               </button>
             )}
@@ -145,18 +143,17 @@ export default function Sidebar() {
               alt="PLN logo"
               width={30}
               height={30}
-              className={`transition-none ${!isCollapsed ? "opacity-0" : "opacity-100"
-                }`}
+              className={`transition-none brightness-0 invert ${!isCollapsed ? "opacity-0" : "opacity-100"}`}
             />
 
             <button
               onClick={() => setIsCollapsed(!isCollapsed)}
-              className="absolute z-100 p-1.5 rounded-full bg-slate-100 hover:bg-slate-200 -right-8 transition-colors"
+              className="absolute z-100 p-1.5 rounded-full bg-white/10 hover:bg-white/20 -right-8 transition-colors"
             >
               {isCollapsed ? (
-                <ChevronRight size={16} className="text-slate-600" />
+                <ChevronRight size={16} className="text-white/70" />
               ) : (
-                <ChevronLeft size={16} className="text-slate-600" />
+                <ChevronLeft size={16} className="text-white/70" />
               )}
             </button>
           </div>
@@ -164,22 +161,22 @@ export default function Sidebar() {
       </div>
 
       {/* Decorative line */}
-      <div className="mx-4 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
+      <div className="mx-4 h-px bg-linear-to-r from-transparent via-white/15 to-transparent" />
 
-      {/* User Profile Card - Light Style */}
+      {/* User Profile Card */}
       <div className="px-3 py-3">
         {!isCollapsed || isMobile ? (
-          <div className="bg-slate-50 rounded-xl p-2.5 border border-slate-200 flex items-center gap-3">
+          <div className="bg-white/10 rounded-xl p-2.5 border border-white/10 flex items-center gap-3">
             {/* Avatar */}
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#115d72] to-[#14a2bb] flex items-center justify-center flex-shrink-0">
+            <div className="w-9 h-9 rounded-full bg-linear-to-br from-white/20 to-white/5 flex items-center justify-center shrink-0 border border-white/15">
               <User size={18} className="text-white" />
             </div>
             {/* User Info */}
             <div className="flex-1 min-w-0">
-              <p className="text-slate-800 font-semibold text-sm truncate">
+              <p className="text-white font-semibold text-sm truncate">
                 Ivan Fabriano
               </p>
-              <p className="text-slate-500 text-xs truncate">
+              <p className="text-white/50 text-xs truncate">
                 Admin · IT Division
               </p>
             </div>
@@ -187,7 +184,7 @@ export default function Sidebar() {
         ) : (
           /* Collapsed view - just avatar */
           <div className="flex justify-center">
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#115d72] to-[#14a2bb] flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity">
+            <div className="w-9 h-9 rounded-full bg-linear-to-br from-white/20 to-white/5 flex items-center justify-center cursor-pointer hover:bg-white/20 transition-colors border border-white/15">
               <User size={18} className="text-white" />
             </div>
           </div>
@@ -197,7 +194,7 @@ export default function Sidebar() {
       <div className="flex-1 py-2">
         <div className="px-4 mb-3">
           {(!isCollapsed || isMobile) && (
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+            <p className="text-xs font-semibold text-white/40 uppercase tracking-wider">
               OVERVIEW
             </p>
           )}
@@ -221,9 +218,9 @@ export default function Sidebar() {
                       ? setSubMenuOpen(!subMenuOpen)
                       : menu.path && router.push(menu.path)
                   }
-                  className={
+                  className={`${
                     isParentActive || isSubmenuOpen ? menuActive : menuNonActive
-                  }
+                  } ${isCollapsed && !isMobile ? "justify-center" : ""}`}
                 >
                   {Icon && <Icon className="w-5 h-5" />}
                   {(!isCollapsed || isMobile) && (
@@ -231,20 +228,16 @@ export default function Sidebar() {
                   )}
 
                   {/* Chevron */}
-                  {menu.children && subMenuOpen && (!isCollapsed || isMobile) && (
-                    <ChevronUp
-                      className={`${chevronBase} ${isSubmenuOpen ? chevronOpen : ""
-                        }`}
-                      size={18}
-                    />
-                  )}
-                  {menu.children && !subMenuOpen && (!isCollapsed || isMobile) && (
-                    <ChevronDown
-                      className={`${chevronBase} ${isSubmenuOpen ? chevronOpen : ""
-                        }`}
-                      size={18}
-                    />
-                  )}
+                  {menu.children &&
+                    subMenuOpen &&
+                    (!isCollapsed || isMobile) && (
+                      <ChevronUp className={chevronBase} size={18} />
+                    )}
+                  {menu.children &&
+                    !subMenuOpen &&
+                    (!isCollapsed || isMobile) && (
+                      <ChevronDown className={chevronBase} size={18} />
+                    )}
                 </button>
                 {/* Submenu (auto open only when active) */}
                 {menu.children && (isSubmenuOpen || subMenuOpen) && (
@@ -255,13 +248,14 @@ export default function Sidebar() {
                         <button
                           key={idx}
                           onClick={() => router.push(child.path)}
-                          className={`flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg w-full cursor-pointer
-                          ${isParentActive || isSubmenuOpen
-                              ? "text-white bg-white/10"
-                              : "text-white/70 hover:text-white hover:bg-white/10"
+                          className={`flex items-center gap-3 px-3 py-2 text-sm rounded-lg w-full cursor-pointer transition-all duration-200
+                            ${
+                              isChildActive
+                                ? "text-white font-semibold bg-white/15"
+                                : "text-white/60 hover:text-white hover:bg-white/10 font-medium"
                             }
-                          ${isCollapsed && !isMobile ? "justify-center" : ""}
-                        `}
+                            ${isCollapsed && !isMobile ? "justify-center" : ""}
+                          `}
                         >
                           {child.title}
                         </button>
@@ -276,25 +270,25 @@ export default function Sidebar() {
       </div>
 
       {/* Footer */}
-      <div className="mx-4 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
+      <div className="mx-4 h-px bg-linear-to-r from-transparent via-white/15 to-transparent" />
       <div className="py-2">
         <nav className="space-y-1 px-2 pb-3">
           <button
-            className={`flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-slate-600 hover:text-[#115d72] hover:bg-slate-100 rounded-xl mt-2 cursor-pointer w-full transition-all ${isCollapsed && !isMobile ? "justify-center" : ""}`}
+            className={`flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-white/70 hover:text-white hover:bg-white/10 rounded-xl mt-2 cursor-pointer w-full transition-all ${isCollapsed && !isMobile ? "justify-center" : ""}`}
             onClick={() => router.push("/landingpage")}
           >
             <Reply className="w-5 h-5" />
             {(!isCollapsed || isMobile) && <span>Pilih Dashboard</span>}
           </button>
           <button
-            className={`flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-slate-600 hover:text-[#115d72] hover:bg-slate-100 rounded-xl cursor-pointer w-full transition-all ${isCollapsed && !isMobile ? "justify-center" : ""}`}
+            className={`flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-white/70 hover:text-white hover:bg-white/10 rounded-xl cursor-pointer w-full transition-all ${isCollapsed && !isMobile ? "justify-center" : ""}`}
           >
             <Settings className="w-5 h-5" />
             {(!isCollapsed || isMobile) && <span>Pengaturan</span>}
           </button>
           <button
             onClick={() => router.push("/auth/login")}
-            className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-red-500 hover:text-red-600 hover:bg-red-50 rounded-xl cursor-pointer w-full transition-all"
+            className={`flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-red-300 hover:text-red-200 hover:bg-red-500/10 rounded-xl cursor-pointer w-full transition-all ${isCollapsed && !isMobile ? "justify-center" : ""}`}
           >
             <LogOut className="w-5 h-5" />
             {(!isCollapsed || isMobile) && <span>Logout</span>}
@@ -324,16 +318,18 @@ export default function Sidebar() {
 
       {/* Mobile sidebar */}
       <aside
-        className={`lg:hidden fixed top-0 left-0 h-full w-72 bg-gradient-to-b from-[#115d72] via-[#115d72] to-[#0e4d5f] z-50 transform transition-transform duration-300 ease-in-out flex flex-col shadow-2xl ${isMobileOpen ? "translate-x-0" : "-translate-x-full"
-          }`}
+        className={`lg:hidden fixed top-0 left-0 h-full w-72 bg-linear-to-b from-[#115d72] via-[#115d72] to-[#0e4d5f] z-50 transform transition-transform duration-300 ease-in-out flex flex-col shadow-2xl ${
+          isMobileOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
       >
         {sidebarContent(true)}
       </aside>
 
       {/* Desktop sidebar */}
       <aside
-        className={`${isCollapsed ? "w-20" : "w-64"
-          } bg-gradient-to-b from-[#115d72] via-[#115d72] to-[#0e4d5f] h-screen hidden lg:flex flex-col transition-[width] duration-300 ease-in-out shadow-xl shadow-[#115d72]/20`}
+        className={`${
+          isCollapsed ? "w-20" : "w-64"
+        } bg-linear-to-b from-[#115d72] via-[#115d72] to-[#0e4d5f] h-screen hidden lg:flex flex-col transition-[width] duration-300 ease-in-out shadow-xl shadow-[#115d72]/20`}
       >
         {sidebarContent(false)}
       </aside>
