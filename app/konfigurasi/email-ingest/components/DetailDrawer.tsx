@@ -112,9 +112,11 @@ export default function DetailDrawer({
         }`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gradient-to-r from-[#115d72]/5 to-transparent">
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-linear-to-r from-[#115d72]/5 to-transparent">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">Detail Email</h2>
+            <h2 className="text-lg font-semibold text-gray-900">
+              Detail Email
+            </h2>
             <p className="text-sm text-gray-500 truncate max-w-[300px]">
               {email.email}
             </p>
@@ -190,7 +192,10 @@ export default function DetailDrawer({
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        provider: e.target.value as "PLN" | "Internal" | "Other",
+                        provider: e.target.value as
+                          | "PLN"
+                          | "Internal"
+                          | "Other",
                       })
                     }
                     className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white cursor-pointer pr-10 transition-all duration-200"
@@ -257,9 +262,13 @@ export default function DetailDrawer({
 
               <div className="flex items-center justify-between py-3 px-4 bg-gray-50 rounded-lg">
                 <div>
-                  <span className="text-sm font-medium text-gray-700">Status</span>
+                  <span className="text-sm font-medium text-gray-700">
+                    Status
+                  </span>
                   <p className="text-xs text-gray-500">
-                    {formData.status === "active" ? "Email aktif menerima ingestion" : "Email tidak aktif"}
+                    {formData.status === "active"
+                      ? "Email aktif menerima ingestion"
+                      : "Email tidak aktif"}
                   </p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
@@ -333,7 +342,9 @@ export default function DetailDrawer({
                             {item.field}
                           </span>
                           {item.message && (
-                            <p className="text-xs text-yellow-600">{item.message}</p>
+                            <p className="text-xs text-yellow-600">
+                              {item.message}
+                            </p>
                           )}
                         </div>
                       </div>
@@ -349,9 +360,12 @@ export default function DetailDrawer({
                 <div className="flex items-start gap-2">
                   <AlertTriangle className="w-4 h-4 text-yellow-600 mt-0.5 shrink-0" />
                   <div>
-                    <p className="text-sm font-medium text-yellow-800">1 Warning</p>
+                    <p className="text-sm font-medium text-yellow-800">
+                      1 Warning
+                    </p>
                     <p className="text-xs text-yellow-700">
-                      Field &apos;unit&apos; was assumed from context. Please verify.
+                      Field &apos;unit&apos; was assumed from context. Please
+                      verify.
                     </p>
                   </div>
                 </div>
@@ -453,7 +467,7 @@ export default function DetailDrawer({
             transform: translateY(0);
           }
         }
-        
+
         .animate-fadeIn {
           animation: fadeIn 0.3s ease-out forwards;
         }
