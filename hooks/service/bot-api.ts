@@ -1,8 +1,8 @@
 // Bot API service — wraps all WhatsApp bot management endpoints.
 // Two bot instances share the same API surface but run on different ports.
 
-export const BOT_PRIMARY_API = "http://localhost:3005";
-export const BOT_SECONDARY_API = "http://localhost:3006";
+export const BOT_PRIMARY_API = "http://localhost:3006";
+export const BOT_SECONDARY_API = "http://localhost:3007";
 
 // ---------------------------------------------------------------------------
 // Standard API envelope

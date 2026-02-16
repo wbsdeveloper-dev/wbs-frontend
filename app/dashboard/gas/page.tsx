@@ -44,12 +44,16 @@ export default function GasDashboard() {
   const { isOpen, open, close } = useModal();
   const [filterType, setFilterType] = useState<string | null>("Pemasok");
 
-  const { startDate, endDate } = useMemo(() => getCurrentMonthRange(), []);
   const todayDate = useMemo(() => new Date().toISOString().split("T")[0], []);
+  const { startDate, endDate } = useMemo(() => getCurrentMonthRange(), []);
+  const [startDateFilter, setStartDateFilter] = useState<string | null>(
+    todayDate,
+  );
+  const [endDateFilter, setEndDateFilter] = useState<string | null>(todayDate);
 
   // Chart flow state
   const [granularity, setGranularity] = useState<Granularity>("hour");
-  const [chartBy] = useState<"supplier" | "plant">("plant");
+  const [chartBy, setChartBy] = useState<"supplier" | "plant">("supplier");
   const [selectedPemasokId, setSelectedPemasokId] = useState<
     string | undefined
   >(undefined);
@@ -75,8 +79,8 @@ export default function GasDashboard() {
 
   // Fetch chart flow data
   const { data: chartFlowData, isLoading: isChartLoading } = useChartFlow(
-    todayDate,
-    todayDate,
+    startDateFilter || "",
+    endDateFilter || "",
     granularity,
     chartBy,
     selectedPemasokId,
@@ -101,7 +105,35 @@ export default function GasDashboard() {
 
   // Chart flow callbacks
   const handlePeriodChange = useCallback((newGranularity: Granularity) => {
-    setGranularity(newGranularity);
+    if (newGranularity === "hour") {
+      setStartDateFilter(todayDate);
+      setEndDateFilter(todayDate);
+      setGranularity("hour");
+    } else if (newGranularity === "day") {
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(new Date(todayDate).getDate() - 7);
+      setStartDateFilter(sevenDaysAgo.toISOString().split("T")[0]);
+      setEndDateFilter(todayDate);
+      setGranularity("day");
+    } else if (newGranularity === "three_month") {
+      const threeMonthsAgo = new Date();
+      threeMonthsAgo.setDate(new Date(todayDate).getDate() - 90);
+      setStartDateFilter(threeMonthsAgo.toISOString().split("T")[0]);
+      setEndDateFilter(todayDate);
+      setGranularity("month");
+    } else if (newGranularity === "six_month") {
+      const sixMonthsAgo = new Date();
+      sixMonthsAgo.setDate(new Date(todayDate).getDate() - 180);
+      setStartDateFilter(sixMonthsAgo.toISOString().split("T")[0]);
+      setEndDateFilter(endDate);
+      setGranularity("month");
+    } else if (newGranularity === "one_year") {
+      const oneYearAgo = new Date();
+      oneYearAgo.setDate(new Date(todayDate).getDate() - 365);
+      setStartDateFilter(oneYearAgo.toISOString().split("T")[0]);
+      setEndDateFilter(endDate);
+      setGranularity("month");
+    }
   }, []);
 
   const handlePemasokChange = useCallback((pemasokId: string | null) => {
@@ -110,6 +142,23 @@ export default function GasDashboard() {
 
   const handlePembangkitChange = useCallback((pembangkitId: string | null) => {
     setSelectedPembangkitId(pembangkitId ?? undefined);
+  }, []);
+
+  const handleDateRangeChange = useCallback(
+    (startDate: string | null, endDate: string | null) => {
+      setStartDateFilter(startDate);
+      setEndDateFilter(endDate);
+      setGranularity("day");
+    },
+    [],
+  );
+
+  const handleFilterByChange = useCallback((filterType: string | null) => {
+    if (filterType === "Pemasok") {
+      setChartBy("supplier");
+    } else if (filterType === "Pembangkit") {
+      setChartBy("plant");
+    }
   }, []);
 
   // Transform distribution data for pie chart component
@@ -218,163 +267,12 @@ export default function GasDashboard() {
                 chartFlowData={chartFlowData ?? null}
                 filtersData={filtersData ?? null}
                 isLoading={isChartLoading}
+                onFilterByChange={handleFilterByChange}
                 onPeriodChange={handlePeriodChange}
                 onPemasokChange={handlePemasokChange}
                 onPembangkitChange={handlePembangkitChange}
+                onDateRangeChange={handleDateRangeChange}
               />
-            </div>
-
-            {/* Contract Info Section */}
-            <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6 mb-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Detail Kontrak
-              </h3>
-              {isContractLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="animate-spin text-[#14a2bb]" size={32} />
-                </div>
-              ) : contractData?.contract ? (
-                <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div>
-                      <p className="text-sm text-gray-500">Jenis Kontrak</p>
-                      <p className="font-medium text-gray-900">
-                        {contractData.contract.jenisKontrak}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Nomor Kontrak</p>
-                      <p className="font-medium text-gray-900">
-                        {contractData.contract.nomorKontrak}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Jangka Waktu</p>
-                      <p className="font-medium text-gray-900">
-                        {contractData.contract.jangkaWaktu.start} s/d{" "}
-                        {contractData.contract.jangkaWaktu.end}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Volume JPH</p>
-                      <p className="font-medium text-gray-900">
-                        {contractData.contract.volumeJph.value}{" "}
-                        {contractData.contract.volumeJph.unit}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Volume TOP</p>
-                      <p className="font-medium text-gray-900">
-                        {contractData.contract.volumeTop.value} (
-                        {contractData.contract.volumeTop.percentage}%)
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Harga PJBG</p>
-                      <p className="font-medium text-gray-900">
-                        {contractData.contract.hargaPjbg.value}{" "}
-                        {contractData.contract.hargaPjbg.unit}
-                      </p>
-                    </div>
-                  </div>
-                  {contractData.contract.unitYangDipasok?.length > 0 && (
-                    <div className="mt-4">
-                      <p className="text-sm text-gray-500 mb-2">
-                        Unit Yang Dipasok
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        {contractData.contract.unitYangDipasok.map(
-                          (unit: {
-                            siteId: string;
-                            name: string;
-                            siteType: string;
-                          }) => (
-                            <span
-                              key={unit.siteId}
-                              className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm"
-                            >
-                              {unit.name} ({unit.siteType})
-                            </span>
-                          ),
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <p className="text-gray-500 text-sm py-4 text-center">
-                  Belum ada data kontrak.
-                </p>
-              )}
-            </div>
-
-            {/* Events Section */}
-            <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6 mb-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Catatan Kejadian
-              </h3>
-              {isEventsLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="animate-spin text-[#14a2bb]" size={32} />
-                </div>
-              ) : eventsData?.events && eventsData.events.length > 0 ? (
-                <div className="space-y-3">
-                  {eventsData.events.map(
-                    (event: {
-                      id: string;
-                      siteName: string;
-                      occurredAt: string;
-                      title: string;
-                      description: string;
-                      severity: string;
-                    }) => (
-                      <div
-                        key={event.id}
-                        className="flex items-start gap-3 p-3 rounded-lg border border-gray-100 hover:bg-gray-50 transition-colors"
-                      >
-                        <div
-                          className={`mt-1 w-2 h-2 rounded-full flex-shrink-0 ${
-                            event.severity === "CRITICAL"
-                              ? "bg-red-500"
-                              : event.severity === "WARNING"
-                                ? "bg-yellow-500"
-                                : "bg-blue-500"
-                          }`}
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className="font-medium text-gray-900 text-sm">
-                              {event.title}
-                            </p>
-                            <span
-                              className={`text-xs px-2 py-0.5 rounded-full ${
-                                event.severity === "CRITICAL"
-                                  ? "bg-red-100 text-red-700"
-                                  : event.severity === "WARNING"
-                                    ? "bg-yellow-100 text-yellow-700"
-                                    : "bg-blue-100 text-blue-700"
-                              }`}
-                            >
-                              {event.severity}
-                            </span>
-                          </div>
-                          <p className="text-gray-500 text-xs mt-0.5">
-                            {event.siteName} •{" "}
-                            {new Date(event.occurredAt).toLocaleString("id-ID")}
-                          </p>
-                          <p className="text-gray-600 text-sm mt-1">
-                            {event.description}
-                          </p>
-                        </div>
-                      </div>
-                    ),
-                  )}
-                </div>
-              ) : (
-                <p className="text-gray-500 text-sm py-4 text-center">
-                  Belum ada catatan kejadian.
-                </p>
-              )}
             </div>
           </div>
         </div>
