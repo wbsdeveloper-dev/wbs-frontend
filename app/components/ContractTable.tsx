@@ -99,7 +99,7 @@ const initialRows = [
         volumeJumlah2029: "",
         volumeJumlah2030: "",
         volumeHargaJGB8: "",
-        hbgt: "",
+        hgbt: "",
         unitSwitch: "BBTUD",
     },
 ];
@@ -284,8 +284,8 @@ function buildColumns(isEditMode: boolean): GridColDef[] {
             renderCell,
         },
         {
-            field: "hbgt",
-            headerName: "HBGT",
+            field: "hgbt",
+            headerName: "HGBT",
             width: 100,
             headerAlign: "center",
             align: "center",
@@ -525,6 +525,8 @@ export default function ContractTable() {
                 size="small"
                 sx={{
                     height: "30px",
+                    borderRadius: "8px",
+                    gap: "1px",
                     "& .MuiToggleButton-root": {
                         fontSize: "0.6rem",
                         fontWeight: 600,
@@ -532,6 +534,7 @@ export default function ContractTable() {
                         py: 0.3,
                         textTransform: "none",
                         border: "1px solid #e5e7eb",
+                        borderRadius: "8px !important",
                         color: "#9ca3af",
                         "&.Mui-selected": {
                             backgroundColor: "#115d72",
@@ -550,12 +553,12 @@ export default function ContractTable() {
         ),
     };
 
-    // Insert unitSwitch after hbgt
-    const hbgtIndex = baseColumns.findIndex((col) => col.field === "hbgt");
+    // Insert unitSwitch after hgbt
+    const hgbtIndex = baseColumns.findIndex((col) => col.field === "hgbt");
     const columnsWithSwitch = [
-        ...baseColumns.slice(0, hbgtIndex + 1),
+        ...baseColumns.slice(0, hgbtIndex + 1),
         unitColumn,
-        ...baseColumns.slice(hbgtIndex + 1),
+        ...baseColumns.slice(hgbtIndex + 1),
     ];
 
     const allColumns: GridColDef[] = [
