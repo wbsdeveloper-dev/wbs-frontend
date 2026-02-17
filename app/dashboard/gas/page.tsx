@@ -66,12 +66,18 @@ export default function GasDashboard() {
     distributionBy as "supplier" | "plant",
   );
 
+  // Top suppliers/plants date filters
+  const [topSuppliersStart, setTopSuppliersStart] = useState(startDate);
+  const [topSuppliersEnd, setTopSuppliersEnd] = useState(endDate);
+  const [topPlantsStart, setTopPlantsStart] = useState(startDate);
+  const [topPlantsEnd, setTopPlantsEnd] = useState(endDate);
+
   // Fetch top suppliers and plants
   const { data: topSuppliersData, isLoading: isSuppliersLoading } =
-    useTopSuppliers(startDate, endDate, 5);
+    useTopSuppliers(topSuppliersStart, topSuppliersEnd, 5);
   const { data: topPlantsData, isLoading: isPlantsLoading } = useTopPlants(
-    startDate,
-    endDate,
+    topPlantsStart,
+    topPlantsEnd,
     5,
   );
 
@@ -243,6 +249,10 @@ export default function GasDashboard() {
                   list={topPemasokList}
                   unit={topSuppliersData?.unit || "%"}
                   description={`List top 5 performa pemasok dengan perhitungan Realisasi/TOP ${topSuppliersData?.unit}`}
+                  startDate={topSuppliersStart}
+                  endDate={topSuppliersEnd}
+                  onStartDateChange={setTopSuppliersStart}
+                  onEndDateChange={setTopSuppliersEnd}
                 />
               )}
               {isPlantsLoading ? (
@@ -255,6 +265,10 @@ export default function GasDashboard() {
                   list={topPembangkitList}
                   unit={topPlantsData?.unit || "BBTUD"}
                   description={`List top 5 performa pembangkit dengan satuan ${topPlantsData?.unit}`}
+                  startDate={topPlantsStart}
+                  endDate={topPlantsEnd}
+                  onStartDateChange={setTopPlantsStart}
+                  onEndDateChange={setTopPlantsEnd}
                 />
               )}
             </div>
