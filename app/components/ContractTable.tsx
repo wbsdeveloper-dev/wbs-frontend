@@ -156,7 +156,7 @@ const makeRenderCell =
             );
         }
         return (
-            <span className="text-sm text-gray-700 truncate">
+            <span className="text-xs text-gray-700 truncate">
                 {params.value || "—"}
             </span>
         );
