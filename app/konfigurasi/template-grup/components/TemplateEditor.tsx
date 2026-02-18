@@ -158,8 +158,21 @@ export default function TemplateEditor({
         const parsed = JSON.parse(fieldForm.sourceRef);
         normalizedSourceRef = JSON.stringify(parsed);
       } catch (error) {
-        alert("sourceRef harus berupa valid JSON untuk WA_REGEX_RECORDS");
-        return;
+        // Attempt to auto-fix common regex backslash issues (e.g. \s -> \\s)
+        try {
+          // Replace backslashes that are NOT followed by valid JSON escape chars
+          const fixed = fieldForm.sourceRef.replace(
+            /\\(?![/\"\\bfnrtu])/g,
+            "\\\\",
+          );
+          const parsed = JSON.parse(fixed);
+          normalizedSourceRef = JSON.stringify(parsed);
+        } catch {
+          alert(
+            "sourceRef harus berupa valid JSON. Pastikan escape characters (\\) ditulis double (\\\\) atau gunakan format yang benar.",
+          );
+          return;
+        }
       }
     }
 
@@ -924,7 +937,7 @@ export default function TemplateEditor({
                 }
                 rows={6}
                 placeholder={
-                  '[\n  {"metric_type": "FLOWRATE_MMSCFD", "period_type": "hour", "regex": "Flow[\\\\s\\\\S]*?Current\\\\s+Rate\\\\s*:\\\\s*([\\\\d.,]+)\\\\s*MMSCFD", "unit": "MMSCFD"}\n]'
+                  '[\n  {"metric_type": "FLOWRATE_MMSCFD", "period_type": "hour", "regex": "Flow[\\s\\S]*?Current\\s+Rate\\s*:\\s*([\\d.,]+)\\s*MMSCFD", "unit": "MMSCFD"}\n]'
                 }
                 className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] font-mono resize-none"
               />

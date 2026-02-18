@@ -1,6 +1,7 @@
 // Monitoring API service — reconciliation / monitoring record endpoints.
 
 import { DASHBOARD_API_HOST } from "./dashboard-api";
+import { getAccessToken } from "@/lib/auth";
 import {
   useQuery,
   useMutation,
@@ -126,8 +127,13 @@ export async function getMonitoringRecords(
   // receive the array of records directly. We need the pagination too,
   // so we do a manual fetch here.
   const url = `${DASHBOARD_API_HOST}/monitoring/records${query}`;
+  const accessToken = getAccessToken();
+  
   const res = await fetch(url, {
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
   });
 
   if (!res.ok) {
@@ -154,8 +160,13 @@ export async function getMonitoringRecord(
   id: string,
 ): Promise<MonitoringRecord> {
   const url = `${DASHBOARD_API_HOST}/monitoring/records/${id}`;
+  const accessToken = getAccessToken();
+  
   const res = await fetch(url, {
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
   });
 
   if (!res.ok) {
@@ -180,9 +191,14 @@ export async function updateMonitoringRecord(
   payload: UpdateMonitoringPayload,
 ): Promise<MonitoringRecord> {
   const url = `${DASHBOARD_API_HOST}/monitoring/records/${id}`;
+  const accessToken = getAccessToken();
+  
   const res = await fetch(url, {
     method: "PATCH",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
     body: JSON.stringify(payload),
   });
 
@@ -260,9 +276,14 @@ export async function deleteMonitoringRecord(
   id: string,
 ): Promise<{ deleted: boolean }> {
   const url = `${DASHBOARD_API_HOST}/monitoring/records/${id}`;
+  const accessToken = getAccessToken();
+  
   const res = await fetch(url, {
     method: "DELETE",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
   });
 
   if (!res.ok) {

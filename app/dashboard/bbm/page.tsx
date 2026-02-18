@@ -69,8 +69,14 @@ export default function Home() {
   // Monitoring table state
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  
+  // Get current date for required startDate and endDate
+  const todayDate = new Date().toISOString().split("T")[0];
+  const startDate = todayDate;
+  const endDate = todayDate;
+  
   const { data: monitoringData, isLoading: isMonitoringLoading } =
-    useMonitoringRecords({ page, limit: pageSize });
+    useMonitoringRecords({ page, limit: pageSize, startDate, endDate });
 
   const handlePageChange = useCallback(
     (newPage: number, newPageSize: number) => {
