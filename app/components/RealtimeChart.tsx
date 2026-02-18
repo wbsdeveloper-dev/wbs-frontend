@@ -297,10 +297,14 @@ const CustomTooltip = ({
   active,
   payload,
   label,
+  unit,
+  flowrate,
 }: {
   active?: boolean;
   payload?: TooltipPayload[];
   label?: string;
+  unit?: string;
+  flowrate?: number;
 }) => {
   if (!active || !payload || payload.length === 0) return null;
 
@@ -320,15 +324,17 @@ const CustomTooltip = ({
             </div>
 
             <div className="font-medium w-[150px] text-right">
-              {item.value} MMBTU
+              {item.value} {unit || "MMBTU"}
             </div>
           </div>
         ))}
       </ul>
-      <div className="flex justify-between mt-4">
-        <p>Flowrate</p>
-        <p>80</p>
-      </div>
+      {flowrate !== undefined && flowrate !== null && (
+        <div className="flex justify-between mt-4 pt-4 border-t border-gray-200">
+          <p className="font-medium">Flowrate</p>
+          <p className="font-medium">{flowrate} {unit || "MMBTU"}</p>
+        </div>
+      )}
     </div>
   );
 };
@@ -427,13 +433,20 @@ export default function RealtimeChart({
   }, [chartFlowData]);
 
   // Calculate mean values from API data
-  const apiMeanValues: Record<string, number> = useMemo(() => {
+  const apiMeanValues: Record<string, number | null> = useMemo(() => {
     if (!chartFlowData?.series?.length) return {};
-    const means: Record<string, number> = {};
+    const means: Record<string, number | null> = {};
     chartFlowData.series.forEach((series) => {
       const total = series.dataPoints.reduce((sum, dp) => sum + dp.value, 0);
       means[series.name] = total / (series.dataPoints.length || 1);
     });
+    // Use mean from referenceLines if available
+    if (chartFlowData?.referenceLines?.mean !== null && chartFlowData?.referenceLines?.mean !== undefined) {
+      // If there's only one series, use the mean from referenceLines
+      if (chartFlowData.series.length === 1) {
+        means[chartFlowData.series[0].name] = chartFlowData.referenceLines.mean;
+      }
+    }
     return means;
   }, [chartFlowData]);
 
@@ -465,8 +478,12 @@ export default function RealtimeChart({
   }, [chartFlowData]);
 
   // Reference line values from API
-  const jphValue = chartFlowData?.referenceLines?.jph ?? 34.8;
-  const topValue = chartFlowData?.referenceLines?.top ?? 24.36;
+  const jphValue = chartFlowData?.referenceLines?.jph ?? null;
+  const topValue = chartFlowData?.referenceLines?.top ?? null;
+  
+  // Unit and flowrate from API
+  const unit = chartFlowData?.unit;
+  const flowrate = chartFlowData?.summary?.flowrate;
 
   const submitNote = () => {};
 
@@ -513,7 +530,7 @@ export default function RealtimeChart({
                   <XAxis dataKey="label" />
                   <YAxis />
                   <Legend className="z-0" />
-                  <Tooltip content={<CustomTooltip />} />
+                  <Tooltip content={<CustomTooltip unit={unit} flowrate={flowrate} />} />
                   {chartData.length > 0 &&
                     Object.keys(chartData[0].values).map((key: string) => (
                       <Line
@@ -557,6 +574,7 @@ export default function RealtimeChart({
                           .toLowerCase()
                           .includes(pembangkit.toLowerCase());
                       })
+                      .filter((key) => meanValues[key] !== null)
                       .map((key) => (
                         <ReferenceLine
                           key={`mean-${key}`}
@@ -571,7 +589,7 @@ export default function RealtimeChart({
                         />
                       ))}
                   {/* Garis JPH */}
-                  {jphLineActive && (
+                  {jphLineActive && jphValue !== null && (
                     <ReferenceLine
                       y={jphValue}
                       stroke={"#008BFF"}
@@ -580,7 +598,7 @@ export default function RealtimeChart({
                   )}
 
                   {/* Garis TOP */}
-                  {topLineActive && (
+                  {topLineActive && topValue !== null && (
                     <ReferenceLine
                       y={topValue}
                       stroke={"#08CB00"}

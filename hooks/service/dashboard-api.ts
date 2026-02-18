@@ -5,7 +5,7 @@ import { ApiError, type ApiResponse } from "./bot-api";
 import { getAccessToken } from "@/lib/auth";
 import { useQuery, type UseQueryOptions } from "@tanstack/react-query";
 
-export const DASHBOARD_API_HOST = "http://localhost:3001/api";
+export const DASHBOARD_API_HOST = "http://localhost:3005/api";
 
 // ---------------------------------------------------------------------------
 // Response types
@@ -64,12 +64,13 @@ export interface ChartFlowSeries {
   siteId: string;
   name: string;
   dataPoints: ChartFlowDataPoint[];
+  flowratePercentage: number | null;
 }
 
 export interface ChartFlowReferenceLines {
-  jph: number;
-  top: number;
-  mean: number;
+  jph: number | null;
+  top: number | null;
+  mean: number | null;
 }
 
 export interface ChartFlowSummary {

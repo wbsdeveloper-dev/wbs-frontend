@@ -29,6 +29,7 @@ interface TemplateEditorProps {
 }
 
 const FIELD_KEY_OPTIONS = [
+  "report_date",
   "site_name",
   "metric_type",
   "period_value",
@@ -36,6 +37,7 @@ const FIELD_KEY_OPTIONS = [
   "unit",
   "supplier",
   "transportir",
+  "records",
   "notes",
   "custom",
 ];
@@ -46,6 +48,7 @@ const SOURCE_KIND_OPTIONS: {
 }[] = [
   { value: "SHEET_COLUMN", label: "Sheet Column" },
   { value: "WA_REGEX", label: "WA Regex" },
+  { value: "WA_REGEX_RECORDS", label: "WA Regex Records" },
   { value: "WA_FIXED", label: "WA Fixed Value" },
   { value: "AI_JSON_PATH", label: "AI JSON Path" },
 ];
@@ -58,10 +61,26 @@ export default function TemplateEditor({
   groupConfigs,
   spreadsheetSources,
 }: TemplateEditorProps) {
-  const [formData, setFormData] = useState<Template>({
+  // Normalize WA_REGEX_RECORDS fields when loading from API
+  const normalizedTemplate = {
     ...template,
-    fields: template.fields ?? [],
-  });
+    fields: (template.fields ?? []).map((field) => {
+      if (field.sourceKind === "WA_REGEX_RECORDS") {
+        try {
+          const parsed = JSON.parse(field.sourceRef);
+          return {
+            ...field,
+            sourceRef: JSON.stringify(parsed),
+          };
+        } catch {
+          return field;
+        }
+      }
+      return field;
+    }),
+  };
+
+  const [formData, setFormData] = useState<Template>(normalizedTemplate);
   const { data: aiModels = [], isLoading: isLoadingModels } = useAiModels();
   const [isFieldModalOpen, setIsFieldModalOpen] = useState(false);
   const [editingField, setEditingField] = useState<TemplateField | null>(null);
@@ -132,6 +151,18 @@ export default function TemplateEditor({
       return;
     }
 
+    // Validate and normalize sourceRef for WA_REGEX_RECORDS
+    let normalizedSourceRef = fieldForm.sourceRef;
+    if (fieldForm.sourceKind === "WA_REGEX_RECORDS") {
+      try {
+        const parsed = JSON.parse(fieldForm.sourceRef);
+        normalizedSourceRef = JSON.stringify(parsed);
+      } catch (error) {
+        alert("sourceRef harus berupa valid JSON untuk WA_REGEX_RECORDS");
+        return;
+      }
+    }
+
     if (editingField) {
       // Update existing field
       setFormData({
@@ -142,7 +173,7 @@ export default function TemplateEditor({
                 ...f,
                 fieldKey: key,
                 sourceKind: fieldForm.sourceKind,
-                sourceRef: fieldForm.sourceRef,
+                sourceRef: normalizedSourceRef,
                 transform: fieldForm.transform || null,
                 isRequired: fieldForm.isRequired,
               }
@@ -157,7 +188,7 @@ export default function TemplateEditor({
         orderNo: formData.fields.length + 1,
         fieldKey: key,
         sourceKind: fieldForm.sourceKind,
-        sourceRef: fieldForm.sourceRef,
+        sourceRef: normalizedSourceRef,
         transform: fieldForm.transform || null,
         isRequired: fieldForm.isRequired,
         createdAt: new Date().toISOString(),
@@ -240,6 +271,25 @@ export default function TemplateEditor({
           const match = testInput.match(regex);
           if (match && match[1]) {
             result[field.fieldKey] = match[1];
+          } else if (field.isRequired) {
+            hasError = true;
+          }
+        } catch {
+          hasError = true;
+        }
+      } else if (field.sourceKind === "WA_REGEX_RECORDS") {
+        try {
+          const regexConfigs = JSON.parse(field.sourceRef);
+          const matches: string[] = [];
+          regexConfigs.forEach((config: { regex: string }) => {
+            const regex = new RegExp(config.regex, "g");
+            let m: RegExpExecArray | null;
+            while ((m = regex.exec(testInput)) !== null) {
+              if (m[1]) matches.push(m[1]);
+            }
+          });
+          if (matches.length > 0) {
+            result[field.fieldKey] = matches.join(", ");
           } else if (field.isRequired) {
             hasError = true;
           }
@@ -859,48 +909,79 @@ export default function TemplateEditor({
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Source Ref
-              {fieldForm.sourceKind === "WA_REGEX" && (
+          {fieldForm.sourceKind === "WA_REGEX_RECORDS" ? (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Source Ref
                 <span className="text-xs text-gray-400 ml-1">
-                  (Regex pattern)
+                  (JSON array of record configs)
                 </span>
-              )}
-            </label>
-            <input
-              type="text"
-              value={fieldForm.sourceRef}
-              onChange={(e) =>
-                setFieldForm({ ...fieldForm, sourceRef: e.target.value })
-              }
-              placeholder={
-                fieldForm.sourceKind === "SHEET_COLUMN"
-                  ? "e.g., A or Column Name"
-                  : fieldForm.sourceKind === "WA_REGEX"
-                    ? "e.g., Site:\\s*(.+)"
-                    : fieldForm.sourceKind === "AI_JSON_PATH"
-                      ? "e.g., $.site_name"
-                      : "Fixed value"
-              }
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] font-mono"
-            />
-          </div>
+              </label>
+              <textarea
+                value={fieldForm.sourceRef}
+                onChange={(e) =>
+                  setFieldForm({ ...fieldForm, sourceRef: e.target.value })
+                }
+                rows={6}
+                placeholder={
+                  '[\n  {"metric_type": "FLOWRATE_MMSCFD", "period_type": "hour", "regex": "Flow[\\\\s\\\\S]*?Current\\\\s+Rate\\\\s*:\\\\s*([\\\\d.,]+)\\\\s*MMSCFD", "unit": "MMSCFD"}\n]'
+                }
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] font-mono resize-none"
+              />
+            </div>
+          ) : (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Source Ref
+                {fieldForm.sourceKind === "WA_REGEX" && (
+                  <span className="text-xs text-gray-400 ml-1">
+                    (Regex pattern)
+                  </span>
+                )}
+              </label>
+              <input
+                type="text"
+                value={fieldForm.sourceRef}
+                onChange={(e) =>
+                  setFieldForm({ ...fieldForm, sourceRef: e.target.value })
+                }
+                placeholder={
+                  fieldForm.sourceKind === "SHEET_COLUMN"
+                    ? "e.g., A or Column Name"
+                    : fieldForm.sourceKind === "WA_REGEX"
+                      ? "e.g., Site:\\s*(.+)"
+                      : fieldForm.sourceKind === "AI_JSON_PATH"
+                        ? "e.g., $.site_name"
+                        : "Fixed value"
+                }
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] font-mono"
+              />
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
               Transform{" "}
               <span className="text-xs text-gray-400">(Optional)</span>
             </label>
-            <input
-              type="text"
-              value={fieldForm.transform}
-              onChange={(e) =>
-                setFieldForm({ ...fieldForm, transform: e.target.value })
-              }
-              placeholder="e.g., value.trim().toUpperCase()"
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] font-mono"
-            />
+            <div className="relative">
+              <select
+                value={fieldForm.transform}
+                onChange={(e) =>
+                  setFieldForm({ ...fieldForm, transform: e.target.value })
+                }
+                className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] bg-white cursor-pointer pr-10"
+              >
+                <option value="">None</option>
+                <option value="date">Date (→ YYYY-MM-DD)</option>
+                <option value="number">Number</option>
+                <option value="integer">Integer</option>
+                <option value="uppercase">Uppercase</option>
+                <option value="lowercase">Lowercase</option>
+                <option value="trim">Trim</option>
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            </div>
           </div>
 
           <div className="flex items-center gap-3">

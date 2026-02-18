@@ -112,7 +112,12 @@ export interface TemplateField {
   id: string;
   ingestionTemplateId: string;
   fieldKey: string;
-  sourceKind: "SHEET_COLUMN" | "WA_REGEX" | "WA_FIXED" | "AI_JSON_PATH";
+  sourceKind:
+    | "SHEET_COLUMN"
+    | "WA_REGEX"
+    | "WA_REGEX_RECORDS"
+    | "WA_FIXED"
+    | "AI_JSON_PATH";
   sourceRef: string;
   transform: string | null;
   isRequired: boolean;
@@ -161,6 +166,7 @@ export interface CreateTemplatePayload {
     fieldKey: string;
     sourceKind: TemplateField["sourceKind"];
     sourceRef: string;
+    transform?: string | null;
     isRequired: boolean;
     orderNo: number;
   }[];
@@ -183,6 +189,7 @@ export interface UpdateTemplatePayload {
     fieldKey: string;
     sourceKind: TemplateField["sourceKind"];
     sourceRef: string;
+    transform?: string | null;
     isRequired: boolean;
     orderNo: number;
   }[];

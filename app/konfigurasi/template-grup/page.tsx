@@ -182,7 +182,9 @@ export default function TemplateGrupPage() {
           fields: updatedTemplate.fields.map((f, i) => ({
             fieldKey: f.fieldKey,
             sourceKind: f.sourceKind,
-            sourceRef: f.sourceRef,
+            sourceRef: f.sourceKind === "WA_REGEX_RECORDS"
+              ? f.sourceRef.replace(/\\\\/g, "\\")
+              : f.sourceRef,
             isRequired: f.isRequired,
             orderNo: i + 1,
           })),
