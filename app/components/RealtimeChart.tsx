@@ -652,14 +652,46 @@ export default function RealtimeChart({
         </div>
       ) : (
         <div className="lg:col-span-9 lg:pr-6">
-          <div className="flex justify-center items-center text-center mb-6 text-gray-500 text-xl p-4 rounded-lg font-semibold h-[300px] gap-4">
-            <div className="flex justify-center items-center">
-              <Info className="w-8 h-8 text-gray-500" />
+          <div className="flex flex-col justify-center items-center text-center h-[400px] gap-4">
+            {/* Decorative icon with subtle background */}
+            <div className="relative">
+              <div className="absolute inset-0 bg-[#14a2bb]/10 rounded-full blur-xl scale-150" />
+              <div className="relative w-20 h-20 bg-gradient-to-br from-[#14a2bb]/20 to-[#115d72]/10 rounded-2xl flex items-center justify-center border border-[#14a2bb]/20">
+                <Info className="w-10 h-10 text-[#14a2bb]" />
+              </div>
             </div>
-            <p>
-              Mohon pilih {filterType == "Pemasok" ? "Pemasok" : "Pembangkit"}{" "}
-              Terlebih Dahulu
-            </p>
+
+            {/* Main message */}
+            <div className="space-y-2 max-w-sm">
+              <h3 className="text-lg font-semibold text-gray-800">
+                Pilih {filterType === "Pemasok" ? "Pemasok" : "Pembangkit"}
+              </h3>
+              <p className="text-sm text-gray-500 leading-relaxed">
+                Silakan pilih{" "}
+                <span className="font-medium text-[#115d72]">
+                  {filterType === "Pemasok" ? "Pemasok" : "Pembangkit"}
+                </span>{" "}
+                pada panel filter di samping kanan untuk menampilkan grafik
+                penyaluran gas.
+              </p>
+            </div>
+
+            {/* Arrow hint */}
+            <div className="hidden lg:flex items-center gap-2 text-xs text-gray-400 mt-2">
+              <span>Panel filter tersedia di sebelah kanan</span>
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M5 12h14m-7-7 7 7-7 7" />
+              </svg>
+            </div>
           </div>
         </div>
       )}
@@ -742,7 +774,7 @@ export default function RealtimeChart({
                 placeholder="Pilih Pembangkit"
               />
             )}
-            {pembangkit && (
+            {pembangkit && (!pemasok || filterType == "Pembangkit") && (
               <FilterAutocomplete
                 label="Pemasok"
                 options={pemasokOptions}

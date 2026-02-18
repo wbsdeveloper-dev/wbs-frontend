@@ -24,7 +24,7 @@ export default function LoginPage() {
     try {
       const data = await login(email, password);
       setTokens(data.accessToken, data.refreshToken);
-      router.push("/dashboard/gas");
+      router.push("/landingpage");
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Login gagal. Silakan coba lagi.",
