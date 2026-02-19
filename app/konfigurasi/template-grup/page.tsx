@@ -4,7 +4,6 @@ import React, { useState, useMemo } from "react";
 import {
   Search,
   Plus,
-  Download,
   ChevronDown,
   FileText,
   CheckCircle,
@@ -288,22 +287,6 @@ export default function TemplateGrupPage() {
     );
   };
 
-  const handleExportJSON = () => {
-    if (!selectedTemplate) {
-      showNotification("error", "Pilih template terlebih dahulu");
-      return;
-    }
-    const json = JSON.stringify(selectedTemplate, null, 2);
-    const blob = new Blob([json], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${selectedTemplate.name.replace(/\s+/g, "_")}_v${selectedTemplate.version}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    showNotification("success", "Template berhasil diexport");
-  };
-
   const handleAddGroup = (name: string) => {
     createGroupMutation.mutate(
       { groupId: name.toLowerCase().replace(/\s+/g, "-"), name },
@@ -379,13 +362,6 @@ export default function TemplateGrupPage() {
             >
               <Plus size={18} />
               Buat Template
-            </button>
-            <button
-              onClick={handleExportJSON}
-              className="flex items-center gap-2 px-4 py-2.5 bg-white text-gray-700 text-sm font-medium border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200 hover:border-gray-400"
-            >
-              <Download size={18} />
-              Export JSON
             </button>
           </div>
 

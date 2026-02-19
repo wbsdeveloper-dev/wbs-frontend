@@ -13,7 +13,11 @@ import {
   Play,
   AlertCircle,
   CheckCircle,
+  Upload,
+  Download,
 } from "lucide-react";
+import { downloadFieldsCSV } from "../utils/csvExport";
+import CSVImportModal from "./CSVImportModal";
 import Card, { CardHeader } from "@/app/components/ui/Card";
 import { Modal } from "@/app/components/ui";
 import type { Template, TemplateField } from "@/hooks/service/config-api";
@@ -81,6 +85,7 @@ export default function TemplateEditor({
   };
 
   const [formData, setFormData] = useState<Template>(normalizedTemplate);
+  const [isCSVImportModalOpen, setIsCSVImportModalOpen] = useState(false);
   const { data: aiModels = [], isLoading: isLoadingModels } = useAiModels();
   const [isFieldModalOpen, setIsFieldModalOpen] = useState(false);
   const [editingField, setEditingField] = useState<TemplateField | null>(null);
@@ -326,6 +331,25 @@ export default function TemplateEditor({
     } else {
       setTestResult({ success: true, data: result });
     }
+  };
+
+  const handleExportCSV = () => {
+    try {
+      downloadFieldsCSV(formData.fields, formData.name);
+    } catch (error) {
+      alert("Gagal mengekspor CSV: " + (error as Error).message);
+    }
+  };
+
+  const handleImportFields = (importedFields: TemplateField[]) => {
+    setFormData({
+      ...formData,
+      fields: importedFields.map((f, i) => ({
+        ...f,
+        orderNo: i + 1,
+        ingestionTemplateId: formData.id,
+      })),
+    });
   };
 
   return (
@@ -679,16 +703,34 @@ export default function TemplateEditor({
           title="Template Fields"
           description={`${formData.fields.length} field(s) defined`}
           action={
-            <button
-              onClick={() => {
-                resetFieldForm();
-                setIsFieldModalOpen(true);
-              }}
-              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-all duration-200"
-            >
-              <Plus size={16} />
-              Add Field
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setIsCSVImportModalOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200"
+                title="Import Fields from CSV"
+              >
+                <Upload size={16} />
+                <span className="hidden sm:inline">Import</span>
+              </button>
+              <button
+                onClick={handleExportCSV}
+                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200"
+                title="Export Fields to CSV"
+              >
+                <Download size={16} />
+                <span className="hidden sm:inline">Export</span>
+              </button>
+              <button
+                onClick={() => {
+                  resetFieldForm();
+                  setIsFieldModalOpen(true);
+                }}
+                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-all duration-200"
+              >
+                <Plus size={16} />
+                Add Field
+              </button>
+            </div>
           }
         />
 
@@ -1085,6 +1127,14 @@ export default function TemplateEditor({
           </div>
         </div>
       </Modal>
+      {/* CSV Import Modal */}
+      <CSVImportModal
+        isOpen={isCSVImportModalOpen}
+        onClose={() => setIsCSVImportModalOpen(false)}
+        onImport={handleImportFields}
+        existingFields={formData.fields}
+        template={formData}
+      />
     </div>
   );
 }
