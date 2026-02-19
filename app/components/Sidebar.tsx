@@ -21,10 +21,12 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
+import { useAuth } from "@/components/providers/auth-provider";
 
 export default function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
+  const { user, logout } = useAuth();
 
   const [subMenuOpen, setSubMenuOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -174,10 +176,10 @@ export default function Sidebar() {
             {/* User Info */}
             <div className="flex-1 min-w-0">
               <p className="text-gray-800 font-semibold text-sm truncate">
-                Ivan Fabriano
+                {user?.email || "User"}
               </p>
               <p className="text-gray-400 text-xs truncate">
-                Admin · IT Division
+                {user?.roles?.join(", ") || "User"}
               </p>
             </div>
           </div>
@@ -287,7 +289,7 @@ export default function Sidebar() {
             {(!isCollapsed || isMobile) && <span>Pengaturan</span>}
           </button>
           <button
-            onClick={() => router.push("/auth/login")}
+            onClick={logout}
             className={`flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-red-500 hover:text-red-600 hover:bg-red-50 rounded-xl cursor-pointer w-full transition-all duration-200 hover:scale-[1.03] ${isCollapsed && !isMobile ? "justify-center" : ""}`}
           >
             <LogOut className="w-5 h-5" />
