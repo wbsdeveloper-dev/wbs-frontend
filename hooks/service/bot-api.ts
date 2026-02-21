@@ -191,6 +191,16 @@ export function updateEnabledGroups(host: string, enabledGroupIds: string[]) {
   });
 }
 
+export function syncBotToBackend(host: string) {
+  return botFetch<{ syncedCount: number; result: Record<string, unknown> }>(
+    host,
+    "/api/sync-to-backend",
+    {
+      method: "POST",
+    },
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Keywords Management
 // ---------------------------------------------------------------------------

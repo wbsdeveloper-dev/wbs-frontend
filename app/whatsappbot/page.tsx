@@ -11,7 +11,11 @@ import {
   useBotQR,
   useDisconnectBot,
 } from "@/hooks/use-bot-status";
-import { useBotGroups, useUpdateGroups } from "@/hooks/use-bot-groups";
+import {
+  useBotGroups,
+  useUpdateGroups,
+  useSyncBotToBackend,
+} from "@/hooks/use-bot-groups";
 import {
   useBotKeywords,
   useAddKeyword,
@@ -303,6 +307,7 @@ function GroupsSection({
 }) {
   const { data: groups, isLoading } = useBotGroups(host, connected);
   const updateGroups = useUpdateGroups(host);
+  const syncGroups = useSyncBotToBackend(host);
 
   if (!connected) {
     return (
@@ -337,9 +342,24 @@ function GroupsSection({
     updateGroups.mutate(next);
   };
 
+  const handleSync = () => {
+    syncGroups.mutate();
+  };
+
   return (
     <Card>
-      <CardHeader title="Konfigurasi Group" />
+      <CardHeader
+        title="Konfigurasi Group"
+        action={
+          <button
+            onClick={handleSync}
+            disabled={syncGroups.isPending}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-[#14a2bb] text-white rounded-lg hover:bg-[#118d9f] transition-all disabled:opacity-50"
+          >
+            {syncGroups.isPending ? "Syncing..." : "Sync ke Backend"}
+          </button>
+        }
+      />
 
       <div className="space-y-1 max-h-[280px] overflow-y-auto pr-1">
         {list.map((group) => (

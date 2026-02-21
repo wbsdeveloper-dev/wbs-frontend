@@ -26,9 +26,11 @@ import {
   useDeprecateTemplate,
   useCreateGroup,
   useActivateTemplate,
+  useTestRouting,
   type Template,
   type TemplateField,
   type TemplateListFilters,
+  type RoutingTestTemplatePreview,
 } from "@/hooks/service/config-api";
 
 // Wrapper component to fetch full details
@@ -113,6 +115,15 @@ export default function TemplateGrupPage() {
     "WA_GROUP" | "SPREADSHEET_SOURCE"
   >("WA_GROUP");
 
+  const [isTestModalOpen, setIsTestModalOpen] = useState(false);
+  const [testGroupId, setTestGroupId] = useState("");
+  const [testMessage, setTestMessage] = useState("");
+  const [testResult, setTestResult] = useState<{
+    allowed: boolean;
+    groupConfigId: string | null;
+    template: RoutingTestTemplatePreview | null;
+  } | null>(null);
+
   // ---------------------------------------------------------------------------
   // API queries
   // ---------------------------------------------------------------------------
@@ -142,6 +153,7 @@ export default function TemplateGrupPage() {
   const deprecateTemplateMutation = useDeprecateTemplate();
   const activateTemplateMutation = useActivateTemplate();
   const createGroupMutation = useCreateGroup();
+  const testRoutingMutation = useTestRouting();
 
   // Show notification helper
   const showNotification = (
@@ -301,6 +313,25 @@ export default function TemplateGrupPage() {
     );
   };
 
+  const handleTestRouting = () => {
+    if (!testGroupId.trim()) {
+      showNotification("error", "Wah Group ID kosong nih.");
+      return;
+    }
+
+    testRoutingMutation.mutate(
+      { groupId: testGroupId, textContent: testMessage },
+      {
+        onSuccess: (data) => {
+          setTestResult(data);
+        },
+        onError: (err) => {
+          showNotification("error", `Test failed: ${err.message}`);
+        },
+      },
+    );
+  };
+
   // Map GroupConfig[] to the shape TemplateEditor expects
   const groupConfigsForEditor = groupConfigs.map((g) => ({
     id: g.id,
@@ -362,6 +393,17 @@ export default function TemplateGrupPage() {
             >
               <Plus size={18} />
               Buat Template
+            </button>
+            <button
+              onClick={() => {
+                setIsTestModalOpen(true);
+                setTestResult(null);
+                setTestGroupId("");
+                setTestMessage("");
+              }}
+              className="flex items-center gap-2 px-4 py-2.5 bg-indigo-50 text-indigo-700 border border-indigo-200 text-sm font-medium rounded-lg hover:bg-indigo-100 transition-all duration-200 hover:shadow-sm active:scale-95"
+            >
+              Test Routing
             </button>
           </div>
 
@@ -534,6 +576,126 @@ export default function TemplateGrupPage() {
               )}
             </button>
           </div>
+        </div>
+      </Modal>
+
+      {/* Test Routing Modal */}
+      <Modal
+        isOpen={isTestModalOpen}
+        onClose={() => {
+          setIsTestModalOpen(false);
+          setTestResult(null);
+        }}
+        title="Test Message Routing"
+        maxWidth="max-w-md"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              WhatsApp Group ID
+            </label>
+            <div className="relative">
+              <select
+                value={testGroupId}
+                onChange={(e) => setTestGroupId(e.target.value)}
+                className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white cursor-pointer pr-10"
+              >
+                <option value="" disabled>
+                  Pilih Group...
+                </option>
+                {groupConfigs.map((g) => {
+                  const safeGroupId = g.groupId || g.group_id || g.id;
+                  return (
+                    <option key={g.id} value={safeGroupId}>
+                      {g.name} ({safeGroupId})
+                    </option>
+                  );
+                })}
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              Test akan dilakukan seolah-olah pesan datang dari group ini.
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Message Content
+            </label>
+            <textarea
+              value={testMessage}
+              onChange={(e) => setTestMessage(e.target.value)}
+              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent min-h-[100px] resize-y"
+              placeholder="Ketik isi pesan WhatsApp di sini..."
+            />
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button
+              onClick={handleTestRouting}
+              disabled={testRoutingMutation.isPending || !testGroupId}
+              className="w-full px-4 py-2.5 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-all duration-200 hover:shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {testRoutingMutation.isPending ? "Testing..." : "Run Test"}
+            </button>
+          </div>
+
+          {testResult && (
+            <div className="mt-4 p-4 rounded-lg border bg-gray-50">
+              <h4 className="text-sm font-semibold text-gray-900 mb-2">
+                Test Result
+              </h4>
+
+              {!testResult.allowed ? (
+                <div className="text-sm text-red-600 flex items-start gap-2">
+                  <AlertCircle size={16} className="mt-0.5 shrink-0" />
+                  <p>
+                    Akses ditolak. Group ini dinonaktifkan atau belum disync.
+                  </p>
+                </div>
+              ) : testResult.template ? (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium text-gray-500 w-24">
+                      Template:
+                    </span>
+                    <span className="text-sm font-medium text-[#115d72]">
+                      {testResult.template.name}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium text-gray-500 w-24">
+                      Parser Mode:
+                    </span>
+                    <span className="text-sm text-gray-700">
+                      {testResult.template.parserMode}
+                    </span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-xs font-medium text-gray-500 w-24 pt-0.5">
+                      Explanation:
+                    </span>
+                    <span className="text-sm text-gray-700 flex-1">
+                      {testResult.groupConfigId
+                        ? "Dipilih karena group ini secara eksplisit terhubung dengan template ini (Priority 1)."
+                        : testResult.template.waKeywordHint
+                          ? "Dipilih karena pesan mengandung keyword yang cocok dengan global template (Priority 2)."
+                          : "Dipilih sebagai template default fallback karena tidak ada match spesifik (Priority 3)."}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-sm text-amber-600 flex items-start gap-2">
+                  <span className="mt-0.5 shrink-0">⚠️</span>
+                  <p>
+                    Tidak ada template yang cocok ditemukan. Coba cek template
+                    default dan konfigurasi template Anda.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </Modal>
 

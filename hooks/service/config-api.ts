@@ -86,11 +86,15 @@ async function configFetch<T>(
 export interface GroupConfig {
   id: string;
   groupId: string;
+  group_id?: string;
   name: string;
   isEnabled: boolean;
+  is_enabled?: boolean;
   keywords: string[];
   createdAt: string;
+  created_at?: string;
   updatedAt: string;
+  updated_at?: string;
 }
 
 export interface CreateGroupPayload {
@@ -201,6 +205,24 @@ export interface TemplateListFilters {
   search?: string;
 }
 
+export interface RoutingTestPayload {
+  groupId: string;
+  textContent: string;
+}
+
+export interface RoutingTestTemplatePreview {
+  id: string;
+  name: string;
+  parserMode: string;
+  waKeywordHint?: string | null;
+}
+
+export interface RoutingTestResponse {
+  allowed: boolean;
+  groupConfigId: string | null;
+  template: RoutingTestTemplatePreview | null;
+}
+
 // ---------------------------------------------------------------------------
 // Types — AI Models
 // ---------------------------------------------------------------------------
@@ -219,11 +241,15 @@ export interface AiModel {
 // Helper to build query string
 // ---------------------------------------------------------------------------
 
-function buildQuery(params: Record<string, string | number | undefined>): string {
+function buildQuery(
+  params: Record<string, string | number | undefined>,
+): string {
   const parts: string[] = [];
   for (const [key, value] of Object.entries(params)) {
     if (value !== undefined && value !== "" && value !== "all") {
-      parts.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
+      parts.push(
+        `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`,
+      );
     }
   }
   return parts.length > 0 ? `?${parts.join("&")}` : "";
@@ -242,7 +268,8 @@ export const configKeys = {
   // For queries — includes filters in key for per-filter caching
   templates: (filters?: TemplateListFilters) =>
     [...configKeys.all, "templates", "list", filters] as const,
-  template: (id: string) => [...configKeys.all, "templates", "detail", id] as const,
+  template: (id: string) =>
+    [...configKeys.all, "templates", "detail", id] as const,
   aiModels: () => [...configKeys.all, "ai-models"] as const,
 };
 
@@ -333,6 +360,13 @@ export function deleteTemplate(id: string) {
   });
 }
 
+export function testRouting(payload: RoutingTestPayload) {
+  return configFetch<RoutingTestResponse>("/config/routing/test", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
 // ---------------------------------------------------------------------------
 // API functions — AI Models
 // ---------------------------------------------------------------------------
@@ -345,9 +379,7 @@ export function getAiModels() {
 // React Query hooks — Groups
 // ---------------------------------------------------------------------------
 
-export function useGroups(
-  options?: Partial<UseQueryOptions<GroupConfig[]>>,
-) {
+export function useGroups(options?: Partial<UseQueryOptions<GroupConfig[]>>) {
   return useQuery({
     queryKey: configKeys.groups(),
     queryFn: () => getGroups(),
@@ -369,12 +401,23 @@ export function useCreateGroup(
 }
 
 export function useUpdateGroup(
-  options?: Partial<UseMutationOptions<GroupConfig, Error, { id: string; payload: UpdateGroupPayload }>>,
+  options?: Partial<
+    UseMutationOptions<
+      GroupConfig,
+      Error,
+      { id: string; payload: UpdateGroupPayload }
+    >
+  >,
 ) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: UpdateGroupPayload }) =>
-      updateGroup(id, payload),
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: UpdateGroupPayload;
+    }) => updateGroup(id, payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: configKeys.groups() });
     },
@@ -436,12 +479,23 @@ export function useCreateTemplate(
 }
 
 export function useUpdateTemplate(
-  options?: Partial<UseMutationOptions<Template, Error, { id: string; payload: UpdateTemplatePayload }>>,
+  options?: Partial<
+    UseMutationOptions<
+      Template,
+      Error,
+      { id: string; payload: UpdateTemplatePayload }
+    >
+  >,
 ) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: UpdateTemplatePayload }) =>
-      updateTemplate(id, payload),
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: UpdateTemplatePayload;
+    }) => updateTemplate(id, payload),
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: configKeys._templatesBase() });
       qc.invalidateQueries({ queryKey: configKeys.template(variables.id) });
@@ -499,6 +553,17 @@ export function useDeleteTemplate(
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: configKeys._templatesBase() });
     },
+    ...options,
+  });
+}
+
+export function useTestRouting(
+  options?: Partial<
+    UseMutationOptions<RoutingTestResponse, Error, RoutingTestPayload>
+  >,
+) {
+  return useMutation({
+    mutationFn: (payload: RoutingTestPayload) => testRouting(payload),
     ...options,
   });
 }

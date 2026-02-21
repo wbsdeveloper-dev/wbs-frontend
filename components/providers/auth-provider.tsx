@@ -1,9 +1,9 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { login as loginApi, logout as logoutApi, refreshAccessToken, getCurrentUser } from "@/hooks/service/auth-api";
-import { setTokens, getAccessToken, clearTokens, isAuthenticated } from "@/lib/auth";
+import { setTokens, clearTokens, isAuthenticated, getTimeUntilExpiry } from "@/lib/auth";
 import type { UserProfile } from "@/hooks/service/auth-api";
 
 interface AuthContextType {
@@ -22,13 +22,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuth, setIsAuth] = useState(false);
+  const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Check authentication status on mount
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const token = getAccessToken();
-        if (token) {
+        if (isAuthenticated()) {
           setIsAuth(true);
           // Fetch user profile
           const userProfile = await getCurrentUser();
@@ -47,32 +47,79 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     checkAuth();
   }, []);
 
-  // Set up token refresh interval
+  // Set up dynamic token refresh based on actual token expiration
   useEffect(() => {
     if (!isAuth) return;
 
-    const refreshInterval = setInterval(async () => {
+    const scheduleNextRefresh = () => {
+      // Clear any existing timeout
+      if (refreshTimeoutRef.current) {
+        clearTimeout(refreshTimeoutRef.current);
+      }
+
+      const timeUntilExpiry = getTimeUntilExpiry();
+
+      if (timeUntilExpiry === null) {
+        // No expiry info, use default 4-minute refresh
+        refreshTimeoutRef.current = setTimeout(() => attemptRefresh(), 4 * 60 * 1000);
+        return;
+      }
+
+      if (timeUntilExpiry <= 0) {
+        // Token already expired, refresh immediately
+        attemptRefresh();
+        return;
+      }
+
+      // Refresh at 80% of token lifetime to provide buffer
+      const refreshDelay = Math.floor(timeUntilExpiry * 0.8);
+      refreshTimeoutRef.current = setTimeout(() => attemptRefresh(), refreshDelay);
+    };
+
+    const attemptRefresh = async (retryCount = 0) => {
+      const MAX_RETRIES = 2;
+
       try {
-        await refreshAccessToken();
+        const data = await refreshAccessToken();
+        setTokens(data.accessToken, data.refreshToken, data.expiresIn);
+        // Schedule next refresh based on new token expiry
+        scheduleNextRefresh();
       } catch (error) {
         console.error("Token refresh failed:", error);
-        await logout();
+        if (retryCount < MAX_RETRIES) {
+          // Retry after 5 seconds with exponential backoff
+          const backoffDelay = 5000 * Math.pow(2, retryCount);
+          setTimeout(() => attemptRefresh(retryCount + 1), backoffDelay);
+        } else {
+          // Max retries reached, logout
+          clearTokens();
+          setUser(null);
+          setIsAuth(false);
+          router.push("/auth/login");
+        }
       }
-    }, 4 * 60 * 1000); // Refresh every 4 minutes (before typical 5-minute expiration)
+    };
 
-    return () => clearInterval(refreshInterval);
-  }, [isAuth]);
+    // Initial schedule
+    scheduleNextRefresh();
+
+    return () => {
+      if (refreshTimeoutRef.current) {
+        clearTimeout(refreshTimeoutRef.current);
+      }
+    };
+  }, [isAuth, router]);
 
   const login = useCallback(async (email: string, password: string) => {
     try {
       const data = await loginApi(email, password);
-      setTokens(data.accessToken, data.refreshToken);
+      setTokens(data.accessToken, data.refreshToken, data.expiresIn);
       setIsAuth(true);
-      
+
       // Fetch user profile after successful login
       const userProfile = await getCurrentUser();
       setUser(userProfile);
-      
+
       router.push("/landingpage");
     } catch (error) {
       console.error("Login failed:", error);
@@ -99,7 +146,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refresh = useCallback(async () => {
     try {
       const data = await refreshAccessToken();
-      setTokens(data.accessToken, data.refreshToken);
+      setTokens(data.accessToken, data.refreshToken, data.expiresIn);
       setIsAuth(true);
     } catch (error) {
       console.error("Token refresh failed:", error);
