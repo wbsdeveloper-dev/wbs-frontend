@@ -1,10 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Eye, EyeOff, LogIn, Loader2, AlertCircle } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/providers/auth-provider";
+
+const REMEMBER_ME_KEY = "wbs_remember_me";
+const SAVED_EMAIL_KEY = "wbs_saved_email";
+const SAVED_PASSWORD_KEY = "wbs_saved_password";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -15,11 +19,43 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [rememberMe, setRememberMe] = useState(false);
+
+  // Load saved credentials from localStorage on mount
+  useEffect(() => {
+    try {
+      const savedRememberMe = localStorage.getItem(REMEMBER_ME_KEY);
+      if (savedRememberMe === "true") {
+        const savedEmail = localStorage.getItem(SAVED_EMAIL_KEY) || "";
+        const savedPassword = localStorage.getItem(SAVED_PASSWORD_KEY) || "";
+        setEmail(savedEmail);
+        setPassword(savedPassword);
+        setRememberMe(true);
+      }
+    } catch {
+      // localStorage not available (e.g. SSR), ignore
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
+
+    // Save or clear credentials based on rememberMe
+    try {
+      if (rememberMe) {
+        localStorage.setItem(REMEMBER_ME_KEY, "true");
+        localStorage.setItem(SAVED_EMAIL_KEY, email);
+        localStorage.setItem(SAVED_PASSWORD_KEY, password);
+      } else {
+        localStorage.removeItem(REMEMBER_ME_KEY);
+        localStorage.removeItem(SAVED_EMAIL_KEY);
+        localStorage.removeItem(SAVED_PASSWORD_KEY);
+      }
+    } catch {
+      // localStorage not available, ignore
+    }
 
     try {
       await login(email, password);
@@ -142,6 +178,8 @@ export default function LoginPage() {
                 <label className="flex items-center gap-2 cursor-pointer group">
                   <input
                     type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
                     className="w-4 h-4 rounded border-gray-300 text-[#14a2bb] focus:ring-[#14a2bb] cursor-pointer"
                   />
                   <span className="text-gray-600 group-hover:text-gray-800 transition-colors">
