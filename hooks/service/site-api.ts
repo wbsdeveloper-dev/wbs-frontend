@@ -120,6 +120,7 @@ export interface Site {
   name: string;
   site_type: "PEMBANGKIT" | "PEMASOK";
   region: string;
+  capacity?: number;
   pembangkit_id?: string;
   pemasok_id?: string;
   lat?: number;
@@ -134,6 +135,7 @@ export interface CreateSitePayload {
   name: string;
   site_type: "PEMBANGKIT" | "PEMASOK";
   region: string;
+  capacity?: number;
   pembangkit_id?: string;
   pemasok_id?: string;
   lat?: number;
@@ -145,6 +147,7 @@ export interface UpdateSitePayload {
   name?: string;
   site_type?: "PEMBANGKIT" | "PEMASOK";
   region?: string;
+  capacity?: number;
   pembangkit_id?: string;
   pemasok_id?: string;
   lat?: number;
@@ -226,11 +229,15 @@ export interface CreateMappingPayload {
 // Helper to build query string
 // ---------------------------------------------------------------------------
 
-function buildQuery(params: Record<string, string | number | boolean | undefined>): string {
+function buildQuery(
+  params: Record<string, string | number | boolean | undefined>,
+): string {
   const parts: string[] = [];
   for (const [key, value] of Object.entries(params)) {
     if (value !== undefined && value !== "" && value !== "all") {
-      parts.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
+      parts.push(
+        `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`,
+      );
     }
   }
   return parts.length > 0 ? `?${parts.join("&")}` : "";
@@ -246,9 +253,11 @@ export const siteKeys = {
   sites: (filters?: { type?: string; region?: string; search?: string }) =>
     [...siteKeys.all, "list", filters] as const,
   site: (id: string) => [...siteKeys.all, "detail", id] as const,
-  relations: (active?: boolean) => [...siteKeys.all, "relations", active] as const,
+  relations: (active?: boolean) =>
+    [...siteKeys.all, "relations", active] as const,
   relation: (id: string) => [...siteKeys.all, "relations", id] as const,
-  mappings: (sourceType?: string) => [...siteKeys.all, "mappings", sourceType] as const,
+  mappings: (sourceType?: string) =>
+    [...siteKeys.all, "mappings", sourceType] as const,
 };
 
 // ---------------------------------------------------------------------------
@@ -263,7 +272,11 @@ export function getDropdowns() {
 // API functions — Sites
 // ---------------------------------------------------------------------------
 
-export function getSites(filters?: { type?: string; region?: string; search?: string }) {
+export function getSites(filters?: {
+  type?: string;
+  region?: string;
+  search?: string;
+}) {
   const query = buildQuery({
     type: filters?.type,
     region: filters?.region,
@@ -349,9 +362,7 @@ export function createMapping(payload: CreateMappingPayload) {
 // React Query hooks — Dropdowns
 // ---------------------------------------------------------------------------
 
-export function useDropdowns(
-  options?: Partial<UseQueryOptions<DropdownData>>,
-) {
+export function useDropdowns(options?: Partial<UseQueryOptions<DropdownData>>) {
   return useQuery({
     queryKey: siteKeys.dropdowns(),
     queryFn: () => getDropdowns(),
@@ -364,7 +375,12 @@ export function useDropdowns(
 // ---------------------------------------------------------------------------
 
 export function useSites(
-  filters?: { type?: string; region?: string; search?: string },
+  filters?: {
+    type?: string;
+    region?: string;
+    search?: string;
+    capacity?: string;
+  },
   options?: Partial<UseQueryOptions<Site[]>>,
 ) {
   return useQuery({
@@ -374,10 +390,7 @@ export function useSites(
   });
 }
 
-export function useSite(
-  id: string,
-  options?: Partial<UseQueryOptions<Site>>,
-) {
+export function useSite(id: string, options?: Partial<UseQueryOptions<Site>>) {
   return useQuery({
     queryKey: siteKeys.site(id),
     queryFn: () => getSite(id),
@@ -390,28 +403,32 @@ export function useCreateSite(
   options?: Partial<UseMutationOptions<Site, Error, CreateSitePayload>>,
 ) {
   const qc = useQueryClient();
+  const { onSuccess: externalOnSuccess, ...restOptions } = options || {};
   return useMutation({
     mutationFn: (payload: CreateSitePayload) => createSite(payload),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: siteKeys.sites() });
-      qc.invalidateQueries({ queryKey: siteKeys.dropdowns() });
+    onSuccess: (...args) => {
+      qc.invalidateQueries({ queryKey: siteKeys.all });
+      externalOnSuccess?.(...args);
     },
-    ...options,
+    ...restOptions,
   });
 }
 
 export function useUpdateSite(
-  options?: Partial<UseMutationOptions<Site, Error, { id: string; payload: UpdateSitePayload }>>,
+  options?: Partial<
+    UseMutationOptions<Site, Error, { id: string; payload: UpdateSitePayload }>
+  >,
 ) {
   const qc = useQueryClient();
+  const { onSuccess: externalOnSuccess, ...restOptions } = options || {};
   return useMutation({
     mutationFn: ({ id, payload }: { id: string; payload: UpdateSitePayload }) =>
       updateSite(id, payload),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: siteKeys.sites() });
-      qc.invalidateQueries({ queryKey: siteKeys.dropdowns() });
+    onSuccess: (...args) => {
+      qc.invalidateQueries({ queryKey: siteKeys.all });
+      externalOnSuccess?.(...args);
     },
-    ...options,
+    ...restOptions,
   });
 }
 
@@ -457,7 +474,9 @@ export function useRelation(
 }
 
 export function useCreateRelation(
-  options?: Partial<UseMutationOptions<SiteRelation, Error, CreateRelationPayload>>,
+  options?: Partial<
+    UseMutationOptions<SiteRelation, Error, CreateRelationPayload>
+  >,
 ) {
   const qc = useQueryClient();
   return useMutation({
@@ -470,12 +489,23 @@ export function useCreateRelation(
 }
 
 export function useUpdateRelation(
-  options?: Partial<UseMutationOptions<SiteRelation, Error, { id: string; payload: UpdateRelationPayload }>>,
+  options?: Partial<
+    UseMutationOptions<
+      SiteRelation,
+      Error,
+      { id: string; payload: UpdateRelationPayload }
+    >
+  >,
 ) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: UpdateRelationPayload }) =>
-      updateRelation(id, payload),
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: UpdateRelationPayload;
+    }) => updateRelation(id, payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: siteKeys.relations() });
     },
@@ -512,7 +542,9 @@ export function useMappings(
 }
 
 export function useCreateMapping(
-  options?: Partial<UseMutationOptions<SiteMapping, Error, CreateMappingPayload>>,
+  options?: Partial<
+    UseMutationOptions<SiteMapping, Error, CreateMappingPayload>
+  >,
 ) {
   const qc = useQueryClient();
   return useMutation({

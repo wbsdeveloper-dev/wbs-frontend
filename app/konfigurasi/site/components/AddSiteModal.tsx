@@ -18,7 +18,12 @@ interface AddSiteModalProps {
   editingId?: string | null;
 }
 
-export function AddSiteModal({ open, onClose, onSuccess, editingId }: AddSiteModalProps) {
+export function AddSiteModal({
+  open,
+  onClose,
+  onSuccess,
+  editingId,
+}: AddSiteModalProps) {
   const { data: dropdowns, isLoading: isLoadingDropdowns } = useDropdowns();
   const createSiteMutation = useCreateSite({
     onSuccess: () => {
@@ -40,6 +45,7 @@ export function AddSiteModal({ open, onClose, onSuccess, editingId }: AddSiteMod
     name: "",
     site_type: "PEMBANGKIT",
     region: "",
+    capacity: undefined,
   });
 
   const [selectedPlant, setSelectedPlant] = useState<string | null>(null);
@@ -53,6 +59,7 @@ export function AddSiteModal({ open, onClose, onSuccess, editingId }: AddSiteMod
       name: "",
       site_type: "PEMBANGKIT",
       region: "",
+      capacity: undefined,
     });
     setSelectedPlant(null);
     setSelectedSupplier(null);
@@ -72,6 +79,7 @@ export function AddSiteModal({ open, onClose, onSuccess, editingId }: AddSiteMod
         name: editingSite.name,
         site_type: editingSite.site_type,
         region: editingSite.region,
+        capacity: editingSite.capacity ?? undefined,
       });
       setSelectedPlant(editingSite.pembangkit_id || null);
       setSelectedSupplier(editingSite.pemasok_id || null);
@@ -109,6 +117,7 @@ export function AddSiteModal({ open, onClose, onSuccess, editingId }: AddSiteMod
       name: formData.name,
       site_type: formData.site_type,
       region: formData.region,
+      capacity: formData.capacity,
     };
 
     if (formData.site_type === "PEMBANGKIT" && selectedPlant) {
@@ -143,14 +152,16 @@ export function AddSiteModal({ open, onClose, onSuccess, editingId }: AddSiteMod
   };
 
   // Filter plants based on search
-  const filteredPlants = dropdowns?.plants.filter((plant) =>
-    plant.name.toLowerCase().includes(plantSearch.toLowerCase())
-  ) || [];
+  const filteredPlants =
+    dropdowns?.plants.filter((plant) =>
+      plant.name.toLowerCase().includes(plantSearch.toLowerCase()),
+    ) || [];
 
   // Filter suppliers based on search
-  const filteredSuppliers = dropdowns?.suppliers.filter((supplier) =>
-    supplier.name.toLowerCase().includes(supplierSearch.toLowerCase())
-  ) || [];
+  const filteredSuppliers =
+    dropdowns?.suppliers.filter((supplier) =>
+      supplier.name.toLowerCase().includes(supplierSearch.toLowerCase()),
+    ) || [];
 
   if (!open) return null;
 
@@ -182,7 +193,9 @@ export function AddSiteModal({ open, onClose, onSuccess, editingId }: AddSiteMod
             </label>
             <select
               value={formData.site_type}
-              onChange={(e) => handleSiteTypeChange(e.target.value as "PEMBANGKIT" | "PEMASOK")}
+              onChange={(e) =>
+                handleSiteTypeChange(e.target.value as "PEMBANGKIT" | "PEMASOK")
+              }
               className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white transition-all duration-200"
             >
               <option value="PEMBANGKIT">Pembangkit</option>
@@ -198,10 +211,14 @@ export function AddSiteModal({ open, onClose, onSuccess, editingId }: AddSiteMod
             <input
               type="text"
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, name: e.target.value })
+              }
               placeholder="Masukkan nama site"
               className={`w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200 ${
-                errors.name ? "border-red-300 focus:ring-red-500" : "border-gray-300"
+                errors.name
+                  ? "border-red-300 focus:ring-red-500"
+                  : "border-gray-300"
               }`}
             />
             {errors.name && (
@@ -217,10 +234,14 @@ export function AddSiteModal({ open, onClose, onSuccess, editingId }: AddSiteMod
             <input
               type="text"
               value={formData.region}
-              onChange={(e) => setFormData({ ...formData, region: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, region: e.target.value })
+              }
               placeholder="Masukkan region"
               className={`w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200 ${
-                errors.region ? "border-red-300 focus:ring-red-500" : "border-gray-300"
+                errors.region
+                  ? "border-red-300 focus:ring-red-500"
+                  : "border-gray-300"
               }`}
             />
             {errors.region && (
@@ -262,7 +283,9 @@ export function AddSiteModal({ open, onClose, onSuccess, editingId }: AddSiteMod
                 </select>
               )}
               {errors.pembangkit_id && (
-                <p className="text-xs text-red-600 mt-1">{errors.pembangkit_id}</p>
+                <p className="text-xs text-red-600 mt-1">
+                  {errors.pembangkit_id}
+                </p>
               )}
             </div>
           )}
@@ -305,6 +328,29 @@ export function AddSiteModal({ open, onClose, onSuccess, editingId }: AddSiteMod
               )}
             </div>
           )}
+
+          {/* Capacity */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Kapasitas (MW)
+            </label>
+            <input
+              type="number"
+              value={formData.capacity ?? ""}
+              onChange={(e) =>
+                setFormData({ ...formData, capacity: Number(e.target.value) })
+              }
+              placeholder="Masukkan kapasitas"
+              className={`w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200 ${
+                errors.capacity
+                  ? "border-red-300 focus:ring-red-500"
+                  : "border-gray-300"
+              }`}
+            />
+            {errors.capacity && (
+              <p className="text-xs text-red-600 mt-1">{errors.capacity}</p>
+            )}
+          </div>
 
           {/* Latitude */}
           <div>
@@ -357,14 +403,18 @@ export function AddSiteModal({ open, onClose, onSuccess, editingId }: AddSiteMod
               onChange={(e) =>
                 setFormData({
                   ...formData,
-                  conversion_factor: e.target.value ? parseFloat(e.target.value) : undefined,
+                  conversion_factor: e.target.value
+                    ? parseFloat(e.target.value)
+                    : undefined,
                 })
               }
               step="any"
               placeholder="1000"
               className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200"
             />
-            <p className="text-xs text-gray-500 mt-1">Opsional: Faktor konversi untuk satuan</p>
+            <p className="text-xs text-gray-500 mt-1">
+              Opsional: Faktor konversi untuk satuan
+            </p>
           </div>
         </form>
 
@@ -379,10 +429,14 @@ export function AddSiteModal({ open, onClose, onSuccess, editingId }: AddSiteMod
           </button>
           <button
             onClick={handleSubmit}
-            disabled={createSiteMutation.isPending || updateSiteMutation.isPending}
+            disabled={
+              createSiteMutation.isPending || updateSiteMutation.isPending
+            }
             className="px-4 py-2.5 text-sm font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95 disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
-            {(createSiteMutation.isPending || updateSiteMutation.isPending) ? "Menyimpan..." : "Simpan"}
+            {createSiteMutation.isPending || updateSiteMutation.isPending
+              ? "Menyimpan..."
+              : "Simpan"}
           </button>
         </div>
       </div>

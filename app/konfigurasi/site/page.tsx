@@ -29,8 +29,7 @@ export default function SitePage() {
   const queryClient = useQueryClient();
 
   const handleAddSiteSuccess = () => {
-    queryClient.invalidateQueries({ queryKey: siteKeys.sites() });
-    queryClient.invalidateQueries({ queryKey: siteKeys.dropdowns() });
+    queryClient.invalidateQueries({ queryKey: siteKeys.all });
   };
 
   const handleAddRelationSuccess = () => {
