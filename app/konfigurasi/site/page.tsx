@@ -14,7 +14,7 @@ import { siteKeys } from "@/hooks/service/site-api";
 
 const tabs = [
   { label: "Daftar Site", icon: MapPin },
-  { label: "Relasi Operasional", icon: ArrowRightLeft },
+  { label: "Relasi Pemasok - Pembangkit", icon: ArrowRightLeft },
   { label: "Peta Lokasi", icon: Map },
 ];
 
@@ -23,7 +23,9 @@ export default function SitePage() {
   const [addSiteModalOpen, setAddSiteModalOpen] = useState(false);
   const [addRelationModalOpen, setAddRelationModalOpen] = useState(false);
   const [editingSiteId, setEditingSiteId] = useState<string | null>(null);
-  const [editingRelationId, setEditingRelationId] = useState<string | null>(null);
+  const [editingRelationId, setEditingRelationId] = useState<string | null>(
+    null,
+  );
   const queryClient = useQueryClient();
 
   const handleAddSiteSuccess = () => {
