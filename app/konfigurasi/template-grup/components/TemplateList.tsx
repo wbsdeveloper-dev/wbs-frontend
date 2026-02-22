@@ -113,12 +113,17 @@ export default function TemplateList({
             </div>
 
             {/* Badges */}
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex flex-wrap items-center gap-2 mb-2">
               {getScopeBadge(template.scope)}
               {getStatusBadge(template.status)}
               {template.isDefault && (
                 <span className="px-2 py-0.5 text-xs font-medium bg-[#115d72]/10 text-[#115d72] rounded-full">
                   Default
+                </span>
+              )}
+              {template.groupConfigId && (
+                <span className="px-2 py-0.5 text-xs font-medium bg-indigo-100 text-indigo-700 rounded-full">
+                  Group Mapped
                 </span>
               )}
             </div>
