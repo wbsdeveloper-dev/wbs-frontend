@@ -5,6 +5,7 @@ import {
   botKeys,
   getGroups,
   updateEnabledGroups,
+  syncBotToBackend,
   type GroupItem,
 } from "./service/bot-api";
 
@@ -23,6 +24,17 @@ export function useUpdateGroups(host: string) {
     mutationFn: (enabledGroupIds: string[]) =>
       updateEnabledGroups(host, enabledGroupIds),
     onSuccess: () => {
+      qc.invalidateQueries({ queryKey: botKeys.groups(host) });
+    },
+  });
+}
+
+export function useSyncBotToBackend(host: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => syncBotToBackend(host),
+    onSuccess: () => {
+      // Refresh groups after sync
       qc.invalidateQueries({ queryKey: botKeys.groups(host) });
     },
   });

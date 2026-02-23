@@ -592,13 +592,13 @@ export function RelasiOperasionalTable({ onEdit, onDelete }: SiteTableProps) {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Site Sumber
+                  Sumber
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   Jenis Relasi
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Site Tujuan
+                  Tujuan
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   Komoditas
