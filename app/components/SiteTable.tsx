@@ -32,14 +32,12 @@ const StatusBadge = ({
   isEnabled: boolean;
 }) => (
   <span
-    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
-      isEnabled ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"
-    }`}
+    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${isEnabled ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"
+      }`}
   >
     <span
-      className={`w-1.5 h-1.5 rounded-full ${
-        isEnabled ? "bg-green-500" : "bg-red-500"
-      }`}
+      className={`w-1.5 h-1.5 rounded-full ${isEnabled ? "bg-green-500" : "bg-red-500"
+        }`}
     />
     {isEnabled ? "Aktif" : "Nonaktif"}
   </span>

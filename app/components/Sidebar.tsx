@@ -81,7 +81,7 @@ export default function Sidebar() {
         { title: "Manajemen Site", path: "/konfigurasi/site" },
         { title: "Kontrak & Dokumen", path: "/konfigurasi/kontrak" },
         { title: "Email Ingest", path: "/konfigurasi/email-ingest" },
-        { title: "Template Grup", path: "/konfigurasi/template-grup" },
+        { title: "Template Grup", path: "/konfigurasi/template-grup" }
       ],
     },
     {
@@ -103,7 +103,7 @@ export default function Sidebar() {
 
   const sidebarContent = (isMobile = false) => (
     <>
-      {/* Header */}
+      {/* Header with gradient */}
       <div className="p-5 flex justify-between items-center">
         {isMobile && (
           <button
@@ -115,7 +115,7 @@ export default function Sidebar() {
         )}
         {!isCollapsed && (
           <div className="flex items-center gap-6">
-            <div>
+            <div className="">
               <Image
                 src="/logos/pln-epi.png"
                 alt="PLN logo"
@@ -165,7 +165,7 @@ export default function Sidebar() {
       {/* Decorative line */}
       <div className="mx-4 h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent" />
 
-      {/* User Profile Card */}
+      {/* User Profile Card - Light Style */}
       <div className="px-3 py-3">
         {!isCollapsed || isMobile ? (
           <div className="bg-gray-50 rounded-xl p-2.5 border border-gray-200 flex items-center gap-3">
@@ -220,9 +220,9 @@ export default function Sidebar() {
                       ? setSubMenuOpen(!subMenuOpen)
                       : menu.path && router.push(menu.path)
                   }
-                  className={`${
+                  className={
                     isParentActive || isSubmenuOpen ? menuActive : menuNonActive
-                  } ${isCollapsed && !isMobile ? "justify-center" : ""}`}
+                  }
                 >
                   {Icon && <Icon className="w-5 h-5" />}
                   {(!isCollapsed || isMobile) && (
@@ -251,13 +251,12 @@ export default function Sidebar() {
                           key={idx}
                           onClick={() => router.push(child.path)}
                           className={`flex items-center gap-3 px-3 py-2 text-sm rounded-lg w-full cursor-pointer transition-all duration-200 hover:scale-[1.02]
-                            ${
-                              isChildActive
-                                ? "text-[#115d72] font-semibold bg-[#115d72]/10"
-                                : "text-gray-500 hover:text-[#115d72] hover:bg-gray-100 font-medium"
+                            ${isChildActive
+                              ? "text-[#115d72] font-semibold bg-[#115d72]/10"
+                              : "text-gray-500 hover:text-[#115d72] hover:bg-gray-100 font-medium"
                             }
-                            ${isCollapsed && !isMobile ? "justify-center" : ""}
-                          `}
+                          ${isCollapsed && !isMobile ? "justify-center" : ""}
+                        `}
                         >
                           {child.title}
                         </button>
@@ -320,18 +319,16 @@ export default function Sidebar() {
 
       {/* Mobile sidebar */}
       <aside
-        className={`lg:hidden fixed top-0 left-0 h-full w-72 bg-white z-50 transform transition-transform duration-300 ease-in-out flex flex-col shadow-2xl border-r border-gray-100 ${
-          isMobileOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
+        className={`lg:hidden fixed top-0 left-0 h-full w-72 bg-white z-50 transform transition-transform duration-300 ease-in-out flex flex-col shadow-2xl border-r border-gray-100 ${isMobileOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
       >
         {sidebarContent(true)}
       </aside>
 
       {/* Desktop sidebar */}
       <aside
-        className={`${
-          isCollapsed ? "w-20" : "w-64"
-        } bg-white h-screen hidden lg:flex flex-col transition-[width] duration-300 ease-in-out shadow-lg border-r border-gray-100`}
+        className={`${isCollapsed ? "w-20" : "w-64"
+          } bg-white h-screen hidden lg:flex flex-col transition-[width] duration-300 ease-in-out shadow-lg border-r border-gray-100`}
       >
         {sidebarContent(false)}
       </aside>

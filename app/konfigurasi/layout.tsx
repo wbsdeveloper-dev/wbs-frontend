@@ -31,13 +31,13 @@ export default function KonfigurasiLayout({
     >
       {/* Background gradient matching dashboard theme */}
       <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-gray-50 to-slate-100" />
-      
+
       {/* Subtle pattern overlay */}
       <div className="absolute inset-0 opacity-30">
         <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-[#14a2bb]/5 rounded-full blur-3xl" />
         <div className="absolute bottom-0 left-1/4 w-[400px] h-[400px] bg-[#115d72]/5 rounded-full blur-3xl" />
       </div>
-      
+
       {/* Content */}
       <div className="relative z-10 flex w-full h-full">
         <Sidebar />
