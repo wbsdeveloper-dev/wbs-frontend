@@ -92,14 +92,8 @@ export function AddSiteModal({
     if (!formData.name.trim()) {
       newErrors.name = "Nama site wajib diisi";
     }
-    if (!formData.region.trim()) {
+    if (!formData.region.trim() && formData.site_type != "TRANSPORTIR") {
       newErrors.region = "Region wajib diisi";
-    }
-    if (formData.site_type === "PEMBANGKIT" && !selectedPlant) {
-      newErrors.pembangkit_id = "Pembangkit wajib dipilih";
-    }
-    if (formData.site_type === "PEMASOK" && !selectedSupplier) {
-      newErrors.pemasok_id = "Pemasok wajib dipilih";
     }
 
     setErrors(newErrors);
@@ -120,13 +114,6 @@ export function AddSiteModal({
       capacity: formData.capacity,
     };
 
-    if (formData.site_type === "PEMBANGKIT" && selectedPlant) {
-      payload.pembangkit_id = selectedPlant;
-    }
-    if (formData.site_type === "PEMASOK" && selectedSupplier) {
-      payload.pemasok_id = selectedSupplier;
-    }
-
     // Include lat, long, and conversion_factor from editing site if available
     if (editingSite) {
       payload.lat = editingSite.lat;
@@ -142,7 +129,9 @@ export function AddSiteModal({
     }
   };
 
-  const handleSiteTypeChange = (siteType: "PEMBANGKIT" | "PEMASOK") => {
+  const handleSiteTypeChange = (
+    siteType: "PEMBANGKIT" | "PEMASOK" | "TRANSPORTIR",
+  ) => {
     setFormData({ ...formData, site_type: siteType });
     setSelectedPlant(null);
     setSelectedSupplier(null);
@@ -189,7 +178,7 @@ export function AddSiteModal({
           {/* Site Type Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Jenis Site
+              Jenis
             </label>
             <select
               value={formData.site_type}
@@ -200,13 +189,14 @@ export function AddSiteModal({
             >
               <option value="PEMBANGKIT">Pembangkit</option>
               <option value="PEMASOK">Pemasok</option>
+              <option value="TRANSPORTIR">Transportir</option>
             </select>
           </div>
 
           {/* Site Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Nama Site
+              Nama
             </label>
             <input
               type="text"
@@ -227,130 +217,54 @@ export function AddSiteModal({
           </div>
 
           {/* Region */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Region
-            </label>
-            <input
-              type="text"
-              value={formData.region}
-              onChange={(e) =>
-                setFormData({ ...formData, region: e.target.value })
-              }
-              placeholder="Masukkan region"
-              className={`w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200 ${
-                errors.region
-                  ? "border-red-300 focus:ring-red-500"
-                  : "border-gray-300"
-              }`}
-            />
-            {errors.region && (
-              <p className="text-xs text-red-600 mt-1">{errors.region}</p>
-            )}
-          </div>
 
-          {/* Plant Selection (for PEMBANGKIT) */}
-          {formData.site_type === "PEMBANGKIT" && (
+          {formData.site_type != "TRANSPORTIR" && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Pembangkit
+                Region
               </label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="text"
-                  value={plantSearch}
-                  onChange={(e) => setPlantSearch(e.target.value)}
-                  placeholder="Cari pembangkit..."
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200"
-                />
-              </div>
-              {filteredPlants.length > 0 && (
-                <select
-                  value={selectedPlant || ""}
-                  onChange={(e) => {
-                    setSelectedPlant(e.target.value || null);
-                    setErrors({ ...errors, pembangkit_id: "" });
-                  }}
-                  className="w-full mt-2 px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white transition-all duration-200"
-                >
-                  <option value="">Pilih pembangkit...</option>
-                  {filteredPlants.map((plant) => (
-                    <option key={plant.id} value={plant.id}>
-                      {plant.name}
-                    </option>
-                  ))}
-                </select>
-              )}
-              {errors.pembangkit_id && (
-                <p className="text-xs text-red-600 mt-1">
-                  {errors.pembangkit_id}
-                </p>
+              <input
+                type="text"
+                value={formData.region}
+                onChange={(e) =>
+                  setFormData({ ...formData, region: e.target.value })
+                }
+                placeholder="Masukkan region"
+                className={`w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200 ${
+                  errors.region
+                    ? "border-red-300 focus:ring-red-500"
+                    : "border-gray-300"
+                }`}
+              />
+              {errors.region && (
+                <p className="text-xs text-red-600 mt-1">{errors.region}</p>
               )}
             </div>
           )}
 
-          {/* Supplier Selection (for PEMASOK) */}
-          {formData.site_type === "PEMASOK" && (
+          {formData.site_type != "TRANSPORTIR" && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Pemasok
+                Kapasitas (MW)
               </label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="text"
-                  value={supplierSearch}
-                  onChange={(e) => setSupplierSearch(e.target.value)}
-                  placeholder="Cari pemasok..."
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200"
-                />
-              </div>
-              {filteredSuppliers.length > 0 && (
-                <select
-                  value={selectedSupplier || ""}
-                  onChange={(e) => {
-                    setSelectedSupplier(e.target.value || null);
-                    setErrors({ ...errors, pemasok_id: "" });
-                  }}
-                  className="w-full mt-2 px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white transition-all duration-200"
-                >
-                  <option value="">Pilih pemasok...</option>
-                  {filteredSuppliers.map((supplier) => (
-                    <option key={supplier.id} value={supplier.id}>
-                      {supplier.name}
-                    </option>
-                  ))}
-                </select>
-              )}
-              {errors.pemasok_id && (
-                <p className="text-xs text-red-600 mt-1">{errors.pemasok_id}</p>
+              <input
+                type="number"
+                value={formData.capacity ?? ""}
+                onChange={(e) =>
+                  setFormData({ ...formData, capacity: Number(e.target.value) })
+                }
+                placeholder="Masukkan kapasitas"
+                className={`w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200 ${
+                  errors.capacity
+                    ? "border-red-300 focus:ring-red-500"
+                    : "border-gray-300"
+                }`}
+              />
+              {errors.capacity && (
+                <p className="text-xs text-red-600 mt-1">{errors.capacity}</p>
               )}
             </div>
           )}
-
-          {/* Capacity */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Kapasitas (MW)
-            </label>
-            <input
-              type="number"
-              value={formData.capacity ?? ""}
-              onChange={(e) =>
-                setFormData({ ...formData, capacity: Number(e.target.value) })
-              }
-              placeholder="Masukkan kapasitas"
-              className={`w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200 ${
-                errors.capacity
-                  ? "border-red-300 focus:ring-red-500"
-                  : "border-gray-300"
-              }`}
-            />
-            {errors.capacity && (
-              <p className="text-xs text-red-600 mt-1">{errors.capacity}</p>
-            )}
-          </div>
 
           {/* Latitude */}
           <div>
