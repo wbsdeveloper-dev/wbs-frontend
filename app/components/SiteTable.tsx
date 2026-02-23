@@ -347,6 +347,9 @@ export function DaftarSiteTable({ onEdit, onDelete }: SiteTableProps) {
                   Lokasi
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  Kapasitas
+                </th>
+                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   Status
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
@@ -385,10 +388,15 @@ export function DaftarSiteTable({ onEdit, onDelete }: SiteTableProps) {
                     <td className="px-4 py-3 text-center text-gray-700">
                       {site.site_type === "PEMBANGKIT"
                         ? "Pembangkit"
-                        : "Pemasok"}
+                        : site.site_type === "PEMASOK"
+                          ? "Pemasok"
+                          : "Transportir"}
                     </td>
                     <td className="px-4 py-3 text-center text-gray-700">
                       {site.region}
+                    </td>
+                    <td className="px-4 py-3 text-center text-gray-700">
+                      {site.capacity ? site.capacity + " MW" : "-"}
                     </td>
                     <td className="px-4 py-3 text-center">
                       <StatusBadge

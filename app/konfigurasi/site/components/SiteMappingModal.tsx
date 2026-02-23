@@ -15,9 +15,14 @@ interface SiteMappingModalProps {
   onSuccess: () => void;
 }
 
-export function SiteMappingModal({ open, onClose, onSuccess }: SiteMappingModalProps) {
+export function SiteMappingModal({
+  open,
+  onClose,
+  onSuccess,
+}: SiteMappingModalProps) {
   const { data: dropdowns, isLoading: isLoadingDropdowns } = useDropdowns();
-  const { data: existingMappings, isLoading: isLoadingMappings } = useMappings("WA");
+  const { data: existingMappings, isLoading: isLoadingMappings } =
+    useMappings("WA");
   const createMappingMutation = useCreateMapping({
     onSuccess: () => {
       onSuccess();
@@ -61,7 +66,7 @@ export function SiteMappingModal({ open, onClose, onSuccess }: SiteMappingModalP
     const duplicate = existingMappings?.find(
       (m) =>
         m.source_name.toLowerCase() === formData.source_name.toLowerCase() &&
-        m.source_type === formData.source_type
+        m.source_type === formData.source_type,
     );
     if (duplicate) {
       newErrors.source_name = `Mapping untuk "${formData.source_name}" sudah ada`;
@@ -97,7 +102,9 @@ export function SiteMappingModal({ open, onClose, onSuccess }: SiteMappingModalP
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
           <div className="flex items-center gap-2">
             <MessageSquare className="w-6 h-6 text-[#115d72]" />
-            <h2 className="text-lg font-semibold text-gray-900">Mapping Pesan WhatsApp</h2>
+            <h2 className="text-lg font-semibold text-gray-900">
+              Mapping Pesan WhatsApp
+            </h2>
           </div>
           <button
             onClick={onClose}
@@ -110,8 +117,9 @@ export function SiteMappingModal({ open, onClose, onSuccess }: SiteMappingModalP
         {/* Info Box */}
         <div className="px-6 py-4 bg-[#f0f9ff] border-b border-[#bae6fd]">
           <p className="text-sm text-[#0c4a6e]">
-            Hubungkan nama sumber dari pesan WhatsApp ke site yang sesuai dalam sistem.
-            Mapping ini akan digunakan untuk otomatisasi pemrosesan data.
+            Hubungkan nama sumber dari pesan WhatsApp ke site yang sesuai dalam
+            sistem. Mapping ini akan digunakan untuk otomatisasi pemrosesan
+            data.
           </p>
         </div>
 
@@ -151,13 +159,17 @@ export function SiteMappingModal({ open, onClose, onSuccess }: SiteMappingModalP
               }}
               placeholder="Masukkan nama grup atau pengirim WhatsApp"
               className={`w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200 ${
-                errors.source_name ? "border-red-300 focus:ring-red-500" : "border-gray-300"
+                errors.source_name
+                  ? "border-red-300 focus:ring-red-500"
+                  : "border-gray-300"
               }`}
             />
             {errors.source_name ? (
               <p className="text-xs text-red-600 mt-1">{errors.source_name}</p>
             ) : (
-              <p className="text-xs text-gray-500 mt-1">Contoh: MKG Power, Suralaya Update, dll.</p>
+              <p className="text-xs text-gray-500 mt-1">
+                Contoh: MKG Power, Suralaya Update, dll.
+              </p>
             )}
           </div>
 
@@ -174,18 +186,22 @@ export function SiteMappingModal({ open, onClose, onSuccess }: SiteMappingModalP
               }}
               disabled={isLoadingDropdowns}
               className={`w-full px-4 py-2.5 border rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white transition-all duration-200 ${
-                errors.normalized_site_id ? "border-red-300 focus:ring-red-500" : "border-gray-300"
+                errors.normalized_site_id
+                  ? "border-red-300 focus:ring-red-500"
+                  : "border-gray-300"
               }`}
             >
               <option value="">Cari site untuk dihubungkan...</option>
-              {dropdowns?.sites.map((site) => (
+              {dropdowns?.plants.map((site) => (
                 <option key={site.id} value={site.id}>
                   {site.name}
                 </option>
               ))}
             </select>
             {errors.normalized_site_id && (
-              <p className="text-xs text-red-600 mt-1">{errors.normalized_site_id}</p>
+              <p className="text-xs text-red-600 mt-1">
+                {errors.normalized_site_id}
+              </p>
             )}
           </div>
 
@@ -224,7 +240,9 @@ export function SiteMappingModal({ open, onClose, onSuccess }: SiteMappingModalP
             disabled={createMappingMutation.isPending}
             className="px-4 py-2.5 text-sm font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95 disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
-            {createMappingMutation.isPending ? "Menyimpan..." : "Simpan Mapping"}
+            {createMappingMutation.isPending
+              ? "Menyimpan..."
+              : "Simpan Mapping"}
           </button>
         </div>
       </div>

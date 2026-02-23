@@ -133,7 +133,7 @@ export interface Site {
 
 export interface CreateSitePayload {
   name: string;
-  site_type: "PEMBANGKIT" | "PEMASOK";
+  site_type: "PEMBANGKIT" | "PEMASOK" | "TRANSPORTIR";
   region: string;
   capacity?: number;
   pembangkit_id?: string;
@@ -145,7 +145,7 @@ export interface CreateSitePayload {
 
 export interface UpdateSitePayload {
   name?: string;
-  site_type?: "PEMBANGKIT" | "PEMASOK";
+  site_type?: "PEMBANGKIT" | "PEMASOK" | "TRANSPORTIR";
   region?: string;
   capacity?: number;
   pembangkit_id?: string;
