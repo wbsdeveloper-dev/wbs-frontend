@@ -297,10 +297,14 @@ const CustomTooltip = ({
   active,
   payload,
   label,
+  unit,
+  flowrate,
 }: {
   active?: boolean;
   payload?: TooltipPayload[];
   label?: string;
+  unit?: string;
+  flowrate?: number;
 }) => {
   if (!active || !payload || payload.length === 0) return null;
 
@@ -320,15 +324,17 @@ const CustomTooltip = ({
             </div>
 
             <div className="font-medium w-[150px] text-right">
-              {item.value} MMBTU
+              {item.value} {unit || "MMBTU"}
             </div>
           </div>
         ))}
       </ul>
-      <div className="flex justify-between mt-4">
-        <p>Flowrate</p>
-        <p>80</p>
-      </div>
+      {flowrate !== undefined && flowrate !== null && (
+        <div className="flex justify-between mt-4 pt-4 border-t border-gray-200">
+          <p className="font-medium">Flowrate</p>
+          <p className="font-medium">{flowrate} {unit || "MMBTU"}</p>
+        </div>
+      )}
     </div>
   );
 };
@@ -427,13 +433,20 @@ export default function RealtimeChart({
   }, [chartFlowData]);
 
   // Calculate mean values from API data
-  const apiMeanValues: Record<string, number> = useMemo(() => {
+  const apiMeanValues: Record<string, number | null> = useMemo(() => {
     if (!chartFlowData?.series?.length) return {};
-    const means: Record<string, number> = {};
+    const means: Record<string, number | null> = {};
     chartFlowData.series.forEach((series) => {
       const total = series.dataPoints.reduce((sum, dp) => sum + dp.value, 0);
       means[series.name] = total / (series.dataPoints.length || 1);
     });
+    // Use mean from referenceLines if available
+    if (chartFlowData?.referenceLines?.mean !== null && chartFlowData?.referenceLines?.mean !== undefined) {
+      // If there's only one series, use the mean from referenceLines
+      if (chartFlowData.series.length === 1) {
+        means[chartFlowData.series[0].name] = chartFlowData.referenceLines.mean;
+      }
+    }
     return means;
   }, [chartFlowData]);
 
@@ -465,8 +478,12 @@ export default function RealtimeChart({
   }, [chartFlowData]);
 
   // Reference line values from API
-  const jphValue = chartFlowData?.referenceLines?.jph ?? 34.8;
-  const topValue = chartFlowData?.referenceLines?.top ?? 24.36;
+  const jphValue = chartFlowData?.referenceLines?.jph ?? null;
+  const topValue = chartFlowData?.referenceLines?.top ?? null;
+  
+  // Unit and flowrate from API
+  const unit = chartFlowData?.unit;
+  const flowrate = chartFlowData?.summary?.flowrate;
 
   const submitNote = () => {};
 
@@ -513,7 +530,7 @@ export default function RealtimeChart({
                   <XAxis dataKey="label" />
                   <YAxis />
                   <Legend className="z-0" />
-                  <Tooltip content={<CustomTooltip />} />
+                  <Tooltip content={<CustomTooltip unit={unit} flowrate={flowrate} />} />
                   {chartData.length > 0 &&
                     Object.keys(chartData[0].values).map((key: string) => (
                       <Line
@@ -557,6 +574,7 @@ export default function RealtimeChart({
                           .toLowerCase()
                           .includes(pembangkit.toLowerCase());
                       })
+                      .filter((key) => meanValues[key] !== null)
                       .map((key) => (
                         <ReferenceLine
                           key={`mean-${key}`}
@@ -571,7 +589,7 @@ export default function RealtimeChart({
                         />
                       ))}
                   {/* Garis JPH */}
-                  {jphLineActive && (
+                  {jphLineActive && jphValue !== null && (
                     <ReferenceLine
                       y={jphValue}
                       stroke={"#008BFF"}
@@ -580,7 +598,7 @@ export default function RealtimeChart({
                   )}
 
                   {/* Garis TOP */}
-                  {topLineActive && (
+                  {topLineActive && topValue !== null && (
                     <ReferenceLine
                       y={topValue}
                       stroke={"#08CB00"}
@@ -634,14 +652,46 @@ export default function RealtimeChart({
         </div>
       ) : (
         <div className="lg:col-span-9 lg:pr-6">
-          <div className="flex justify-center items-center text-center mb-6 text-gray-500 text-xl p-4 rounded-lg font-semibold h-[300px] gap-4">
-            <div className="flex justify-center items-center">
-              <Info className="w-8 h-8 text-gray-500" />
+          <div className="flex flex-col justify-center items-center text-center h-[400px] gap-4">
+            {/* Decorative icon with subtle background */}
+            <div className="relative">
+              <div className="absolute inset-0 bg-[#14a2bb]/10 rounded-full blur-xl scale-150" />
+              <div className="relative w-20 h-20 bg-gradient-to-br from-[#14a2bb]/20 to-[#115d72]/10 rounded-2xl flex items-center justify-center border border-[#14a2bb]/20">
+                <Info className="w-10 h-10 text-[#14a2bb]" />
+              </div>
             </div>
-            <p>
-              Mohon pilih {filterType == "Pemasok" ? "Pemasok" : "Pembangkit"}{" "}
-              Terlebih Dahulu
-            </p>
+
+            {/* Main message */}
+            <div className="space-y-2 max-w-sm">
+              <h3 className="text-lg font-semibold text-gray-800">
+                Pilih {filterType === "Pemasok" ? "Pemasok" : "Pembangkit"}
+              </h3>
+              <p className="text-sm text-gray-500 leading-relaxed">
+                Silakan pilih{" "}
+                <span className="font-medium text-[#115d72]">
+                  {filterType === "Pemasok" ? "Pemasok" : "Pembangkit"}
+                </span>{" "}
+                pada panel filter di samping kanan untuk menampilkan grafik
+                penyaluran gas.
+              </p>
+            </div>
+
+            {/* Arrow hint */}
+            <div className="hidden lg:flex items-center gap-2 text-xs text-gray-400 mt-2">
+              <span>Panel filter tersedia di sebelah kanan</span>
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M5 12h14m-7-7 7 7-7 7" />
+              </svg>
+            </div>
           </div>
         </div>
       )}
@@ -724,7 +774,7 @@ export default function RealtimeChart({
                 placeholder="Pilih Pembangkit"
               />
             )}
-            {pembangkit && (
+            {pembangkit && (!pemasok || filterType == "Pembangkit") && (
               <FilterAutocomplete
                 label="Pemasok"
                 options={pemasokOptions}

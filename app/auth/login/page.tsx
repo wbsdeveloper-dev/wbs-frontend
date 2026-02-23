@@ -4,11 +4,11 @@ import { useState } from "react";
 import { Eye, EyeOff, LogIn, Loader2, AlertCircle } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { login } from "@/hooks/service/auth-api";
-import { setTokens } from "@/lib/auth";
+import { useAuth } from "@/components/providers/auth-provider";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -22,9 +22,8 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      const data = await login(email, password);
-      setTokens(data.accessToken, data.refreshToken);
-      router.push("/dashboard/gas");
+      await login(email, password);
+      // Navigation is handled by the auth context
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Login gagal. Silakan coba lagi.",

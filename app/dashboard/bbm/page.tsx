@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import StatCard from "../../components/StatCard";
 import StockBarChart from "../../components/StockBarChart";
 import FuelTypeDonutChart from "../../components/FuelTypeDonutChart";
@@ -11,6 +11,7 @@ import RealtimeChart from "../../components/RealtimeChart";
 import dynamic from "next/dynamic";
 import RealizationChart from "@/app/components/RealizationChart";
 import BBMMonitoringTable from "@/app/components/EditDataTable";
+import { useMonitoringRecords } from "@/hooks/service/monitoring-api";
 
 const Map = dynamic(() => import("../../components/Map"), { ssr: false });
 
@@ -65,12 +66,34 @@ export default function Home() {
   const [tbbm, setTbbm] = useState<string | null>(null);
   const [period, setPeriod] = useState<string | null>(null);
 
+  // Monitoring table state
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  
+  // Get current date for required startDate and endDate
+  const todayDate = new Date().toISOString().split("T")[0];
+  const startDate = todayDate;
+  const endDate = todayDate;
+  
+  const { data: monitoringData, isLoading: isMonitoringLoading } =
+    useMonitoringRecords({ page, limit: pageSize, startDate, endDate });
+
+  const handlePageChange = useCallback(
+    (newPage: number, newPageSize: number) => {
+      setPage(newPage);
+      setPageSize(newPageSize);
+    },
+    [],
+  );
+
   return (
     <div className="flex h-screen bg-gray-50">
       <main className="flex-1 overflow-auto">
         <div className="p-4 md:p-6 lg:p-8">
           <div className="mb-6 md:mb-8">
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Dashboard BBM</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+              Dashboard BBM
+            </h1>
           </div>
 
           <div className="mb-6 md:mb-8">
@@ -113,7 +136,19 @@ export default function Home() {
             </div>
           </div>
           <div>
-            <BBMMonitoringTable />
+            <BBMMonitoringTable
+              records={monitoringData?.records ?? []}
+              pagination={
+                monitoringData?.pagination ?? {
+                  page,
+                  limit: pageSize,
+                  total: 0,
+                  totalPages: 0,
+                }
+              }
+              isLoading={isMonitoringLoading}
+              onPageChange={handlePageChange}
+            />
           </div>
         </div>
       </main>
