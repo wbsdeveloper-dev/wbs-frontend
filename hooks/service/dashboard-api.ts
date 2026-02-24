@@ -5,7 +5,7 @@ import { ApiError, type ApiResponse } from "./bot-api";
 import { getAccessToken } from "@/lib/auth";
 import { useQuery, type UseQueryOptions } from "@tanstack/react-query";
 
-export const DASHBOARD_API_HOST = "http://localhost:3005/api";
+export const DASHBOARD_API_HOST = "http://localhost:3000/api";
 
 // ---------------------------------------------------------------------------
 // Response types
