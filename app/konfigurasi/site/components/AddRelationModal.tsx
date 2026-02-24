@@ -18,7 +18,12 @@ interface AddRelationModalProps {
   editingId?: string | null;
 }
 
-export function AddRelationModal({ open, onClose, onSuccess, editingId }: AddRelationModalProps) {
+export function AddRelationModal({
+  open,
+  onClose,
+  onSuccess,
+  editingId,
+}: AddRelationModalProps) {
   const { data: dropdowns, isLoading: isLoadingDropdowns } = useDropdowns();
   const createRelationMutation = useCreateRelation({
     onSuccess: () => {
@@ -44,8 +49,12 @@ export function AddRelationModal({ open, onClose, onSuccess, editingId }: AddRel
     priority: 1,
   });
 
-  const [selectedSourceSite, setSelectedSourceSite] = useState<string | null>(null);
-  const [selectedTargetSite, setSelectedTargetSite] = useState<string | null>(null);
+  const [selectedSourceSite, setSelectedSourceSite] = useState<string | null>(
+    null,
+  );
+  const [selectedTargetSite, setSelectedTargetSite] = useState<string | null>(
+    null,
+  );
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Load relation data for editing
@@ -89,10 +98,8 @@ export function AddRelationModal({ open, onClose, onSuccess, editingId }: AddRel
       newErrors.target_site_id = "Site tujuan wajib dipilih";
     }
     if (selectedSourceSite === selectedTargetSite) {
-      newErrors.target_site_id = "Site tujuan tidak boleh sama dengan site sumber";
-    }
-    if (!formData.relation_type.trim()) {
-      newErrors.relation_type = "Jenis relasi wajib diisi";
+      newErrors.target_site_id =
+        "Site tujuan tidak boleh sama dengan site sumber";
     }
     if (!formData.commodity.trim()) {
       newErrors.commodity = "Komoditas wajib diisi";
@@ -112,7 +119,7 @@ export function AddRelationModal({ open, onClose, onSuccess, editingId }: AddRel
     const payload: CreateRelationPayload = {
       source_site_id: selectedSourceSite!,
       target_site_id: selectedTargetSite!,
-      relation_type: formData.relation_type,
+      relation_type: "PEMASOK - PEMBANGKIT",
       commodity: formData.commodity,
       priority: formData.priority,
     };
@@ -124,20 +131,7 @@ export function AddRelationModal({ open, onClose, onSuccess, editingId }: AddRel
     }
   };
 
-  const relationTypes = [
-    "MENYUPLAI",
-    "MENGANGKUT",
-    "MENERIMA",
-    "MENDISTRIBUSIKAN",
-  ];
-
-  const commodities = [
-    "Gas",
-    "BBM",
-    "Batubara",
-    "Listrik",
-    "Lainnya",
-  ];
+  const commodities = ["Gas"];
 
   if (!open) return null;
 
@@ -149,7 +143,7 @@ export function AddRelationModal({ open, onClose, onSuccess, editingId }: AddRel
           <div className="flex items-center gap-2">
             <ArrowRightLeft className="w-6 h-6 text-[#115d72]" />
             <h2 className="text-lg font-semibold text-gray-900">
-              {editingId ? "Edit Relasi" : "Tambah Relasi Operasional"}
+              {editingId ? "Edit Relasi" : "Tambah Relasi Pemasok - Pembangkit"}
             </h2>
           </div>
           <button
@@ -177,14 +171,16 @@ export function AddRelationModal({ open, onClose, onSuccess, editingId }: AddRel
               className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white transition-all duration-200"
             >
               <option value="">Cari site sumber...</option>
-              {dropdowns?.sites.map((site) => (
+              {dropdowns?.suppliers.map((site) => (
                 <option key={site.id} value={site.id}>
                   {site.name}
                 </option>
               ))}
             </select>
             {errors.source_site_id && (
-              <p className="text-xs text-red-600 mt-1">{errors.source_site_id}</p>
+              <p className="text-xs text-red-600 mt-1">
+                {errors.source_site_id}
+              </p>
             )}
           </div>
 
@@ -203,39 +199,16 @@ export function AddRelationModal({ open, onClose, onSuccess, editingId }: AddRel
               className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white transition-all duration-200"
             >
               <option value="">Cari site tujuan...</option>
-              {dropdowns?.sites.map((site) => (
+              {dropdowns?.plants.map((site) => (
                 <option key={site.id} value={site.id}>
                   {site.name}
                 </option>
               ))}
             </select>
             {errors.target_site_id && (
-              <p className="text-xs text-red-600 mt-1">{errors.target_site_id}</p>
-            )}
-          </div>
-
-          {/* Relation Type */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Jenis Relasi
-            </label>
-            <select
-              value={formData.relation_type}
-              onChange={(e) => {
-                setFormData({ ...formData, relation_type: e.target.value });
-                setErrors({ ...errors, relation_type: "" });
-              }}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white transition-all duration-200"
-            >
-              <option value="">Pilih jenis relasi...</option>
-              {relationTypes.map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
-            </select>
-            {errors.relation_type && (
-              <p className="text-xs text-red-600 mt-1">{errors.relation_type}</p>
+              <p className="text-xs text-red-600 mt-1">
+                {errors.target_site_id}
+              </p>
             )}
           </div>
 
@@ -282,7 +255,9 @@ export function AddRelationModal({ open, onClose, onSuccess, editingId }: AddRel
               max={100}
               className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200"
             />
-            <p className="text-xs text-gray-500 mt-1">Semakin tinggi angka, semakin prioritas</p>
+            <p className="text-xs text-gray-500 mt-1">
+              Semakin tinggi angka, semakin prioritas
+            </p>
           </div>
         </form>
 
@@ -297,10 +272,16 @@ export function AddRelationModal({ open, onClose, onSuccess, editingId }: AddRel
           </button>
           <button
             onClick={handleSubmit}
-            disabled={createRelationMutation.isPending || updateRelationMutation.isPending}
+            disabled={
+              createRelationMutation.isPending ||
+              updateRelationMutation.isPending
+            }
             className="px-4 py-2.5 text-sm font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95 disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
-            {(createRelationMutation.isPending || updateRelationMutation.isPending) ? "Menyimpan..." : "Simpan"}
+            {createRelationMutation.isPending ||
+            updateRelationMutation.isPending
+              ? "Menyimpan..."
+              : "Simpan"}
           </button>
         </div>
       </div>
