@@ -101,9 +101,6 @@ export function AddRelationModal({
       newErrors.target_site_id =
         "Site tujuan tidak boleh sama dengan site sumber";
     }
-    if (!formData.relation_type.trim()) {
-      newErrors.relation_type = "Jenis relasi wajib diisi";
-    }
     if (!formData.commodity.trim()) {
       newErrors.commodity = "Komoditas wajib diisi";
     }
@@ -122,7 +119,7 @@ export function AddRelationModal({
     const payload: CreateRelationPayload = {
       source_site_id: selectedSourceSite!,
       target_site_id: selectedTargetSite!,
-      relation_type: formData.relation_type,
+      relation_type: "PEMASOK - PEMBANGKIT",
       commodity: formData.commodity,
       priority: formData.priority,
     };
