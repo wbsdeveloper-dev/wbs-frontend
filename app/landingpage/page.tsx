@@ -8,7 +8,7 @@ import { useAuth } from "@/components/providers/auth-provider";
 
 export default function DashboardSelection() {
   const router = useRouter();
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, logout } = useAuth();
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -50,7 +50,7 @@ export default function DashboardSelection() {
       <header className="relative z-10 px-6 py-3 md:px-8 md:py-4">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
           <button
-            onClick={() => router.push("/auth/login")}
+            onClick={() => logout()}
             className="flex items-center gap-2 text-slate-600 hover:text-[#115d72] transition-colors group"
           >
             <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
