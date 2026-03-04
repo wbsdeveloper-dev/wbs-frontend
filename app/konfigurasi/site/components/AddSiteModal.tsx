@@ -46,6 +46,9 @@ export function AddSiteModal({
     site_type: "PEMBANGKIT",
     region: "",
     capacity: undefined,
+    lat: undefined,
+    long: undefined,
+    conversion_factor: undefined,
   });
 
   const [selectedPlant, setSelectedPlant] = useState<string | null>(null);
@@ -60,6 +63,9 @@ export function AddSiteModal({
       site_type: "PEMBANGKIT",
       region: "",
       capacity: undefined,
+      lat: undefined,
+      long: undefined,
+      conversion_factor: undefined,
     });
     setSelectedPlant(null);
     setSelectedSupplier(null);
@@ -80,6 +86,9 @@ export function AddSiteModal({
         site_type: editingSite.site_type,
         region: editingSite.region,
         capacity: editingSite.capacity ?? undefined,
+        lat: editingSite.lat,
+        long: editingSite.long,
+        conversion_factor: editingSite.conversion_factor,
       });
       setSelectedPlant(editingSite.pembangkit_id || null);
       setSelectedSupplier(editingSite.pemasok_id || null);
@@ -112,6 +121,9 @@ export function AddSiteModal({
       site_type: formData.site_type,
       region: formData.region,
       capacity: formData.capacity,
+      lat: formData.lat,
+      long: formData.long,
+      conversion_factor: formData.conversion_factor,
     };
 
     // Include lat, long, and conversion_factor from editing site if available

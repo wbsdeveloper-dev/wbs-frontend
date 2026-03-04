@@ -19,13 +19,18 @@ import {
   Layers,
   X,
   Filter,
+  Loader2,
 } from "lucide-react";
 import FilterAutocomplete from "./FilterAutocomplete";
-import FilterMultiSelect from "./FilterMultiSelect";
+import {
+  useMapLocations,
+  type MapSite,
+  type MapLegend,
+} from "@/hooks/service/dashboard-api";
 
-type LeafletIconPrototype = {
+interface LeafletIconPrototype {
   _getIconUrl?: () => string;
-};
+}
 
 delete (L.Icon.Default.prototype as LeafletIconPrototype)._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -35,644 +40,204 @@ L.Icon.Default.mergeOptions({
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
 
-// Enhanced types
-type Pembangkit = {
-  id: number;
-  name: string;
-  jenis: string;
-  kapasitas: string;
-  position: LatLngTuple;
-  wilayah: string;
-  kepemilikan: string;
-};
-
-type Pemasok = {
-  id: number;
-  name: string;
-  position: LatLngTuple;
-  wilayah: string;
-};
-
-type PipaJalur = {
-  id: number;
-  pemasokId: number;
-  pembangkitId: number;
-  name: string;
-  path: LatLngTuple[];
-};
+// ---------------------------------------------------------------------------
+// Icon helpers
+// ---------------------------------------------------------------------------
 
 const createSoftIcon = (color: string) =>
   L.divIcon({
     className: "",
     html: `
       <div style="
-        background:${color};
-        width:16px;
-        height:16px;
-        border-radius:50%;
-        border:2px solid white;
-        box-shadow:0 0 0 4px ${color}33;
+        background: ${color};
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 3px solid white;
+        box-shadow: 0 0 0 4px ${color}33;
       "></div>
     `,
-    iconSize: [16, 16],
-    iconAnchor: [8, 8],
-    popupAnchor: [0, -8],
+    iconSize: [20, 20],
+    iconAnchor: [10, 10],
+    popupAnchor: [0, -10],
   });
 
-export const pemasokIcon = createSoftIcon("#6FCF97");
-export const pembangkitIcon = createSoftIcon("#F2A65A");
+const buildIcons = (legend: MapLegend): Record<string, L.DivIcon> => {
+  const icons: Record<string, L.DivIcon> = {};
+  legend.siteTypes.forEach((st) => {
+    icons[st.type] = createSoftIcon(st.color);
+  });
+  return icons;
+};
 
-// Enhanced Pemasok Data (15 locations) with wilayah
-const pemasokData: Pemasok[] = [
-  {
-    id: 1,
-    name: "PHE ONWJ",
-    position: [-6.2, 106.8],
-    wilayah: "Jawa Bagian Barat",
-  },
-  {
-    id: 2,
-    name: "Pertamina EP Subang",
-    position: [-6.9175, 107.6191],
-    wilayah: "Jawa Bagian Barat",
-  },
-  {
-    id: 3,
-    name: "ConocoPhillips Corridor",
-    position: [-6.9667, 110.4167],
-    wilayah: "Jawa Tengah",
-  },
-  {
-    id: 4,
-    name: "PGN Surabaya",
-    position: [-7.2575, 112.7521],
-    wilayah: "Jawa Timur",
-  },
-  {
-    id: 5,
-    name: "Medco E&P Lematang",
-    position: [-2.9761, 104.7754],
-    wilayah: "Sumatera Selatan",
-  },
-  {
-    id: 6,
-    name: "ExxonMobil Cepu",
-    position: [-7.1, 111.8],
-    wilayah: "Jawa Timur",
-  },
-  {
-    id: 7,
-    name: "Chevron Riau",
-    position: [1.4, 102.1],
-    wilayah: "Sumatera Tengah",
-  },
-  {
-    id: 8,
-    name: "Santos Madura",
-    position: [-7.0, 113.5],
-    wilayah: "Jawa Timur",
-  },
-  {
-    id: 9,
-    name: "VICO Kalimantan",
-    position: [-0.5, 117.1],
-    wilayah: "Kalimantan",
-  },
-  {
-    id: 10,
-    name: "Star Energy Salak",
-    position: [-6.7, 106.7],
-    wilayah: "Jawa Bagian Barat",
-  },
-  { id: 11, name: "BP Tangguh", position: [-2.8, 132.3], wilayah: "Papua" },
-  {
-    id: 12,
-    name: "Petrochina Jabung",
-    position: [-1.5, 103.5],
-    wilayah: "Jambi",
-  },
-  {
-    id: 13,
-    name: "PetroChina Jambi",
-    position: [-1.6, 103.6],
-    wilayah: "Jambi",
-  },
-  {
-    id: 14,
-    name: "Premier Oil Sumatra",
-    position: [1.2, 97.8],
-    wilayah: "Sumatera Tengah",
-  },
-  {
-    id: 15,
-    name: "Husky CNOOC Madura",
-    position: [-7.1, 113.9],
-    wilayah: "Jawa Timur",
-  },
-];
-
-// Enhanced Pembangkit Data with Kapasitas, Wilayah, and Kepemilikan (20 locations)
-const pembangkitData: Pembangkit[] = [
-  {
-    id: 1,
-    name: "PLTU Suralaya",
-    jenis: "PLTU",
-    kapasitas: "3,400 MW",
-    position: [-5.934, 106.025],
-    wilayah: "Jawa Bagian Barat",
-    kepemilikan: "PLN IP",
-  },
-  {
-    id: 2,
-    name: "PLTA Cirata",
-    jenis: "PLTA",
-    kapasitas: "1,008 MW",
-    position: [-6.729, 107.357],
-    wilayah: "Jawa Bagian Barat",
-    kepemilikan: "PLN IP",
-  },
-  {
-    id: 3,
-    name: "PLTU Paiton",
-    jenis: "PLTU",
-    kapasitas: "4,710 MW",
-    position: [-7.716, 113.56],
-    wilayah: "Jawa Timur",
-    kepemilikan: "IPP",
-  },
-  {
-    id: 4,
-    name: "PLTG Muara Karang",
-    jenis: "PLTG",
-    kapasitas: "900 MW",
-    position: [-6.109, 106.787],
-    wilayah: "Jawa Bagian Barat",
-    kepemilikan: "PLN NP",
-  },
-  {
-    id: 5,
-    name: "PLTA Saguling",
-    jenis: "PLTA",
-    kapasitas: "700 MW",
-    position: [-6.901, 107.328],
-    wilayah: "Jawa Bagian Barat",
-    kepemilikan: "PLN IP",
-  },
-  {
-    id: 6,
-    name: "PLTU Tanjung Jati",
-    jenis: "PLTU",
-    kapasitas: "2,640 MW",
-    position: [-6.432, 110.65],
-    wilayah: "Jawa Tengah",
-    kepemilikan: "IPP",
-  },
-  {
-    id: 7,
-    name: "PLTU Asam Asam",
-    jenis: "PLTU",
-    kapasitas: "230 MW",
-    position: [-3.9, 114.7],
-    wilayah: "Kalimantan",
-    kepemilikan: "PLN",
-  },
-  {
-    id: 8,
-    name: "PLTU Ombilin",
-    jenis: "PLTU",
-    kapasitas: "400 MW",
-    position: [-0.65, 100.75],
-    wilayah: "Sumatera Tengah",
-    kepemilikan: "PLN",
-  },
-  {
-    id: 9,
-    name: "PLTU Barru",
-    jenis: "PLTU",
-    kapasitas: "100 MW",
-    position: [-4.42, 119.62],
-    wilayah: "Sulawesi",
-    kepemilikan: "PLN NP",
-  },
-  {
-    id: 10,
-    name: "PLTG Belawan",
-    jenis: "PLTG",
-    kapasitas: "1,100 MW",
-    position: [3.784, 98.65],
-    wilayah: "Sumatera Tengah",
-    kepemilikan: "PLN",
-  },
-  {
-    id: 11,
-    name: "PLTGU Gresik",
-    jenis: "PLTGU",
-    kapasitas: "2,300 MW",
-    position: [-7.16, 112.65],
-    wilayah: "Jawa Timur",
-    kepemilikan: "PLN IP",
-  },
-  {
-    id: 12,
-    name: "PLTGU Muara Tawar",
-    jenis: "PLTGU",
-    kapasitas: "3,450 MW",
-    position: [-6.2, 107.1],
-    wilayah: "Jawa Bagian Barat",
-    kepemilikan: "PLN IP",
-  },
-  {
-    id: 13,
-    name: "PLTGU Tanjung Priok",
-    jenis: "PLTGU",
-    kapasitas: "1,750 MW",
-    position: [-6.1, 106.87],
-    wilayah: "Jawa Bagian Barat",
-    kepemilikan: "PLN NP",
-  },
-  {
-    id: 14,
-    name: "PLTU Cirebon",
-    jenis: "PLTU",
-    kapasitas: "660 MW",
-    position: [-6.75, 108.55],
-    wilayah: "Jawa Bagian Barat",
-    kepemilikan: "IPP",
-  },
-  {
-    id: 15,
-    name: "PLTU Indramayu",
-    jenis: "PLTU",
-    kapasitas: "990 MW",
-    position: [-6.35, 108.35],
-    wilayah: "Jawa Bagian Barat",
-    kepemilikan: "PLN",
-  },
-  {
-    id: 16,
-    name: "PLTGU Tambak Lorok",
-    jenis: "PLTGU",
-    kapasitas: "1,400 MW",
-    position: [-6.95, 110.45],
-    wilayah: "Jawa Tengah",
-    kepemilikan: "PLN IP",
-  },
-  {
-    id: 17,
-    name: "PLTU Banten",
-    jenis: "PLTU",
-    kapasitas: "670 MW",
-    position: [-6.0, 106.15],
-    wilayah: "Jawa Bagian Barat",
-    kepemilikan: "IPP",
-  },
-  {
-    id: 18,
-    name: "PLTG Grati",
-    jenis: "PLTG",
-    kapasitas: "485 MW",
-    position: [-7.68, 113.25],
-    wilayah: "Jawa Timur",
-    kepemilikan: "PLN NP",
-  },
-  {
-    id: 19,
-    name: "PLTU Pacitan",
-    jenis: "PLTU",
-    kapasitas: "630 MW",
-    position: [-8.15, 111.1],
-    wilayah: "Jawa Timur",
-    kepemilikan: "IPP",
-  },
-  {
-    id: 20,
-    name: "PLTU Lontar",
-    jenis: "PLTU",
-    kapasitas: "945 MW",
-    position: [-6.08, 106.35],
-    wilayah: "Jawa Bagian Barat",
-    kepemilikan: "PLN",
-  },
-];
-
-// Enhanced Routes with multiple connections (20 routes)
-const jalurPipa: PipaJalur[] = [
-  {
-    id: 1,
-    pemasokId: 1,
-    pembangkitId: 4,
-    name: "PHE ONWJ → PLTG Muara Karang",
-    path: [
-      [-6.2, 106.8],
-      [-6.15, 106.79],
-      [-6.109, 106.787],
-    ],
-  },
-  {
-    id: 2,
-    pemasokId: 1,
-    pembangkitId: 13,
-    name: "PHE ONWJ → PLTGU Tanjung Priok",
-    path: [
-      [-6.2, 106.8],
-      [-6.15, 106.85],
-      [-6.1, 106.87],
-    ],
-  },
-  {
-    id: 3,
-    pemasokId: 2,
-    pembangkitId: 2,
-    name: "Pertamina EP Subang → PLTA Cirata",
-    path: [
-      [-6.9175, 107.6191],
-      [-6.85, 107.52],
-      [-6.729, 107.357],
-    ],
-  },
-  {
-    id: 4,
-    pemasokId: 2,
-    pembangkitId: 14,
-    name: "Pertamina EP Subang → PLTU Cirebon",
-    path: [
-      [-6.9175, 107.6191],
-      [-6.85, 108.1],
-      [-6.75, 108.55],
-    ],
-  },
-  {
-    id: 5,
-    pemasokId: 3,
-    pembangkitId: 6,
-    name: "ConocoPhillips → PLTU Tanjung Jati",
-    path: [
-      [-6.9667, 110.4167],
-      [-6.7, 110.5],
-      [-6.432, 110.65],
-    ],
-  },
-  {
-    id: 6,
-    pemasokId: 3,
-    pembangkitId: 16,
-    name: "ConocoPhillips → PLTGU Tambak Lorok",
-    path: [
-      [-6.9667, 110.4167],
-      [-6.96, 110.44],
-      [-6.95, 110.45],
-    ],
-  },
-  {
-    id: 7,
-    pemasokId: 4,
-    pembangkitId: 11,
-    name: "PGN Surabaya → PLTGU Gresik",
-    path: [
-      [-7.2575, 112.7521],
-      [-7.2, 112.7],
-      [-7.16, 112.65],
-    ],
-  },
-  {
-    id: 8,
-    pemasokId: 4,
-    pembangkitId: 3,
-    name: "PGN Surabaya → PLTU Paiton",
-    path: [
-      [-7.2575, 112.7521],
-      [-7.5, 113.1],
-      [-7.716, 113.56],
-    ],
-  },
-  {
-    id: 9,
-    pemasokId: 5,
-    pembangkitId: 8,
-    name: "Medco Lematang → PLTU Ombilin",
-    path: [
-      [-2.9761, 104.7754],
-      [-1.8, 102.8],
-      [-0.65, 100.75],
-    ],
-  },
-  {
-    id: 10,
-    pemasokId: 6,
-    pembangkitId: 3,
-    name: "ExxonMobil Cepu → PLTU Paiton",
-    path: [
-      [-7.1, 111.8],
-      [-7.4, 112.5],
-      [-7.716, 113.56],
-    ],
-  },
-  {
-    id: 11,
-    pemasokId: 6,
-    pembangkitId: 11,
-    name: "ExxonMobil Cepu → PLTGU Gresik",
-    path: [
-      [-7.1, 111.8],
-      [-7.12, 112.2],
-      [-7.16, 112.65],
-    ],
-  },
-  {
-    id: 12,
-    pemasokId: 7,
-    pembangkitId: 8,
-    name: "Chevron Riau → PLTU Ombilin",
-    path: [
-      [1.4, 102.1],
-      [0.5, 101.4],
-      [-0.65, 100.75],
-    ],
-  },
-  {
-    id: 13,
-    pemasokId: 8,
-    pembangkitId: 18,
-    name: "Santos Madura → PLTG Grati",
-    path: [
-      [-7.0, 113.5],
-      [-7.3, 113.35],
-      [-7.68, 113.25],
-    ],
-  },
-  {
-    id: 14,
-    pemasokId: 9,
-    pembangkitId: 7,
-    name: "VICO Kalimantan → PLTU Asam Asam",
-    path: [
-      [-0.5, 117.1],
-      [-2.2, 116.0],
-      [-3.9, 114.7],
-    ],
-  },
-  {
-    id: 15,
-    pemasokId: 10,
-    pembangkitId: 1,
-    name: "Star Energy Salak → PLTU Suralaya",
-    path: [
-      [-6.7, 106.7],
-      [-6.3, 106.4],
-      [-5.934, 106.025],
-    ],
-  },
-  {
-    id: 16,
-    pemasokId: 10,
-    pembangkitId: 20,
-    name: "Star Energy Salak → PLTU Lontar",
-    path: [
-      [-6.7, 106.7],
-      [-6.4, 106.5],
-      [-6.08, 106.35],
-    ],
-  },
-  {
-    id: 17,
-    pemasokId: 14,
-    pembangkitId: 10,
-    name: "Premier Oil → PLTG Belawan",
-    path: [
-      [1.2, 97.8],
-      [2.5, 98.2],
-      [3.784, 98.65],
-    ],
-  },
-  {
-    id: 18,
-    pemasokId: 15,
-    pembangkitId: 3,
-    name: "Husky CNOOC → PLTU Paiton",
-    path: [
-      [-7.1, 113.9],
-      [-7.4, 113.7],
-      [-7.716, 113.56],
-    ],
-  },
-  {
-    id: 19,
-    pemasokId: 15,
-    pembangkitId: 18,
-    name: "Husky CNOOC → PLTG Grati",
-    path: [
-      [-7.1, 113.9],
-      [-7.4, 113.6],
-      [-7.68, 113.25],
-    ],
-  },
-  {
-    id: 20,
-    pemasokId: 1,
-    pembangkitId: 12,
-    name: "PHE ONWJ → PLTGU Muara Tawar",
-    path: [
-      [-6.2, 106.8],
-      [-6.2, 107.0],
-      [-6.2, 107.1],
-    ],
-  },
-];
-
-// Transportir data
-const transportirData = [
-  "PGN (Perusahaan Gas Negara)",
-  "Pertamina Gas",
-  "Medco Energi",
-  "Pertagas Niaga",
-  "Transportir X",
-  "Transportir Y",
-];
-
-// Region/Wilayah options
-const wilayahOptions = [
-  "Jawa Bagian Barat",
-  "Jawa Timur",
-  "Jawa Tengah",
-  "Sumatera Tengah",
-  "Jambi",
-  "Sumatera Selatan",
-  "Kalimantan",
-  "Sulawesi",
-  "Papua",
-];
-
-// Kepemilikan options
-const kepemilikanOptions = ["PLN IP", "PLN NP", "PLN", "IPP"];
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
 
 export default function Map() {
-  const [showPemasok, setShowPemasok] = useState(true);
-  const [showPembangkit, setShowPembangkit] = useState(true);
-  const [showRute, setShowRute] = useState(true);
+  // ---- API data -----------------------------------------------------------
+  const { data, isLoading, isError, error } = useMapLocations();
+
+  // ---- UI state -----------------------------------------------------------
   const [legendExpanded, setLegendExpanded] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false);
+
+  // Visibility toggles per site type
+  const [visibleSiteTypes, setVisibleSiteTypes] = useState<
+    Record<string, boolean>
+  >({
+    PEMBANGKIT: true,
+    PEMASOK: true,
+    TRANSPORTIR: true,
+    TERMINAL: true,
+    HANDOVER_POINT: true,
+  });
+  const [showPipes, setShowPipes] = useState(true);
 
   // Filter states
-  const [selectedWilayah, setSelectedWilayah] = useState<string | null>(null);
+  const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
   const [selectedPemasok, setSelectedPemasok] = useState<string | null>(null);
   const [selectedPembangkit, setSelectedPembangkit] = useState<string | null>(
     null,
   );
-  const [selectedTransportir, setSelectedTransportir] = useState<string | null>(
-    null,
-  );
-  const [selectedKepemilikan, setSelectedKepemilikan] =
-    useState<string[]>(kepemilikanOptions);
-  const [filterOpen, setFilterOpen] = useState(false);
 
-  // Filtered Pemasok Data
-  const filteredPemasok = useMemo(() => {
-    return pemasokData.filter((p) => {
-      // Filter by wilayah
-      if (selectedWilayah && p.wilayah !== selectedWilayah) return false;
-      // Filter by specific pemasok name
-      if (selectedPemasok && p.name !== selectedPemasok) return false;
-      return true;
-    });
-  }, [selectedWilayah, selectedPemasok]);
+  // ---- Derived data -------------------------------------------------------
+  const icons = useMemo(() => {
+    if (!data?.legend) return {} as Record<string, L.DivIcon>;
+    return buildIcons(data.legend);
+  }, [data?.legend]);
 
-  // Filtered Pembangkit Data
-  const filteredPembangkit = useMemo(() => {
-    return pembangkitData.filter((p) => {
-      // Filter by wilayah
-      if (selectedWilayah && p.wilayah !== selectedWilayah) return false;
-      // Filter by specific pembangkit name
-      if (selectedPembangkit && p.name !== selectedPembangkit) return false;
-      // Filter by kepemilikan
+  // Unique region list for filter dropdown
+  const regionOptions = useMemo(() => {
+    if (!data?.sites) return [];
+    return Array.from(new Set(data.sites.map((s) => s.region)))
+      .filter(Boolean)
+      .sort();
+  }, [data?.sites]);
+
+  // Names for autocomplete filters
+  const pemasokNames = useMemo(() => {
+    if (!data?.sites) return [];
+    return data.sites
+      .filter((s) => s.siteType === "PEMASOK")
+      .map((s) => s.name)
+      .sort();
+  }, [data?.sites]);
+
+  const pembangkitNames = useMemo(() => {
+    if (!data?.sites) return [];
+    return data.sites
+      .filter((s) => s.siteType === "PEMBANGKIT")
+      .map((s) => s.name)
+      .sort();
+  }, [data?.sites]);
+
+  // Filtered sites
+  const filteredSites = useMemo(() => {
+    if (!data?.sites) return [];
+    return data.sites.filter((site) => {
+      if (!visibleSiteTypes[site.siteType]) return false;
+      if (selectedRegion && site.region !== selectedRegion) return false;
       if (
-        selectedKepemilikan.length > 0 &&
-        !selectedKepemilikan.includes(p.kepemilikan)
+        selectedPemasok &&
+        site.siteType === "PEMASOK" &&
+        site.name !== selectedPemasok
       )
         return false;
+      if (
+        selectedPembangkit &&
+        site.siteType === "PEMBANGKIT" &&
+        site.name !== selectedPembangkit
+      )
+        return false;
+      // When a specific pemasok is selected, hide non-matching PEMASOK sites
+      if (selectedPemasok && site.siteType !== "PEMASOK") {
+        // Keep pembangkits that are connected through pipes
+      }
       return true;
     });
-  }, [selectedWilayah, selectedPembangkit, selectedKepemilikan]);
+  }, [
+    data?.sites,
+    visibleSiteTypes,
+    selectedRegion,
+    selectedPemasok,
+    selectedPembangkit,
+  ]);
 
-  // Filtered Routes (only show routes connecting visible pemasok and pembangkit)
-  const filteredRoutes = useMemo(() => {
-    const visiblePemasokIds = filteredPemasok.map((p) => p.id);
-    const visiblePembangkitIds = filteredPembangkit.map((p) => p.id);
+  // Filtered pipes – show only if both source and target are visible
+  const filteredPipes = useMemo(() => {
+    if (!data?.pipes || !showPipes) return [];
+    const visibleIds = new Set(filteredSites.map((s) => s.id));
+    return data.pipes.filter(
+      (pipe) =>
+        visibleIds.has(pipe.sourceSiteId) && visibleIds.has(pipe.targetSiteId),
+    );
+  }, [data?.pipes, filteredSites, showPipes]);
 
-    return jalurPipa.filter((jalur) => {
-      return (
-        visiblePemasokIds.includes(jalur.pemasokId) &&
-        visiblePembangkitIds.includes(jalur.pembangkitId)
+  // ---- helpers ------------------------------------------------------------
+  const getSiteTypeLabel = (type: string) =>
+    data?.legend.siteTypes.find((st) => st.type === type)?.label || type;
+
+  const getSiteTypeColor = (type: string) =>
+    data?.legend.siteTypes.find((st) => st.type === type)?.color || "#999999";
+
+  const getPipeTypeColor = (relationType: string) =>
+    data?.legend.pipeTypes.find((pt) => pt.type === relationType)?.color ||
+    "#38BDF8";
+
+  const getSiteById = (id: string): MapSite | undefined =>
+    data?.sites.find((s) => s.id === id);
+
+  const getConnectedSites = (siteId: string): MapSite[] => {
+    if (!data?.pipes || !data?.sites) return [];
+    const connectedIds = data.pipes
+      .filter(
+        (pipe) => pipe.sourceSiteId === siteId || pipe.targetSiteId === siteId,
+      )
+      .map((pipe) =>
+        pipe.sourceSiteId === siteId ? pipe.targetSiteId : pipe.sourceSiteId,
       );
-    });
-  }, [filteredPemasok, filteredPembangkit]);
-
-  // Helper function to get connected pembangkit for a pemasok (using filtered data)
-  const getConnectedPembangkitFiltered = (pemasokId: number): Pembangkit[] => {
-    const connectedIds = filteredRoutes
-      .filter((jalur) => jalur.pemasokId === pemasokId)
-      .map((jalur) => jalur.pembangkitId);
-    return filteredPembangkit.filter((p) => connectedIds.includes(p.id));
+    return data.sites.filter((s) => connectedIds.includes(s.id));
   };
 
+  // Toggle a specific site type visibility
+  const toggleSiteType = (type: string) => {
+    setVisibleSiteTypes((prev) => ({ ...prev, [type]: !prev[type] }));
+  };
+
+  // ---- Loading state ------------------------------------------------------
+  if (isLoading) {
+    return (
+      <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6 mt-4 flex items-center justify-center h-[400px]">
+        <div className="text-center">
+          <Loader2
+            size={32}
+            className="animate-spin text-[#115d72] mx-auto mb-3"
+          />
+          <p className="text-gray-500 text-sm">Memuat peta...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ---- Error state --------------------------------------------------------
+  if (isError || !data) {
+    return (
+      <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6 mt-4 flex items-center justify-center h-[400px]">
+        <div className="text-center">
+          <X size={48} className="text-red-400 mx-auto mb-3" />
+          <p className="text-gray-700 text-sm font-medium mb-1">
+            Gagal Memuat Data Peta
+          </p>
+          <p className="text-gray-500 text-xs">
+            {error instanceof Error ? error.message : "Terjadi kesalahan"}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // ---- Render -------------------------------------------------------------
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6 mt-4 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:divide-x divide-gray-200">
       {/* Map Section */}
@@ -693,104 +258,116 @@ export default function Map() {
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
 
-            {/* PEMASOK MARKERS */}
-            {showPemasok &&
-              filteredPemasok.map((item) => {
-                const connected = getConnectedPembangkitFiltered(item.id);
+            {/* PIPES */}
+            {showPipes &&
+              filteredPipes.map((pipe) => {
+                const source = getSiteById(pipe.sourceSiteId);
+                const target = getSiteById(pipe.targetSiteId);
+                if (!source || !target) return null;
+
                 return (
-                  <Marker
-                    key={`pemasok-${item.id}`}
-                    position={item.position}
-                    icon={pemasokIcon}
+                  <Polyline
+                    key={pipe.id}
+                    positions={[
+                      [source.lat, source.lng] as LatLngTuple,
+                      [target.lat, target.lng] as LatLngTuple,
+                    ]}
+                    pathOptions={{
+                      color: getPipeTypeColor(pipe.relationType),
+                      weight: 3,
+                      opacity: 0.8,
+                      dashArray: "1 5",
+                    }}
                   >
-                    <Popup>
-                      <div className="min-w-[180px]">
-                        <p className="font-semibold text-[#6FCF97] text-sm">
-                          Pemasok
+                    <Tooltip sticky>
+                      <div className="text-xs">
+                        <p className="font-medium">
+                          {source.name} → {target.name}
                         </p>
-                        <p className="text-sm font-medium text-gray-800">
-                          {item.name}
-                        </p>
-                        {connected.length > 0 && (
-                          <div className="mt-2 pt-2 border-t border-gray-200">
-                            <p className="text-xs text-gray-500 mb-1">
-                              Koneksi ke Pembangkit:
-                            </p>
-                            <ul className="text-xs text-gray-700 space-y-0.5">
-                              {connected.map((p) => (
-                                <li
-                                  key={p.id}
-                                  className="flex items-center gap-1"
-                                >
-                                  <span className="w-1.5 h-1.5 rounded-full bg-[#F2A65A]" />
-                                  {p.name}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
+                        <p>Komoditas: {pipe.commodity}</p>
+                        <p>Status: {pipe.status}</p>
                       </div>
-                    </Popup>
-                  </Marker>
+                    </Tooltip>
+                  </Polyline>
                 );
               })}
 
-            {/* PEMBANGKIT MARKERS */}
-            {showPembangkit &&
-              filteredPembangkit.map((item) => (
+            {/* SITE MARKERS */}
+            {filteredSites.map((site) => {
+              const icon = icons[site.siteType];
+              const connected = getConnectedSites(site.id);
+
+              return (
                 <Marker
-                  key={`pembangkit-${item.id}`}
-                  position={item.position}
-                  icon={pembangkitIcon}
+                  key={site.id}
+                  position={[site.lat, site.lng] as LatLngTuple}
+                  icon={icon}
                 >
                   <Popup>
-                    <div className="min-w-[150px]">
-                      <p className="font-semibold text-[#F2A65A] text-sm">
-                        Pembangkit
+                    <div className="min-w-[180px]">
+                      <p
+                        className="font-semibold text-sm"
+                        style={{ color: getSiteTypeColor(site.siteType) }}
+                      >
+                        {getSiteTypeLabel(site.siteType)}
                       </p>
                       <p className="text-sm font-medium text-gray-800">
-                        {item.name}
+                        {site.name}
                       </p>
                       <div className="mt-2 pt-2 border-t border-gray-200 space-y-1">
                         <div className="flex justify-between text-xs">
-                          <span className="text-gray-500">Jenis:</span>
+                          <span className="text-gray-500">Region:</span>
                           <span className="font-medium text-gray-700">
-                            {item.jenis}
+                            {site.region}
                           </span>
                         </div>
+                        {site.siteType === "PEMBANGKIT" && site.capacity && (
+                          <div className="flex justify-between text-xs">
+                            <span className="text-gray-500">Kapasitas:</span>
+                            <span className="font-medium text-[#115d72]">
+                              {parseFloat(site.capacity).toLocaleString()} MW
+                            </span>
+                          </div>
+                        )}
                         <div className="flex justify-between text-xs">
-                          <span className="text-gray-500">Kapasitas:</span>
-                          <span className="font-medium text-[#115d72]">
-                            {item.kapasitas}
+                          <span className="text-gray-500">Koordinat:</span>
+                          <span className="font-medium text-gray-700">
+                            {site.lat?.toFixed(4)}, {site.lng?.toFixed(4)}
                           </span>
                         </div>
                       </div>
+                      {connected.length > 0 && (
+                        <div className="mt-2 pt-2 border-t border-gray-200">
+                          <p className="text-xs text-gray-500 mb-1">Koneksi:</p>
+                          <ul className="text-xs text-gray-700 space-y-0.5">
+                            {connected.map((c) => (
+                              <li
+                                key={c.id}
+                                className="flex items-center gap-1"
+                              >
+                                <span
+                                  className="w-1.5 h-1.5 rounded-full"
+                                  style={{
+                                    backgroundColor: getSiteTypeColor(
+                                      c.siteType,
+                                    ),
+                                  }}
+                                />
+                                {c.name}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
                     </div>
                   </Popup>
                 </Marker>
-              ))}
-
-            {/* ROUTES */}
-            {showRute &&
-              filteredRoutes.map((jalur) => (
-                <Polyline
-                  key={jalur.id}
-                  positions={jalur.path}
-                  pathOptions={{
-                    color: "#38BDF8",
-                    weight: 3,
-                    opacity: 0.8,
-                    dashArray: "1 5",
-                  }}
-                >
-                  <Tooltip sticky>{jalur.name}</Tooltip>
-                </Polyline>
-              ))}
+              );
+            })}
           </MapContainer>
 
           {/* INTERACTIVE LEGEND - Collapsible */}
           <div className="absolute bottom-2 left-2 sm:bottom-4 sm:left-4 z-1000">
-            {/* Collapsed view (mobile-friendly) */}
             {!legendExpanded ? (
               <button
                 onClick={() => setLegendExpanded(true)}
@@ -801,7 +378,6 @@ export default function Map() {
                 <ChevronUp size={14} className="text-gray-400" />
               </button>
             ) : (
-              /* Expanded view */
               <div className="bg-white/95 backdrop-blur rounded-lg shadow-lg px-3 py-2 sm:px-4 sm:py-3 text-xs space-y-2 min-w-[140px]">
                 {/* Header with collapse button */}
                 <div className="flex items-center justify-between border-b border-gray-200 pb-1.5 mb-1">
@@ -816,72 +392,61 @@ export default function Map() {
                   </button>
                 </div>
 
-                {/* Pemasok Toggle */}
-                <button
-                  onClick={() => setShowPemasok(!showPemasok)}
-                  className={`flex items-center gap-2 w-full py-1 px-1.5 rounded-md transition-all ${
-                    showPemasok ? "bg-[#6FCF97]/10" : "bg-gray-100 opacity-60"
-                  }`}
-                >
-                  <span
-                    className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-[#6FCF97] ${showPemasok ? "ring-2 sm:ring-4 ring-[#6FCF9733]" : ""}`}
-                  />
-                  <span className="text-gray-700 text-xs flex-1 text-left">
-                    Pemasok
-                  </span>
-                  {showPemasok ? (
-                    <Eye size={14} className="text-[#6FCF97]" />
-                  ) : (
-                    <EyeOff size={14} className="text-gray-400" />
-                  )}
-                </button>
+                {/* Site type toggles — driven by legend */}
+                {data.legend.siteTypes.map((st) => {
+                  const isVisible = visibleSiteTypes[st.type] ?? true;
+                  return (
+                    <button
+                      key={st.type}
+                      onClick={() => toggleSiteType(st.type)}
+                      className={`flex items-center gap-2 w-full py-1 px-1.5 rounded-md transition-all ${
+                        isVisible ? `bg-opacity-10` : "bg-gray-100 opacity-60"
+                      }`}
+                      style={
+                        isVisible
+                          ? { backgroundColor: `${st.color}1A` }
+                          : undefined
+                      }
+                    >
+                      <span
+                        className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full`}
+                        style={{
+                          backgroundColor: st.color,
+                          boxShadow: isVisible
+                            ? `0 0 0 4px ${st.color}33`
+                            : "none",
+                        }}
+                      />
+                      <span className="text-gray-700 text-xs flex-1 text-left">
+                        {st.label}
+                      </span>
+                      {isVisible ? (
+                        <Eye size={14} style={{ color: st.color }} />
+                      ) : (
+                        <EyeOff size={14} className="text-gray-400" />
+                      )}
+                    </button>
+                  );
+                })}
 
-                {/* Pembangkit Toggle */}
-                <button
-                  onClick={() => setShowPembangkit(!showPembangkit)}
-                  className={`flex items-center gap-2 w-full py-1 px-1.5 rounded-md transition-all ${
-                    showPembangkit
-                      ? "bg-[#F2A65A]/10"
-                      : "bg-gray-100 opacity-60"
-                  }`}
-                >
-                  <span
-                    className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-[#F2A65A] ${showPembangkit ? "ring-2 sm:ring-4 ring-[#F2A65A33]" : ""}`}
-                  />
-                  <span className="text-gray-700 text-xs flex-1 text-left">
-                    Pembangkit
-                  </span>
-                  {showPembangkit ? (
-                    <Eye size={14} className="text-[#F2A65A]" />
-                  ) : (
-                    <EyeOff size={14} className="text-gray-400" />
-                  )}
-                </button>
-
-                {/* Rute Toggle */}
-                <button
-                  onClick={() => setShowRute(!showRute)}
-                  className={`flex items-center gap-2 w-full py-1 px-1.5 rounded-md transition-all ${
-                    showRute ? "bg-[#38BDF8]/10" : "bg-gray-100 opacity-60"
-                  }`}
-                >
-                  <span
-                    className={`w-6 sm:w-8 h-0.5 ${showRute ? "bg-[#38BDF8]" : "bg-gray-400"}`}
-                    style={{
-                      borderStyle: "dashed",
-                      borderWidth: "0 0 2px 0",
-                      borderColor: showRute ? "#38BDF8" : "#9ca3af",
-                    }}
-                  />
-                  <span className="text-gray-700 text-xs flex-1 text-left">
-                    Rute Pipa
-                  </span>
-                  {showRute ? (
-                    <Eye size={14} className="text-[#38BDF8]" />
-                  ) : (
-                    <EyeOff size={14} className="text-gray-400" />
-                  )}
-                </button>
+                {/* Pipe type legend items */}
+                {data.legend.pipeTypes.length > 0 && (
+                  <div className="pt-1 border-t border-gray-200">
+                    <p className="text-[10px] text-gray-500 mb-1">Jenis Pipa</p>
+                    {data.legend.pipeTypes.map((pt) => (
+                      <div
+                        key={pt.type}
+                        className="flex items-center gap-1.5 text-xs text-gray-600 py-0.5"
+                      >
+                        <span
+                          className="w-6 h-0.5"
+                          style={{ backgroundColor: pt.color }}
+                        />
+                        {pt.label}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -925,38 +490,24 @@ export default function Map() {
           <div className="flex flex-col gap-3 pr-4">
             <FilterAutocomplete
               label="Wilayah"
-              options={wilayahOptions}
-              value={selectedWilayah}
-              onChange={setSelectedWilayah}
+              options={regionOptions}
+              value={selectedRegion}
+              onChange={setSelectedRegion}
               placeholder="Pilih Wilayah"
             />
             <FilterAutocomplete
               label="Pemasok"
-              options={pemasokData.map((p) => p.name)}
+              options={pemasokNames}
               value={selectedPemasok}
               onChange={setSelectedPemasok}
               placeholder="Pilih Pemasok"
             />
             <FilterAutocomplete
               label="Pembangkit"
-              options={pembangkitData.map((p) => p.name)}
+              options={pembangkitNames}
               value={selectedPembangkit}
               onChange={setSelectedPembangkit}
               placeholder="Pilih Pembangkit"
-            />
-            <FilterAutocomplete
-              label="Transportir"
-              options={transportirData}
-              value={selectedTransportir}
-              onChange={setSelectedTransportir}
-              placeholder="Pilih Transportir"
-            />
-            <FilterMultiSelect
-              label="Kepemilikan"
-              options={kepemilikanOptions}
-              value={selectedKepemilikan}
-              onChange={setSelectedKepemilikan}
-              placeholder="Pilih Kepemilikan"
             />
           </div>
         </div>
