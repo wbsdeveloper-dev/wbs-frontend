@@ -23,6 +23,16 @@ export function useUpdateGroups(host: string) {
   return useMutation({
     mutationFn: (enabledGroupIds: string[]) =>
       updateEnabledGroups(host, enabledGroupIds),
+    onMutate: async (enabledGroupIds: string[]) => {
+      await qc.cancelQueries({ queryKey: botKeys.groups(host) });
+      // Optimistically update the cache
+      qc.setQueryData<GroupItem[]>(botKeys.groups(host), (old) =>
+        old?.map((g) => ({
+          ...g,
+          enabled: enabledGroupIds.includes(g.id),
+        })),
+      );
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: botKeys.groups(host) });
     },

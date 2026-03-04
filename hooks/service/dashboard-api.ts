@@ -12,15 +12,52 @@ export const DASHBOARD_API_HOST = "http://localhost:3005/api";
 // ---------------------------------------------------------------------------
 
 /** GET /dashboard/map-locations */
-export interface MapLocation {
+export interface MapSite {
   id: string;
   name: string;
-  type: string;
+  siteType:
+    | "PEMBANGKIT"
+    | "PEMASOK"
+    | "TRANSPORTIR"
+    | "TERMINAL"
+    | "HANDOVER_POINT";
   lat: number;
   lng: number;
   region: string;
+  isEnabled: boolean;
+  capacity?: string;
+}
+
+export interface MapPipe {
+  id: string;
+  sourceSiteId: string;
+  targetSiteId: string;
+  relationType: string;
   status: string;
-  details?: Record<string, unknown>;
+  commodity: string;
+}
+
+export interface SiteTypeLegend {
+  type: string;
+  label: string;
+  color: string;
+}
+
+export interface PipeTypeLegend {
+  type: string;
+  label: string;
+  color: string;
+}
+
+export interface MapLegend {
+  siteTypes: SiteTypeLegend[];
+  pipeTypes: PipeTypeLegend[];
+}
+
+export interface MapLocationsResponse {
+  sites: MapSite[];
+  pipes: MapPipe[];
+  legend: MapLegend;
 }
 
 /** GET /dashboard/distribution */
@@ -288,7 +325,7 @@ function buildQuery(
 }
 
 export async function getMapLocations(region?: string) {
-  return dashboardFetch<MapLocation[]>(
+  return dashboardFetch<MapLocationsResponse>(
     `/dashboard/map-locations${buildQuery({ region })}`,
   );
 }
@@ -377,7 +414,7 @@ export async function getSummary(startDate: string, endDate: string) {
 
 export function useMapLocations(
   region?: string,
-  options?: Partial<UseQueryOptions<MapLocation[]>>,
+  options?: Partial<UseQueryOptions<MapLocationsResponse>>,
 ) {
   return useQuery({
     queryKey: dashboardKeys.mapLocations(region),
