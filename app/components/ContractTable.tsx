@@ -1459,10 +1459,12 @@ export default function ContractTable() {
             <Dialog
                 open={deleteConfirmId !== null}
                 onClose={() => setDeleteConfirmId(null)}
-                PaperProps={{
-                    sx: {
-                        borderRadius: "12px",
-                        px: 1,
+                slotProps={{
+                    paper: {
+                        sx: {
+                            borderRadius: "12px",
+                            px: 1,
+                        },
                     },
                 }}
             >
