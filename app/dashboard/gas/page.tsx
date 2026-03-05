@@ -193,7 +193,7 @@ export default function GasDashboard() {
     if (!topPlantsData?.items) return [];
     return topPlantsData.items.map((item: { name: string; value: number }) => ({
       name: item.name,
-      volume: `${item.value.toFixed(0)}`,
+      volume: `${item.value.toFixed(2)}`,
     }));
   }, [topPlantsData]);
 
