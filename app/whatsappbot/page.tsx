@@ -342,6 +342,22 @@ function GroupsSection({
     updateGroups.mutate(next);
   };
 
+  const handleSelectAll = () => {
+    const allIds = list.map((g) => g.id);
+    updateGroups.mutate(allIds);
+  };
+
+  const handleUnselectAll = () => {
+    // Toggle off each enabled group one by one
+    const enabledGroups = list.filter((g) => g.enabled);
+    if (enabledGroups.length === 0) return;
+    // Send empty enabled list - disable all at once
+    const current = list.filter((g) => g.enabled).map((g) => g.id);
+    // Remove all from the enabled list
+    const next = current.filter(() => false);
+    updateGroups.mutate(next);
+  };
+
   const handleSync = () => {
     syncGroups.mutate();
   };
@@ -360,6 +376,23 @@ function GroupsSection({
           </button>
         }
       />
+
+      <div className="flex items-center gap-2 mb-2">
+        <button
+          onClick={handleSelectAll}
+          disabled={updateGroups.isPending}
+          className="px-3 py-1.5 text-xs font-medium text-[#115d72] bg-[#14a2bb]/10 rounded-lg hover:bg-[#14a2bb]/20 transition-all disabled:opacity-50"
+        >
+          Select All
+        </button>
+        <button
+          onClick={handleUnselectAll}
+          disabled={updateGroups.isPending}
+          className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-all disabled:opacity-50"
+        >
+          Unselect All
+        </button>
+      </div>
 
       <div className="space-y-1 max-h-[280px] overflow-y-auto pr-1">
         {list.map((group) => (

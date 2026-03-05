@@ -332,7 +332,9 @@ const CustomTooltip = ({
       {flowrate !== undefined && flowrate !== null && (
         <div className="flex justify-between mt-4 pt-4 border-t border-gray-200">
           <p className="font-medium">Flowrate</p>
-          <p className="font-medium">{flowrate} {unit || "MMBTU"}</p>
+          <p className="font-medium">
+            {flowrate} {unit || "MMBTU"}
+          </p>
         </div>
       )}
     </div>
@@ -441,7 +443,10 @@ export default function RealtimeChart({
       means[series.name] = total / (series.dataPoints.length || 1);
     });
     // Use mean from referenceLines if available
-    if (chartFlowData?.referenceLines?.mean !== null && chartFlowData?.referenceLines?.mean !== undefined) {
+    if (
+      chartFlowData?.referenceLines?.mean !== null &&
+      chartFlowData?.referenceLines?.mean !== undefined
+    ) {
       // If there's only one series, use the mean from referenceLines
       if (chartFlowData.series.length === 1) {
         means[chartFlowData.series[0].name] = chartFlowData.referenceLines.mean;
@@ -480,10 +485,26 @@ export default function RealtimeChart({
   // Reference line values from API
   const jphValue = chartFlowData?.referenceLines?.jph ?? null;
   const topValue = chartFlowData?.referenceLines?.top ?? null;
-  
+
   // Unit and flowrate from API
   const unit = chartFlowData?.unit;
   const flowrate = chartFlowData?.summary?.flowrate;
+
+  // Compute Y-axis domain from actual series data
+  const yDomain = useMemo(() => {
+    if (!chartData.length) return [0, 100];
+    let min = Infinity;
+    let max = -Infinity;
+    chartData.forEach((item) => {
+      Object.values(item.values).forEach((v) => {
+        if (v < min) min = v;
+        if (v > max) max = v;
+      });
+    });
+    if (!isFinite(min) || !isFinite(max)) return [0, 100];
+    const padding = (max - min) * 0.1 || 5;
+    return [Math.floor(min - padding), Math.ceil(max + padding)];
+  }, [chartData]);
 
   const submitNote = () => {};
 
@@ -528,9 +549,11 @@ export default function RealtimeChart({
                 >
                   <CartesianGrid stroke="#eee" strokeDasharray="5 5" />
                   <XAxis dataKey="label" />
-                  <YAxis />
+                  <YAxis domain={yDomain} />
                   <Legend className="z-0" />
-                  <Tooltip content={<CustomTooltip unit={unit} flowrate={flowrate} />} />
+                  <Tooltip
+                    content={<CustomTooltip unit={unit} flowrate={flowrate} />}
+                  />
                   {chartData.length > 0 &&
                     Object.keys(chartData[0].values).map((key: string) => (
                       <Line
