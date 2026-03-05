@@ -150,10 +150,11 @@ export interface Contract {
     tanggal_efektif: string | null;
     akhir_perjanjian: string | null;
     volume_jpmh_bbtud: number | null;
+    volume_jpmh_mmscfd: number | null;
     price_value: number | null;
     price_unit: string;
-    hbgt_value: number | null;
-    hbgt_unit: string | null;
+    hgbt_value: number | null;
+    hgbt_unit: string | null;
     created_by: string | null;
     created_at: string;
     updated_at: string;
@@ -176,10 +177,11 @@ export interface CreateContractPayload {
     tanggal_efektif?: string;
     akhir_perjanjian?: string;
     volume_jpmh_bbtud?: number;
+    volume_jpmh_mmscfd?: number;
     price_value?: number;
     price_unit?: string;
-    hbgt_value?: number;
-    hbgt_unit?: string;
+    hgbt_value?: number;
+    hgbt_unit?: string;
 }
 
 export interface UpdateContractPayload {
@@ -193,10 +195,11 @@ export interface UpdateContractPayload {
     tanggal_efektif?: string;
     akhir_perjanjian?: string;
     volume_jpmh_bbtud?: number;
+    volume_jpmh_mmscfd?: number;
     price_value?: number;
     price_unit?: string;
-    hbgt_value?: number;
-    hbgt_unit?: string;
+    hgbt_value?: number;
+    hgbt_unit?: string;
 }
 
 export interface ContractFilters {
@@ -240,7 +243,9 @@ export interface ContractVolume {
     year: number;
     basis: string;
     value_bbtud: number;
+    value_mmscfd: number | null;
     top_percentage: number | null;
+    top_percentage_mmscfd: number | null;
     is_kepmen: boolean;
     created_at: string;
 }
@@ -249,7 +254,9 @@ export interface UpsertContractVolumeItem {
     year: number;
     basis?: string;
     value_bbtud: number;
+    value_mmscfd?: number;
     top_percentage?: number;
+    top_percentage_mmscfd?: number;
     is_kepmen?: boolean;
 }
 
@@ -262,12 +269,14 @@ export interface ContractDailyDelivery {
     contract_id: string;
     year: number;
     value_bbtud: number;
+    value_mmscfd: number | null;
     created_at: string;
 }
 
 export interface UpsertContractDailyDeliveryItem {
     year: number;
     value_bbtud: number;
+    value_mmscfd?: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -279,12 +288,14 @@ export interface ContractAnnualTotal {
     contract_id: string;
     year: number;
     total_bbtu: number;
+    total_mmscfd: number | null;
     created_at: string;
 }
 
 export interface UpsertContractAnnualTotalItem {
     year: number;
     total_bbtu: number;
+    total_mmscfd?: number;
 }
 
 // ---------------------------------------------------------------------------

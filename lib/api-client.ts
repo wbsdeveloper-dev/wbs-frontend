@@ -99,12 +99,12 @@ async function apiRequest<T>(
       // Refresh failed - clear tokens and force logout
       clearTokens();
       isRefreshing = false;
-      
+
       // Redirect to login page
       if (typeof window !== "undefined") {
         window.location.href = "/auth/login";
       }
-      
+
       throw error;
     } finally {
       isRefreshing = false;
@@ -117,7 +117,7 @@ async function apiRequest<T>(
 async function processResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     let message = response.statusText;
-    
+
     try {
       const body = (await response.json()) as ApiResponse;
       if (body.message) message = body.message;

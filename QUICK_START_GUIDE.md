@@ -10,7 +10,7 @@ npm install
 npm run dev
 ```
 
-Visit **http://localhost:3000** to view the dashboard.
+Visit **http://localhost:3005** to view the dashboard.
 
 ## Dashboard Structure
 

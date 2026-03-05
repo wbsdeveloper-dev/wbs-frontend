@@ -46,7 +46,7 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to view the dashboard.
+Open [http://localhost:3005](http://localhost:3005) to view the dashboard.
 
 ### Build for production:
 ```bash

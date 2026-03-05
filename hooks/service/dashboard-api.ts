@@ -5,7 +5,7 @@ import { ApiError, type ApiResponse } from "./bot-api";
 import { getAccessToken } from "@/lib/auth";
 import { useQuery, type UseQueryOptions } from "@tanstack/react-query";
 
-export const DASHBOARD_API_HOST = "http://localhost:3000/api";
+export const DASHBOARD_API_HOST = "http://localhost:3005/api";
 
 // ---------------------------------------------------------------------------
 // Response types
@@ -16,11 +16,11 @@ export interface MapSite {
   id: string;
   name: string;
   siteType:
-    | "PEMBANGKIT"
-    | "PEMASOK"
-    | "TRANSPORTIR"
-    | "TERMINAL"
-    | "HANDOVER_POINT";
+  | "PEMBANGKIT"
+  | "PEMASOK"
+  | "TRANSPORTIR"
+  | "TERMINAL"
+  | "HANDOVER_POINT";
   lat: number;
   lng: number;
   region: string;
