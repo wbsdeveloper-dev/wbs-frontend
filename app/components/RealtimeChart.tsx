@@ -23,10 +23,10 @@ import ModalNote from "./ModalNote";
 import DateRangeFilter from "./DateRangeFilter";
 import type {
   ChartFlowResponse,
-  ContractInfoResponse,
   DashboardFilters,
   FilterOption,
 } from "@/hooks/service/dashboard-api";
+import type { Contract } from "@/hooks/service/contract-api";
 import { Loader2 } from "lucide-react";
 
 const filterTypeOptions = ["Pemasok", "Pembangkit"];
@@ -43,7 +43,7 @@ export type FilterBy = "supplier" | "plant";
 export interface RealtimeChartProps {
   chartFlowData?: ChartFlowResponse | null;
   filtersData?: DashboardFilters | null;
-  contractData?: ContractInfoResponse | null;
+  contractData?: Contract | null;
   isLoading?: boolean;
   isContractLoading?: boolean;
   onPeriodChange?: (granularity: Granularity) => void;
@@ -506,7 +506,7 @@ export default function RealtimeChart({
     return [Math.floor(min - padding), Math.ceil(max + padding)];
   }, [chartData]);
 
-  const submitNote = () => {};
+  const submitNote = () => { };
 
   if (topLineActive === null) return null;
 
@@ -601,7 +601,7 @@ export default function RealtimeChart({
                       .map((key) => (
                         <ReferenceLine
                           key={`mean-${key}`}
-                          y={meanValues[key]}
+                          y={meanValues[key]!}
                           stroke={
                             seriesColors[`Mean ${key}`] ||
                             COLORS[`Mean ${key}`] ||
@@ -665,7 +665,7 @@ export default function RealtimeChart({
           </div>
           <div className=" mt-4 border-t border-gray-200 pt-6">
             <SupplierResumeTable
-              contractData={contractData}
+              contract={contractData}
               isLoading={isContractLoading}
             />
           </div>
@@ -829,11 +829,10 @@ export default function RealtimeChart({
                 <div className="flex gap-10">
                   <div className="flex gap-4 mb-3">
                     <button
-                      className={`text-[#115d72] ${
-                        period == "1D"
-                          ? "bg-[#14a2bb92] w-[45px] rounded-md"
-                          : ""
-                      } cursor-pointer`}
+                      className={`text-[#115d72] ${period == "1D"
+                        ? "bg-[#14a2bb92] w-[45px] rounded-md"
+                        : ""
+                        } cursor-pointer`}
                       onClick={() => {
                         setPeriod("1D");
                         if (onPeriodChange) {
@@ -849,11 +848,10 @@ export default function RealtimeChart({
                       1D
                     </button>
                     <button
-                      className={`text-[#115d72] ${
-                        period == "1W"
-                          ? "bg-[#14a2bb92] w-[45px] rounded-md"
-                          : ""
-                      } cursor-pointer`}
+                      className={`text-[#115d72] ${period == "1W"
+                        ? "bg-[#14a2bb92] w-[45px] rounded-md"
+                        : ""
+                        } cursor-pointer`}
                       onClick={() => {
                         setPeriod("1W");
                         if (onPeriodChange) {
@@ -869,11 +867,10 @@ export default function RealtimeChart({
                       1W
                     </button>
                     <button
-                      className={`text-[#115d72] ${
-                        period == "3M"
-                          ? "bg-[#14a2bb92] w-[45px] rounded-md"
-                          : ""
-                      } cursor-pointer`}
+                      className={`text-[#115d72] ${period == "3M"
+                        ? "bg-[#14a2bb92] w-[45px] rounded-md"
+                        : ""
+                        } cursor-pointer`}
                       onClick={() => {
                         setPeriod("3M");
                         if (onPeriodChange) {
@@ -889,11 +886,10 @@ export default function RealtimeChart({
                       3M
                     </button>
                     <button
-                      className={`text-[#115d72] ${
-                        period == "6M"
-                          ? "bg-[#14a2bb92] w-[45px] rounded-md"
-                          : ""
-                      } cursor-pointer`}
+                      className={`text-[#115d72] ${period == "6M"
+                        ? "bg-[#14a2bb92] w-[45px] rounded-md"
+                        : ""
+                        } cursor-pointer`}
                       onClick={() => {
                         setPeriod("6M");
                         if (onPeriodChange) {
@@ -909,11 +905,10 @@ export default function RealtimeChart({
                       6M
                     </button>
                     <button
-                      className={`text-[#115d72] ${
-                        period == "1Y"
-                          ? "bg-[#14a2bb92] w-[45px] rounded-md"
-                          : ""
-                      } cursor-pointer`}
+                      className={`text-[#115d72] ${period == "1Y"
+                        ? "bg-[#14a2bb92] w-[45px] rounded-md"
+                        : ""
+                        } cursor-pointer`}
                       onClick={() => {
                         setPeriod("1Y");
                         if (onPeriodChange) {
@@ -954,9 +949,9 @@ export default function RealtimeChart({
                           color: "#14a1bb",
                         },
                         "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
-                          {
-                            backgroundColor: "#14a1bb",
-                          },
+                        {
+                          backgroundColor: "#14a1bb",
+                        },
                       }}
                     />
                   </div>
@@ -972,9 +967,9 @@ export default function RealtimeChart({
                           color: "#14a1bb",
                         },
                         "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
-                          {
-                            backgroundColor: "#14a1bb",
-                          },
+                        {
+                          backgroundColor: "#14a1bb",
+                        },
                       }}
                     />
                   </div>
@@ -990,9 +985,9 @@ export default function RealtimeChart({
                           color: "#14a1bb",
                         },
                         "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
-                          {
-                            backgroundColor: "#14a1bb",
-                          },
+                        {
+                          backgroundColor: "#14a1bb",
+                        },
                       }}
                     />
                   </div>

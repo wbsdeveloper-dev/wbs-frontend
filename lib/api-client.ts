@@ -81,7 +81,7 @@ async function apiRequest<T>(
 
       // Attempt to refresh the token
       const refreshData = await refreshAccessToken();
-      setTokens(refreshData.accessToken, refreshData.refreshToken);
+      setTokens(refreshData.accessToken, refreshData.refreshToken, refreshData.expiresIn || 3600);
 
       // Notify all waiting requests
       onTokenRefreshed(refreshData.accessToken);

@@ -154,6 +154,7 @@ export interface ContractInfo {
   jangkaWaktu: { start: string; end: string };
   volumeJph: { value: number; unit: string; notes: string };
   volumeTop: { value: number; percentage: number; notes: string };
+  volumeJpmh: number | null;
   hargaPjbg: { value: number; unit: string };
   unitYangDipasok: ContractUnitDipasok[];
 }
@@ -298,8 +299,8 @@ export const dashboardKeys = {
       pemasokId,
       pembangkitId,
     ] as const,
-  contractInfo: (pemasokId: string) =>
-    [...dashboardKeys.all, "contract-info", pemasokId] as const,
+  contractInfo: (pemasokId?: string, pembangkitId?: string) =>
+    [...dashboardKeys.all, "contract-info", pemasokId, pembangkitId] as const,
   events: (startDate: string, endDate: string, limit?: number, page?: number) =>
     [...dashboardKeys.all, "events", startDate, endDate, limit, page] as const,
   filters: () => [...dashboardKeys.all, "filters"] as const,
@@ -505,7 +506,7 @@ export function useContractInfo(
   options?: Partial<UseQueryOptions<ContractInfoResponse>>,
 ) {
   return useQuery({
-    queryKey: dashboardKeys.contractInfo(pemasokId ?? ""),
+    queryKey: dashboardKeys.contractInfo(pemasokId, pembangkitId),
     queryFn: () => getContractInfo(pemasokId, pembangkitId, contractId),
     ...options,
   });

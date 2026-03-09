@@ -206,6 +206,8 @@ export interface ContractFilters {
     contract_party_id?: string;
     status?: string;
     search?: string;
+    pemasok_site_id?: string;
+    pembangkit_site_id?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -433,6 +435,8 @@ export function getContracts(filters?: ContractFilters) {
         contract_party_id: filters?.contract_party_id,
         status: filters?.status,
         search: filters?.search,
+        pemasok_site_id: filters?.pemasok_site_id,
+        pembangkit_site_id: filters?.pembangkit_site_id,
     });
     return contractFetch<Contract[]>(`/contracts${query}`);
 }
