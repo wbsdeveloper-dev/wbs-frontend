@@ -22,8 +22,20 @@ import {
     DialogContentText,
     DialogActions,
     Button,
+    Typography,
+    Divider,
 } from "@mui/material";
-import { Pencil, Trash2, Plus, FileText, Save, X, RefreshCw } from "lucide-react";
+import {
+    Pencil,
+    Trash2,
+    Plus,
+    FileText,
+    Save,
+    X,
+    RefreshCw,
+    Download,
+    Upload
+} from "lucide-react";
 import {
     useContracts,
     useCreateContract,
@@ -44,7 +56,12 @@ import {
     type UpsertContractVolumeItem,
     type UpsertContractDailyDeliveryItem,
     type UpsertContractAnnualTotalItem,
+    type ContractDocument,
+    useUploadContractPdf,
+    getContractDocuments,
+    downloadContractDocument,
 } from "@/hooks/service/contract-api";
+import { useSites } from "@/hooks/service/site-api";
 
 // ---------------------------------------------------------------------------
 // Row shape for the DataGrid (flattened from API response)
@@ -132,6 +149,9 @@ interface ContractTableRow {
     _mmscfd_volumeJumlah2028: string;
     _mmscfd_volumeJumlah2029: string;
     _mmscfd_volumeJumlah2030: string;
+
+    // Document
+    document: ContractDocument | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -215,6 +235,7 @@ function mapContractToRow(
     volumes: ContractVolume[] = [],
     dailyDeliveries: ContractDailyDelivery[] = [],
     annualTotals: ContractAnnualTotal[] = [],
+    document: ContractDocument | null = null,
 ): ContractTableRow {
     // Volume entries by year + basis
     const jph2024 = findVolume(volumes, 2024, "JPH");
@@ -347,6 +368,8 @@ function mapContractToRow(
         _mmscfd_volumeJumlah2028: mmscfd_volumeJumlah2028,
         _mmscfd_volumeJumlah2029: mmscfd_volumeJumlah2029,
         _mmscfd_volumeJumlah2030: mmscfd_volumeJumlah2030,
+
+        document,
     };
 }
 
@@ -433,6 +456,8 @@ function createEmptyRow(rowNumber: number): ContractTableRow {
         _mmscfd_volumeJumlah2028: "",
         _mmscfd_volumeJumlah2029: "",
         _mmscfd_volumeJumlah2030: "",
+
+        document: null,
     };
 }
 
@@ -478,7 +503,11 @@ const makeRenderCell =
 // Build columns dynamically based on edit mode
 // ---------------------------------------------------------------------------
 
-function buildColumns(isEditMode: boolean): GridColDef[] {
+function buildColumns(
+    isEditMode: boolean,
+    supplierNames: string[],
+    powerplantNames: string[],
+): GridColDef[] {
     const renderCell = makeRenderCell(isEditMode);
 
     return [
@@ -506,6 +535,8 @@ function buildColumns(isEditMode: boolean): GridColDef[] {
             headerAlign: "center",
             align: "center",
             editable: isEditMode,
+            type: isEditMode ? "singleSelect" : "string",
+            valueOptions: supplierNames,
             renderCell,
         },
         {
@@ -515,6 +546,8 @@ function buildColumns(isEditMode: boolean): GridColDef[] {
             headerAlign: "center",
             align: "center",
             editable: isEditMode,
+            type: isEditMode ? "singleSelect" : "string",
+            valueOptions: powerplantNames,
             renderCell,
         },
         {
@@ -821,11 +854,20 @@ const columnGroupingModel: GridColumnGroupingModel = [
 
 export default function ContractTable() {
     const apiRef = useGridApiRef();
+
+    // File Upload State
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [uploadingRowId, setUploadingRowId] = useState<string | null>(null);
+    const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const uploadMutation = useUploadContractPdf();
+
     const [rows, setRows] = useState<ContractTableRow[]>([]);
     const [isEditMode, setIsEditMode] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [pendingDeletes, setPendingDeletes] = useState<string[]>([]);
     const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+    const [documentModalRowId, setDocumentModalRowId] = useState<string | null>(null);
     const [snackbar, setSnackbar] = useState<{
         open: boolean;
         message: string;
@@ -833,6 +875,14 @@ export default function ContractTable() {
     }>({ open: false, message: "", severity: "success" });
 
     // ---- API hooks ----
+    const { data: supplierSitesData } = useSites({ type: "PEMASOK" });
+    const { data: powerplantSitesData } = useSites({ type: "PEMBANGKIT" });
+
+    const supplierSites = supplierSitesData || [];
+    const powerplantSites = powerplantSitesData || [];
+    const supplierNames = supplierSites.map((s) => s.name);
+    const powerplantNames = powerplantSites.map((s) => s.name);
+
     const {
         data: contracts,
         isLoading,
@@ -905,18 +955,24 @@ export default function ContractTable() {
             try {
                 const enriched = await Promise.all(
                     contracts.map(async (contract, index) => {
-                        const [volumes, dailyDeliveries, annualTotals] =
+                        const [volumes, dailyDeliveries, annualTotals, documents] =
                             await Promise.all([
                                 getContractVolumes(contract.id).catch(() => []),
                                 getContractDailyDelivery(contract.id).catch(() => []),
                                 getContractAnnualTotal(contract.id).catch(() => []),
+                                getContractDocuments(contract.id).catch(() => []),
                             ]);
+
+                        // Just use the latest document if it exists
+                        const latestDocument = documents.length > 0 ? documents[0] : null;
+
                         return mapContractToRow(
                             contract,
                             index,
                             volumes,
                             dailyDeliveries,
                             annualTotals,
+                            latestDocument,
                         );
                     }),
                 );
@@ -924,7 +980,7 @@ export default function ContractTable() {
             } catch (err) {
                 console.error("Failed to load sub-resource data:", err);
                 // Fallback: show rows without sub-resource data
-                if (!cancelled) setRows(contracts.map((c, i) => mapContractToRow(c, i, [], [], [])));
+                if (!cancelled) setRows(contracts.map((c, i) => mapContractToRow(c, i, [], [], [], null)));
             }
         })();
 
@@ -1206,9 +1262,14 @@ export default function ContractTable() {
                     // Auto-create a contract party if none is set
                     let partyId = row._contractPartyId;
                     if (!partyId) {
+                        const selectedSupplier = supplierSites.find((s) => s.name === row.pemasok);
+                        const selectedPowerplant = powerplantSites.find((s) => s.name === row.pembangkit);
+
                         const party = await createContractParty({
                             region: row.region || undefined,
                             owner_kit: row.pemilikKIT || undefined,
+                            pemasok_site_id: selectedSupplier?.id,
+                            pembangkit_site_id: selectedPowerplant?.id,
                         });
                         partyId = party.id;
                     }
@@ -1294,12 +1355,22 @@ export default function ContractTable() {
                     if (newVolMmscfd !== original.volume_jpmh_mmscfd)
                         payload.volume_jpmh_mmscfd = newVolMmscfd;
 
-                    // Update contract party fields (region, pemilikKIT)
+                    // Update contract party fields (region, pemilikKIT, pemasok_site_id, pembangkit_site_id)
                     const partyPayload: Record<string, unknown> = {};
                     if (row.region !== (original.region || ""))
                         partyPayload.region = row.region || null;
                     if (row.pemilikKIT !== (original.owner_kit || ""))
                         partyPayload.owner_kit = row.pemilikKIT || null;
+
+                    if (row.pemasok !== ((original as any).pemasok_name || "")) {
+                        const newSupplier = supplierSites.find((s) => s.name === row.pemasok);
+                        partyPayload.pemasok_site_id = newSupplier ? newSupplier.id : null;
+                    }
+                    if (row.pembangkit !== ((original as any).pembangkit_name || "")) {
+                        const newPowerplant = powerplantSites.find((s) => s.name === row.pembangkit);
+                        partyPayload.pembangkit_site_id = newPowerplant ? newPowerplant.id : null;
+                    }
+
                     if (Object.keys(partyPayload).length > 0) {
                         await updateContractParty(row._contractPartyId, partyPayload as any);
                     }
@@ -1332,7 +1403,7 @@ export default function ContractTable() {
 
     const handleCancel = useCallback(() => {
         if (contracts) {
-            setRows(contracts.map((c, i) => mapContractToRow(c, i, [], [], [])));
+            setRows(contracts.map((c, i) => mapContractToRow(c, i, [], [], [], null)));
         }
         setPendingDeletes([]);
         setIsEditMode(false);
@@ -1378,9 +1449,24 @@ export default function ContractTable() {
         [],
     );
 
+    const handleUploadClick = useCallback((rowId: string) => {
+        setUploadingRowId(rowId);
+        fileInputRef.current?.click();
+    }, []);
+
+    const handleFileChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file || !uploadingRowId) return;
+
+        setSelectedFileName(file.name);
+        setSelectedFile(file);
+
+        if (fileInputRef.current) fileInputRef.current.value = "";
+    }, [uploadingRowId]);
+
     // ---- Column definitions ----
 
-    const baseColumns = buildColumns(isEditMode);
+    const baseColumns = buildColumns(isEditMode, supplierNames, powerplantNames);
 
     const unitColumn: GridColDef = {
         field: "unitSwitch",
@@ -1446,38 +1532,45 @@ export default function ContractTable() {
             align: "center",
             sortable: false,
             editable: false,
-            renderCell: (params) => (
-                <Box
-                    sx={{
-                        display: "flex",
-                        gap: 0.5,
-                        alignItems: "center",
-                        justifyContent: "center",
-                        height: "100%",
-                    }}
-                >
-                    <IconButton
-                        size="small"
+            renderCell: (params) => {
+                const document = params.row.document;
+
+                return (
+                    <Box
                         sx={{
-                            color: "#f59e0b",
-                            "&:hover": { color: "#d97706" },
+                            display: "flex",
+                            gap: 0.5,
+                            alignItems: "center",
+                            justifyContent: "center",
+                            height: "100%",
                         }}
-                        onClick={() => console.log("View", params.row.id)}
                     >
-                        <FileText size={16} />
-                    </IconButton>
-                    <IconButton
-                        size="small"
-                        sx={{
-                            color: "#ef4444",
-                            "&:hover": { color: "#dc2626" },
-                        }}
-                        onClick={() => handleDeleteRow(params.row.id as string)}
-                    >
-                        <Trash2 size={16} />
-                    </IconButton>
-                </Box>
-            ),
+                        <IconButton
+                            size="small"
+                            sx={{
+                                color: document ? "#115d72" : "#f59e0b", // Green if has document, amber if not
+                                "&:hover": { color: document ? "#115d72" : "#d97706" },
+                            }}
+                            onClick={() => setDocumentModalRowId(params.row.id as string)}
+                            title="Kelola Dokumen"
+                        >
+                            <FileText size={16} />
+                        </IconButton>
+
+                        <IconButton
+                            size="small"
+                            sx={{
+                                color: "#ef4444",
+                                "&:hover": { color: "#dc2626" },
+                            }}
+                            onClick={() => handleDeleteRow(params.row.id as string)}
+                            title="Hapus Kontrak"
+                        >
+                            <Trash2 size={16} />
+                        </IconButton>
+                    </Box>
+                );
+            },
         },
     ];
 
@@ -1539,6 +1632,13 @@ export default function ContractTable() {
     // ---- Main render ----
     return (
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <input
+                type="file"
+                accept="application/pdf"
+                style={{ display: "none" }}
+                ref={fileInputRef}
+                onChange={handleFileChange}
+            />
             {/* Card Header with Actions */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
                 <div className="flex items-center gap-2">
@@ -1635,10 +1735,14 @@ export default function ContractTable() {
                         disableRowSelectionOnClick
                         onCellClick={(params, event) => {
                             if (isEditMode && params.isEditable) {
-                                apiRef.current?.startCellEditMode({
-                                    id: params.id,
-                                    field: params.field,
-                                });
+                                const state = apiRef.current?.state;
+                                const isEditing = state?.editRows?.[params.id]?.[params.field];
+                                if (!isEditing) {
+                                    apiRef.current?.startCellEditMode({
+                                        id: params.id,
+                                        field: params.field,
+                                    });
+                                }
                             }
                         }}
                         sx={{
@@ -1689,14 +1793,25 @@ export default function ContractTable() {
                                 },
                             },
                             "& .MuiDataGrid-cell:focus": {
-                                outline: isEditMode
-                                    ? "none"
-                                    : "none",
+                                outline: "none",
                             },
                             "& .MuiDataGrid-cell:focus-within": {
-                                outline: isEditMode
-                                    ? "none"
-                                    : "none",
+                                outline: "none",
+                            },
+                            "& .MuiSelect-select": {
+                                "&:focus": {
+                                    backgroundColor: "transparent",
+                                },
+                            },
+                            "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                                border: "none",
+                                outline: "none",
+                            },
+                            "& .MuiDataGrid-editInputCell": {
+                                "&:focus, &:focus-visible": {
+                                    outline: "none",
+                                    border: "none",
+                                },
                             },
                             "& .MuiDataGrid-footerContainer": {
                                 borderTop: "1px solid #e5e7eb",
@@ -1753,6 +1868,197 @@ export default function ContractTable() {
                         }}
                     >
                         Hapus
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Document Management Modal */}
+            <Dialog
+                open={documentModalRowId !== null}
+                onClose={() => {
+                    setDocumentModalRowId(null);
+                    setSelectedFileName(null);
+                    setSelectedFile(null);
+                    setUploadingRowId(null);
+                }}
+                maxWidth="sm"
+                fullWidth
+                slotProps={{
+                    paper: {
+                        sx: {
+                            borderRadius: "12px",
+                            px: 1,
+                        },
+                    },
+                }}
+            >
+                <DialogTitle sx={{ fontWeight: 600, fontSize: "16px", display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+                    Dokumen Kontrak
+                    <IconButton
+                        onClick={() => {
+                            setDocumentModalRowId(null);
+                            setSelectedFileName(null);
+                            setSelectedFile(null);
+                            setUploadingRowId(null);
+                        }}
+                        size="small"
+                        sx={{ color: '#6b7280' }}
+                    >
+                        <X size={20} />
+                    </IconButton>
+                </DialogTitle>
+                <DialogContent dividers>
+                    {(() => {
+                        const row = rows.find(r => r.id === documentModalRowId);
+                        if (!row) return null;
+
+                        const doc = row.document;
+                        const isUploadingThis = uploadMutation.isPending && uploadingRowId === documentModalRowId;
+
+                        return (
+                            <div className="flex flex-col gap-4 py-2">
+                                {/* Current Document Section */}
+                                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                                    <Typography variant="subtitle2" sx={{ fontWeight: 600, color: "#374151", mb: 1 }}>
+                                        Dokumen Saat Ini
+                                    </Typography>
+
+                                    {doc ? (
+                                        <div className="flex items-center justify-between bg-white border border-gray-200 rounded-md p-3">
+                                            <div className="flex items-center gap-2 overflow-hidden">
+                                                <FileText size={18} className="text-[#115d72] shrink-0" />
+                                                <Typography variant="body2" sx={{ color: "#4b5563", fontWeight: 500 }} noWrap>
+                                                    {doc.original_name}
+                                                </Typography>
+                                            </div>
+                                            <div className="flex items-center gap-1 shrink-0 ml-2">
+                                                <IconButton
+                                                    size="small"
+                                                    sx={{ color: "#115d72", "&:hover": { color: "#0d4a5c", backgroundColor: "#eff6ff" } }}
+                                                    title="Unduh Dokumen"
+                                                    onClick={async () => {
+                                                        try {
+                                                            await downloadContractDocument(row._contractId, doc.id, doc.original_name);
+                                                        } catch (error) {
+                                                            setSnackbar({ open: true, message: "Gagal mengunduh dokumen", severity: "error" });
+                                                        }
+                                                    }}
+                                                >
+                                                    <Download size={16} />
+                                                </IconButton>
+                                                {/* We can add a delete document mutation here later if needed */}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-md bg-white">
+                                            <Typography variant="body2" sx={{ color: "#9ca3af" }}>
+                                                Belum ada dokumen yang diunggah
+                                            </Typography>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <Divider />
+
+                                {/* Upload Section */}
+                                <div>
+                                    <Typography variant="subtitle2" sx={{ fontWeight: 600, color: "#374151", mb: 2 }}>
+                                        {doc ? "Unggah Dokumen Baru (Akan menggantikan yang lama)" : "Unggah Dokumen"}
+                                    </Typography>
+                                    <Button
+                                        variant="outlined"
+                                        fullWidth
+                                        startIcon={isUploadingThis ? <CircularProgress size={16} /> : <Upload size={16} />}
+                                        onClick={() => {
+                                            if (documentModalRowId) {
+                                                handleUploadClick(documentModalRowId);
+                                            }
+                                        }}
+                                        disabled={isUploadingThis}
+                                        sx={{
+                                            textTransform: "none",
+                                            fontWeight: 500,
+                                            borderRadius: "8px",
+                                            color: "#115d72",
+                                            borderColor: "#115d72",
+                                            "&:hover": {
+                                                borderColor: "#0d4a5c",
+                                                backgroundColor: "#f8fafc"
+                                            }
+                                        }}
+                                    >
+                                        {isUploadingThis
+                                            ? (selectedFileName ? `Mengunggah ${selectedFileName}...` : "Mengunggah...")
+                                            : (selectedFileName ? selectedFileName : "Pilih File")}
+                                    </Button>
+                                    <Typography variant="caption" sx={{ display: 'block', mt: 1, color: "#6b7280", textAlign: 'center' }}>
+                                        Format yang didukung: PDF. Ukuran maksimal: 10MB.
+                                    </Typography>
+                                </div>
+                            </div>
+                        );
+                    })()}
+                </DialogContent>
+                <DialogActions sx={{ px: 3, pb: 2 }}>
+                    <Button
+                        onClick={() => {
+                            setDocumentModalRowId(null);
+                            setSelectedFileName(null);
+                            setSelectedFile(null);
+                            setUploadingRowId(null);
+                        }}
+                        sx={{
+                            textTransform: "none",
+                            color: "#6b7280",
+                            fontWeight: 500,
+                            borderRadius: "8px",
+                            "&:hover": { backgroundColor: "#f3f4f6" }
+                        }}
+                    >
+                        Batal
+                    </Button>
+                    <Button
+                        onClick={async () => {
+                            if (selectedFile && documentModalRowId) {
+                                try {
+                                    await uploadMutation.mutateAsync({
+                                        id: documentModalRowId,
+                                        file: selectedFile
+                                    });
+                                    setSnackbar({ open: true, message: "Dokumen berhasil disimpan", severity: "success" });
+
+                                    const documents = await getContractDocuments(documentModalRowId).catch(() => []);
+                                    const latestDocument = documents.length > 0 ? documents[0] : null;
+
+                                    setRows((prev) =>
+                                        prev.map((r) => r.id === documentModalRowId ? { ...r, document: latestDocument } : r)
+                                    );
+
+                                    setSelectedFile(null);
+                                    setSelectedFileName(null);
+                                    setUploadingRowId(null);
+                                } catch (error) {
+                                    setSnackbar({ open: true, message: "Gagal mengunggah PDF", severity: "error" });
+                                }
+                            } else {
+                                setDocumentModalRowId(null);
+                                setSelectedFileName(null);
+                                setSelectedFile(null);
+                                setUploadingRowId(null);
+                            }
+                        }}
+                        disabled={uploadMutation.isPending}
+                        sx={{
+                            textTransform: "none",
+                            color: "#ffffffff",
+                            fontWeight: 500,
+                            borderRadius: "8px",
+                            backgroundColor: "#115d72",
+                            "&:hover": { backgroundColor: "#0d4a5c" },
+                            "&.Mui-disabled": { backgroundColor: "#0d4a5c", color: "#ffffff" }
+                        }}
+                    >
+                        {uploadMutation.isPending ? "Menyimpan..." : "Simpan"}
                     </Button>
                 </DialogActions>
             </Dialog>

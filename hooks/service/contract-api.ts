@@ -299,6 +299,19 @@ export interface UpsertContractAnnualTotalItem {
 }
 
 // ---------------------------------------------------------------------------
+// Types — Contract Documents
+// ---------------------------------------------------------------------------
+
+export interface ContractDocument {
+    id: string;
+    contract_id: string;
+    original_name: string;
+    stored_name: string;
+    uploaded_by: string | null;
+    created_at: string;
+}
+
+// ---------------------------------------------------------------------------
 // Types — Contract Relation Links
 // ---------------------------------------------------------------------------
 
@@ -363,6 +376,8 @@ export const contractKeys = {
         [...contractKeys.all, "annual-total", contractId] as const,
     relationLinks: (contractId: string) =>
         [...contractKeys.all, "relation-links", contractId] as const,
+    documents: (contractId: string) =>
+        [...contractKeys.all, "documents", contractId] as const,
 };
 
 // ---------------------------------------------------------------------------
@@ -444,6 +459,28 @@ export function deleteContract(id: string) {
     return contractFetch<{ deleted: boolean }>(`/contracts/${id}`, {
         method: "DELETE",
     });
+}
+
+export async function uploadContractPdf(contractId: string, file: File) {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const accessToken = getAccessToken();
+    const url = `${CONTRACT_API_HOST}/contracts/${contractId}/documents`;
+
+    const res = await fetch(url, {
+        method: "POST",
+        headers: {
+            ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
+        body: formData,
+    });
+
+    if (!res.ok) {
+        throw new Error("Gagal mengunggah file");
+    }
+
+    return res.json();
 }
 
 // ---------------------------------------------------------------------------
@@ -569,6 +606,46 @@ export function deleteContractRelationLink(
         `/contracts/${contractId}/relation-links/${linkId}`,
         { method: "DELETE" },
     );
+}
+
+// ---------------------------------------------------------------------------
+// API functions — Contract Documents
+// ---------------------------------------------------------------------------
+
+export function getContractDocuments(contractId: string) {
+    return contractFetch<ContractDocument[]>(
+        `/contracts/${contractId}/documents`,
+    );
+}
+
+export async function downloadContractDocument(contractId: string, documentId: string, fileName: string) {
+    const accessToken = getAccessToken();
+    const url = `${CONTRACT_API_HOST}/contracts/${contractId}/documents/${documentId}/download`;
+
+    const res = await fetch(url, {
+        method: "GET",
+        headers: {
+            ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
+    });
+
+    if (!res.ok) {
+        throw new Error("Gagal mengunduh dokumen");
+    }
+
+    const blob = await res.blob();
+    const windowUrl = window.URL || window.webkitURL;
+    const blobUrl = windowUrl.createObjectURL(blob);
+
+    const anchor = document.createElement("a");
+    anchor.href = blobUrl;
+    anchor.download = fileName;
+    document.body.appendChild(anchor);
+    anchor.click();
+
+    // Clean up
+    document.body.removeChild(anchor);
+    windowUrl.revokeObjectURL(blobUrl);
 }
 
 // ---------------------------------------------------------------------------
@@ -721,6 +798,16 @@ export function useDeleteContract(
             qc.invalidateQueries({ queryKey: contractKeys.all });
         },
         ...options,
+    });
+}
+
+export function useUploadContractPdf() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, file }: { id: string; file: File }) => uploadContractPdf(id, file),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: contractKeys.all });
+        },
     });
 }
 
