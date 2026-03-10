@@ -1963,7 +1963,7 @@ export default function ContractTable() {
                                 {/* Upload Section */}
                                 <div>
                                     <Typography variant="subtitle2" sx={{ fontWeight: 600, color: "#374151", mb: 2 }}>
-                                        {doc ? "Unggah Dokumen Baru (Akan menggantikan yang lama)" : "Unggah Dokumen"}
+                                        {doc ? "Unggah Dokumen Baru" : "Unggah Dokumen"}
                                     </Typography>
                                     <Button
                                         variant="outlined"
@@ -2009,10 +2009,14 @@ export default function ContractTable() {
                         }}
                         sx={{
                             textTransform: "none",
-                            color: "#6b7280",
+                            color: "#374151",          // text-gray-700
+                            backgroundColor: "#f9fafb", // bg-gray-50
+                            border: "1px solid #e5e7eb", // border + border-gray-200
                             fontWeight: 500,
                             borderRadius: "8px",
-                            "&:hover": { backgroundColor: "#f3f4f6" }
+                            "&:hover": {
+                                backgroundColor: "#f3f4f6"
+                            } // hover:bg-gray-100
                         }}
                     >
                         Batal
