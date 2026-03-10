@@ -303,7 +303,8 @@ export const dashboardKeys = {
     [...dashboardKeys.all, "contract-info", pemasokId, pembangkitId] as const,
   events: (startDate: string, endDate: string, limit?: number, page?: number) =>
     [...dashboardKeys.all, "events", startDate, endDate, limit, page] as const,
-  filters: () => [...dashboardKeys.all, "filters"] as const,
+  filters: (pemasokId?: string, pembangkitId?: string) =>
+    [...dashboardKeys.all, "filters", pemasokId, pembangkitId] as const,
   summary: (startDate: string, endDate: string) =>
     [...dashboardKeys.all, "summary", startDate, endDate] as const,
 };
@@ -399,8 +400,10 @@ export async function getEvents(
   );
 }
 
-export async function getFilters() {
-  return dashboardFetch<DashboardFilters>("/dashboard/filters");
+export async function getFilters(pemasokId?: string, pembangkitId?: string) {
+  return dashboardFetch<DashboardFilters>(
+    `/dashboard/filters${buildQuery({ pemasokId, pembangkitId })}`,
+  );
 }
 
 export async function getSummary(startDate: string, endDate: string) {
@@ -529,11 +532,13 @@ export function useEvents(
 }
 
 export function useFilters(
+  pemasokId?: string,
+  pembangkitId?: string,
   options?: Partial<UseQueryOptions<DashboardFilters>>,
 ) {
   return useQuery({
-    queryKey: dashboardKeys.filters(),
-    queryFn: getFilters,
+    queryKey: dashboardKeys.filters(pemasokId, pembangkitId),
+    queryFn: () => getFilters(pemasokId, pembangkitId),
     staleTime: 5 * 60 * 1000, // filters change rarely
     ...options,
   });
