@@ -407,28 +407,54 @@ export default function RealtimeChart({
   const apiChartData: ChartItem[] = useMemo(() => {
     if (!chartFlowData?.series?.length) return [];
 
-    // Get all timestamps from the first series
-    const timestamps = chartFlowData.series[0].dataPoints.map((dp) => {
+    // Helper to format a raw timestamp string into a display label
+    const formatTimestamp = (raw: string): string => {
       if (chartFlowData.granularity === "hour") {
-        const d = new Date(dp.timestamp);
+        const d = new Date(raw);
         return `${d.getHours().toString().padStart(2, "0")}.00`;
       }
       if (chartFlowData.granularity === "day") {
-        const d = new Date(dp.timestamp);
+        const d = new Date(raw);
         return d.toLocaleDateString("id-ID", {
           day: "2-digit",
           month: "short",
         });
       }
       // month
-      const d = new Date(dp.timestamp + "-01");
+      const d = new Date(raw + "-01");
       return d.toLocaleDateString("id-ID", { month: "short" });
+    };
+
+    // Collect ALL unique timestamps from ALL series
+    const timestampSet = new Set<string>();
+    chartFlowData.series.forEach((series) => {
+      series.dataPoints.forEach((dp) => {
+        timestampSet.add(dp.timestamp);
+      });
     });
 
-    return timestamps.map((label, idx) => {
+    // Sort timestamps chronologically
+    const sortedTimestamps = Array.from(timestampSet).sort(
+      (a, b) => new Date(a).getTime() - new Date(b).getTime(),
+    );
+
+    // Build a lookup map for each series: timestamp -> value
+    const seriesLookups = chartFlowData.series.map((series) => {
+      const lookup = new Map<string, number>();
+      series.dataPoints.forEach((dp) => {
+        lookup.set(dp.timestamp, dp.value);
+      });
+      return { name: series.name, lookup };
+    });
+
+    return sortedTimestamps.map((rawTs) => {
+      const label = formatTimestamp(rawTs);
       const values: Record<string, number> = {};
-      chartFlowData.series.forEach((series) => {
-        values[series.name] = series.dataPoints[idx]?.value ?? 0;
+      seriesLookups.forEach(({ name, lookup }) => {
+        const val = lookup.get(rawTs);
+        if (val !== undefined) {
+          values[name] = val;
+        }
       });
       return { label, values };
     });
@@ -555,7 +581,9 @@ export default function RealtimeChart({
                     content={<CustomTooltip unit={unit} flowrate={flowrate} />}
                   />
                   {chartData.length > 0 &&
-                    Object.keys(chartData[0].values).map((key: string) => (
+                    Array.from(
+                      new Set(chartData.flatMap((d) => Object.keys(d.values))),
+                    ).map((key: string) => (
                       <Line
                         key={key}
                         type="monotone"
