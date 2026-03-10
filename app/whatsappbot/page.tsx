@@ -31,6 +31,7 @@ import {
   useToggleHumanize,
 } from "@/hooks/use-bot-humanize";
 import ConfirmModal from "@/components/ui/ConfirmModal";
+import { OutboxLogger } from "./OutboxLogger";
 
 // MUI Switch brand color shared sx
 const SWITCH_SX = {
@@ -1058,6 +1059,13 @@ const ManajemenBot: React.FC = () => {
         >
           <BotActivity host={activeHost} connected={anyConnected} />
           <HumanizeSection host={activeHost} connected={anyConnected} />
+        </div>
+      )}
+
+      {/* Outbox Logger (only when connected) */}
+      {anyConnected && (
+        <div className="animate-fadeIn" style={{ animationDelay: "400ms" }}>
+          <OutboxLogger host={activeHost} connected={anyConnected} />
         </div>
       )}
 

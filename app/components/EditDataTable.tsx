@@ -588,6 +588,9 @@ export default function EditDataTable({
                   Periode
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  Jam
+                </th>
+                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   WA Value
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
@@ -626,7 +629,7 @@ export default function EditDataTable({
               ) : records.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={13}
+                    colSpan={14}
                     className="px-4 py-8 text-center text-gray-500"
                   >
                     Tidak ada data monitoring
@@ -658,6 +661,9 @@ export default function EditDataTable({
                     </td>
                     <td className="px-4 py-3 text-center text-gray-700">
                       {record.periodType}
+                    </td>
+                    <td className="px-4 py-3 text-center text-gray-700 font-mono text-xs">
+                      {record.periodValue || "-"}
                     </td>
                     <td className="px-4 py-3 text-center text-gray-700">
                       {record.waValue ?? "-"}

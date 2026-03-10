@@ -81,7 +81,8 @@ export default function Sidebar() {
         { title: "Manajemen Site", path: "/konfigurasi/site" },
         { title: "Kontrak & Dokumen", path: "/konfigurasi/kontrak" },
         { title: "Email Ingest", path: "/konfigurasi/email-ingest" },
-        { title: "Template Grup", path: "/konfigurasi/template-grup" }
+        { title: "Template Grup", path: "/konfigurasi/template-grup" },
+        { title: "API Keys", path: "/konfigurasi/bot/api-keys" },
       ],
     },
     {
@@ -163,14 +164,14 @@ export default function Sidebar() {
       </div>
 
       {/* Decorative line */}
-      <div className="mx-4 h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent" />
+      <div className="mx-4 h-px bg-linear-to-r from-transparent via-gray-200 to-transparent" />
 
       {/* User Profile Card - Light Style */}
       <div className="px-3 py-3">
         {!isCollapsed || isMobile ? (
           <div className="bg-gray-50 rounded-xl p-2.5 border border-gray-200 flex items-center gap-3">
             {/* Avatar */}
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#115d72] to-[#14a2bb] flex items-center justify-center shrink-0">
+            <div className="w-9 h-9 rounded-full bg-linear-to-br from-[#115d72] to-[#14a2bb] flex items-center justify-center shrink-0">
               <User size={18} className="text-white" />
             </div>
             {/* User Info */}
@@ -186,7 +187,7 @@ export default function Sidebar() {
         ) : (
           /* Collapsed view - just avatar */
           <div className="flex justify-center">
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#115d72] to-[#14a2bb] flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity">
+            <div className="w-9 h-9 rounded-full bg-linear-to-br from-[#115d72] to-[#14a2bb] flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity">
               <User size={18} className="text-white" />
             </div>
           </div>
@@ -271,7 +272,7 @@ export default function Sidebar() {
       </div>
 
       {/* Footer */}
-      <div className="mx-4 h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent" />
+      <div className="mx-4 h-px bg-linear-to-r from-transparent via-gray-200 to-transparent" />
       <div className="py-2">
         <nav className="space-y-1 px-2 pb-3">
           <button
