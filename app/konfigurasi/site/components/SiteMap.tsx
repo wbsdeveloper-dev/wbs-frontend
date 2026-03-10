@@ -103,7 +103,7 @@ async function mapFetch<T>(path: string, options?: RequestInit): Promise<T> {
   if (!res.ok) {
     let msg = res.statusText;
     try {
-      const body = (await res.json()) as ApiResponse;
+      const body = (await res.json()) as ApiResponse<unknown>;
       if (body.error) msg = body.error;
       else if (body.message) msg = body.message;
     } catch {
@@ -211,7 +211,7 @@ export default function SiteMap() {
   // Filter sites based on filters
   const filteredSites = useMemo(() => {
     if (!data?.sites) return [];
-    
+
     return data.sites.map((site) => ({
       ...site,
       isEnabled: updatingSiteId === site.id ? !site.isEnabled : site.isEnabled, // Show opposite status during update
@@ -267,9 +267,9 @@ export default function SiteMap() {
   // Filter pipes based on visible sites
   const filteredPipes = useMemo(() => {
     if (!data?.pipes || !showPipes) return [];
-    
+
     const visibleSiteIds = new Set(filteredSites.map((s) => s.id));
-    
+
     return data.pipes.filter((pipe) =>
       visibleSiteIds.has(pipe.sourceSiteId) &&
       visibleSiteIds.has(pipe.targetSiteId)
@@ -666,7 +666,7 @@ export default function SiteMap() {
             const icon = icons[site.siteType];
             const isUpdating = updatingSiteId === site.id;
             const displayStatus = isUpdating ? !site.isEnabled : site.isEnabled;
-            
+
             return (
               <Marker
                 key={site.id}
@@ -725,13 +725,12 @@ export default function SiteMap() {
                       <button
                         onClick={() => handleToggleSiteStatus(site.id, site.isEnabled)}
                         disabled={isUpdating}
-                        className={`w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
-                          isUpdating
+                        className={`w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${isUpdating
                             ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                             : displayStatus
                               ? "bg-red-50 text-red-600 hover:bg-red-100"
                               : "bg-green-50 text-green-600 hover:bg-green-100"
-                        }`}
+                          }`}
                       >
                         {isUpdating ? (
                           <>
