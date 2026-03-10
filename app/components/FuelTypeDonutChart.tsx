@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   PieChart,
   Pie,
@@ -8,41 +9,24 @@ import {
   Legend,
   Tooltip,
 } from "recharts";
-import { Expand } from "lucide-react";
-
-const COLORS = [
-  "#4F8EF7", // soft blue
-  "#34C77B", // soft green
-  "#F87171", // soft red
-  "#FBBF24", // soft amber
-  "#8B7CF6", // soft violet
-  "#38BDF8", // soft sky
-  "#4ADE80", // soft mint
-  "#FB7185", // soft rose
-  "#FACC15", // soft yellow
-  "#6366F1", // soft indigo
-  "#2DD4BF", // soft teal
-  "#FB923C", // soft orange
-  "#A3E635", // soft lime
-  "#22D3EE", // soft cyan
-  "#A78BFA", // soft purple
-  "#F472B6", // soft pink
-  "#34D399", // soft emerald
-  "#60A5FA", // soft blue light
-  "#F43F5E", // soft rose strong
-  "#7C3AED", // soft violet strong
-];
+import { Expand, Calendar, ChevronDown, ChevronUp } from "lucide-react";
+import { CHART_COLORS } from "@/app/_constants";
 
 interface DataPieChart {
   name: string;
   value: number;
   [key: string]: string | number;
 }
+
 type Props = {
   openModalFunction: () => void;
   data: DataPieChart[];
   changeFilterType: (value: string | null) => void;
   filterType: string | null;
+  /** Selected distribution date (YYYY-MM-DD) */
+  selectedDate: string;
+  /** Called when the user picks a new date */
+  onDateChange: (date: string) => void;
 };
 
 export default function FuelTypeDonutChart({
@@ -50,40 +34,96 @@ export default function FuelTypeDonutChart({
   data,
   changeFilterType,
   filterType,
+  selectedDate,
+  onDateChange,
 }: Props) {
+  const [showDateFilter, setShowDateFilter] = useState(false);
+
+  /** Format YYYY-MM-DD → human-readable Indonesian date */
+  const formattedDate = (() => {
+    try {
+      return new Date(selectedDate + "T00:00:00").toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      });
+    } catch {
+      return selectedDate;
+    }
+  })();
+
   return (
-    <div className="bg-white rounded-xl p-6 border border-gray-200">
-      <div className="flex justify-between items-center mb-">
-        <div className="flex gap-2 items-center justify-between w-full">
-          <h3 className="text-lg font-semibold text-gray-900">Konsumsi Gas</h3>
+    <div className="bg-white rounded-xl p-6 border border-gray-200 flex flex-col">
+      {/* Header row */}
+      <div className="flex justify-between items-center">
+        <h3 className="text-lg font-semibold text-gray-900">Konsumsi Gas</h3>
+        <div className="flex items-center gap-1">
+          {/* Date filter toggle */}
           <button
-            onClick={() => {
-              openModalFunction();
-            }}
-            className="cursor-pointer"
+            onClick={() => setShowDateFilter(!showDateFilter)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer ${
+              showDateFilter
+                ? "bg-[#14a2bb]/10 text-[#115d72] border border-[#14a2bb]/30"
+                : "text-gray-500 hover:bg-gray-100 border border-transparent"
+            }`}
           >
-            <Expand className="text-gray-900" />
+            <Calendar className="w-4 h-4" />
+            <span className="hidden sm:inline">Tanggal</span>
+            {showDateFilter ? (
+              <ChevronUp className="w-3.5 h-3.5" />
+            ) : (
+              <ChevronDown className="w-3.5 h-3.5" />
+            )}
+          </button>
+
+          {/* Expand button */}
+          <button
+            onClick={openModalFunction}
+            className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors cursor-pointer"
+          >
+            <Expand className="w-4 h-4" />
           </button>
         </div>
       </div>
+
+      {/* Collapsible date picker */}
+      {showDateFilter && (
+        <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+          <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
+            Tanggal Distribusi
+          </label>
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => onDateChange(e.target.value)}
+            className="w-full px-3 py-2 rounded-lg text-sm border border-gray-300
+                       bg-white text-gray-700
+                       focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/40 focus:border-[#14a2bb]
+                       transition-all duration-200"
+          />
+        </div>
+      )}
+
+      {/* Pemasok / Pembangkit tabs */}
       <div className="flex items-center mt-4 mb-2 justify-center">
-        <button
-          className={`text-[#115d72] ${filterType == "Pemasok" ? "bg-[#14a2bb92]" : ""} px-2 rounded-md cursor-pointer`}
-          onClick={() => {
-            changeFilterType("Pemasok");
-          }}
-        >
-          Pemasok
-        </button>
-        <button
-          className={`text-[#115d72] ${filterType == "Pembangkit" ? "bg-[#14a2bb92]" : ""} px-2 rounded-md cursor-pointer`}
-          onClick={() => {
-            changeFilterType("Pembangkit");
-          }}
-        >
-          Pembangkit
-        </button>
+        <div className="inline-flex bg-gray-100 rounded-lg p-0.5">
+          {["Pemasok", "Pembangkit"].map((type) => (
+            <button
+              key={type}
+              className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer ${
+                filterType === type
+                  ? "bg-[#14a2bb] text-white shadow-sm"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+              onClick={() => changeFilterType(type)}
+            >
+              {type}
+            </button>
+          ))}
+        </div>
       </div>
+
+      {/* Chart */}
       <ResponsiveContainer width="100%" height={250}>
         <PieChart>
           <Pie
@@ -95,8 +135,11 @@ export default function FuelTypeDonutChart({
             paddingAngle={2}
             dataKey="value"
           >
-            {data.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={COLORS[index]} />
+            {data.map((_, index) => (
+              <Cell
+                key={`cell-${index}`}
+                fill={CHART_COLORS[index % CHART_COLORS.length]}
+              />
             ))}
           </Pie>
           <Tooltip
@@ -138,9 +181,12 @@ export default function FuelTypeDonutChart({
           />
         </PieChart>
       </ResponsiveContainer>
+
+      {/* Dynamic footer */}
       <p className="text-xs text-gray-500 mt-4 pt-4 border-t border-gray-200">
-        Visualisasi konsumsi gas pada setiap pembangkit PLN EPI per tanggal 13
-        Januari 2026
+        Visualisasi konsumsi gas pada setiap{" "}
+        {filterType?.toLowerCase() ?? "pembangkit"} PLN EPI per tanggal{" "}
+        {formattedDate}
       </p>
     </div>
   );
