@@ -14,9 +14,9 @@ import {
   useTopPlants,
   useChartFlow,
   useFilters,
-  useContractInfo,
   useEvents,
 } from "@/hooks/service/dashboard-api";
+import { useContracts } from "@/hooks/service/contract-api";
 import type { Granularity } from "@/app/components/RealtimeChart";
 
 // Components
@@ -99,11 +99,18 @@ export default function GasDashboard() {
     selectedPembangkitId,
   );
 
-  // Fetch contract info — always fetch, optionally filter by selected pemasok
-  const { data: contractData, isLoading: isContractLoading } = useContractInfo(
-    selectedPemasokId,
-    selectedPembangkitId,
+  // Fetch contract from contracts table, filtered by selected pemasok/pembangkit
+  const { data: contractsData, isLoading: isContractLoading } = useContracts(
+    {
+      pemasok_site_id: selectedPemasokId,
+      pembangkit_site_id: selectedPembangkitId,
+      status: "ACTIVE",
+    },
+    {
+      enabled: !!(selectedPemasokId && selectedPembangkitId),
+    },
   );
+  const firstContract = contractsData?.[0] ?? null;
 
   // Fetch events — always fetch
   const { data: eventsData, isLoading: isEventsLoading } = useEvents(
@@ -282,10 +289,11 @@ export default function GasDashboard() {
 
             <div className="mb-6">
               <RealtimeChart
-                contractData={contractData ?? null}
+                contractData={firstContract}
                 chartFlowData={chartFlowData ?? null}
                 filtersData={filtersData ?? null}
                 isLoading={isChartLoading}
+                isContractLoading={isContractLoading}
                 onFilterByChange={handleFilterByChange}
                 onPeriodChange={handlePeriodChange}
                 onPemasokChange={handlePemasokChange}

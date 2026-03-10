@@ -68,6 +68,15 @@ async function botFetch<T>(
   return body.data;
 }
 
+export function getBotApiOptions(host: string) {
+  return {
+    baseUrl: host,
+    headers: {
+      "Content-Type": "application/json",
+    },
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Query key factory (namespaced per host to keep caches separate)
 // ---------------------------------------------------------------------------

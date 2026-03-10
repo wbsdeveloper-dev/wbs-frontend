@@ -8,7 +8,8 @@ import {
 } from "../../components/SiteTable";
 import { AddSiteModal } from "./components/AddSiteModal";
 import { AddRelationModal } from "./components/AddRelationModal";
-import SiteMap from "./components/SiteMap";
+import dynamic from "next/dynamic";
+const SiteMap = dynamic(() => import("./components/SiteMap"), { ssr: false });
 import { useQueryClient } from "@tanstack/react-query";
 import { siteKeys } from "@/hooks/service/site-api";
 
@@ -91,11 +92,10 @@ export default function SitePage() {
               <button
                 key={idx}
                 onClick={() => setActiveTab(idx)}
-                className={`relative flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all duration-200 cursor-pointer ${
-                  isActive
-                    ? "text-[#115d72]"
-                    : "text-gray-500 hover:text-gray-700"
-                }`}
+                className={`relative flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all duration-200 cursor-pointer ${isActive
+                  ? "text-[#115d72]"
+                  : "text-gray-500 hover:text-gray-700"
+                  }`}
               >
                 <Icon size={16} />
                 {tab.label}
