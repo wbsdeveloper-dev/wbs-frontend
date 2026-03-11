@@ -199,8 +199,17 @@ export default function EditDataTable({
   onFilterChange,
 }: EditDataTableProps) {
   const router = useRouter();
-  const startIndex = (pagination.page - 1) * pagination.limit;
-  const totalPages = pagination.totalPages;
+
+  // Client-side pagination state
+  const [currentPage, setCurrentPage] = useState(0);
+  const [itemsPerPage, setItemsPerPage] = useState(pagination.limit || 10);
+
+  // Derive pagination values from actual records
+  const totalItems = records.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const startIndex = currentPage * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedRecords = records.slice(startIndex, endIndex);
 
   // Only show filter UI if the parent provides onFilterChange
   const filtersEnabled = !!onFilterChange;
@@ -636,7 +645,7 @@ export default function EditDataTable({
                   </td>
                 </tr>
               ) : (
-                records.map((record, index) => (
+                paginatedRecords.map((record, index) => (
                   <tr
                     key={record.id}
                     className="hover:bg-gray-50 transition-colors"
@@ -700,36 +709,107 @@ export default function EditDataTable({
         </div>
 
         {/* Pagination */}
-        {!isLoading && totalPages > 1 && (
-          <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200">
-            <div className="text-sm text-gray-600">
-              Menampilkan {startIndex + 1}-
-              {Math.min(startIndex + pagination.limit, pagination.total)} dari{" "}
-              {pagination.total} data
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() =>
-                  onPageChange(pagination.page - 1, pagination.limit)
-                }
-                disabled={pagination.page <= 1}
-                className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <ChevronLeft size={16} />
-              </button>
-              <span className="text-sm text-gray-700">
-                Halaman {pagination.page} dari {totalPages}
+        {!isLoading && (
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-4 py-3 border-t border-gray-200 gap-3">
+            {/* Left: info + page size */}
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="text-sm text-gray-600">
+                Menampilkan{" "}
+                {totalItems > 0 ? (
+                  <>
+                    {startIndex + 1}-{Math.min(endIndex, totalItems)} dari{" "}
+                    {totalItems}
+                  </>
+                ) : (
+                  "0"
+                )}{" "}
+                data
               </span>
-              <button
-                onClick={() =>
-                  onPageChange(pagination.page + 1, pagination.limit)
-                }
-                disabled={pagination.page >= totalPages}
-                className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <ChevronRight size={16} />
-              </button>
+              <div className="flex items-center gap-1.5">
+                <label htmlFor="page-size" className="text-sm text-gray-500">
+                  Baris:
+                </label>
+                <select
+                  id="page-size"
+                  value={itemsPerPage}
+                  onChange={(e) => {
+                    setItemsPerPage(Number(e.target.value));
+                    setCurrentPage(0);
+                  }}
+                  className="px-2 py-1 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/40 focus:border-[#14a2bb] transition-all duration-200"
+                >
+                  {[5, 10, 25, 50].map((size) => (
+                    <option key={size} value={size}>
+                      {size}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
+
+            {/* Right: page buttons */}
+            {totalPages > 1 && (
+              <div className="flex items-center gap-1">
+                {/* Previous */}
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
+                  disabled={currentPage === 0}
+                  className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+
+                {/* Page numbers (1-indexed for display) */}
+                {(() => {
+                  const pages: (number | "...")[] = [];
+                  const displayPage = currentPage + 1; // 1-indexed for display
+                  if (totalPages <= 7) {
+                    for (let i = 1; i <= totalPages; i++) pages.push(i);
+                  } else {
+                    pages.push(1);
+                    if (displayPage > 3) pages.push("...");
+                    const start = Math.max(2, displayPage - 1);
+                    const end = Math.min(totalPages - 1, displayPage + 1);
+                    for (let i = start; i <= end; i++) pages.push(i);
+                    if (displayPage < totalPages - 2) pages.push("...");
+                    pages.push(totalPages);
+                  }
+                  return pages.map((p, idx) =>
+                    p === "..." ? (
+                      <span
+                        key={`ellipsis-${idx}`}
+                        className="px-1 text-sm text-gray-400 select-none"
+                      >
+                        …
+                      </span>
+                    ) : (
+                      <button
+                        key={p}
+                        onClick={() => setCurrentPage((p as number) - 1)}
+                        className={`min-w-[2rem] h-8 rounded-lg text-sm font-medium transition-all duration-200 ${
+                          p === displayPage
+                            ? "bg-[#115d72] text-white shadow-sm"
+                            : "text-gray-700 hover:bg-gray-100"
+                        }`}
+                      >
+                        {p}
+                      </button>
+                    ),
+                  );
+                })()}
+
+                {/* Next */}
+                <button
+                  onClick={() =>
+                    setCurrentPage((p) => Math.min(totalPages - 1, p + 1))
+                  }
+                  disabled={currentPage >= totalPages - 1}
+                  className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

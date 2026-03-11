@@ -155,7 +155,7 @@ export interface Template {
 
 export interface CreateTemplatePayload {
   name: string;
-  scope: "WA_GROUP" | "SPREADSHEET_SOURCE";
+  scope: "WA_GROUP" | "SPREADSHEET_SOURCE" | "EMAIL_INGEST";
   parserMode?: "RULE_BASED" | "AI_ASSISTED";
   groupConfigId?: string;
   spreadsheetSourceId?: string;
@@ -572,9 +572,7 @@ export function useTestRouting(
 // React Query hooks — AI Models
 // ---------------------------------------------------------------------------
 
-export function useAiModels(
-  options?: Partial<UseQueryOptions<AiModel[]>>,
-) {
+export function useAiModels(options?: Partial<UseQueryOptions<AiModel[]>>) {
   return useQuery({
     queryKey: configKeys.aiModels(),
     queryFn: () => getAiModels(),
