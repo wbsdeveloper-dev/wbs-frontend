@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import {
     DataGrid,
     GridColDef,
@@ -46,17 +46,15 @@ import {
     getContractVolumes,
     upsertContractVolumes,
     getContractDailyDelivery,
-    upsertContractDailyDelivery,
     getContractAnnualTotal,
     upsertContractAnnualTotal,
     type Contract,
     type ContractVolume,
-    type ContractDailyDelivery,
     type ContractAnnualTotal,
     type UpsertContractVolumeItem,
-    type UpsertContractDailyDeliveryItem,
     type UpsertContractAnnualTotalItem,
     type ContractDocument,
+    type CreateContractPayload,
     useUploadContractPdf,
     getContractDocuments,
     downloadContractDocument,
@@ -84,24 +82,6 @@ interface ContractTableRow {
     hargaPJBG: string;
     hgbt: string;
     volumeJPMH: string;
-    volume2024JPH: string;
-    volume2024TOP: string;
-    volume2024PercentTOP: string;
-    jumlahKontrakTahunan: string;
-    volumeKepmen2024: string;
-    volume2025JPH: string;
-    volume2025TOP: string;
-    volume2025PercentTOP: string;
-    jumlahKontrakTahunan2025: string;
-    volumeKepmen2025: string;
-    volumeJumlah2023: string;
-    volumeJumlah2024: string;
-    volumeJumlah2025: string;
-    volumeJumlah2026: string;
-    volumeJumlah2027: string;
-    volumeJumlah2028: string;
-    volumeJumlah2029: string;
-    volumeJumlah2030: string;
     unitSwitch: string;
     // Keep original contract data for API calls
     _contractId: string;
@@ -109,49 +89,18 @@ interface ContractTableRow {
     _priceUnit: string;
     _hgbtUnit: string;
     _isNew?: boolean;
-    // Hidden BBTUD values (always stored for saving)
+    // Hidden unit-specific base values
     _bbtud_volumeJPMH: string;
-    _bbtud_volume2024JPH: string;
-    _bbtud_volume2024TOP: string;
-    _bbtud_volume2024PercentTOP: string;
-    _bbtud_jumlahKontrakTahunan: string;
-    _bbtud_volumeKepmen2024: string;
-    _bbtud_volume2025JPH: string;
-    _bbtud_volume2025TOP: string;
-    _bbtud_volume2025PercentTOP: string;
-    _bbtud_jumlahKontrakTahunan2025: string;
-    _bbtud_volumeKepmen2025: string;
-    _bbtud_volumeJumlah2023: string;
-    _bbtud_volumeJumlah2024: string;
-    _bbtud_volumeJumlah2025: string;
-    _bbtud_volumeJumlah2026: string;
-    _bbtud_volumeJumlah2027: string;
-    _bbtud_volumeJumlah2028: string;
-    _bbtud_volumeJumlah2029: string;
-    _bbtud_volumeJumlah2030: string;
-    // Hidden MMSCFD values (from database)
     _mmscfd_volumeJPMH: string;
-    _mmscfd_volume2024JPH: string;
-    _mmscfd_volume2024TOP: string;
-    _mmscfd_volume2024PercentTOP: string;
-    _mmscfd_jumlahKontrakTahunan: string;
-    _mmscfd_volumeKepmen2024: string;
-    _mmscfd_volume2025JPH: string;
-    _mmscfd_volume2025TOP: string;
-    _mmscfd_volume2025PercentTOP: string;
-    _mmscfd_jumlahKontrakTahunan2025: string;
-    _mmscfd_volumeKepmen2025: string;
-    _mmscfd_volumeJumlah2023: string;
-    _mmscfd_volumeJumlah2024: string;
-    _mmscfd_volumeJumlah2025: string;
-    _mmscfd_volumeJumlah2026: string;
-    _mmscfd_volumeJumlah2027: string;
-    _mmscfd_volumeJumlah2028: string;
-    _mmscfd_volumeJumlah2029: string;
-    _mmscfd_volumeJumlah2030: string;
+    // Year tracking for dynamic volume columns
+    _awalPerjanjianYear: number | null;
+    _akhirPerjanjianYear: number | null;
 
     // Document
     document: ContractDocument | null;
+
+    // Dynamic volume year fields (volume{year}JPH, volume{year}TOP, etc.)
+    [key: string]: string | number | boolean | null | undefined | ContractDocument;
 }
 
 // ---------------------------------------------------------------------------
@@ -211,13 +160,6 @@ function findKepmen(
     return volumes.find((v) => v.year === year && v.is_kepmen === true);
 }
 
-function findDailyDelivery(
-    items: ContractDailyDelivery[],
-    year: number,
-): ContractDailyDelivery | undefined {
-    return items.find((d) => d.year === year);
-}
-
 function findAnnualTotal(
     items: ContractAnnualTotal[],
     year: number,
@@ -233,59 +175,16 @@ function mapContractToRow(
     contract: Contract,
     index: number,
     volumes: ContractVolume[] = [],
-    dailyDeliveries: ContractDailyDelivery[] = [],
+    _dailyDeliveries: unknown[] = [], // eslint-disable-line @typescript-eslint/no-unused-vars
     annualTotals: ContractAnnualTotal[] = [],
     document: ContractDocument | null = null,
+    years: number[] = [],
 ): ContractTableRow {
-    // Volume entries by year + basis
-    const jph2024 = findVolume(volumes, 2024, "JPH");
-    const top2024 = findVolume(volumes, 2024, "TOP");
-    const kepmen2024 = findKepmen(volumes, 2024);
-    const jph2025 = findVolume(volumes, 2025, "JPH");
-    const top2025 = findVolume(volumes, 2025, "TOP");
-    const kepmen2025 = findKepmen(volumes, 2025);
+    // Parse contract year range
+    const awalYear = contract.awal_perjanjian ? new Date(contract.awal_perjanjian).getFullYear() : null;
+    const akhirYear = contract.akhir_perjanjian ? new Date(contract.akhir_perjanjian).getFullYear() : null;
 
-    // BBTUD values
-    const bbtud_volume2024JPH = numStr(jph2024?.value_bbtud);
-    const bbtud_volume2024TOP = numStr(top2024?.value_bbtud);
-    const bbtud_volume2024PercentTOP = numStr(top2024?.top_percentage);
-    const bbtud_jumlahKontrakTahunan = numStr(findAnnualTotal(annualTotals, 2024)?.total_bbtu);
-    const bbtud_volumeKepmen2024 = numStr(kepmen2024?.value_bbtud);
-    const bbtud_volume2025JPH = numStr(jph2025?.value_bbtud);
-    const bbtud_volume2025TOP = numStr(top2025?.value_bbtud);
-    const bbtud_volume2025PercentTOP = numStr(top2025?.top_percentage);
-    const bbtud_jumlahKontrakTahunan2025 = numStr(findAnnualTotal(annualTotals, 2025)?.total_bbtu);
-    const bbtud_volumeKepmen2025 = numStr(kepmen2025?.value_bbtud);
-    const bbtud_volumeJumlah2023 = numStr(findDailyDelivery(dailyDeliveries, 2023)?.value_bbtud);
-    const bbtud_volumeJumlah2024 = numStr(findDailyDelivery(dailyDeliveries, 2024)?.value_bbtud);
-    const bbtud_volumeJumlah2025 = numStr(findDailyDelivery(dailyDeliveries, 2025)?.value_bbtud);
-    const bbtud_volumeJumlah2026 = numStr(findDailyDelivery(dailyDeliveries, 2026)?.value_bbtud);
-    const bbtud_volumeJumlah2027 = numStr(findDailyDelivery(dailyDeliveries, 2027)?.value_bbtud);
-    const bbtud_volumeJumlah2028 = numStr(findDailyDelivery(dailyDeliveries, 2028)?.value_bbtud);
-    const bbtud_volumeJumlah2029 = numStr(findDailyDelivery(dailyDeliveries, 2029)?.value_bbtud);
-    const bbtud_volumeJumlah2030 = numStr(findDailyDelivery(dailyDeliveries, 2030)?.value_bbtud);
-
-    // MMSCFD values
-    const mmscfd_volume2024JPH = numStr(jph2024?.value_mmscfd);
-    const mmscfd_volume2024TOP = numStr(top2024?.value_mmscfd);
-    const mmscfd_volume2024PercentTOP = numStr(top2024?.top_percentage_mmscfd);
-    const mmscfd_jumlahKontrakTahunan = numStr(findAnnualTotal(annualTotals, 2024)?.total_mmscfd);
-    const mmscfd_volumeKepmen2024 = numStr(kepmen2024?.value_mmscfd);
-    const mmscfd_volume2025JPH = numStr(jph2025?.value_mmscfd);
-    const mmscfd_volume2025TOP = numStr(top2025?.value_mmscfd);
-    const mmscfd_volume2025PercentTOP = numStr(top2025?.top_percentage_mmscfd);
-    const mmscfd_jumlahKontrakTahunan2025 = numStr(findAnnualTotal(annualTotals, 2025)?.total_mmscfd);
-    const mmscfd_volumeKepmen2025 = numStr(kepmen2025?.value_mmscfd);
-    const mmscfd_volumeJumlah2023 = numStr(findDailyDelivery(dailyDeliveries, 2023)?.value_mmscfd);
-    const mmscfd_volumeJumlah2024 = numStr(findDailyDelivery(dailyDeliveries, 2024)?.value_mmscfd);
-    const mmscfd_volumeJumlah2025 = numStr(findDailyDelivery(dailyDeliveries, 2025)?.value_mmscfd);
-    const mmscfd_volumeJumlah2026 = numStr(findDailyDelivery(dailyDeliveries, 2026)?.value_mmscfd);
-    const mmscfd_volumeJumlah2027 = numStr(findDailyDelivery(dailyDeliveries, 2027)?.value_mmscfd);
-    const mmscfd_volumeJumlah2028 = numStr(findDailyDelivery(dailyDeliveries, 2028)?.value_mmscfd);
-    const mmscfd_volumeJumlah2029 = numStr(findDailyDelivery(dailyDeliveries, 2029)?.value_mmscfd);
-    const mmscfd_volumeJumlah2030 = numStr(findDailyDelivery(dailyDeliveries, 2030)?.value_mmscfd);
-
-    return {
+    const row: ContractTableRow = {
         id: contract.id,
         no: index + 1,
         region: contract.region || "",
@@ -304,78 +203,55 @@ function mapContractToRow(
         volumeJPMH: contract.volume_jpmh_bbtud != null
             ? String(contract.volume_jpmh_bbtud)
             : "",
-        // Display values default to BBTUD
-        volume2024JPH: bbtud_volume2024JPH,
-        volume2024TOP: bbtud_volume2024TOP,
-        volume2024PercentTOP: bbtud_volume2024PercentTOP,
-        jumlahKontrakTahunan: bbtud_jumlahKontrakTahunan,
-        volumeKepmen2024: bbtud_volumeKepmen2024,
-        volume2025JPH: bbtud_volume2025JPH,
-        volume2025TOP: bbtud_volume2025TOP,
-        volume2025PercentTOP: bbtud_volume2025PercentTOP,
-        jumlahKontrakTahunan2025: bbtud_jumlahKontrakTahunan2025,
-        volumeKepmen2025: bbtud_volumeKepmen2025,
-        volumeJumlah2023: bbtud_volumeJumlah2023,
-        volumeJumlah2024: bbtud_volumeJumlah2024,
-        volumeJumlah2025: bbtud_volumeJumlah2025,
-        volumeJumlah2026: bbtud_volumeJumlah2026,
-        volumeJumlah2027: bbtud_volumeJumlah2027,
-        volumeJumlah2028: bbtud_volumeJumlah2028,
-        volumeJumlah2029: bbtud_volumeJumlah2029,
-        volumeJumlah2030: bbtud_volumeJumlah2030,
         unitSwitch: "BBTUD",
         _contractId: contract.id,
         _contractPartyId: contract.contract_party_id,
         _priceUnit: contract.price_unit || "USD_PER_MMBTU",
         _hgbtUnit: contract.hgbt_unit || "",
-        // Hidden BBTUD values
+        _awalPerjanjianYear: awalYear,
+        _akhirPerjanjianYear: akhirYear,
+        // Hidden unit-specific base values
         _bbtud_volumeJPMH: contract.volume_jpmh_bbtud != null ? String(contract.volume_jpmh_bbtud) : "",
-        _bbtud_volume2024JPH: bbtud_volume2024JPH,
-        _bbtud_volume2024TOP: bbtud_volume2024TOP,
-        _bbtud_volume2024PercentTOP: bbtud_volume2024PercentTOP,
-        _bbtud_jumlahKontrakTahunan: bbtud_jumlahKontrakTahunan,
-        _bbtud_volumeKepmen2024: bbtud_volumeKepmen2024,
-        _bbtud_volume2025JPH: bbtud_volume2025JPH,
-        _bbtud_volume2025TOP: bbtud_volume2025TOP,
-        _bbtud_volume2025PercentTOP: bbtud_volume2025PercentTOP,
-        _bbtud_jumlahKontrakTahunan2025: bbtud_jumlahKontrakTahunan2025,
-        _bbtud_volumeKepmen2025: bbtud_volumeKepmen2025,
-        _bbtud_volumeJumlah2023: bbtud_volumeJumlah2023,
-        _bbtud_volumeJumlah2024: bbtud_volumeJumlah2024,
-        _bbtud_volumeJumlah2025: bbtud_volumeJumlah2025,
-        _bbtud_volumeJumlah2026: bbtud_volumeJumlah2026,
-        _bbtud_volumeJumlah2027: bbtud_volumeJumlah2027,
-        _bbtud_volumeJumlah2028: bbtud_volumeJumlah2028,
-        _bbtud_volumeJumlah2029: bbtud_volumeJumlah2029,
-        _bbtud_volumeJumlah2030: bbtud_volumeJumlah2030,
-        // Hidden MMSCFD values
         _mmscfd_volumeJPMH: contract.volume_jpmh_mmscfd != null ? String(contract.volume_jpmh_mmscfd) : "",
-        _mmscfd_volume2024JPH: mmscfd_volume2024JPH,
-        _mmscfd_volume2024TOP: mmscfd_volume2024TOP,
-        _mmscfd_volume2024PercentTOP: mmscfd_volume2024PercentTOP,
-        _mmscfd_jumlahKontrakTahunan: mmscfd_jumlahKontrakTahunan,
-        _mmscfd_volumeKepmen2024: mmscfd_volumeKepmen2024,
-        _mmscfd_volume2025JPH: mmscfd_volume2025JPH,
-        _mmscfd_volume2025TOP: mmscfd_volume2025TOP,
-        _mmscfd_volume2025PercentTOP: mmscfd_volume2025PercentTOP,
-        _mmscfd_jumlahKontrakTahunan2025: mmscfd_jumlahKontrakTahunan2025,
-        _mmscfd_volumeKepmen2025: mmscfd_volumeKepmen2025,
-        _mmscfd_volumeJumlah2023: mmscfd_volumeJumlah2023,
-        _mmscfd_volumeJumlah2024: mmscfd_volumeJumlah2024,
-        _mmscfd_volumeJumlah2025: mmscfd_volumeJumlah2025,
-        _mmscfd_volumeJumlah2026: mmscfd_volumeJumlah2026,
-        _mmscfd_volumeJumlah2027: mmscfd_volumeJumlah2027,
-        _mmscfd_volumeJumlah2028: mmscfd_volumeJumlah2028,
-        _mmscfd_volumeJumlah2029: mmscfd_volumeJumlah2029,
-        _mmscfd_volumeJumlah2030: mmscfd_volumeJumlah2030,
 
         document,
     };
+
+    // Dynamically populate volume year fields (JPH, TOP, %TOP, Jumlah Kontrak Tahunan, Volume Kepmen)
+    for (const year of years) {
+        const jph = findVolume(volumes, year, "JPH");
+        const top = findVolume(volumes, year, "TOP");
+        const kepmen = findKepmen(volumes, year);
+        const annual = findAnnualTotal(annualTotals, year);
+
+        // Visible values (default to BBTUD)
+        row[`volume${year}JPH`] = numStr(jph?.value_bbtud);
+        row[`volume${year}TOP`] = numStr(top?.value_bbtud);
+        row[`volume${year}PercentTOP`] = numStr(top?.top_percentage);
+        row[`jumlahKontrakTahunan${year}`] = numStr(annual?.total_bbtu);
+        row[`volumeKepmen${year}`] = numStr(kepmen?.value_bbtud);
+
+        // Hidden BBTUD values
+        row[`_bbtud_volume${year}JPH`] = numStr(jph?.value_bbtud);
+        row[`_bbtud_volume${year}TOP`] = numStr(top?.value_bbtud);
+        row[`_bbtud_volume${year}PercentTOP`] = numStr(top?.top_percentage);
+        row[`_bbtud_jumlahKontrakTahunan${year}`] = numStr(annual?.total_bbtu);
+        row[`_bbtud_volumeKepmen${year}`] = numStr(kepmen?.value_bbtud);
+
+        // Hidden MMSCFD values
+        row[`_mmscfd_volume${year}JPH`] = numStr(jph?.value_mmscfd);
+        row[`_mmscfd_volume${year}TOP`] = numStr(top?.value_mmscfd);
+        row[`_mmscfd_volume${year}PercentTOP`] = numStr(top?.top_percentage_mmscfd);
+        row[`_mmscfd_jumlahKontrakTahunan${year}`] = numStr(annual?.total_mmscfd);
+        row[`_mmscfd_volumeKepmen${year}`] = numStr(kepmen?.value_mmscfd);
+    }
+
+    return row;
 }
 
-function createEmptyRow(rowNumber: number): ContractTableRow {
+function createEmptyRow(rowNumber: number, years: number[] = []): ContractTableRow {
     const newId = `new-${Date.now()}`;
-    return {
+    const row: ContractTableRow = {
         id: newId,
         no: rowNumber,
         region: "",
@@ -392,73 +268,41 @@ function createEmptyRow(rowNumber: number): ContractTableRow {
         hargaPJBG: "",
         hgbt: "",
         volumeJPMH: "",
-        volume2024JPH: "",
-        volume2024TOP: "",
-        volume2024PercentTOP: "",
-        jumlahKontrakTahunan: "",
-        volumeKepmen2024: "",
-        volume2025JPH: "",
-        volume2025TOP: "",
-        volume2025PercentTOP: "",
-        jumlahKontrakTahunan2025: "",
-        volumeKepmen2025: "",
-        volumeJumlah2023: "",
-        volumeJumlah2024: "",
-        volumeJumlah2025: "",
-        volumeJumlah2026: "",
-        volumeJumlah2027: "",
-        volumeJumlah2028: "",
-        volumeJumlah2029: "",
-        volumeJumlah2030: "",
         unitSwitch: "BBTUD",
         _contractId: newId,
         _contractPartyId: "",
         _priceUnit: "USD_PER_MMBTU",
         _hgbtUnit: "",
         _isNew: true,
-        // Hidden BBTUD values
+        _awalPerjanjianYear: null,
+        _akhirPerjanjianYear: null,
+        // Hidden unit-specific base values
         _bbtud_volumeJPMH: "",
-        _bbtud_volume2024JPH: "",
-        _bbtud_volume2024TOP: "",
-        _bbtud_volume2024PercentTOP: "",
-        _bbtud_jumlahKontrakTahunan: "",
-        _bbtud_volumeKepmen2024: "",
-        _bbtud_volume2025JPH: "",
-        _bbtud_volume2025TOP: "",
-        _bbtud_volume2025PercentTOP: "",
-        _bbtud_jumlahKontrakTahunan2025: "",
-        _bbtud_volumeKepmen2025: "",
-        _bbtud_volumeJumlah2023: "",
-        _bbtud_volumeJumlah2024: "",
-        _bbtud_volumeJumlah2025: "",
-        _bbtud_volumeJumlah2026: "",
-        _bbtud_volumeJumlah2027: "",
-        _bbtud_volumeJumlah2028: "",
-        _bbtud_volumeJumlah2029: "",
-        _bbtud_volumeJumlah2030: "",
-        // Hidden MMSCFD values
         _mmscfd_volumeJPMH: "",
-        _mmscfd_volume2024JPH: "",
-        _mmscfd_volume2024TOP: "",
-        _mmscfd_volume2024PercentTOP: "",
-        _mmscfd_jumlahKontrakTahunan: "",
-        _mmscfd_volumeKepmen2024: "",
-        _mmscfd_volume2025JPH: "",
-        _mmscfd_volume2025TOP: "",
-        _mmscfd_volume2025PercentTOP: "",
-        _mmscfd_jumlahKontrakTahunan2025: "",
-        _mmscfd_volumeKepmen2025: "",
-        _mmscfd_volumeJumlah2023: "",
-        _mmscfd_volumeJumlah2024: "",
-        _mmscfd_volumeJumlah2025: "",
-        _mmscfd_volumeJumlah2026: "",
-        _mmscfd_volumeJumlah2027: "",
-        _mmscfd_volumeJumlah2028: "",
-        _mmscfd_volumeJumlah2029: "",
-        _mmscfd_volumeJumlah2030: "",
 
         document: null,
     };
+
+    // Dynamically populate volume year fields
+    for (const year of years) {
+        row[`volume${year}JPH`] = "";
+        row[`volume${year}TOP`] = "";
+        row[`volume${year}PercentTOP`] = "";
+        row[`jumlahKontrakTahunan${year}`] = "";
+        row[`volumeKepmen${year}`] = "";
+        row[`_bbtud_volume${year}JPH`] = "";
+        row[`_bbtud_volume${year}TOP`] = "";
+        row[`_bbtud_volume${year}PercentTOP`] = "";
+        row[`_bbtud_jumlahKontrakTahunan${year}`] = "";
+        row[`_bbtud_volumeKepmen${year}`] = "";
+        row[`_mmscfd_volume${year}JPH`] = "";
+        row[`_mmscfd_volume${year}TOP`] = "";
+        row[`_mmscfd_volume${year}PercentTOP`] = "";
+        row[`_mmscfd_jumlahKontrakTahunan${year}`] = "";
+        row[`_mmscfd_volumeKepmen${year}`] = "";
+    }
+
+    return row;
 }
 
 // ---------------------------------------------------------------------------
@@ -466,8 +310,8 @@ function createEmptyRow(rowNumber: number): ContractTableRow {
 // ---------------------------------------------------------------------------
 
 // Cell renderer — edit mode shows bordered input-like box, view mode shows plain text
-const makeRenderCell =
-    (isEditMode: boolean) => (params: GridRenderCellParams) => {
+function makeRenderCell(isEditMode: boolean) {
+    const RenderCell = (params: GridRenderCellParams) => {
         if (isEditMode) {
             return (
                 <Box
@@ -498,6 +342,9 @@ const makeRenderCell =
             </span>
         );
     };
+    RenderCell.displayName = "RenderCell";
+    return RenderCell;
+}
 
 // ---------------------------------------------------------------------------
 // Build columns dynamically based on edit mode
@@ -507,10 +354,73 @@ function buildColumns(
     isEditMode: boolean,
     supplierNames: string[],
     powerplantNames: string[],
+    years: number[] = [],
 ): GridColDef[] {
     const renderCell = makeRenderCell(isEditMode);
 
-    return [
+    // Custom renderCell for volume year columns with grayed-out support
+    const makeVolumeYearRenderCell = (year: number) => {
+        const VolumeYearCell = (params: GridRenderCellParams) => {
+            const row = params.row;
+            const contractEndYear = row._akhirPerjanjianYear;
+
+            // Year is beyond contract end → grayed/disabled cell
+            if (contractEndYear !== null && contractEndYear !== undefined && year > contractEndYear) {
+                return (
+                    <Box
+                        sx={{
+                            width: "100%",
+                            height: "100%",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            backgroundColor: "#f3f4f6",
+                            color: "#d1d5db",
+                            fontSize: "12px",
+                            cursor: "not-allowed",
+                        }}
+                    >
+                        —
+                    </Box>
+                );
+            }
+
+            // Normal rendering
+            if (isEditMode) {
+                return (
+                    <Box
+                        sx={{
+                            width: "calc(100% - 8px)",
+                            height: "36px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            border: "1px solid #e5e7eb",
+                            borderRadius: "6px",
+                            backgroundColor: "#fff",
+                            px: 1,
+                            mx: "auto",
+                            fontSize: "12px",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                        }}
+                    >
+                        {params.value || "—"}
+                    </Box>
+                );
+            }
+            return (
+                <span className="text-xs text-gray-700 truncate">
+                    {params.value || <span style={{ fontSize: "10px", color: "#aaa" }}>—</span>}
+                </span>
+            );
+        };
+        VolumeYearCell.displayName = `VolumeYearCell_${year}`;
+        return VolumeYearCell;
+    };
+
+    const cols: GridColDef[] = [
         {
             field: "no",
             headerName: "No",
@@ -649,204 +559,79 @@ function buildColumns(
             editable: isEditMode,
             renderCell,
         },
-        {
-            field: "volume2024JPH",
-            headerName: "JPH",
-            width: 100,
-            headerAlign: "center",
-            align: "center",
-            editable: isEditMode,
-            renderCell,
-        },
-        {
-            field: "volume2024TOP",
-            headerName: "TOP",
-            width: 120,
-            headerAlign: "center",
-            align: "center",
-            editable: isEditMode,
-            renderCell,
-        },
-        {
-            field: "volume2024PercentTOP",
-            headerName: "% TOP",
-            width: 120,
-            headerAlign: "center",
-            align: "center",
-            editable: isEditMode,
-            renderCell,
-        },
-        {
-            field: "jumlahKontrakTahunan",
-            headerName: "JUMLAH KONTRAK TAHUNAN 2024",
-            width: 240,
-            headerAlign: "center",
-            align: "center",
-            editable: isEditMode,
-            renderCell,
-        },
-        {
-            field: "volumeKepmen2024",
-            headerName: "Volume Kepmen 2024",
-            width: 120,
-            headerAlign: "center",
-            align: "center",
-            editable: isEditMode,
-            renderCell,
-        },
-        {
-            field: "volume2025JPH",
-            headerName: "JPH",
-            width: 100,
-            headerAlign: "center",
-            align: "center",
-            editable: isEditMode,
-            renderCell,
-        },
-        {
-            field: "volume2025TOP",
-            headerName: "TOP",
-            width: 100,
-            headerAlign: "center",
-            align: "center",
-            editable: isEditMode,
-            renderCell,
-        },
-        {
-            field: "volume2025PercentTOP",
-            headerName: "% TOP",
-            width: 100,
-            headerAlign: "center",
-            align: "center",
-            editable: isEditMode,
-            renderCell,
-        },
-        {
-            field: "jumlahKontrakTahunan2025",
-            headerName: "JUMLAH KONTRAK TAHUNAN 2025",
-            width: 240,
-            headerAlign: "center",
-            align: "center",
-            editable: isEditMode,
-            renderCell,
-        },
-        {
-            field: "volumeKepmen2025",
-            headerName: "Volume Kepmen 2025",
-            width: 120,
-            headerAlign: "center",
-            align: "center",
-            editable: isEditMode,
-            renderCell,
-        },
-        {
-            field: "volumeJumlah2023",
-            headerName: "2023",
-            width: 100,
-            headerAlign: "center",
-            align: "center",
-            editable: isEditMode,
-            renderCell,
-        },
-        {
-            field: "volumeJumlah2024",
-            headerName: "2024",
-            width: 100,
-            headerAlign: "center",
-            align: "center",
-            editable: isEditMode,
-            renderCell,
-        },
-        {
-            field: "volumeJumlah2025",
-            headerName: "2025",
-            width: 100,
-            headerAlign: "center",
-            align: "center",
-            editable: isEditMode,
-            renderCell,
-        },
-        {
-            field: "volumeJumlah2026",
-            headerName: "2026",
-            width: 100,
-            headerAlign: "center",
-            align: "center",
-            editable: isEditMode,
-            renderCell,
-        },
-        {
-            field: "volumeJumlah2027",
-            headerName: "2027",
-            width: 100,
-            headerAlign: "center",
-            align: "center",
-            editable: isEditMode,
-            renderCell,
-        },
-        {
-            field: "volumeJumlah2028",
-            headerName: "2028",
-            width: 100,
-            headerAlign: "center",
-            align: "center",
-            editable: isEditMode,
-            renderCell,
-        },
-        {
-            field: "volumeJumlah2029",
-            headerName: "2029",
-            width: 100,
-            headerAlign: "center",
-            align: "center",
-            editable: isEditMode,
-            renderCell,
-        },
-        {
-            field: "volumeJumlah2030",
-            headerName: "2030",
-            width: 100,
-            headerAlign: "center",
-            align: "center",
-            editable: isEditMode,
-            renderCell,
-        },
     ];
+
+    // Add dynamic volume year group columns (JPH, TOP, %TOP, Jumlah Kontrak Tahunan, Volume Kepmen)
+    for (const year of years) {
+        const yearRenderCell = makeVolumeYearRenderCell(year);
+        cols.push(
+            {
+                field: `volume${year}JPH`,
+                headerName: "JPH",
+                width: 100,
+                headerAlign: "center",
+                align: "center",
+                editable: isEditMode,
+                renderCell: yearRenderCell,
+            },
+            {
+                field: `volume${year}TOP`,
+                headerName: "TOP",
+                width: 120,
+                headerAlign: "center",
+                align: "center",
+                editable: isEditMode,
+                renderCell: yearRenderCell,
+            },
+            {
+                field: `volume${year}PercentTOP`,
+                headerName: "% TOP",
+                width: 120,
+                headerAlign: "center",
+                align: "center",
+                editable: isEditMode,
+                renderCell: yearRenderCell,
+            },
+            {
+                field: `jumlahKontrakTahunan${year}`,
+                headerName: `JUMLAH KONTRAK TAHUNAN ${year}`,
+                width: 240,
+                headerAlign: "center",
+                align: "center",
+                editable: isEditMode,
+                renderCell: yearRenderCell,
+            },
+            {
+                field: `volumeKepmen${year}`,
+                headerName: `Volume Kepmen ${year}`,
+                width: 120,
+                headerAlign: "center",
+                align: "center",
+                editable: isEditMode,
+                renderCell: yearRenderCell,
+            },
+        );
+    }
+
+    return cols;
 }
 
 // ---------------------------------------------------------------------------
 // Column grouping
 // ---------------------------------------------------------------------------
 
-const columnGroupingModel: GridColumnGroupingModel = [
-    {
-        groupId: "volume2024",
-        headerName: "Volume 2024",
-        headerAlign: "center",
-        children: [{ field: "volume2024JPH" }, { field: "volume2024TOP" }, { field: "volume2024PercentTOP" }],
-    },
-    {
-        groupId: "volume2025",
-        headerName: "Volume 2025",
-        headerAlign: "center",
-        children: [{ field: "volume2025JPH" }, { field: "volume2025TOP" }, { field: "volume2025PercentTOP" }],
-    },
-    {
-        groupId: "volumeJumlahPH",
-        headerName: "Volume Jumlah Penyerahan Harian",
-        headerAlign: "center",
+function buildColumnGroupingModel(years: number[]): GridColumnGroupingModel {
+    return years.map((year) => ({
+        groupId: `volume${year}`,
+        headerName: `Volume ${year}`,
+        headerAlign: "center" as const,
         children: [
-            { field: "volumeJumlah2023" },
-            { field: "volumeJumlah2024" },
-            { field: "volumeJumlah2025" },
-            { field: "volumeJumlah2026" },
-            { field: "volumeJumlah2027" },
-            { field: "volumeJumlah2028" },
-            { field: "volumeJumlah2029" },
-            { field: "volumeJumlah2030" },
+            { field: `volume${year}JPH` },
+            { field: `volume${year}TOP` },
+            { field: `volume${year}PercentTOP` },
         ],
-    },
-];
+    }));
+}
 
 // ---------------------------------------------------------------------------
 // Component
@@ -878,10 +663,10 @@ export default function ContractTable() {
     const { data: supplierSitesData } = useSites({ type: "PEMASOK" });
     const { data: powerplantSitesData } = useSites({ type: "PEMBANGKIT" });
 
-    const supplierSites = supplierSitesData || [];
-    const powerplantSites = powerplantSitesData || [];
-    const supplierNames = supplierSites.map((s) => s.name);
-    const powerplantNames = powerplantSites.map((s) => s.name);
+    const supplierSites = useMemo(() => supplierSitesData || [], [supplierSitesData]);
+    const powerplantSites = useMemo(() => powerplantSitesData || [], [powerplantSitesData]);
+    const supplierNames = useMemo(() => supplierSites.map((s) => s.name), [supplierSites]);
+    const powerplantNames = useMemo(() => powerplantSites.map((s) => s.name), [powerplantSites]);
 
     const {
         data: contracts,
@@ -942,6 +727,27 @@ export default function ContractTable() {
         },
     });
 
+    // ---- Compute dynamic year range from contracts ----
+    const yearRange = useMemo(() => {
+        if (!contracts || contracts.length === 0) return [];
+        let minYear = Infinity;
+        let maxYear = -Infinity;
+        for (const c of contracts) {
+            if (c.awal_perjanjian) {
+                const y = new Date(c.awal_perjanjian).getFullYear();
+                if (y < minYear) minYear = y;
+            }
+            if (c.akhir_perjanjian) {
+                const y = new Date(c.akhir_perjanjian).getFullYear();
+                if (y > maxYear) maxYear = y;
+            }
+        }
+        if (minYear === Infinity || maxYear === -Infinity) return [];
+        const years: number[] = [];
+        for (let y = minYear; y <= maxYear; y++) years.push(y);
+        return years;
+    }, [contracts]);
+
     // ---- Sync API data → local rows (fetch sub-resources per contract) ----
     useEffect(() => {
         if (!contracts || contracts.length === 0) {
@@ -973,6 +779,7 @@ export default function ContractTable() {
                             dailyDeliveries,
                             annualTotals,
                             latestDocument,
+                            yearRange,
                         );
                     }),
                 );
@@ -980,14 +787,14 @@ export default function ContractTable() {
             } catch (err) {
                 console.error("Failed to load sub-resource data:", err);
                 // Fallback: show rows without sub-resource data
-                if (!cancelled) setRows(contracts.map((c, i) => mapContractToRow(c, i, [], [], [], null)));
+                if (!cancelled) setRows(contracts.map((c, i) => mapContractToRow(c, i, [], [], [], null, yearRange)));
             }
         })();
 
         return () => {
             cancelled = true;
         };
-    }, [contracts]);
+    }, [contracts, yearRange]);
 
     // ---- Handlers ----
 
@@ -1001,10 +808,79 @@ export default function ContractTable() {
         [],
     );
 
+    const handleExport = useCallback(() => {
+        if (!rows || rows.length === 0) {
+            setSnackbar({ open: true, message: "Tidak ada data untuk diekspor", severity: "error" });
+            return;
+        }
+
+        const headers = [
+            "No", "Region", "Pemasok", "Pembangkit", "Pemilik KIT",
+            "Jenis Dokumen", "No Kontrak Awal", "Jenis Dokumen Tambahan", "No Kontrak Terbaru",
+            "Awal Perjanjian", "Tanggal Efektif", "Akhir Perjanjian",
+            "Harga PJBG", "Harga HGBT", "Unit", "Volume JPMH"
+        ];
+
+        for (const year of yearRange) {
+            headers.push(`Volume ${year} JPH`);
+            headers.push(`Volume ${year} TOP`);
+            headers.push(`Volume ${year} % TOP`);
+            headers.push(`Jumlah Kontrak Tahunan ${year}`);
+            headers.push(`Volume Kepmen ${year}`);
+        }
+
+        const escapeCSV = (val: unknown) => {
+            if (val === null || val === undefined || val === "") return '""';
+            const str = String(val);
+            if (str.includes(",") || str.includes('"') || str.includes("\n") || str.includes("—")) {
+                return `"${str.replace(/"/g, '""')}"`;
+            }
+            return `"${str}"`;
+        };
+
+        const csvRows: string[] = [headers.map(escapeCSV).join(",")];
+
+        for (const row of rows) {
+            const rowData: unknown[] = [
+                row.no, row.region, row.pemasok, row.pembangkit, row.pemilikKIT,
+                row.jenisDokumen, row.noKontrakAwal, row.jenisDokumenTambahan, row.noKontrakTerbaru,
+                row.awalPerjanjian, row.tanggalEfektif, row.akhirPerjanjian,
+                row.hargaPJBG, row.hgbt, row.unitSwitch, row.volumeJPMH
+            ];
+
+            for (const year of yearRange) {
+                if (row._akhirPerjanjianYear !== null && row._akhirPerjanjianYear !== undefined && year > row._akhirPerjanjianYear) {
+                    rowData.push("—", "—", "—", "—", "—");
+                } else {
+                    rowData.push(
+                        row[`volume${year}JPH`],
+                        row[`volume${year}TOP`],
+                        row[`volume${year}PercentTOP`],
+                        row[`jumlahKontrakTahunan${year}`],
+                        row[`volumeKepmen${year}`]
+                    );
+                }
+            }
+
+            csvRows.push(rowData.map(escapeCSV).join(","));
+        }
+
+        const csvContent = "\uFEFF" + csvRows.join("\n");
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `kontrak_gas_pipa_${new Date().toISOString().slice(0, 10)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }, [rows, yearRange]);
+
     const handleAddRow = useCallback(() => {
-        setRows((prev) => [...prev, createEmptyRow(prev.length + 1)]);
+        setRows((prev) => [...prev, createEmptyRow(prev.length + 1, yearRange)]);
         setIsEditMode(true);
-    }, []);
+    }, [yearRange]);
 
     const handleDeleteRow = useCallback(
         (id: string) => {
@@ -1051,10 +927,11 @@ export default function ContractTable() {
                 message: "Kontrak berhasil dihapus",
                 severity: "success",
             });
-        } catch (err: any) {
+        } catch (err) {
+            const message = err instanceof Error ? err.message : "Terjadi kesalahan";
             setSnackbar({
                 open: true,
-                message: `Gagal menghapus: ${err?.message || "Terjadi kesalahan"}`,
+                message: `Gagal menghapus: ${message}`,
                 severity: "error",
             });
         }
@@ -1069,150 +946,84 @@ export default function ContractTable() {
             const currentPrefix = row.unitSwitch === "BBTUD" ? "_bbtud_" : "_mmscfd_";
             const volumeFieldNames = [
                 "volumeJPMH",
-                "volume2024JPH", "volume2024TOP", "volume2024PercentTOP",
-                "jumlahKontrakTahunan", "volumeKepmen2024",
-                "volume2025JPH", "volume2025TOP", "volume2025PercentTOP",
-                "jumlahKontrakTahunan2025", "volumeKepmen2025",
-                "volumeJumlah2023", "volumeJumlah2024", "volumeJumlah2025",
-                "volumeJumlah2026", "volumeJumlah2027", "volumeJumlah2028",
-                "volumeJumlah2029", "volumeJumlah2030",
-            ] as const;
+                ...yearRange.flatMap(y => [
+                    `volume${y}JPH`, `volume${y}TOP`, `volume${y}PercentTOP`,
+                    `jumlahKontrakTahunan${y}`, `volumeKepmen${y}`,
+                ]),
+            ];
             for (const field of volumeFieldNames) {
-                (row as any)[`${currentPrefix}${field}`] = row[field];
+                row[`${currentPrefix}${field}`] = row[field];
             }
 
             // Helper to parse hidden field value
             const bVal = (field: string): number | undefined => {
-                const v = (row as any)[`_bbtud_${field}`];
-                return v ? parseFloat(v) : undefined;
+                const v = row[`_bbtud_${field}`];
+                return v ? parseFloat(String(v)) : undefined;
             };
             const mVal = (field: string): number | undefined => {
-                const v = (row as any)[`_mmscfd_${field}`];
-                return v ? parseFloat(v) : undefined;
+                const v = row[`_mmscfd_${field}`];
+                return v ? parseFloat(String(v)) : undefined;
             };
 
-            // --- Contract Volumes (JPH, TOP, Kepmen for 2024 & 2025) ---
+            // --- Contract Volumes (JPH, TOP, Kepmen for each year) ---
             const volumeItems: UpsertContractVolumeItem[] = [];
 
-            // 2024 JPH
-            if (bVal("volume2024JPH") !== undefined || mVal("volume2024JPH") !== undefined) {
-                volumeItems.push({
-                    year: 2024,
-                    basis: "JPH",
-                    value_bbtud: bVal("volume2024JPH") ?? 0,
-                    value_mmscfd: mVal("volume2024JPH"),
-                });
-            }
-            // 2024 TOP (+ %TOP as top_percentage)
-            if (bVal("volume2024TOP") !== undefined || bVal("volume2024PercentTOP") !== undefined ||
-                mVal("volume2024TOP") !== undefined || mVal("volume2024PercentTOP") !== undefined) {
-                volumeItems.push({
-                    year: 2024,
-                    basis: "TOP",
-                    value_bbtud: bVal("volume2024TOP") ?? 0,
-                    value_mmscfd: mVal("volume2024TOP"),
-                    top_percentage: bVal("volume2024PercentTOP"),
-                    top_percentage_mmscfd: mVal("volume2024PercentTOP"),
-                });
-            }
-            // 2024 Kepmen
-            if (bVal("volumeKepmen2024") !== undefined || mVal("volumeKepmen2024") !== undefined) {
-                volumeItems.push({
-                    year: 2024,
-                    basis: "JPH",
-                    value_bbtud: bVal("volumeKepmen2024") ?? 0,
-                    value_mmscfd: mVal("volumeKepmen2024"),
-                    is_kepmen: true,
-                });
-            }
-            // 2025 JPH
-            if (bVal("volume2025JPH") !== undefined || mVal("volume2025JPH") !== undefined) {
-                volumeItems.push({
-                    year: 2025,
-                    basis: "JPH",
-                    value_bbtud: bVal("volume2025JPH") ?? 0,
-                    value_mmscfd: mVal("volume2025JPH"),
-                });
-            }
-            // 2025 TOP (+ %TOP as top_percentage)
-            if (bVal("volume2025TOP") !== undefined || bVal("volume2025PercentTOP") !== undefined ||
-                mVal("volume2025TOP") !== undefined || mVal("volume2025PercentTOP") !== undefined) {
-                volumeItems.push({
-                    year: 2025,
-                    basis: "TOP",
-                    value_bbtud: bVal("volume2025TOP") ?? 0,
-                    value_mmscfd: mVal("volume2025TOP"),
-                    top_percentage: bVal("volume2025PercentTOP"),
-                    top_percentage_mmscfd: mVal("volume2025PercentTOP"),
-                });
-            }
-            // 2025 Kepmen
-            if (bVal("volumeKepmen2025") !== undefined || mVal("volumeKepmen2025") !== undefined) {
-                volumeItems.push({
-                    year: 2025,
-                    basis: "JPH",
-                    value_bbtud: bVal("volumeKepmen2025") ?? 0,
-                    value_mmscfd: mVal("volumeKepmen2025"),
-                    is_kepmen: true,
-                });
+            for (const year of yearRange) {
+                // JPH
+                if (bVal(`volume${year}JPH`) !== undefined || mVal(`volume${year}JPH`) !== undefined) {
+                    volumeItems.push({
+                        year,
+                        basis: "JPH",
+                        value_bbtud: bVal(`volume${year}JPH`) ?? 0,
+                        value_mmscfd: mVal(`volume${year}JPH`),
+                    });
+                }
+                // TOP (+ %TOP as top_percentage)
+                if (bVal(`volume${year}TOP`) !== undefined || bVal(`volume${year}PercentTOP`) !== undefined ||
+                    mVal(`volume${year}TOP`) !== undefined || mVal(`volume${year}PercentTOP`) !== undefined) {
+                    volumeItems.push({
+                        year,
+                        basis: "TOP",
+                        value_bbtud: bVal(`volume${year}TOP`) ?? 0,
+                        value_mmscfd: mVal(`volume${year}TOP`),
+                        top_percentage: bVal(`volume${year}PercentTOP`),
+                        top_percentage_mmscfd: mVal(`volume${year}PercentTOP`),
+                    });
+                }
+                // Kepmen
+                if (bVal(`volumeKepmen${year}`) !== undefined || mVal(`volumeKepmen${year}`) !== undefined) {
+                    volumeItems.push({
+                        year,
+                        basis: "JPH",
+                        value_bbtud: bVal(`volumeKepmen${year}`) ?? 0,
+                        value_mmscfd: mVal(`volumeKepmen${year}`),
+                        is_kepmen: true,
+                    });
+                }
             }
 
             if (volumeItems.length > 0) {
                 await upsertContractVolumes(contractId, volumeItems);
             }
 
-            // --- Contract Daily Delivery (2023–2030) ---
-            const dailyItems: UpsertContractDailyDeliveryItem[] = [];
-            const dailyYears = [
-                { year: 2023, field: "volumeJumlah2023" },
-                { year: 2024, field: "volumeJumlah2024" },
-                { year: 2025, field: "volumeJumlah2025" },
-                { year: 2026, field: "volumeJumlah2026" },
-                { year: 2027, field: "volumeJumlah2027" },
-                { year: 2028, field: "volumeJumlah2028" },
-                { year: 2029, field: "volumeJumlah2029" },
-                { year: 2030, field: "volumeJumlah2030" },
-            ];
-            for (const { year, field } of dailyYears) {
-                const bbtudVal = bVal(field);
-                const mmscfdVal = mVal(field);
-                if (bbtudVal !== undefined || mmscfdVal !== undefined) {
-                    dailyItems.push({
+            // --- Contract Annual Total (dynamic years) ---
+            const annualItems: UpsertContractAnnualTotalItem[] = [];
+            for (const year of yearRange) {
+                const bbtudAnnual = bVal(`jumlahKontrakTahunan${year}`);
+                const mmscfdAnnual = mVal(`jumlahKontrakTahunan${year}`);
+                if (bbtudAnnual !== undefined || mmscfdAnnual !== undefined) {
+                    annualItems.push({
                         year,
-                        value_bbtud: bbtudVal ?? 0,
-                        value_mmscfd: mmscfdVal,
+                        total_bbtu: bbtudAnnual ?? 0,
+                        total_mmscfd: mmscfdAnnual,
                     });
                 }
-            }
-            if (dailyItems.length > 0) {
-                await upsertContractDailyDelivery(contractId, dailyItems);
-            }
-
-            // --- Contract Annual Total (2024 & 2025) ---
-            const annualItems: UpsertContractAnnualTotalItem[] = [];
-            const bbtud2024Annual = bVal("jumlahKontrakTahunan");
-            const mmscfd2024Annual = mVal("jumlahKontrakTahunan");
-            if (bbtud2024Annual !== undefined || mmscfd2024Annual !== undefined) {
-                annualItems.push({
-                    year: 2024,
-                    total_bbtu: bbtud2024Annual ?? 0,
-                    total_mmscfd: mmscfd2024Annual,
-                });
-            }
-            const bbtud2025Annual = bVal("jumlahKontrakTahunan2025");
-            const mmscfd2025Annual = mVal("jumlahKontrakTahunan2025");
-            if (bbtud2025Annual !== undefined || mmscfd2025Annual !== undefined) {
-                annualItems.push({
-                    year: 2025,
-                    total_bbtu: bbtud2025Annual ?? 0,
-                    total_mmscfd: mmscfd2025Annual,
-                });
             }
             if (annualItems.length > 0) {
                 await upsertContractAnnualTotal(contractId, annualItems);
             }
         },
-        [],
+        [yearRange],
     );
 
     const handleSave = useCallback(async () => {
@@ -1254,10 +1065,8 @@ export default function ContractTable() {
                 await deleteMutation.mutateAsync(deleteId);
             }
 
-            let hasNewRows = false;
             for (const row of currentRows) {
                 if (row._isNew) {
-                    hasNewRows = true;
 
                     // Auto-create a contract party if none is set
                     let partyId = row._contractPartyId;
@@ -1301,18 +1110,18 @@ export default function ContractTable() {
 
                     // Numeric fields — sync JPMH to hidden fields first
                     const newJpmhPrefix = row.unitSwitch === "BBTUD" ? "_bbtud_" : "_mmscfd_";
-                    (row as any)[`${newJpmhPrefix}volumeJPMH`] = row.volumeJPMH;
+                    row[`${newJpmhPrefix}volumeJPMH`] = row.volumeJPMH;
 
                     if (row._bbtud_volumeJPMH)
-                        createPayload.volume_jpmh_bbtud = parseFloat(row._bbtud_volumeJPMH);
+                        createPayload.volume_jpmh_bbtud = parseFloat(String(row._bbtud_volumeJPMH));
                     if (row._mmscfd_volumeJPMH)
-                        createPayload.volume_jpmh_mmscfd = parseFloat(row._mmscfd_volumeJPMH);
+                        createPayload.volume_jpmh_mmscfd = parseFloat(String(row._mmscfd_volumeJPMH));
                     if (row.hargaPJBG)
                         createPayload.price_value = parseFloat(row.hargaPJBG);
                     if (row.hgbt)
                         createPayload.hgbt_value = parseFloat(row.hgbt);
 
-                    const createdContract = await createMutation.mutateAsync(createPayload as any);
+                    const createdContract = await createMutation.mutateAsync(createPayload as unknown as CreateContractPayload);
 
                     // Save sub-resource data for the newly created contract
                     await saveSubResources(createdContract.id, row);
@@ -1378,7 +1187,7 @@ export default function ContractTable() {
                     if (Object.keys(payload).length > 0) {
                         await updateMutation.mutateAsync({
                             id: row.id,
-                            payload: payload as any,
+                            payload,
                         });
                     }
 
@@ -1389,25 +1198,26 @@ export default function ContractTable() {
 
             setPendingDeletes([]);
             setIsEditMode(false);
-        } catch (err: any) {
+        } catch (err) {
             console.error("Save error:", err);
+            const message = err instanceof Error ? err.message : "Terjadi kesalahan";
             setSnackbar({
                 open: true,
-                message: `Gagal menyimpan: ${err?.message || "Terjadi kesalahan"}`,
+                message: `Gagal menyimpan: ${message}`,
                 severity: "error",
             });
         } finally {
             setIsSaving(false);
         }
-    }, [contracts, createMutation, updateMutation, deleteMutation, apiRef, isSaving, pendingDeletes, saveSubResources]);
+    }, [contracts, createMutation, updateMutation, deleteMutation, apiRef, isSaving, pendingDeletes, saveSubResources, powerplantSites, supplierSites]);
 
     const handleCancel = useCallback(() => {
         if (contracts) {
-            setRows(contracts.map((c, i) => mapContractToRow(c, i, [], [], [], null)));
+            setRows(contracts.map((c, i) => mapContractToRow(c, i, [], [], [], null, yearRange)));
         }
         setPendingDeletes([]);
         setIsEditMode(false);
-    }, [contracts]);
+    }, [contracts, yearRange]);
 
     const handleUnitToggle = useCallback(
         (id: string, newValue: string | null) => {
@@ -1416,29 +1226,26 @@ export default function ContractTable() {
                     prev.map((row) => {
                         if (row.id !== id || row.unitSwitch === newValue) return row;
 
-                        const updated = { ...row, unitSwitch: newValue };
+                        const updated: ContractTableRow = { ...row, unitSwitch: newValue };
 
                         // Save current visible values back to the old unit's hidden fields
                         const oldPrefix = row.unitSwitch === "BBTUD" ? "_bbtud_" : "_mmscfd_";
                         const volumeFields = [
                             "volumeJPMH",
-                            "volume2024JPH", "volume2024TOP", "volume2024PercentTOP",
-                            "jumlahKontrakTahunan", "volumeKepmen2024",
-                            "volume2025JPH", "volume2025TOP", "volume2025PercentTOP",
-                            "jumlahKontrakTahunan2025", "volumeKepmen2025",
-                            "volumeJumlah2023", "volumeJumlah2024", "volumeJumlah2025",
-                            "volumeJumlah2026", "volumeJumlah2027", "volumeJumlah2028",
-                            "volumeJumlah2029", "volumeJumlah2030",
-                        ] as const;
+                            ...yearRange.flatMap(y => [
+                                `volume${y}JPH`, `volume${y}TOP`, `volume${y}PercentTOP`,
+                                `jumlahKontrakTahunan${y}`, `volumeKepmen${y}`,
+                            ]),
+                        ];
 
                         for (const field of volumeFields) {
-                            (updated as any)[`${oldPrefix}${field}`] = row[field];
+                            updated[`${oldPrefix}${field}`] = row[field];
                         }
 
                         // Copy new unit's hidden values into visible fields
                         const newPrefix = newValue === "BBTUD" ? "_bbtud_" : "_mmscfd_";
                         for (const field of volumeFields) {
-                            (updated as any)[field] = (row as any)[`${newPrefix}${field}`] || "";
+                            updated[field] = row[`${newPrefix}${field}`] || "";
                         }
 
                         return updated;
@@ -1446,7 +1253,7 @@ export default function ContractTable() {
                 );
             }
         },
-        [],
+        [yearRange],
     );
 
     const handleUploadClick = useCallback((rowId: string) => {
@@ -1466,7 +1273,7 @@ export default function ContractTable() {
 
     // ---- Column definitions ----
 
-    const baseColumns = buildColumns(isEditMode, supplierNames, powerplantNames);
+    const baseColumns = buildColumns(isEditMode, supplierNames, powerplantNames, yearRange);
 
     const unitColumn: GridColDef = {
         field: "unitSwitch",
@@ -1649,7 +1456,7 @@ export default function ContractTable() {
                 </div>
                 <div className="flex items-center gap-3">
                     {/* Export button */}
-                    <button className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-[#115d72] bg-[#115d72]/5 border border-[#115d72]/20 rounded-lg hover:bg-[#115d72]/10 transition-all duration-200">
+                    <button onClick={handleExport} className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-[#115d72] bg-[#115d72]/5 border border-[#115d72]/20 rounded-lg hover:bg-[#115d72]/10 transition-all duration-200">
                         <FileText size={16} />
                         Ekspor
                     </button>
@@ -1722,8 +1529,22 @@ export default function ContractTable() {
                         apiRef={apiRef}
                         rows={rows}
                         columns={allColumns}
-                        columnGroupingModel={columnGroupingModel}
+                        columnGroupingModel={buildColumnGroupingModel(yearRange)}
                         processRowUpdate={processRowUpdate}
+                        isCellEditable={(params) => {
+                            if (!isEditMode) return false;
+                            const field = params.field;
+                            // Match dynamic year-based fields: volume{year}JPH, volume{year}TOP, volume{year}PercentTOP, jumlahKontrakTahunan{year}, volumeKepmen{year}
+                            const yearMatch = field.match(/^(?:volume(\d{4})(?:JPH|TOP|PercentTOP)|jumlahKontrakTahunan(\d{4})|volumeKepmen(\d{4}))$/);
+                            if (yearMatch) {
+                                const year = parseInt(yearMatch[1] || yearMatch[2] || yearMatch[3]);
+                                const row = params.row;
+                                if (row._akhirPerjanjianYear !== null && row._akhirPerjanjianYear !== undefined && year > row._akhirPerjanjianYear) {
+                                    return false;
+                                }
+                            }
+                            return params.colDef.editable !== false;
+                        }}
                         initialState={{
                             pagination: {
                                 paginationModel: { page: 0, pageSize: 10 },
@@ -1733,7 +1554,7 @@ export default function ContractTable() {
                         pageSizeOptions={[5, 10, 25, 50]}
                         columnHeaderHeight={56}
                         disableRowSelectionOnClick
-                        onCellClick={(params, event) => {
+                        onCellClick={(params) => {
                             if (isEditMode && params.isEditable) {
                                 const state = apiRef.current?.state;
                                 const isEditing = state?.editRows?.[params.id]?.[params.field];
@@ -1939,7 +1760,7 @@ export default function ContractTable() {
                                                     onClick={async () => {
                                                         try {
                                                             await downloadContractDocument(row._contractId, doc.id, doc.original_name);
-                                                        } catch (error) {
+                                                        } catch {
                                                             setSnackbar({ open: true, message: "Gagal mengunduh dokumen", severity: "error" });
                                                         }
                                                     }}
@@ -2041,7 +1862,7 @@ export default function ContractTable() {
                                     setSelectedFile(null);
                                     setSelectedFileName(null);
                                     setUploadingRowId(null);
-                                } catch (error) {
+                                } catch {
                                     setSnackbar({ open: true, message: "Gagal mengunggah PDF", severity: "error" });
                                 }
                             } else {
