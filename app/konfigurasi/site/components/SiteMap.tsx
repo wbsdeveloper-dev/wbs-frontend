@@ -86,7 +86,7 @@ interface ApiResponse<T> {
   meta?: { requestId: string; timestamp: string };
 }
 
-const SITE_API_HOST = "http://localhost:3005/api";
+const SITE_API_HOST = process.env.NEXT_PUBLIC_API_HOST || "http://localhost:3005/api";
 
 async function mapFetch<T>(path: string, options?: RequestInit): Promise<T> {
   const url = `${SITE_API_HOST}${path}`;

@@ -11,7 +11,7 @@ import {
   type UseMutationOptions,
 } from "@tanstack/react-query";
 
-export const CONFIG_API_HOST = "http://localhost:3005/api";
+export const CONFIG_API_HOST = process.env.NEXT_PUBLIC_API_HOST || "http://localhost:3005/api";
 
 // ---------------------------------------------------------------------------
 // Standard API envelope
