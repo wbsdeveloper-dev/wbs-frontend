@@ -9,9 +9,13 @@ RUN npm ci
 # Copy source
 COPY . .
 
-# Build args for API URL (baked into the client bundle at build time)
+# Build args for API URLs (baked into the client bundle at build time)
 ARG NEXT_PUBLIC_API_HOST
+ARG NEXT_PUBLIC_BOT_PRIMARY_API
+ARG NEXT_PUBLIC_BOT_SECONDARY_API
 ENV NEXT_PUBLIC_API_HOST=$NEXT_PUBLIC_API_HOST
+ENV NEXT_PUBLIC_BOT_PRIMARY_API=$NEXT_PUBLIC_BOT_PRIMARY_API
+ENV NEXT_PUBLIC_BOT_SECONDARY_API=$NEXT_PUBLIC_BOT_SECONDARY_API
 
 # Build
 RUN npm run build
