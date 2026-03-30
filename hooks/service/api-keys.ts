@@ -1,6 +1,6 @@
 import { getAccessToken } from "@/lib/auth";
 
-export const API_KEYS_HOST = "http://localhost:3005/api";
+export const API_KEYS_HOST = process.env.NEXT_PUBLIC_API_HOST || "http://localhost:3005/api";
 
 export interface ApiKeyView {
   id: string;

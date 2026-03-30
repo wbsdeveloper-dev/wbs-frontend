@@ -4,10 +4,12 @@ import { getAccessToken, getRefreshToken, setTokens, clearTokens } from "./auth"
 import { refreshAccessToken } from "@/hooks/service/auth-api";
 import type { ApiResponse } from "@/hooks/service/bot-api";
 
-export const AUTH_API_HOST = "http://localhost:3005/api";
-export const DASHBOARD_API_HOST = "http://localhost:3005/api";
-export const CONFIG_API_HOST = "http://localhost:3005/api";
-export const SITE_API_HOST = "http://localhost:3005/api";
+const API_HOST = process.env.NEXT_PUBLIC_API_HOST || "http://localhost:3005/api";
+
+export const AUTH_API_HOST = API_HOST;
+export const DASHBOARD_API_HOST = API_HOST;
+export const CONFIG_API_HOST = API_HOST;
+export const SITE_API_HOST = API_HOST;
 
 interface ApiClientOptions extends RequestInit {
   host?: string;

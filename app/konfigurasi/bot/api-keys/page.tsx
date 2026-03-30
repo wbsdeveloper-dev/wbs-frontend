@@ -52,9 +52,35 @@ export default function ApiKeyManagerPage() {
     });
   };
 
-  const handleCopySecret = () => {
+  const handleCopySecret = async () => {
     if (newlyGeneratedKey?.apiKey) {
-      navigator.clipboard.writeText(newlyGeneratedKey.apiKey);
+      const textToCopy = newlyGeneratedKey.apiKey;
+      
+      // Try modern clipboard API first (only works on HTTPS/localhost)
+      if (navigator?.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(textToCopy);
+      } else {
+        // Fallback for HTTP environments
+        const textArea = document.createElement("textarea");
+        textArea.value = textToCopy;
+        
+        // Hide it from view
+        textArea.style.position = "absolute";
+        textArea.style.left = "-999999px";
+        textArea.style.top = "-999999px";
+        
+        document.body.appendChild(textArea);
+        textArea.select();
+
+        try {
+          document.execCommand("copy");
+        } catch (err) {
+          console.error("Fallback copy failed", err);
+        } finally {
+          document.body.removeChild(textArea);
+        }
+      }
+      
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
