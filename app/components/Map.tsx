@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import {
   MapContainer,
   Marker,
@@ -101,6 +101,21 @@ export default function Map() {
     null,
   );
 
+  // Kepemilikan (owner) filter – checked owners are included
+  const OWNER_OPTIONS = ["PLN", "PLN IP", "PLN NP"] as const;
+  const [selectedOwners, setSelectedOwners] = useState<Set<string>>(
+    new Set(OWNER_OPTIONS),
+  );
+
+  const toggleOwner = useCallback((owner: string) => {
+    setSelectedOwners((prev) => {
+      const next = new Set(prev);
+      if (next.has(owner)) next.delete(owner);
+      else next.add(owner);
+      return next;
+    });
+  }, []);
+
   // ---- Derived data -------------------------------------------------------
   const icons = useMemo(() => {
     if (!data?.legend) return {} as Record<string, L.DivIcon>;
@@ -154,6 +169,10 @@ export default function Map() {
       if (selectedPemasok && site.siteType !== "PEMASOK") {
         // Keep pembangkits that are connected through pipes
       }
+      // Kepemilikan filter – hide PEMBANGKIT sites whose owner is unchecked
+      if (site.siteType === "PEMBANGKIT" && site.owner) {
+        if (!selectedOwners.has(site.owner)) return false;
+      }
       return true;
     });
   }, [
@@ -162,6 +181,7 @@ export default function Map() {
     selectedRegion,
     selectedPemasok,
     selectedPembangkit,
+    selectedOwners,
   ]);
 
   // Filtered pipes – show only if both source and target are visible
@@ -326,6 +346,14 @@ export default function Map() {
                             <span className="text-gray-500">Kapasitas:</span>
                             <span className="font-medium text-[#115d72]">
                               {parseFloat(site.capacity).toLocaleString()} MW
+                            </span>
+                          </div>
+                        )}
+                        {site.siteType === "PEMBANGKIT" && site.owner && (
+                          <div className="flex justify-between text-xs">
+                            <span className="text-gray-500">Kepemilikan:</span>
+                            <span className="font-medium text-gray-700">
+                              {site.owner}
                             </span>
                           </div>
                         )}
@@ -509,6 +537,31 @@ export default function Map() {
               onChange={setSelectedPembangkit}
               placeholder="Pilih Pembangkit"
             />
+
+            {/* Kepemilikan checkbox filter */}
+            <div>
+              <p className="text-sm font-medium text-gray-700 mb-2">
+                Kepemilikan
+              </p>
+              <div className="flex flex-col gap-2">
+                {OWNER_OPTIONS.map((owner) => (
+                  <label
+                    key={owner}
+                    className="flex items-center gap-2 cursor-pointer group"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedOwners.has(owner)}
+                      onChange={() => toggleOwner(owner)}
+                      className="w-4 h-4 rounded border-gray-300 text-[#115d72] focus:ring-[#14a2bb] cursor-pointer"
+                    />
+                    <span className="text-sm text-gray-700 group-hover:text-gray-900 transition-colors">
+                      {owner}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </div>

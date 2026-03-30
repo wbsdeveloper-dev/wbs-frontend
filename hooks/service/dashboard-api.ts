@@ -16,16 +16,17 @@ export interface MapSite {
   id: string;
   name: string;
   siteType:
-  | "PEMBANGKIT"
-  | "PEMASOK"
-  | "TRANSPORTIR"
-  | "TERMINAL"
-  | "HANDOVER_POINT";
+    | "PEMBANGKIT"
+    | "PEMASOK"
+    | "TRANSPORTIR"
+    | "TERMINAL"
+    | "HANDOVER_POINT";
   lat: number;
   lng: number;
   region: string;
   isEnabled: boolean;
   capacity?: string;
+  owner?: string;
 }
 
 export interface MapPipe {

@@ -49,6 +49,7 @@ export function AddSiteModal({
     lat: undefined,
     long: undefined,
     conversion_factor: undefined,
+    owner: "",
   });
 
   const [selectedPlant, setSelectedPlant] = useState<string | null>(null);
@@ -66,6 +67,7 @@ export function AddSiteModal({
       lat: undefined,
       long: undefined,
       conversion_factor: undefined,
+      owner: "",
     });
     setSelectedPlant(null);
     setSelectedSupplier(null);
@@ -89,6 +91,7 @@ export function AddSiteModal({
         lat: editingSite.lat,
         long: editingSite.long,
         conversion_factor: editingSite.conversion_factor,
+        owner: editingSite.owner ?? "",
       });
       setSelectedPlant(editingSite.pembangkit_id || null);
       setSelectedSupplier(editingSite.pemasok_id || null);
@@ -124,6 +127,7 @@ export function AddSiteModal({
       lat: formData.lat,
       long: formData.long,
       conversion_factor: formData.conversion_factor,
+      owner: formData.owner || undefined,
     };
 
     // Include lat, long, and conversion_factor from editing site if available
@@ -204,6 +208,27 @@ export function AddSiteModal({
               <option value="TRANSPORTIR">Transportir</option>
             </select>
           </div>
+
+          {/* Kepemilikan */}
+          {formData.site_type == "PEMBANGKIT" && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Kepemilikan
+              </label>
+              <select
+                value={formData.owner ?? ""}
+                onChange={(e) =>
+                  setFormData({ ...formData, owner: e.target.value })
+                }
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white transition-all duration-200"
+              >
+                <option value="">Pilih kepemilikan</option>
+                <option value="PLN">PLN</option>
+                <option value="PLN IP">PLN IP</option>
+                <option value="PLN NP">PLN NP</option>
+              </select>
+            </div>
+          )}
 
           {/* Site Name */}
           <div>
