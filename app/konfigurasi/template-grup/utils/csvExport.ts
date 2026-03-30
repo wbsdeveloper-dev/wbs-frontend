@@ -216,7 +216,7 @@ export function csvFieldsToTemplateFields(
   templateId: string
 ): TemplateField[] {
   return csvFields.map((field, index) => ({
-    id: crypto.randomUUID(),
+    id: typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).substring(2),
     ingestionTemplateId: templateId,
     fieldKey: field.fieldKey.trim(),
     sourceKind: field.sourceKind as TemplateField["sourceKind"],
