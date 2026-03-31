@@ -19,7 +19,7 @@ jobs:
           script: |
             cd ~/apps/wbs-frontend
             # Pull latest changes. (Assuming main is the default branch)
-            git pull origin main || git pull origin master
+            git pull origin main
             
             # Rebuild with production variables injected
             NEXT_PUBLIC_API_HOST=https://dashboardplnepi.online/api \
