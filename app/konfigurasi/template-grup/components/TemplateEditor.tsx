@@ -27,6 +27,7 @@ interface TemplateEditorProps {
   template: Template;
   onUpdate: (template: Template) => void;
   onActivate?: (template: Template) => void;
+  onDelete?: (id: string) => void;
   onAddGroup?: (payload: { groupId: string; name: string }) => void;
   groupConfigs: {
     id: string;
@@ -34,7 +35,12 @@ interface TemplateEditorProps {
     name: string;
     isEnabled: boolean;
   }[];
-  botGroups: { id: string; name: string; participants: number; enabled: boolean }[];
+  botGroups: {
+    id: string;
+    name: string;
+    participants: number;
+    enabled: boolean;
+  }[];
   spreadsheetSources: { id: string; name: string }[];
 }
 
@@ -67,6 +73,7 @@ export default function TemplateEditor({
   template,
   onUpdate,
   onActivate,
+  onDelete,
   onAddGroup,
   groupConfigs,
   botGroups,
@@ -118,6 +125,7 @@ export default function TemplateEditor({
   const [newGroupName, setNewGroupName] = useState("");
   const [selectedBotGroupId, setSelectedBotGroupId] = useState("");
   const [botGroupSearch, setBotGroupSearch] = useState("");
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   // Reset is handled by the parent via key={template.id}
 
@@ -370,6 +378,13 @@ export default function TemplateEditor({
           description={`Version ${formData.version} • ${formData.status}`}
           action={
             <div className="flex items-center gap-2">
+              <button
+                onClick={() => setIsDeleteDialogOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-red-600 bg-red-50 border border-transparent rounded-lg hover:bg-red-100 transition-all duration-200"
+                title="Hapus Template"
+              >
+                <Trash2 size={16} />
+              </button>
               <button
                 onClick={handleSaveDraft}
                 className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200"
@@ -931,7 +946,7 @@ export default function TemplateEditor({
                 </span>
               </div>
               {testResult.data && (
-                <pre className="text-xs font-mono bg-white p-2 rounded border overflow-auto max-h-40">
+                <pre className="text-xs font-mono bg-white p-2 rounded border border-gray-200 overflow-auto max-h-40 text-gray-500">
                   {JSON.stringify(testResult.data, null, 2)}
                 </pre>
               )}
@@ -1155,13 +1170,17 @@ export default function TemplateEditor({
             <div className="max-h-[240px] overflow-y-auto border border-gray-200 rounded-lg divide-y divide-gray-100">
               {(() => {
                 // Filter out groups already in groupConfigs (by matching groupId)
-                const existingGroupIds = new Set(groupConfigs.map((gc) => gc.groupId));
+                const existingGroupIds = new Set(
+                  groupConfigs.map((gc) => gc.groupId),
+                );
                 const availableGroups = botGroups
                   .filter((bg) => !existingGroupIds.has(bg.id))
                   .filter((bg) =>
                     botGroupSearch
-                      ? bg.name.toLowerCase().includes(botGroupSearch.toLowerCase())
-                      : true
+                      ? bg.name
+                          .toLowerCase()
+                          .includes(botGroupSearch.toLowerCase())
+                      : true,
                   );
 
                 if (botGroups.length === 0) {
@@ -1206,7 +1225,8 @@ export default function TemplateEditor({
                         {bg.name}
                       </p>
                       <p className="text-xs text-gray-400 truncate">
-                        {bg.participants} anggota • {bg.enabled ? "Aktif" : "Nonaktif"}
+                        {bg.participants} anggota •{" "}
+                        {bg.enabled ? "Aktif" : "Nonaktif"}
                       </p>
                     </div>
                     {bg.enabled && (
@@ -1222,8 +1242,12 @@ export default function TemplateEditor({
           {selectedBotGroupId && (
             <div className="px-3 py-2 bg-[#14a2bb]/5 border border-[#14a2bb]/20 rounded-lg">
               <p className="text-xs text-gray-500">Group yang dipilih:</p>
-              <p className="text-sm font-medium text-[#115d72]">{newGroupName}</p>
-              <p className="text-xs text-gray-400 font-mono mt-0.5">{selectedBotGroupId}</p>
+              <p className="text-sm font-medium text-[#115d72]">
+                {newGroupName}
+              </p>
+              <p className="text-xs text-gray-400 font-mono mt-0.5">
+                {selectedBotGroupId}
+              </p>
             </div>
           )}
 
@@ -1242,7 +1266,10 @@ export default function TemplateEditor({
             <button
               onClick={() => {
                 if (selectedBotGroupId && newGroupName.trim()) {
-                  onAddGroup?.({ groupId: selectedBotGroupId, name: newGroupName.trim() });
+                  onAddGroup?.({
+                    groupId: selectedBotGroupId,
+                    name: newGroupName.trim(),
+                  });
                   setNewGroupName("");
                   setSelectedBotGroupId("");
                   setBotGroupSearch("");
@@ -1265,6 +1292,45 @@ export default function TemplateEditor({
         existingFields={formData.fields}
         template={formData}
       />
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={isDeleteDialogOpen}
+        onClose={() => setIsDeleteDialogOpen(false)}
+        title="Hapus Template"
+        maxWidth="max-w-md"
+      >
+        <div className="space-y-4">
+          <div className="flex items-start gap-3 p-4 bg-red-50 rounded-lg border border-red-100">
+            <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-red-800">
+                Apakah Anda yakin ingin menghapus template ini?
+              </p>
+              <p className="text-sm text-red-600 mt-1">
+                Tindakan ini tidak dapat dibatalkan. Template yang sudah dihapus tidak dapat dipulihkan kembali.
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-3 pt-4 border-t border-gray-200">
+            <button
+              onClick={() => setIsDeleteDialogOpen(false)}
+              className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200"
+            >
+              Batal
+            </button>
+            <button
+              onClick={() => {
+                onDelete?.(template.id);
+                setIsDeleteDialogOpen(false);
+              }}
+              className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-all duration-200 hover:shadow-md active:scale-95"
+            >
+              Ya, Hapus Template
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

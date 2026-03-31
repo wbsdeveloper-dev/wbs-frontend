@@ -27,6 +27,7 @@ import {
   useCreateGroup,
   useActivateTemplate,
   useTestRouting,
+  useDeleteTemplate,
   type Template,
   type TemplateField,
   type TemplateListFilters,
@@ -41,6 +42,7 @@ function TemplateEditorWrapper({
   templateId,
   onUpdate,
   onActivate,
+  onDelete,
   onAddGroup,
   groupConfigs,
   botGroups,
@@ -49,6 +51,7 @@ function TemplateEditorWrapper({
   templateId: string;
   onUpdate: (t: Template) => void;
   onActivate: (t: Template) => void;
+  onDelete: (id: string) => void;
   onAddGroup: (payload: { groupId: string; name: string }) => void;
   groupConfigs: {
     id: string;
@@ -89,6 +92,7 @@ function TemplateEditorWrapper({
       template={fullTemplate}
       onUpdate={onUpdate}
       onActivate={onActivate}
+      onDelete={onDelete}
       onAddGroup={onAddGroup}
       groupConfigs={groupConfigs}
       botGroups={botGroups}
@@ -164,6 +168,7 @@ export default function TemplateGrupPage() {
   const duplicateTemplateMutation = useDuplicateTemplate();
   const deprecateTemplateMutation = useDeprecateTemplate();
   const activateTemplateMutation = useActivateTemplate();
+  const deleteTemplateMutation = useDeleteTemplate();
   const createGroupMutation = useCreateGroup();
   const testRoutingMutation = useTestRouting();
 
@@ -279,6 +284,18 @@ export default function TemplateGrupPage() {
           "error",
           `Gagal mengarsipkan template: ${err.message}`,
         );
+      },
+    });
+  };
+
+  const handleDeleteTemplate = (id: string) => {
+    deleteTemplateMutation.mutate(id, {
+      onSuccess: () => {
+        showNotification("success", "Template berhasil dihapus");
+        setSelectedTemplate(null);
+      },
+      onError: (err) => {
+        showNotification("error", `Gagal menghapus template: ${err.message}`);
       },
     });
   };
@@ -504,6 +521,7 @@ export default function TemplateGrupPage() {
               templateId={selectedTemplate.id}
               onUpdate={handleUpdateTemplate}
               onActivate={handleActivateTemplate}
+              onDelete={handleDeleteTemplate}
               onAddGroup={handleAddGroup}
               groupConfigs={groupConfigsForEditor}
               botGroups={botGroups}

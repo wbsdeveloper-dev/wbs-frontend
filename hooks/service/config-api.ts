@@ -548,12 +548,20 @@ export function useDeleteTemplate(
   options?: Partial<UseMutationOptions<{ deleted: boolean }, Error, string>>,
 ) {
   const qc = useQueryClient();
+  const { onSuccess: externalOnSuccess, ...restOptions } = options || {};
   return useMutation({
     mutationFn: (id: string) => deleteTemplate(id),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: configKeys._templatesBase() });
+    onSuccess: (...args) => {
+      const [data, id] = args;
+      // Remove detail cache immediately so it doesn't trigger a 404 refetch
+      qc.removeQueries({ queryKey: configKeys.template(id) });
+      
+      // Invalidate the list queries to update the sidebar
+      qc.invalidateQueries({ queryKey: ["config", "templates", "list"] });
+
+      externalOnSuccess?.(...args);
     },
-    ...options,
+    ...restOptions,
   });
 }
 
