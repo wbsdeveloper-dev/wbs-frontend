@@ -482,12 +482,14 @@ export function useCreateRelation(
   >,
 ) {
   const qc = useQueryClient();
+  const { onSuccess: externalOnSuccess, ...restOptions } = options || {};
   return useMutation({
     mutationFn: (payload: CreateRelationPayload) => createRelation(payload),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: siteKeys.relations() });
+    onSuccess: (...args) => {
+      qc.invalidateQueries({ queryKey: ["sites", "relations"] });
+      externalOnSuccess?.(...args);
     },
-    ...options,
+    ...restOptions,
   });
 }
 
@@ -501,6 +503,7 @@ export function useUpdateRelation(
   >,
 ) {
   const qc = useQueryClient();
+  const { onSuccess: externalOnSuccess, ...restOptions } = options || {};
   return useMutation({
     mutationFn: ({
       id,
@@ -509,10 +512,11 @@ export function useUpdateRelation(
       id: string;
       payload: UpdateRelationPayload;
     }) => updateRelation(id, payload),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: siteKeys.relations() });
+    onSuccess: (...args) => {
+      qc.invalidateQueries({ queryKey: ["sites", "relations"] });
+      externalOnSuccess?.(...args);
     },
-    ...options,
+    ...restOptions,
   });
 }
 
@@ -520,12 +524,14 @@ export function useDeleteRelation(
   options?: Partial<UseMutationOptions<DeleteRelationResponse, Error, string>>,
 ) {
   const qc = useQueryClient();
+  const { onSuccess: externalOnSuccess, ...restOptions } = options || {};
   return useMutation({
     mutationFn: (id: string) => deleteRelation(id),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: siteKeys.relations() });
+    onSuccess: (...args) => {
+      qc.invalidateQueries({ queryKey: ["sites", "relations"] });
+      externalOnSuccess?.(...args);
     },
-    ...options,
+    ...restOptions,
   });
 }
 

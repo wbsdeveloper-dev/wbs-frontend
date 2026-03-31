@@ -212,27 +212,29 @@ export function AddRelationModal({
             )}
           </div>
 
-          {/* Priority */}
+          {/* Commodity */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Prioritas
+              Komoditas
             </label>
-            <input
-              type="number"
-              value={formData.priority}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  priority: e.target.value ? parseInt(e.target.value) : 1,
-                })
-              }
-              min={1}
-              max={100}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Semakin tinggi angka, semakin prioritas
-            </p>
+            <select
+              value={formData.commodity}
+              onChange={(e) => {
+                setFormData({ ...formData, commodity: e.target.value });
+                setErrors({ ...errors, commodity: "" });
+              }}
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white transition-all duration-200"
+            >
+              <option value="">Pilih komoditas...</option>
+              {commodities.map((commodity) => (
+                <option key={commodity} value={commodity}>
+                  {commodity}
+                </option>
+              ))}
+            </select>
+            {errors.commodity && (
+              <p className="text-xs text-red-600 mt-1">{errors.commodity}</p>
+            )}
           </div>
         </form>
 
