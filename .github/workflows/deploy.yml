@@ -1,0 +1,31 @@
+name: Deploy Frontend
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            cd ~/apps/wbs-frontend
+            # Pull latest changes. (Assuming main is the default branch)
+            git pull origin main
+            
+            # Rebuild with production variables injected
+            NEXT_PUBLIC_API_HOST=https://dashboardplnepi.online/api \
+            NEXT_PUBLIC_BOT_PRIMARY_API=https://dashboardplnepi.online/bot-primary \
+            NEXT_PUBLIC_BOT_SECONDARY_API=https://dashboardplnepi.online/bot-secondary \
+            docker compose build --no-cache
+            
+            # Restart containers
+            docker compose up -d

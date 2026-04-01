@@ -69,6 +69,13 @@ const SOURCE_KIND_OPTIONS: {
   { value: "AI_JSON_PATH", label: "AI JSON Path" },
 ];
 
+function generateId() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return Date.now().toString(36) + Math.random().toString(36).substring(2);
+}
+
 export default function TemplateEditor({
   template,
   onUpdate,
@@ -218,7 +225,7 @@ export default function TemplateEditor({
     } else {
       // Add new field
       const newField: TemplateField = {
-        id: crypto.randomUUID(),
+        id: generateId(),
         ingestionTemplateId: formData.id,
         orderNo: formData.fields.length + 1,
         fieldKey: key,
