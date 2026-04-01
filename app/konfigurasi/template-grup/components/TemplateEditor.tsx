@@ -27,8 +27,20 @@ interface TemplateEditorProps {
   template: Template;
   onUpdate: (template: Template) => void;
   onActivate?: (template: Template) => void;
-  onAddGroup?: (name: string) => void;
-  groupConfigs: { id: string; name: string }[];
+  onDelete?: (id: string) => void;
+  onAddGroup?: (payload: { groupId: string; name: string }) => void;
+  groupConfigs: {
+    id: string;
+    groupId: string;
+    name: string;
+    isEnabled: boolean;
+  }[];
+  botGroups: {
+    id: string;
+    name: string;
+    participants: number;
+    enabled: boolean;
+  }[];
   spreadsheetSources: { id: string; name: string }[];
 }
 
@@ -68,8 +80,10 @@ export default function TemplateEditor({
   template,
   onUpdate,
   onActivate,
+  onDelete,
   onAddGroup,
   groupConfigs,
+  botGroups,
   spreadsheetSources,
 }: TemplateEditorProps) {
   // Normalize WA_REGEX_RECORDS fields when loading from API
@@ -116,6 +130,9 @@ export default function TemplateEditor({
   // Inline add-group form state
   const [isAddingGroup, setIsAddingGroup] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
+  const [selectedBotGroupId, setSelectedBotGroupId] = useState("");
+  const [botGroupSearch, setBotGroupSearch] = useState("");
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   // Reset is handled by the parent via key={template.id}
 
@@ -369,6 +386,13 @@ export default function TemplateEditor({
           action={
             <div className="flex items-center gap-2">
               <button
+                onClick={() => setIsDeleteDialogOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-red-600 bg-red-50 border border-transparent rounded-lg hover:bg-red-100 transition-all duration-200"
+                title="Hapus Template"
+              >
+                <Trash2 size={16} />
+              </button>
+              <button
                 onClick={handleSaveDraft}
                 className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200"
               >
@@ -454,7 +478,7 @@ export default function TemplateEditor({
 
           {/* Group Config (for WA_GROUP) */}
           {formData.scope === "WA_GROUP" && (
-            <div>
+            <div className="lg:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
                 Group Config
               </label>
@@ -471,11 +495,23 @@ export default function TemplateEditor({
                     className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white cursor-pointer pr-10"
                   >
                     <option value="">Pilih Group</option>
-                    {groupConfigs.map((gc) => (
-                      <option key={gc.id} value={gc.id}>
-                        {gc.name}
-                      </option>
-                    ))}
+                    {groupConfigs
+                      .filter((gc) => gc.isEnabled)
+                      .map((gc) => (
+                        <option key={gc.id} value={gc.id}>
+                          {gc.name} ({gc.groupId})
+                        </option>
+                      ))}
+                    {groupConfigs.some((gc) => !gc.isEnabled) && (
+                      <option disabled>── Disabled Groups ──</option>
+                    )}
+                    {groupConfigs
+                      .filter((gc) => !gc.isEnabled)
+                      .map((gc) => (
+                        <option key={gc.id} value={gc.id}>
+                          ⛔ {gc.name} ({gc.groupId}) — Disabled
+                        </option>
+                      ))}
                   </select>
                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                 </div>
@@ -490,6 +526,33 @@ export default function TemplateEditor({
                   </button>
                 )}
               </div>
+              {/* Selected group info badge */}
+              {formData.groupConfigId &&
+                (() => {
+                  const selected = groupConfigs.find(
+                    (gc) => gc.id === formData.groupConfigId,
+                  );
+                  if (!selected) return null;
+                  return (
+                    <div className="mt-2 flex items-center gap-2">
+                      <span
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full ${
+                          selected.isEnabled
+                            ? "bg-green-100 text-green-700"
+                            : "bg-red-100 text-red-700"
+                        }`}
+                      >
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full ${selected.isEnabled ? "bg-green-500" : "bg-red-500"}`}
+                        />
+                        {selected.isEnabled ? "Aktif" : "Nonaktif"}
+                      </span>
+                      <span className="text-xs text-gray-500 font-mono">
+                        {selected.groupId}
+                      </span>
+                    </div>
+                  );
+                })()}
             </div>
           )}
 
@@ -890,7 +953,7 @@ export default function TemplateEditor({
                 </span>
               </div>
               {testResult.data && (
-                <pre className="text-xs font-mono bg-white p-2 rounded border overflow-auto max-h-40">
+                <pre className="text-xs font-mono bg-white p-2 rounded border border-gray-200 overflow-auto max-h-40 text-gray-500">
                   {JSON.stringify(testResult.data, null, 2)}
                 </pre>
               )}
@@ -1083,36 +1146,124 @@ export default function TemplateEditor({
         isOpen={isAddingGroup}
         onClose={() => {
           setNewGroupName("");
+          setSelectedBotGroupId("");
+          setBotGroupSearch("");
           setIsAddingGroup(false);
         }}
         title="Tambah Group Baru"
         maxWidth="max-w-md"
       >
         <div className="space-y-4">
+          {/* Search filter */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Nama Group <span className="text-red-500">*</span>
+              Cari Group dari Bot
             </label>
             <input
               type="text"
-              value={newGroupName}
-              onChange={(e) => setNewGroupName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && newGroupName.trim()) {
-                  onAddGroup?.(newGroupName.trim());
-                  setNewGroupName("");
-                  setIsAddingGroup(false);
-                }
-              }}
+              value={botGroupSearch}
+              onChange={(e) => setBotGroupSearch(e.target.value)}
               className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent"
-              placeholder="Contoh: PLN Bandung Group"
+              placeholder="Ketik untuk filter group..."
               autoFocus
             />
           </div>
+
+          {/* Group list from bot */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Pilih Group <span className="text-red-500">*</span>
+            </label>
+            <div className="max-h-[240px] overflow-y-auto border border-gray-200 rounded-lg divide-y divide-gray-100">
+              {(() => {
+                // Filter out groups already in groupConfigs (by matching groupId)
+                const existingGroupIds = new Set(
+                  groupConfigs.map((gc) => gc.groupId),
+                );
+                const availableGroups = botGroups
+                  .filter((bg) => !existingGroupIds.has(bg.id))
+                  .filter((bg) =>
+                    botGroupSearch
+                      ? bg.name
+                          .toLowerCase()
+                          .includes(botGroupSearch.toLowerCase())
+                      : true,
+                  );
+
+                if (botGroups.length === 0) {
+                  return (
+                    <div className="px-4 py-6 text-center text-gray-400 text-sm">
+                      Bot tidak terhubung atau tidak ada group.
+                    </div>
+                  );
+                }
+
+                if (availableGroups.length === 0) {
+                  return (
+                    <div className="px-4 py-6 text-center text-gray-400 text-sm">
+                      {botGroupSearch
+                        ? "Tidak ada group yang cocok dengan pencarian."
+                        : "Semua group sudah ditambahkan."}
+                    </div>
+                  );
+                }
+
+                return availableGroups.map((bg) => (
+                  <label
+                    key={bg.id}
+                    className={`flex items-center gap-3 px-3 py-2.5 cursor-pointer transition-colors ${
+                      selectedBotGroupId === bg.id
+                        ? "bg-[#14a2bb]/10"
+                        : "hover:bg-gray-50"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="botGroup"
+                      checked={selectedBotGroupId === bg.id}
+                      onChange={() => {
+                        setSelectedBotGroupId(bg.id);
+                        setNewGroupName(bg.name);
+                      }}
+                      className="w-4 h-4 accent-[#14a2bb]"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">
+                        {bg.name}
+                      </p>
+                      <p className="text-xs text-gray-400 truncate">
+                        {bg.participants} anggota •{" "}
+                        {bg.enabled ? "Aktif" : "Nonaktif"}
+                      </p>
+                    </div>
+                    {bg.enabled && (
+                      <span className="shrink-0 w-2 h-2 rounded-full bg-green-500" />
+                    )}
+                  </label>
+                ));
+              })()}
+            </div>
+          </div>
+
+          {/* Selected group preview */}
+          {selectedBotGroupId && (
+            <div className="px-3 py-2 bg-[#14a2bb]/5 border border-[#14a2bb]/20 rounded-lg">
+              <p className="text-xs text-gray-500">Group yang dipilih:</p>
+              <p className="text-sm font-medium text-[#115d72]">
+                {newGroupName}
+              </p>
+              <p className="text-xs text-gray-400 font-mono mt-0.5">
+                {selectedBotGroupId}
+              </p>
+            </div>
+          )}
+
           <div className="flex gap-3 pt-4 border-t border-gray-200">
             <button
               onClick={() => {
                 setNewGroupName("");
+                setSelectedBotGroupId("");
+                setBotGroupSearch("");
                 setIsAddingGroup(false);
               }}
               className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200"
@@ -1121,16 +1272,21 @@ export default function TemplateEditor({
             </button>
             <button
               onClick={() => {
-                if (newGroupName.trim()) {
-                  onAddGroup?.(newGroupName.trim());
+                if (selectedBotGroupId && newGroupName.trim()) {
+                  onAddGroup?.({
+                    groupId: selectedBotGroupId,
+                    name: newGroupName.trim(),
+                  });
                   setNewGroupName("");
+                  setSelectedBotGroupId("");
+                  setBotGroupSearch("");
                   setIsAddingGroup(false);
                 }
               }}
-              disabled={!newGroupName.trim()}
+              disabled={!selectedBotGroupId}
               className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Tambah
+              Tambah Group
             </button>
           </div>
         </div>
@@ -1143,6 +1299,45 @@ export default function TemplateEditor({
         existingFields={formData.fields}
         template={formData}
       />
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={isDeleteDialogOpen}
+        onClose={() => setIsDeleteDialogOpen(false)}
+        title="Hapus Template"
+        maxWidth="max-w-md"
+      >
+        <div className="space-y-4">
+          <div className="flex items-start gap-3 p-4 bg-red-50 rounded-lg border border-red-100">
+            <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-red-800">
+                Apakah Anda yakin ingin menghapus template ini?
+              </p>
+              <p className="text-sm text-red-600 mt-1">
+                Tindakan ini tidak dapat dibatalkan. Template yang sudah dihapus tidak dapat dipulihkan kembali.
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-3 pt-4 border-t border-gray-200">
+            <button
+              onClick={() => setIsDeleteDialogOpen(false)}
+              className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200"
+            >
+              Batal
+            </button>
+            <button
+              onClick={() => {
+                onDelete?.(template.id);
+                setIsDeleteDialogOpen(false);
+              }}
+              className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-all duration-200 hover:shadow-md active:scale-95"
+            >
+              Ya, Hapus Template
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

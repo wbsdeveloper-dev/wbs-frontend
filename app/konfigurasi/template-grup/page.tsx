@@ -27,31 +27,42 @@ import {
   useCreateGroup,
   useActivateTemplate,
   useTestRouting,
+  useDeleteTemplate,
   type Template,
   type TemplateField,
   type TemplateListFilters,
   type RoutingTestTemplatePreview,
 } from "@/hooks/service/config-api";
+import { useBotGroups } from "@/hooks/use-bot-groups";
+import { BOT_PRIMARY_API } from "@/hooks/service/bot-api";
+import type { GroupItem } from "@/hooks/service/bot-api";
 
 // Wrapper component to fetch full details
 function TemplateEditorWrapper({
   templateId,
-  //  initialData, // Removed to force loading state
   onUpdate,
   onActivate,
+  onDelete,
   onAddGroup,
   groupConfigs,
+  botGroups,
   spreadsheetSources,
 }: {
   templateId: string;
-  //  initialData: Template; // Removed
   onUpdate: (t: Template) => void;
   onActivate: (t: Template) => void;
-  onAddGroup: (name: string) => void;
-  groupConfigs: { id: string; name: string }[];
+  onDelete: (id: string) => void;
+  onAddGroup: (payload: { groupId: string; name: string }) => void;
+  groupConfigs: {
+    id: string;
+    groupId: string;
+    name: string;
+    isEnabled: boolean;
+  }[];
+  botGroups: GroupItem[];
   spreadsheetSources: { id: string; name: string }[];
 }) {
-  const { data: fullTemplate, isLoading, isError } = useTemplate(templateId); // No initialData
+  const { data: fullTemplate, isLoading, isError } = useTemplate(templateId);
 
   if (isLoading) {
     return (
@@ -77,12 +88,14 @@ function TemplateEditorWrapper({
 
   return (
     <TemplateEditor
-      key={fullTemplate.id} // Re-mount when ID changes (or data loads if strict)
+      key={fullTemplate.id}
       template={fullTemplate}
       onUpdate={onUpdate}
       onActivate={onActivate}
+      onDelete={onDelete}
       onAddGroup={onAddGroup}
       groupConfigs={groupConfigs}
+      botGroups={botGroups}
       spreadsheetSources={spreadsheetSources}
     />
   );
@@ -144,6 +157,9 @@ export default function TemplateGrupPage() {
 
   const { data: groupConfigs = [] } = useGroups();
 
+  // Fetch bot groups directly from bot API (same list as Manajemen Bot > Konfigurasi Group)
+  const { data: botGroups = [] } = useBotGroups(BOT_PRIMARY_API);
+
   // ---------------------------------------------------------------------------
   // API mutations
   // ---------------------------------------------------------------------------
@@ -152,6 +168,7 @@ export default function TemplateGrupPage() {
   const duplicateTemplateMutation = useDuplicateTemplate();
   const deprecateTemplateMutation = useDeprecateTemplate();
   const activateTemplateMutation = useActivateTemplate();
+  const deleteTemplateMutation = useDeleteTemplate();
   const createGroupMutation = useCreateGroup();
   const testRoutingMutation = useTestRouting();
 
@@ -271,6 +288,18 @@ export default function TemplateGrupPage() {
     });
   };
 
+  const handleDeleteTemplate = (id: string) => {
+    deleteTemplateMutation.mutate(id, {
+      onSuccess: () => {
+        showNotification("success", "Template berhasil dihapus");
+        setSelectedTemplate(null);
+      },
+      onError: (err) => {
+        showNotification("error", `Gagal menghapus template: ${err.message}`);
+      },
+    });
+  };
+
   const handleCreateTemplate = () => {
     if (!newTemplateName.trim()) {
       showNotification("error", "Nama template wajib diisi");
@@ -299,12 +328,12 @@ export default function TemplateGrupPage() {
     );
   };
 
-  const handleAddGroup = (name: string) => {
+  const handleAddGroup = (payload: { groupId: string; name: string }) => {
     createGroupMutation.mutate(
-      { groupId: name.toLowerCase().replace(/\s+/g, "-"), name },
+      { groupId: payload.groupId, name: payload.name },
       {
         onSuccess: () => {
-          showNotification("success", `Group "${name}" berhasil ditambahkan`);
+          showNotification("success", `Group "${payload.name}" berhasil ditambahkan`);
         },
         onError: (err) => {
           showNotification("error", `Gagal menambahkan group: ${err.message}`);
@@ -335,7 +364,9 @@ export default function TemplateGrupPage() {
   // Map GroupConfig[] to the shape TemplateEditor expects
   const groupConfigsForEditor = groupConfigs.map((g) => ({
     id: g.id,
+    groupId: g.groupId || g.group_id || g.id,
     name: g.name,
+    isEnabled: g.isEnabled ?? g.is_enabled ?? true,
   }));
 
   return (
@@ -490,8 +521,10 @@ export default function TemplateGrupPage() {
               templateId={selectedTemplate.id}
               onUpdate={handleUpdateTemplate}
               onActivate={handleActivateTemplate}
+              onDelete={handleDeleteTemplate}
               onAddGroup={handleAddGroup}
               groupConfigs={groupConfigsForEditor}
+              botGroups={botGroups}
               spreadsheetSources={MOCK_SPREADSHEET_SOURCES}
             />
           ) : (

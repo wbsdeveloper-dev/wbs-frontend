@@ -92,10 +92,11 @@ export default function SitePage() {
               <button
                 key={idx}
                 onClick={() => setActiveTab(idx)}
-                className={`relative flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all duration-200 cursor-pointer ${isActive
-                  ? "text-[#115d72]"
-                  : "text-gray-500 hover:text-gray-700"
-                  }`}
+                className={`relative flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all duration-200 cursor-pointer ${
+                  isActive
+                    ? "text-[#115d72]"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
               >
                 <Icon size={16} />
                 {tab.label}
@@ -108,17 +109,19 @@ export default function SitePage() {
         </div>
 
         <div className="flex gap-2 mb-2">
-          <button
-            onClick={handleAddButtonClick}
-            className="flex items-center gap-2 px-4 py-2.5 bg-[#115d72] text-white text-sm font-medium rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
-          >
-            <Plus size={18} />
-            {activeTab === 0
-              ? "Tambah Site"
-              : activeTab === 1
-                ? "Tambah Relasi"
-                : "Tambah Lokasi"}
-          </button>
+          {activeTab !== 2 && (
+            <button
+              onClick={handleAddButtonClick}
+              className="flex items-center gap-2 px-4 py-2.5 bg-[#115d72] text-white text-sm font-medium rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
+            >
+              <Plus size={18} />
+              {activeTab === 0
+                ? "Tambah Site"
+                : activeTab === 1
+                  ? "Tambah Relasi"
+                  : "Tambah Lokasi"}
+            </button>
+          )}
         </div>
       </div>
 

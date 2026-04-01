@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import {
   MapContainer,
   Marker,
@@ -27,6 +27,7 @@ import {
   type MapSite,
   type MapLegend,
 } from "@/hooks/service/dashboard-api";
+import { useRelations } from "@/hooks/service/site-api";
 
 interface LeafletIconPrototype {
   _getIconUrl?: () => string;
@@ -77,6 +78,7 @@ const buildIcons = (legend: MapLegend): Record<string, L.DivIcon> => {
 export default function Map() {
   // ---- API data -----------------------------------------------------------
   const { data, isLoading, isError, error } = useMapLocations();
+  const { data: relations } = useRelations(true); // fetch active relations
 
   // ---- UI state -----------------------------------------------------------
   const [legendExpanded, setLegendExpanded] = useState(false);
@@ -141,11 +143,52 @@ export default function Map() {
 
   const pembangkitNames = useMemo(() => {
     if (!data?.sites) return [];
+
+    // If a pemasok is selected and we have relations, filter pembangkits
+    if (selectedPemasok && relations) {
+      // Find the selected pemasok site to get its ID
+      const pemasokSite = data.sites.find(
+        (s) => s.siteType === "PEMASOK" && s.name === selectedPemasok,
+      );
+
+      if (pemasokSite) {
+        // Get all site IDs connected to this pemasok via relations
+        const connectedSiteIds = new Set(
+          relations
+            .filter(
+              (rel) =>
+                rel.source_site_id === pemasokSite.id ||
+                rel.target_site_id === pemasokSite.id,
+            )
+            .map((rel) =>
+              rel.source_site_id === pemasokSite.id
+                ? rel.target_site_id
+                : rel.source_site_id,
+            ),
+        );
+
+        return data.sites
+          .filter(
+            (s) => s.siteType === "PEMBANGKIT" && connectedSiteIds.has(s.id),
+          )
+          .map((s) => s.name)
+          .sort();
+      }
+    }
+
+    // No pemasok selected — show all pembangkits
     return data.sites
       .filter((s) => s.siteType === "PEMBANGKIT")
       .map((s) => s.name)
       .sort();
-  }, [data?.sites]);
+  }, [data?.sites, selectedPemasok, relations]);
+
+  // Reset pembangkit when pemasok changes and current selection is no longer valid
+  useEffect(() => {
+    if (selectedPembangkit && !pembangkitNames.includes(selectedPembangkit)) {
+      setSelectedPembangkit(null);
+    }
+  }, [pembangkitNames, selectedPembangkit]);
 
   // Filtered sites
   const filteredSites = useMemo(() => {
