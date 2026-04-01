@@ -496,7 +496,7 @@ export default function RealtimeChart({
   }, [chartFlowData]);
 
   // Use API data if available, otherwise keep fallback for backward compatibility
-  const [fallbackChartData, setFallbackChartData] = useState<ChartItem[]>(dataJamA);
+  const [, setFallbackChartData] = useState<ChartItem[]>(dataJamA);
   const chartData = apiChartData;
   const meanValues =
     Object.keys(apiMeanValues).length > 0 ? apiMeanValues : dataJamAMean;
