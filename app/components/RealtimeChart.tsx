@@ -293,20 +293,33 @@ const data1TahunB: ChartItem[] = [
   { label: "Des", values: { pembangkit: 82, pemasok: 95 } },
 ];
 
+const DYNAMIC_COLORS = [
+  "#f87171",
+  "#fb923c",
+  "#facc15",
+  "#60a5fa",
+  "#34d399",
+  "#a78bfa",
+  "#f472b6",
+];
+
 const CustomTooltip = ({
   active,
   payload,
   label,
   unit,
-  flowrate,
 }: {
   active?: boolean;
   payload?: TooltipPayload[];
   label?: string;
   unit?: string;
-  flowrate?: number;
 }) => {
   if (!active || !payload || payload.length === 0) return null;
+
+  const currentFlowrate = payload.reduce(
+    (sum, item) => sum + (Number(item.value) || 0),
+    0
+  );
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg shadow-md p-3 text-sm text-gray-900 w-[300px] z-100">
@@ -329,14 +342,15 @@ const CustomTooltip = ({
           </div>
         ))}
       </ul>
-      {flowrate !== undefined && flowrate !== null && (
-        <div className="flex justify-between mt-4 pt-4 border-t border-gray-200">
-          <p className="font-medium">Flowrate</p>
-          <p className="font-medium">
-            {flowrate} {unit || "MMBTU"}
-          </p>
-        </div>
-      )}
+      <div className="flex justify-between mt-4 pt-4 border-t border-gray-200">
+        <p className="font-medium">Flowrate</p>
+        <p className="font-medium">
+          {currentFlowrate.toLocaleString("id-ID", {
+            maximumFractionDigits: 2,
+          })}{" "}
+          MMSCFD
+        </p>
+      </div>
     </div>
   );
 };
@@ -482,22 +496,11 @@ export default function RealtimeChart({
   }, [chartFlowData]);
 
   // Use API data if available, otherwise keep fallback for backward compatibility
-  const [fallbackChartData, setFallbackChartData] =
-    useState<ChartItem[]>(dataJamA);
+  const [fallbackChartData, setFallbackChartData] = useState<ChartItem[]>(dataJamA);
   const chartData = apiChartData;
   const meanValues =
     Object.keys(apiMeanValues).length > 0 ? apiMeanValues : dataJamAMean;
 
-  // Dynamic colors for API series
-  const DYNAMIC_COLORS = [
-    "#f87171",
-    "#fb923c",
-    "#facc15",
-    "#60a5fa",
-    "#34d399",
-    "#a78bfa",
-    "#f472b6",
-  ];
   const seriesColors: Record<string, string> = useMemo(() => {
     if (!chartFlowData?.series?.length) return COLORS;
     const colors: Record<string, string> = {};
@@ -512,9 +515,8 @@ export default function RealtimeChart({
   const jphValue = chartFlowData?.referenceLines?.jph ?? null;
   const topValue = chartFlowData?.referenceLines?.top ?? null;
 
-  // Unit and flowrate from API
+  // Unit from API
   const unit = chartFlowData?.unit;
-  const flowrate = chartFlowData?.summary?.flowrate;
 
   // Compute Y-axis domain from actual series data
   const yDomain = useMemo(() => {
@@ -578,7 +580,7 @@ export default function RealtimeChart({
                   <YAxis domain={yDomain} />
                   <Legend className="z-0" />
                   <Tooltip
-                    content={<CustomTooltip unit={unit} flowrate={flowrate} />}
+                    content={<CustomTooltip unit={unit} />}
                   />
                   {chartData.length > 0 &&
                     Array.from(
