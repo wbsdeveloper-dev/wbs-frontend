@@ -112,7 +112,7 @@ export default function TemplateGrupPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [newTemplateName, setNewTemplateName] = useState("");
   const [newTemplateScope, setNewTemplateScope] = useState<
-    "WA_GROUP" | "SPREADSHEET_SOURCE"
+    "WA_GROUP" | "SPREADSHEET_SOURCE" | "EMAIL_INGEST"
   >("WA_GROUP");
 
   const [isTestModalOpen, setIsTestModalOpen] = useState(false);
@@ -540,13 +540,17 @@ export default function TemplateGrupPage() {
                 value={newTemplateScope}
                 onChange={(e) =>
                   setNewTemplateScope(
-                    e.target.value as "WA_GROUP" | "SPREADSHEET_SOURCE",
+                    e.target.value as
+                      | "WA_GROUP"
+                      | "SPREADSHEET_SOURCE"
+                      | "EMAIL_INGEST",
                   )
                 }
                 className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white cursor-pointer pr-10"
               >
                 <option value="WA_GROUP">WA Group</option>
                 <option value="SPREADSHEET_SOURCE">Spreadsheet Source</option>
+                <option value="EMAIL_INGEST">Email Ingest</option>
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             </div>

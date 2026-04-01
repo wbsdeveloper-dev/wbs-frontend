@@ -127,6 +127,7 @@ export interface Site {
   long?: number;
   is_enabled: boolean;
   conversion_factor?: number;
+  owner?: string;
   created_at: string;
   updated_at: string;
 }
@@ -141,6 +142,7 @@ export interface CreateSitePayload {
   lat?: number;
   long?: number;
   conversion_factor?: number;
+  owner?: string;
 }
 
 export interface UpdateSitePayload {
@@ -154,6 +156,7 @@ export interface UpdateSitePayload {
   long?: number;
   is_enabled?: boolean;
   conversion_factor?: number;
+  owner?: string;
 }
 
 export interface DeleteSiteResponse {
