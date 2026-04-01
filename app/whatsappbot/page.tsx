@@ -349,14 +349,9 @@ function GroupsSection({
   };
 
   const handleUnselectAll = () => {
-    // Toggle off each enabled group one by one
     const enabledGroups = list.filter((g) => g.enabled);
     if (enabledGroups.length === 0) return;
-    // Send empty enabled list - disable all at once
-    const current = list.filter((g) => g.enabled).map((g) => g.id);
-    // Remove all from the enabled list
-    const next = current.filter(() => false);
-    updateGroups.mutate(next);
+    updateGroups.mutate([]);
   };
 
   const handleSync = () => {
