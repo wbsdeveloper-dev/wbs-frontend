@@ -130,13 +130,6 @@ export function AddSiteModal({
       owner: formData.owner || undefined,
     };
 
-    // Include lat, long, and conversion_factor from editing site if available
-    if (editingSite) {
-      payload.lat = editingSite.lat;
-      payload.long = editingSite.long;
-      payload.conversion_factor = editingSite.conversion_factor;
-    }
-
     // Use appropriate mutation
     if (editingId) {
       updateSiteMutation.mutate({ id: editingId, payload });
