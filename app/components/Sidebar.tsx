@@ -16,6 +16,8 @@ import {
   Menu,
   X,
   User,
+  MapPin,
+  Briefcase,
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -74,12 +76,20 @@ export default function Sidebar() {
       icon: FileText,
     },
     {
+      title: "Manajemen Site",
+      path: "/konfigurasi/site",
+      icon: MapPin,
+    },
+    {
+      title: "Kontrak & Dokumen",
+      path: "/konfigurasi/kontrak",
+      icon: Briefcase,
+    },
+    {
       title: "Konfigurasi Sistem",
       path: "/konfigurasi",
       icon: Database,
       children: [
-        { title: "Manajemen Site", path: "/konfigurasi/site" },
-        { title: "Kontrak & Dokumen", path: "/konfigurasi/kontrak" },
         { title: "Email Ingest", path: "/konfigurasi/email-ingest" },
         { title: "Template Grup", path: "/konfigurasi/template-grup" },
         { title: "API Keys", path: "/konfigurasi/bot/api-keys" },
