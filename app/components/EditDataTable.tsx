@@ -51,9 +51,8 @@ const STATUS_OPTIONS = [
 
 const PERIOD_OPTIONS = [
   { value: "", label: "Semua Periode" },
-  { value: "DAILY", label: "Daily" },
-  { value: "MONTHLY", label: "Monthly" },
-  { value: "YEARLY", label: "Yearly" },
+  { value: "day", label: "Daily" },
+  { value: "hour", label: "Hourly" },
 ];
 
 // ---------------------------------------------------------------------------
