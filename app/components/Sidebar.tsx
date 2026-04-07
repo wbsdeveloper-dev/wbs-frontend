@@ -90,6 +90,7 @@ export default function Sidebar() {
       path: "/konfigurasi",
       icon: Database,
       children: [
+        { title: "Pengguna", path: "/konfigurasi/pengguna" },
         { title: "Email Ingest", path: "/konfigurasi/email-ingest" },
         { title: "Template Grup", path: "/konfigurasi/template-grup" },
         { title: "API Keys", path: "/konfigurasi/bot/api-keys" },
