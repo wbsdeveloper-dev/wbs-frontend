@@ -229,6 +229,13 @@ export function getRoles() {
   return userFetchData<Role[]>("/roles");
 }
 
+export function createRole(payload: { name: string; description: string }) {
+  return userFetchData<Role>("/roles", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
 // ---------------------------------------------------------------------------
 // React Query hooks
 // ---------------------------------------------------------------------------
@@ -237,6 +244,20 @@ export function useRoles(options?: Partial<UseQueryOptions<Role[]>>) {
   return useQuery({
     queryKey: userKeys.roles(),
     queryFn: () => getRoles(),
+    ...options,
+  });
+}
+
+export function useCreateRole(
+  options?: Partial<UseMutationOptions<Role, Error, { name: string; description: string }>>,
+) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload) => createRole(payload),
+    onSuccess: (...args) => {
+      qc.invalidateQueries({ queryKey: userKeys.roles() });
+      options?.onSuccess?.(...args);
+    },
     ...options,
   });
 }
