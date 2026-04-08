@@ -28,6 +28,7 @@ import {
   useActivateTemplate,
   useTestRouting,
   useDeleteTemplate,
+  useSpreadsheetSources,
   type Template,
   type TemplateField,
   type TemplateListFilters,
@@ -104,13 +105,6 @@ function TemplateEditorWrapper({
 // Re-export types so downstream components can import from page.tsx if needed
 export type { Template, TemplateField };
 
-// Spreadsheet sources are not yet from API — keep as static for now
-const MOCK_SPREADSHEET_SOURCES = [
-  { id: "ss1", name: "Gas Report Sheet" },
-  { id: "ss2", name: "BBM Daily Report" },
-  { id: "ss3", name: "Monthly Summary" },
-];
-
 export default function TemplateGrupPage() {
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(
     null,
@@ -159,6 +153,9 @@ export default function TemplateGrupPage() {
 
   // Fetch bot groups directly from bot API (same list as Manajemen Bot > Konfigurasi Group)
   const { data: botGroups = [] } = useBotGroups(BOT_PRIMARY_API);
+
+  // Fetch real spreadsheet sources from API
+  const { data: spreadsheetSources = [] } = useSpreadsheetSources();
 
   // ---------------------------------------------------------------------------
   // API mutations
@@ -525,7 +522,7 @@ export default function TemplateGrupPage() {
               onAddGroup={handleAddGroup}
               groupConfigs={groupConfigsForEditor}
               botGroups={botGroups}
-              spreadsheetSources={MOCK_SPREADSHEET_SOURCES}
+              spreadsheetSources={spreadsheetSources.map(s => ({ id: s.id, name: s.name }))}
             />
           ) : (
             <Card className="h-full min-h-[400px] flex items-center justify-center">
