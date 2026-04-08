@@ -34,7 +34,8 @@ import {
     X,
     RefreshCw,
     Download,
-    Upload
+    Upload,
+    Eye
 } from "lucide-react";
 import {
     useContracts,
@@ -58,6 +59,7 @@ import {
     useUploadContractPdf,
     getContractDocuments,
     downloadContractDocument,
+    previewContractDocument,
 } from "@/hooks/service/contract-api";
 import { useSites } from "@/hooks/service/site-api";
 
@@ -1753,6 +1755,20 @@ export default function ContractTable() {
                                                 </Typography>
                                             </div>
                                             <div className="flex items-center gap-1 shrink-0 ml-2">
+                                                <IconButton
+                                                    size="small"
+                                                    sx={{ color: "#115d72", "&:hover": { color: "#0d4a5c", backgroundColor: "#eff6ff" } }}
+                                                    title="Pratinjau Dokumen"
+                                                    onClick={async () => {
+                                                        try {
+                                                            await previewContractDocument(row._contractId, doc.id);
+                                                        } catch {
+                                                            setSnackbar({ open: true, message: "Gagal memuat dokumen untuk pratinjau", severity: "error" });
+                                                        }
+                                                    }}
+                                                >
+                                                    <Eye size={16} />
+                                                </IconButton>
                                                 <IconButton
                                                     size="small"
                                                     sx={{ color: "#115d72", "&:hover": { color: "#0d4a5c", backgroundColor: "#eff6ff" } }}

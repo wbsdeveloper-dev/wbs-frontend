@@ -652,6 +652,33 @@ export async function downloadContractDocument(contractId: string, documentId: s
     windowUrl.revokeObjectURL(blobUrl);
 }
 
+export async function previewContractDocument(contractId: string, documentId: string) {
+    const accessToken = getAccessToken();
+    const url = `${CONTRACT_API_HOST}/contracts/${contractId}/documents/${documentId}/download`;
+
+    const res = await fetch(url, {
+        method: "GET",
+        headers: {
+            ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
+    });
+
+    if (!res.ok) {
+        throw new Error("Gagal memuat dokumen untuk pratinjau");
+    }
+
+    const blob = await res.blob();
+    const pdfBlob = new Blob([blob], { type: "application/pdf" });
+    const windowUrl = window.URL || window.webkitURL;
+    const blobUrl = windowUrl.createObjectURL(pdfBlob);
+
+    window.open(blobUrl, "_blank");
+
+    setTimeout(() => {
+        windowUrl.revokeObjectURL(blobUrl);
+    }, 1000 * 60);
+}
+
 // ---------------------------------------------------------------------------
 // React Query hooks — Contract Parties
 // ---------------------------------------------------------------------------

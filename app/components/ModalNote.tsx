@@ -40,7 +40,7 @@ export default function ModalNote({
               <div className="flex justify-between">
                 <h3 className="font-bold mb-2">Catatan {supplier}</h3>
                 <p className="font-bold mb-2">
-                  {time}, {date}
+                  {time}
                 </p>
               </div>
               {time == "04.00" && supplier == "Pembangkit 1" ? (
