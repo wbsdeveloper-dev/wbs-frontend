@@ -238,6 +238,47 @@ export interface AiModel {
 }
 
 // ---------------------------------------------------------------------------
+// Types — Spreadsheet Sources
+// ---------------------------------------------------------------------------
+
+export interface SpreadsheetSource {
+  id: string;
+  provider: string;
+  name: string;
+  spreadsheetId: string;
+  sheetName: string;
+  rangeA1: string | null;
+  authRef: string | null;
+  timezone: string;
+  isEnabled: boolean;
+  cronSchedule: string | null;
+  dataStartRow: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateSpreadsheetSourcePayload {
+  name: string;
+  spreadsheetId: string;
+  sheetName: string;
+  rangeA1?: string;
+  timezone?: string;
+  cronSchedule?: string;
+  dataStartRow?: number;
+}
+
+export interface UpdateSpreadsheetSourcePayload {
+  name?: string;
+  spreadsheetId?: string;
+  sheetName?: string;
+  rangeA1?: string;
+  timezone?: string;
+  isEnabled?: boolean;
+  cronSchedule?: string;
+  dataStartRow?: number;
+}
+
+// ---------------------------------------------------------------------------
 // Helper to build query string
 // ---------------------------------------------------------------------------
 
@@ -271,6 +312,8 @@ export const configKeys = {
   template: (id: string) =>
     [...configKeys.all, "templates", "detail", id] as const,
   aiModels: () => [...configKeys.all, "ai-models"] as const,
+  spreadsheetSources: () => [...configKeys.all, "spreadsheet-sources"] as const,
+  spreadsheetSource: (id: string) => [...configKeys.all, "spreadsheet-sources", id] as const,
 };
 
 // ---------------------------------------------------------------------------
@@ -552,7 +595,7 @@ export function useDeleteTemplate(
   return useMutation({
     mutationFn: (id: string) => deleteTemplate(id),
     onSuccess: (...args) => {
-      const [data, id] = args;
+      const [_data, id] = args;
       // Remove detail cache immediately so it doesn't trigger a 404 refetch
       qc.removeQueries({ queryKey: configKeys.template(id) });
       
@@ -585,6 +628,90 @@ export function useAiModels(options?: Partial<UseQueryOptions<AiModel[]>>) {
     queryKey: configKeys.aiModels(),
     queryFn: () => getAiModels(),
     staleTime: 5 * 60 * 1000, // models rarely change
+    ...options,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// API functions — Spreadsheet Sources
+// ---------------------------------------------------------------------------
+
+export function getSpreadsheetSources() {
+  return configFetch<SpreadsheetSource[]>("/config/spreadsheet-sources");
+}
+
+export function getSpreadsheetSource(id: string) {
+  return configFetch<SpreadsheetSource>(`/config/spreadsheet-sources/${id}`);
+}
+
+export function createSpreadsheetSourceApi(payload: CreateSpreadsheetSourcePayload) {
+  return configFetch<SpreadsheetSource>("/config/spreadsheet-sources", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateSpreadsheetSourceApi(id: string, payload: UpdateSpreadsheetSourcePayload) {
+  return configFetch<SpreadsheetSource>(`/config/spreadsheet-sources/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteSpreadsheetSourceApi(id: string) {
+  return configFetch<{ deleted: boolean }>(`/config/spreadsheet-sources/${id}`, {
+    method: "DELETE",
+  });
+}
+
+// ---------------------------------------------------------------------------
+// React Query hooks — Spreadsheet Sources
+// ---------------------------------------------------------------------------
+
+export function useSpreadsheetSources(options?: Partial<UseQueryOptions<SpreadsheetSource[]>>) {
+  return useQuery({
+    queryKey: configKeys.spreadsheetSources(),
+    queryFn: () => getSpreadsheetSources(),
+    ...options,
+  });
+}
+
+export function useCreateSpreadsheetSource(
+  options?: Partial<UseMutationOptions<SpreadsheetSource, Error, CreateSpreadsheetSourcePayload>>,
+) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: CreateSpreadsheetSourcePayload) => createSpreadsheetSourceApi(payload),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: configKeys.spreadsheetSources() });
+    },
+    ...options,
+  });
+}
+
+export function useUpdateSpreadsheetSource(
+  options?: Partial<UseMutationOptions<SpreadsheetSource, Error, { id: string; payload: UpdateSpreadsheetSourcePayload }>>,
+) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: UpdateSpreadsheetSourcePayload }) =>
+      updateSpreadsheetSourceApi(id, payload),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: configKeys.spreadsheetSources() });
+    },
+    ...options,
+  });
+}
+
+export function useDeleteSpreadsheetSource(
+  options?: Partial<UseMutationOptions<{ deleted: boolean }, Error, string>>,
+) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteSpreadsheetSourceApi(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: configKeys.spreadsheetSources() });
+    },
     ...options,
   });
 }

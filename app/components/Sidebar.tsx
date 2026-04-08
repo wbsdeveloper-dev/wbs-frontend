@@ -93,6 +93,7 @@ export default function Sidebar() {
         { title: "Pengguna", path: "/konfigurasi/pengguna" },
         { title: "Email Ingest", path: "/konfigurasi/email-ingest" },
         { title: "Template Grup", path: "/konfigurasi/template-grup" },
+        { title: "Spreadsheet Source", path: "/konfigurasi/spreadsheet-source" },
         { title: "API Keys", path: "/konfigurasi/bot/api-keys" },
       ],
     },
