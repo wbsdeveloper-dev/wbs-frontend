@@ -16,6 +16,8 @@ import {
   Menu,
   X,
   User,
+  MapPin,
+  Briefcase,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -75,14 +77,24 @@ export default function Sidebar() {
       icon: FileText,
     },
     {
+      title: "Manajemen Site",
+      path: "/site",
+      icon: MapPin,
+    },
+    {
+      title: "Kontrak & Dokumen",
+      path: "/kontrak",
+      icon: Briefcase,
+    },
+    {
       title: "Konfigurasi Sistem",
       path: "/konfigurasi",
       icon: Database,
       children: [
-        { title: "Manajemen Site", path: "/konfigurasi/site" },
-        { title: "Kontrak & Dokumen", path: "/konfigurasi/kontrak" },
+        { title: "Pengguna", path: "/konfigurasi/pengguna" },
         { title: "Email Ingest", path: "/konfigurasi/email-ingest" },
         { title: "Template Grup", path: "/konfigurasi/template-grup" },
+        { title: "Spreadsheet Source", path: "/konfigurasi/spreadsheet-source" },
         { title: "API Keys", path: "/konfigurasi/bot/api-keys" },
       ],
     },
@@ -259,9 +271,10 @@ export default function Sidebar() {
                           key={idx}
                           href={child.path}
                           className={`flex items-center gap-3 px-3 py-2 text-sm rounded-lg w-full cursor-pointer transition-all duration-200 hover:scale-[1.02]
-                            ${isChildActive
-                              ? "text-[#115d72] font-semibold bg-[#115d72]/10"
-                              : "text-gray-500 hover:text-[#115d72] hover:bg-gray-100 font-medium"
+                            ${
+                              isChildActive
+                                ? "text-[#115d72] font-semibold bg-[#115d72]/10"
+                                : "text-gray-500 hover:text-[#115d72] hover:bg-gray-100 font-medium"
                             }
                           ${isCollapsed && !isMobile ? "justify-center" : ""}
                         `}
@@ -327,16 +340,18 @@ export default function Sidebar() {
 
       {/* Mobile sidebar */}
       <aside
-        className={`lg:hidden fixed top-0 left-0 h-full w-72 bg-white z-50 transform transition-transform duration-300 ease-in-out flex flex-col shadow-2xl border-r border-gray-100 ${isMobileOpen ? "translate-x-0" : "-translate-x-full"
-          }`}
+        className={`lg:hidden fixed top-0 left-0 h-full w-72 bg-white z-50 transform transition-transform duration-300 ease-in-out flex flex-col shadow-2xl border-r border-gray-100 ${
+          isMobileOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
       >
         {sidebarContent(true)}
       </aside>
 
       {/* Desktop sidebar */}
       <aside
-        className={`${isCollapsed ? "w-20" : "w-64"
-          } bg-white h-screen hidden lg:flex flex-col transition-[width] duration-300 ease-in-out shadow-lg border-r border-gray-100`}
+        className={`${
+          isCollapsed ? "w-20" : "w-64"
+        } bg-white h-screen hidden lg:flex flex-col transition-[width] duration-300 ease-in-out shadow-lg border-r border-gray-100`}
       >
         {sidebarContent(false)}
       </aside>

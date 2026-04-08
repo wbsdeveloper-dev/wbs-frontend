@@ -5,7 +5,7 @@ import { Plus, MapPin, ArrowRightLeft, Map } from "lucide-react";
 import {
   DaftarSiteTable,
   RelasiOperasionalTable,
-} from "../../components/SiteTable";
+} from "@/app/components/SiteTable";
 import { AddSiteModal } from "./components/AddSiteModal";
 import { AddRelationModal } from "./components/AddRelationModal";
 import dynamic from "next/dynamic";
@@ -62,8 +62,6 @@ export default function SitePage() {
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-gray-500 mb-2 animate-fadeIn">
         <span>Dashboard</span>
-        <span className="text-gray-400">/</span>
-        <span>Konfigurasi Sistem</span>
         <span className="text-gray-400">/</span>
         <span className="text-[#115d72] font-medium">Manajemen Site</span>
       </div>
