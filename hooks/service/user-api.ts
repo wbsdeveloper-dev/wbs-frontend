@@ -236,6 +236,12 @@ export function createRole(payload: { name: string; description: string }) {
   });
 }
 
+export function deleteRole(id: string) {
+  return userFetchData<{ success: boolean; message: string }>(`/roles/${id}`, {
+    method: "DELETE",
+  });
+}
+
 // ---------------------------------------------------------------------------
 // React Query hooks
 // ---------------------------------------------------------------------------
@@ -254,6 +260,20 @@ export function useCreateRole(
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (payload) => createRole(payload),
+    onSuccess: (...args) => {
+      qc.invalidateQueries({ queryKey: userKeys.roles() });
+      options?.onSuccess?.(...args);
+    },
+    ...options,
+  });
+}
+
+export function useDeleteRole(
+  options?: Partial<UseMutationOptions<{ success: boolean; message: string }, Error, string>>,
+) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteRole(id),
     onSuccess: (...args) => {
       qc.invalidateQueries({ queryKey: userKeys.roles() });
       options?.onSuccess?.(...args);

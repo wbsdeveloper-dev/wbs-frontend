@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Save, AlertCircle, Eye, EyeOff, Plus } from "lucide-react";
+import { X, Save, AlertCircle, Eye, EyeOff, Plus, Trash2 } from "lucide-react";
 import {
   useCreateUser,
   useUpdateUser,
   useRoles,
+  useDeleteRole,
   type User,
 } from "@/hooks/service/user-api";
 import { AddRoleModal } from "./AddRoleModal";
@@ -37,8 +38,23 @@ export function AddEditUserModal({
   const { data: rolesData, isLoading: rolesLoading } = useRoles();
   const createMutation = useCreateUser();
   const updateMutation = useUpdateUser();
+  const deleteRoleMutation = useDeleteRole();
 
-  const isSaving = createMutation.isPending || updateMutation.isPending;
+  const isSaving = createMutation.isPending || updateMutation.isPending || deleteRoleMutation.isPending;
+
+  const handleDeleteRole = async (e: React.MouseEvent, roleId: string, roleName: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (window.confirm(`Apakah Anda yakin ingin menghapus role "${roleName}"?\nTindakan ini tidak dapat dibatalkan.`)) {
+      try {
+        await deleteRoleMutation.mutateAsync(roleId);
+        // Clean up from selectedRoles if it was selected
+        setSelectedRoles((prev) => prev.filter((r) => r !== roleName));
+      } catch (err: any) {
+        setError(err?.message || "Gagal menghapus role");
+      }
+    }
+  };
 
   useEffect(() => {
     if (open) {
@@ -236,15 +252,15 @@ export function AddEditUserModal({
                   {rolesData?.map((role) => (
                     <label
                       key={role.id}
-                      className="flex gap-2.5 items-start p-3 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors"
+                      className="group flex items-start p-3 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors relative pr-8"
                     >
                       <input
                         type="checkbox"
                         checked={selectedRoles.includes(role.name)}
                         onChange={() => toggleRole(role.name)}
-                        className="mt-0.5 rounded text-[#115d72] focus:ring-[#115d72]/20"
+                        className="mt-0.5 rounded text-[#115d72] focus:ring-[#115d72]/20 mr-2.5"
                       />
-                      <div className="flex flex-col">
+                      <div className="flex flex-col flex-1">
                         <span className="text-sm font-medium text-gray-900 leading-none">
                           {role.name}
                         </span>
@@ -252,6 +268,14 @@ export function AddEditUserModal({
                           {role.description}
                         </span>
                       </div>
+                      <button
+                        type="button"
+                        onClick={(e) => handleDeleteRole(e, role.id, role.name)}
+                        className="absolute right-2 top-2 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg opacity-0 group-hover:opacity-100 transition-all focus:opacity-100"
+                        title="Hapus Hak Akses"
+                      >
+                        <Trash2 size={14} />
+                      </button>
                     </label>
                   ))}
                 </div>
