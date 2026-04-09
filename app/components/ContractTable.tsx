@@ -62,6 +62,7 @@ import {
     previewContractDocument,
 } from "@/hooks/service/contract-api";
 import { useSites } from "@/hooks/service/site-api";
+import * as XLSX from "xlsx";
 
 // ---------------------------------------------------------------------------
 // Row shape for the DataGrid (flattened from API response)
@@ -831,52 +832,50 @@ export default function ContractTable() {
             headers.push(`Volume Kepmen ${year}`);
         }
 
-        const escapeCSV = (val: unknown) => {
-            if (val === null || val === undefined || val === "") return '""';
-            const str = String(val);
-            if (str.includes(",") || str.includes('"') || str.includes("\n") || str.includes("—")) {
-                return `"${str.replace(/"/g, '""')}"`;
-            }
-            return `"${str}"`;
-        };
-
-        const csvRows: string[] = [headers.map(escapeCSV).join(",")];
-
-        for (const row of rows) {
-            const rowData: unknown[] = [
-                row.no, row.region, row.pemasok, row.pembangkit, row.pemilikKIT,
-                row.jenisDokumen, row.noKontrakAwal, row.jenisDokumenTambahan, row.noKontrakTerbaru,
-                row.awalPerjanjian, row.tanggalEfektif, row.akhirPerjanjian,
-                row.hargaPJBG, row.hgbt, row.unitSwitch, row.volumeJPMH
-            ];
+        const excelData = rows.map((row) => {
+            const rowData: Record<string, any> = {
+                "No": row.no,
+                "Region": row.region,
+                "Pemasok": row.pemasok,
+                "Pembangkit": row.pembangkit,
+                "Pemilik KIT": row.pemilikKIT,
+                "Jenis Dokumen": row.jenisDokumen,
+                "No Kontrak Awal": row.noKontrakAwal,
+                "Jenis Dokumen Tambahan": row.jenisDokumenTambahan,
+                "No Kontrak Terbaru": row.noKontrakTerbaru,
+                "Awal Perjanjian": row.awalPerjanjian,
+                "Tanggal Efektif": row.tanggalEfektif,
+                "Akhir Perjanjian": row.akhirPerjanjian,
+                "Harga PJBG": row.hargaPJBG,
+                "Harga HGBT": row.hgbt,
+                "Unit": row.unitSwitch,
+                "Volume JPMH": row.volumeJPMH,
+            };
 
             for (const year of yearRange) {
                 if (row._akhirPerjanjianYear !== null && row._akhirPerjanjianYear !== undefined && year > row._akhirPerjanjianYear) {
-                    rowData.push("—", "—", "—", "—", "—");
+                    rowData[`Volume ${year} JPH`] = "—";
+                    rowData[`Volume ${year} TOP`] = "—";
+                    rowData[`Volume ${year} % TOP`] = "—";
+                    rowData[`Jumlah Kontrak Tahunan ${year}`] = "—";
+                    rowData[`Volume Kepmen ${year}`] = "—";
                 } else {
-                    rowData.push(
-                        row[`volume${year}JPH`],
-                        row[`volume${year}TOP`],
-                        row[`volume${year}PercentTOP`],
-                        row[`jumlahKontrakTahunan${year}`],
-                        row[`volumeKepmen${year}`]
-                    );
+                    rowData[`Volume ${year} JPH`] = row[`volume${year}JPH`];
+                    rowData[`Volume ${year} TOP`] = row[`volume${year}TOP`];
+                    rowData[`Volume ${year} % TOP`] = row[`volume${year}PercentTOP`];
+                    rowData[`Jumlah Kontrak Tahunan ${year}`] = row[`jumlahKontrakTahunan${year}`];
+                    rowData[`Volume Kepmen ${year}`] = row[`volumeKepmen${year}`];
                 }
             }
 
-            csvRows.push(rowData.map(escapeCSV).join(","));
-        }
+            return rowData;
+        });
 
-        const csvContent = "\uFEFF" + csvRows.join("\n");
-        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.setAttribute("href", url);
-        link.setAttribute("download", `kontrak_gas_pipa_${new Date().toISOString().slice(0, 10)}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+        const worksheet = XLSX.utils.json_to_sheet(excelData, { header: headers });
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Kontrak Gas Pipa");
+        
+        XLSX.writeFile(workbook, `kontrak_gas_pipa_${new Date().toISOString().slice(0, 10)}.xlsx`);
     }, [rows, yearRange]);
 
     const handleAddRow = useCallback(() => {

@@ -123,9 +123,9 @@ export function AddSiteModal({
       name: formData.name,
       site_type: formData.site_type,
       region: formData.region,
-      capacity: formData.capacity,
-      lat: formData.lat,
-      long: formData.long,
+      capacity: formData.capacity ?? null,
+      lat: formData.lat ?? null,
+      long: formData.long ?? null,
       conversion_factor: formData.conversion_factor,
       owner: formData.owner || undefined,
     };
@@ -281,7 +281,12 @@ export function AddSiteModal({
                 type="number"
                 value={formData.capacity ?? ""}
                 onChange={(e) =>
-                  setFormData({ ...formData, capacity: Number(e.target.value) })
+                  setFormData({
+                    ...formData,
+                    capacity: e.target.value
+                      ? Number(e.target.value)
+                      : undefined,
+                  })
                 }
                 placeholder="Masukkan kapasitas"
                 className={`w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200 ${
@@ -303,7 +308,7 @@ export function AddSiteModal({
             </label>
             <input
               type="number"
-              value={formData.lat || ""}
+              value={formData.lat ?? ""}
               onChange={(e) =>
                 setFormData({
                   ...formData,
@@ -323,7 +328,7 @@ export function AddSiteModal({
             </label>
             <input
               type="number"
-              value={formData.long || ""}
+              value={formData.long ?? ""}
               onChange={(e) =>
                 setFormData({
                   ...formData,
@@ -343,7 +348,7 @@ export function AddSiteModal({
             </label>
             <input
               type="number"
-              value={formData.conversion_factor || ""}
+              value={formData.conversion_factor ?? ""}
               onChange={(e) =>
                 setFormData({
                   ...formData,
