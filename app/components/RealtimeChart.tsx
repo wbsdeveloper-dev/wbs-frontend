@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Filter, X, Info } from "lucide-react";
 import {
   CartesianGrid,
@@ -374,6 +374,8 @@ export default function RealtimeChart({
   const [transportir, setTransportir] = useState<string | null>(null);
   const [openModal, setOpenModal] = useState(false);
   const [note, setNote] = useState("");
+  const [selectedPemasokId, setSelectedPemasokId] = useState<string | undefined>(undefined);
+  const [selectedPembangkitId, setSelectedPembangkitId] = useState<string | undefined>(undefined);
   const [topLineActive, setTopLineActive] = useState<boolean | null>(true);
   const [jphLineActive, setJphLineActive] = useState(true);
   const [meanLineActive, setMeanLineActive] = useState(true);
@@ -392,7 +394,7 @@ export default function RealtimeChart({
     year: "numeric",
   }).format(today);
 
-  useMemo(() => {
+  useEffect(() => {
     if (startDate && endDate) {
       onDateRangeChange?.(startDate, endDate);
     }
@@ -700,7 +702,7 @@ export default function RealtimeChart({
             />
           </div>
           <div className=" mt-4 border-t border-gray-200 pt-6">
-            <NoteSection />
+            <NoteSection pemasokId={selectedPemasokId} pembangkitId={selectedPembangkitId} />
           </div>
         </div>
       ) : (
@@ -804,6 +806,7 @@ export default function RealtimeChart({
                     const found = filtersData?.pemasok?.find(
                       (p: FilterOption) => p.name === val,
                     );
+                    setSelectedPemasokId(found?.id ?? undefined);
                     onPemasokChange(found?.id ?? null);
                   }
                 }}
@@ -821,6 +824,7 @@ export default function RealtimeChart({
                     const found = filtersData?.pembangkit?.find(
                       (p: FilterOption) => p.name === val,
                     );
+                    setSelectedPembangkitId(found?.id ?? undefined);
                     onPembangkitChange(found?.id ?? null);
                   }
                 }}
@@ -838,6 +842,7 @@ export default function RealtimeChart({
                     const found = filtersData?.pemasok?.find(
                       (p: FilterOption) => p.name === val,
                     );
+                    setSelectedPemasokId(found?.id ?? undefined);
                     onPemasokChange(found?.id ?? null);
                   }
                 }}
@@ -1044,6 +1049,8 @@ export default function RealtimeChart({
           date={formattedDate}
           note={note}
           submitNote={submitNote}
+          pemasokId={selectedPemasokId}
+          pembangkitId={selectedPembangkitId}
         />
       )}
     </div>

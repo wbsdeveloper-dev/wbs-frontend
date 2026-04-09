@@ -1,4 +1,10 @@
 import { X } from "lucide-react";
+import { useState } from "react";
+import {
+  useEvents,
+  useCreateEvent,
+  type DashboardEvent,
+} from "@/hooks/service/dashboard-api";
 
 type Props = {
   setOpenModal: (value: boolean) => void;
@@ -8,6 +14,8 @@ type Props = {
   note: string;
   setNote: (value: string) => void;
   submitNote: () => void;
+  pemasokId?: string;
+  pembangkitId?: string;
 };
 
 export default function ModalNote({
@@ -18,7 +26,63 @@ export default function ModalNote({
   note,
   setNote,
   submitNote,
+  pemasokId,
+  pembangkitId,
 }: Props) {
+  const [saving, setSaving] = useState(false);
+  const [savedSuccess, setSavedSuccess] = useState(false);
+
+  // Determine the siteId to filter events by
+  const siteId = pembangkitId || pemasokId;
+
+  // Fetch existing events — wide date range to show all recent events
+  const today = new Date().toISOString().split("T")[0];
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .split("T")[0];
+
+  const { data: eventsData, refetch } = useEvents(
+    thirtyDaysAgo,
+    today,
+    50,
+    undefined,
+    siteId,
+    undefined,
+  );
+
+  const createEvent = useCreateEvent();
+
+  // Show all events for this site (no extra client-side filter)
+  const existingNotes = eventsData?.events || [];
+
+  const handleSave = async () => {
+    if (!note.trim()) return;
+    setSaving(true);
+
+    try {
+      await createEvent.mutateAsync({
+        siteId: siteId,
+        siteName: supplier || "Unknown",
+        occurredAt: new Date().toISOString(),
+        title: `Catatan ${supplier} - ${time}`,
+        description: note.trim(),
+        severity: "INFO",
+      });
+
+      setNote("");
+      setSavedSuccess(true);
+      submitNote();
+      refetch();
+
+      setTimeout(() => setSavedSuccess(false), 2000);
+    } catch (err) {
+      console.error("Gagal menyimpan catatan:", err);
+      alert("Gagal menyimpan catatan. Silakan coba lagi.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-100 flex items-center justify-center">
       <div
@@ -39,30 +103,33 @@ export default function ModalNote({
             <div>
               <div className="flex justify-between">
                 <h3 className="font-bold mb-2">Catatan {supplier}</h3>
-                <p className="font-bold mb-2">
-                  {time}
-                </p>
+                <p className="font-bold mb-2">{time}</p>
               </div>
-              {time == "04.00" && supplier == "Pembangkit 1" ? (
-                <div className="border border-gray-200 p-3 rounded-lg">
-                  <div className="mt-1">
-                    <p>
-                      Lorem ipsum dolor, sit amet consectetur adipisicing elit.
-                      Animi consectetur laborum odio sapiente exercitationem
-                      maiores inventore. Eligendi saepe dolorem enim perferendis
-                      dolorum sint! Facilis officia, ea dolor architecto enim,
-                      inventore, quae dolores earum perspiciatis at ipsa
-                      repudiandae! Neque quibusdam laboriosam fugit distinctio
-                      blanditiis? Vitae et quisquam commodi sed nobis. Quaerat
-                      repellendus ducimus quae perspiciatis veritatis eos
-                      mollitia aut alias dignissimos dicta, fuga, minima maxime
-                      doloremque porro temporibus qui blanditiis eum itaque
-                      sequi facilis, esse eligendi neque. Minus debitis officia,
-                      ut laboriosam fuga animi quaerat placeat error? Facere
-                      error similique odit, in beatae temporibus qui quasi alias
-                      esse officia officiis rerum?
-                    </p>
-                  </div>
+              {existingNotes.length > 0 ? (
+                <div className="border border-gray-200 p-3 rounded-lg max-h-[300px] overflow-y-auto space-y-3">
+                  {existingNotes.map((n) => (
+                    <div
+                      key={n.id}
+                      className="border-b border-gray-200 pb-2 last:border-b-0 last:pb-0"
+                    >
+                      <p className="text-sm">{n.description}</p>
+                      <div className="flex justify-between text-xs text-gray-500 mt-2">
+                        <span>
+                          {new Date(n.occurredAt).toLocaleDateString("id-ID", {
+                            day: "2-digit",
+                            month: "long",
+                            year: "numeric",
+                          })}
+                        </span>
+                        <span>
+                          {new Date(n.occurredAt).toLocaleTimeString("id-ID", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               ) : (
                 <div className="border border-gray-200 p-3 rounded-lg h-[200px] flex justify-center items-center">
@@ -84,17 +151,28 @@ export default function ModalNote({
                   className="
                         w-full rounded-lg border border-gray-200
                         px-4 py-2 text-sm
-                        focus:outline-none focus:ring-2 focus:ring-blue-500
-                        focus:border-blue-500
+                        focus:outline-none focus:ring-2 focus:ring-blue-200
+                        focus:border-blue-200
                         resize-none
                       "
                 />
-                <button
-                  className="w-[100] bg-[#14a1bb] hover:bg-[#115d72] text-white font-medium py-2 rounded-lg transition-colors cursor-pointer"
-                  onClick={() => submitNote()}
-                >
-                  Simpan
-                </button>
+                <div className="flex items-center gap-3">
+                  <button
+                    className={`w-[100] font-medium py-2 rounded-lg transition-colors cursor-pointer text-white ${saving || !note.trim()
+                      ? "bg-gray-300 cursor-not-allowed"
+                      : "bg-[#115d72] hover:bg-[#0d4a5c]"
+                      }`}
+                    onClick={handleSave}
+                    disabled={saving || !note.trim()}
+                  >
+                    {saving ? "Menyimpan..." : "Simpan"}
+                  </button>
+                  {savedSuccess && (
+                    <span className="text-green-600 text-sm font-medium animate-fade-in">
+                      ✓ Catatan berhasil disimpan
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           </div>

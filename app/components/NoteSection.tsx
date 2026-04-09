@@ -1,43 +1,76 @@
-export default function NoteSection() {
+import { useEvents, type DashboardEvent } from "@/hooks/service/dashboard-api";
+
+type Props = {
+  pemasokId?: string;
+  pembangkitId?: string;
+};
+
+export default function NoteSection({ pemasokId, pembangkitId }: Props) {
+  const siteId = pembangkitId || pemasokId;
+
+  // Fetch events from API — last 30 days
+  const today = new Date().toISOString().split("T")[0];
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .split("T")[0];
+
+  const { data: eventsData } = useEvents(
+    thirtyDaysAgo,
+    today,
+    50,
+    undefined,
+    siteId,
+    undefined,
+  );
+
+  const notes = eventsData?.events || [];
+
   return (
     <div>
       <div className="text-gray-800 flex justify-between items-center">
         <h3 className="font-bold">Catatan Kejadian</h3>
-        {/* <div>
-          <button className="bg-[#14a1bb] hover:bg-[#115d72] text-white font-medium p-2 rounded-lg transition-colors cursor-pointer flex items-center gap-1">
-            <Plus className="w-5" />
-            Tambah Catatan
-          </button>
-        </div> */}
       </div>
       <div>
         <div className="border border-gray-200 p-5 rounded-lg mt-3 text-gray-800 overflow-auto h-[220px]">
-          <div className="my-1">
-            <div className="flex gap-3">
-              <div className="w-[30px] bg-[#14a2bb92] rounded-full"></div>
-              <div>
-                <div className="flex justify-between mb-1">
-                  <p className="font-bold">Pembangkit 1</p>
-                  <p className="font-bold">04.00, 25 Januari 2026</p>
+          {notes.length > 0 ? (
+            <div className="space-y-4">
+              {notes.map((note) => (
+                <div key={note.id} className="my-4 border-b border-gray-200 pb-2 last:border-b-0 last:pb-0">
+                  <div className="flex gap-3">
+                    <div className="w-[30px] min-w-[30px] bg-[#14a2bb92] rounded-full"></div>
+                    <div className="flex-1">
+                      <div className="flex justify-between mb-1">
+                        <p className="font-bold">{note.siteName}</p>
+                        <p className="font-bold text-sm">
+                          {note.title}
+                        </p>
+                      </div>
+                      <p className="text-justify">{note.description}</p>
+                      <div className="flex justify-between text-xs text-gray-500 mt-1">
+                        <span>
+                          {new Date(note.occurredAt).toLocaleDateString("id-ID", {
+                            day: "2-digit",
+                            month: "long",
+                            year: "numeric",
+                          })}
+                        </span>
+                        <span>
+                          {new Date(note.occurredAt).toLocaleTimeString("id-ID", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <p className="text-justify">
-                  Lorem ipsum dolor, sit amet consectetur adipisicing elit.
-                  Animi consectetur laborum odio sapiente exercitationem maiores
-                  inventore. Eligendi saepe dolorem enim perferendis dolorum
-                  sint! Facilis officia, ea dolor architecto enim, inventore,
-                  quae dolores earum perspiciatis at ipsa repudiandae! Neque
-                  quibusdam laboriosam fugit distinctio blanditiis? Vitae et
-                  quisquam commodi sed nobis. Quaerat repellendus ducimus quae
-                  perspiciatis veritatis eos mollitia aut alias dignissimos
-                  dicta, fuga, minima maxime doloremque porro temporibus qui
-                  blanditiis eum itaque sequi facilis, esse eligendi neque.
-                  Minus debitis officia, ut laboriosam fuga animi quaerat
-                  placeat error? Facere error similique odit, in beatae
-                  temporibus qui quasi alias esse officia officiis rerum?
-                </p>
-              </div>
+              ))}
             </div>
-          </div>
+          ) : (
+            <div className="flex justify-center items-center h-full">
+              <p className="text-gray-400">Belum ada catatan kejadian</p>
+            </div>
+          )}
         </div>
       </div>
     </div>
