@@ -136,27 +136,27 @@ export interface CreateSitePayload {
   name: string;
   site_type: "PEMBANGKIT" | "PEMASOK" | "TRANSPORTIR";
   region: string;
-  capacity?: number;
-  pembangkit_id?: string;
-  pemasok_id?: string;
-  lat?: number;
-  long?: number;
-  conversion_factor?: number;
-  owner?: string;
+  capacity?: number | null;
+  pembangkit_id?: string | null;
+  pemasok_id?: string | null;
+  lat?: number | null;
+  long?: number | null;
+  conversion_factor?: number | null;
+  owner?: string | null;
 }
 
 export interface UpdateSitePayload {
   name?: string;
   site_type?: "PEMBANGKIT" | "PEMASOK" | "TRANSPORTIR";
   region?: string;
-  capacity?: number;
-  pembangkit_id?: string;
-  pemasok_id?: string;
-  lat?: number;
-  long?: number;
+  capacity?: number | null;
+  pembangkit_id?: string | null;
+  pemasok_id?: string | null;
+  lat?: number | null;
+  long?: number | null;
   is_enabled?: boolean;
-  conversion_factor?: number;
-  owner?: string;
+  conversion_factor?: number | null;
+  owner?: string | null;
 }
 
 export interface DeleteSiteResponse {

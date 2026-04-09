@@ -68,16 +68,6 @@ export default function PenggunaPage() {
             Kelola data pengguna, peran, dan status akses sistem
           </p>
         </div>
-
-        <div className="flex shrink-0">
-          <button
-            onClick={handleAddUser}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#115d72] to-[#14a2bb] text-white text-sm font-medium rounded-xl hover:shadow-lg hover:shadow-[#115d72]/20 transition-all duration-200 active:scale-95 w-full sm:w-auto"
-          >
-            <Plus size={18} />
-            Tambah Pengguna
-          </button>
-        </div>
       </div>
 
       {/* Main Content */}
