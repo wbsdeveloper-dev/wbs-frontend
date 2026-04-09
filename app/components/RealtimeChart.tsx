@@ -595,11 +595,12 @@ export default function RealtimeChart({
                         name={key.toUpperCase()}
                         stroke={seriesColors[key] || COLORS[key] || "#999"}
                         strokeWidth={2}
-                        dot={(props) => {
-                          const { cx, cy, payload, value } = props;
+                        dot={(props: any) => {
+                          const { cx, cy, payload, value, index } = props;
 
                           return (
                             <circle
+                              key={`dot-${key}-${index}`}
                               cx={cx}
                               cy={cy}
                               r={20}
