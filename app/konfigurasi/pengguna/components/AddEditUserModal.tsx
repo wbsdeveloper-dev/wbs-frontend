@@ -40,12 +40,23 @@ export function AddEditUserModal({
   const updateMutation = useUpdateUser();
   const deleteRoleMutation = useDeleteRole();
 
-  const isSaving = createMutation.isPending || updateMutation.isPending || deleteRoleMutation.isPending;
+  const isSaving =
+    createMutation.isPending ||
+    updateMutation.isPending ||
+    deleteRoleMutation.isPending;
 
-  const handleDeleteRole = async (e: React.MouseEvent, roleId: string, roleName: string) => {
+  const handleDeleteRole = async (
+    e: React.MouseEvent,
+    roleId: string,
+    roleName: string,
+  ) => {
     e.preventDefault();
     e.stopPropagation();
-    if (window.confirm(`Apakah Anda yakin ingin menghapus role "${roleName}"?\nTindakan ini tidak dapat dibatalkan.`)) {
+    if (
+      window.confirm(
+        `Apakah Anda yakin ingin menghapus role "${roleName}"?\nTindakan ini tidak dapat dibatalkan.`,
+      )
+    ) {
       try {
         await deleteRoleMutation.mutateAsync(roleId);
         // Clean up from selectedRoles if it was selected
@@ -79,7 +90,7 @@ export function AddEditUserModal({
     setSelectedRoles((prev) =>
       prev.includes(roleName)
         ? prev.filter((r) => r !== roleName)
-        : [...prev, roleName]
+        : [...prev, roleName],
     );
   };
 
@@ -223,7 +234,9 @@ export function AddEditUserModal({
               </label>
               <select
                 value={status}
-                onChange={(e) => setStatus(e.target.value as "ACTIVE" | "INACTIVE")}
+                onChange={(e) =>
+                  setStatus(e.target.value as "ACTIVE" | "INACTIVE")
+                }
                 className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all appearance-none"
               >
                 <option value="ACTIVE">Active</option>
@@ -246,9 +259,11 @@ export function AddEditUserModal({
                 </button>
               </div>
               {rolesLoading ? (
-                <div className="text-sm text-gray-500 italic">Memuat roles...</div>
+                <div className="text-sm text-gray-500 italic">
+                  Memuat roles...
+                </div>
               ) : (
-                <div className="grid grid-cols-2 gap-3 max-h-40 overflow-y-auto">
+                <div className="grid grid-cols-2 gap-3">
                   {rolesData?.map((role) => (
                     <label
                       key={role.id}

@@ -62,14 +62,18 @@ function DeleteConfirmModal({
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
         <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-200">
           <Trash2 className="w-6 h-6 text-red-500" />
-          <h2 className="text-lg font-semibold text-gray-900">Konfirmasi Hapus</h2>
+          <h2 className="text-lg font-semibold text-gray-900">
+            Konfirmasi Hapus
+          </h2>
         </div>
         <div className="p-6">
           <p className="text-sm text-gray-700 mb-4">
             Apakah Anda yakin ingin menghapus pengguna{" "}
             <span className="font-semibold text-gray-900">{itemName}</span>?
           </p>
-          <p className="text-sm text-gray-600">Tindakan ini tidak dapat dibatalkan.</p>
+          <p className="text-sm text-gray-600">
+            Tindakan ini tidak dapat dibatalkan.
+          </p>
         </div>
         <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-gray-200">
           <button
@@ -105,7 +109,9 @@ const StatusBadge = ({ status }: { status: string }) => {
         isOk ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-600"
       }`}
     >
-      <span className={`w-1.5 h-1.5 rounded-full ${isOk ? "bg-green-500" : "bg-gray-400"}`} />
+      <span
+        className={`w-1.5 h-1.5 rounded-full ${isOk ? "bg-green-500" : "bg-gray-400"}`}
+      />
       {status === "ACTIVE" ? "Aktif" : "Non-aktif"}
     </span>
   );
@@ -129,7 +135,9 @@ export function UserTable({
   const [localSearch, setLocalSearch] = useState(filters.search || "");
   const [localStatus, setLocalStatus] = useState(filters.status || "");
 
-  const activeFilterCount = [filters.search, filters.status].filter(Boolean).length;
+  const activeFilterCount = [filters.search, filters.status].filter(
+    Boolean,
+  ).length;
 
   const handleApplyFilters = () => {
     onFilterChange({
@@ -215,7 +223,9 @@ export function UserTable({
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-white z-10 relative">
           <div className="flex items-center gap-1.5">
             <Menu size={20} className="text-gray-500" />
-            <span className="text-sm font-medium text-gray-700">Daftar Pengguna</span>
+            <span className="text-sm font-medium text-gray-700">
+              Daftar Pengguna
+            </span>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -325,16 +335,25 @@ export function UserTable({
             <tbody className="divide-y divide-gray-100">
               {isLoading ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-16 text-center text-gray-500">
+                  <td
+                    colSpan={7}
+                    className="px-4 py-16 text-center text-gray-500"
+                  >
                     <div className="flex items-center justify-center gap-2">
-                      <Loader2 className="animate-spin text-[#14a2bb]" size={20} />
+                      <Loader2
+                        className="animate-spin text-[#14a2bb]"
+                        size={20}
+                      />
                       <span>Memuat data pengguna...</span>
                     </div>
                   </td>
                 </tr>
               ) : records.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-16 text-center text-gray-500">
+                  <td
+                    colSpan={7}
+                    className="px-4 py-16 text-center text-gray-500"
+                  >
                     Tidak ada pengguna yang ditemukan
                   </td>
                 </tr>
@@ -342,8 +361,13 @@ export function UserTable({
                 records.map((user, index) => {
                   const globalIndex = (meta.page - 1) * meta.limit + index + 1;
                   return (
-                    <tr key={user.id} className="hover:bg-gray-50/80 transition-colors">
-                      <td className="px-4 py-3 text-center text-gray-700">{globalIndex}</td>
+                    <tr
+                      key={user.id}
+                      className="hover:bg-gray-50/80 transition-colors"
+                    >
+                      <td className="px-4 py-3 text-center text-gray-700">
+                        {globalIndex}
+                      </td>
                       <td className="px-4 py-3 text-gray-900 font-medium">
                         {user.fullName || "-"}
                       </td>
@@ -359,7 +383,9 @@ export function UserTable({
                             </span>
                           ))}
                           {(!user.roles || user.roles.length === 0) && (
-                            <span className="text-gray-400 italic text-xs">No roles</span>
+                            <span className="text-gray-400 italic text-xs">
+                              No roles
+                            </span>
                           )}
                         </div>
                       </td>
@@ -408,8 +434,10 @@ export function UserTable({
         {!isLoading && (
           <div className="flex flex-col sm:flex-row items-center justify-between px-4 py-3 border-t border-gray-200 gap-3">
             <span className="text-sm text-gray-600">
-              Menampilkan {records.length > 0 ? (meta.page - 1) * meta.limit + 1 : 0} -{" "}
-              {Math.min(meta.page * meta.limit, meta.total)} dari {meta.total} data
+              Menampilkan{" "}
+              {records.length > 0 ? (meta.page - 1) * meta.limit + 1 : 0} -{" "}
+              {Math.min(meta.page * meta.limit, meta.total)} dari {meta.total}{" "}
+              data
             </span>
 
             <div className="flex items-center gap-4">
