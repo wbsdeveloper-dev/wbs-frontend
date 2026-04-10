@@ -155,6 +155,8 @@ export interface Contract {
     price_unit: string;
     hgbt_value: number | null;
     hgbt_unit: string | null;
+    tjk_bbtud?: number | null;
+    tjk_mmscfd?: number | null;
     created_by: string | null;
     created_at: string;
     updated_at: string;
@@ -182,6 +184,8 @@ export interface CreateContractPayload {
     price_unit?: string;
     hgbt_value?: number;
     hgbt_unit?: string;
+    tjk_bbtud?: number;
+    tjk_mmscfd?: number;
 }
 
 export interface UpdateContractPayload {
@@ -200,6 +204,8 @@ export interface UpdateContractPayload {
     price_unit?: string;
     hgbt_value?: number;
     hgbt_unit?: string;
+    tjk_bbtud?: number;
+    tjk_mmscfd?: number;
 }
 
 export interface ContractFilters {
