@@ -12,16 +12,9 @@ export default function Home() {
   const [pageSize, setPageSize] = useState(10);
   const [filters, setFilters] = useState<MonitoringParams>({});
 
-  // Get current month date range for default view
-  const today = new Date();
-  const startDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-01`;
-  const endDate = today.toISOString().split("T")[0];
-
   const { data, isLoading } = useMonitoringRecords({
     page,
     limit: pageSize,
-    startDate,
-    endDate,
     ...filters,
   });
 
