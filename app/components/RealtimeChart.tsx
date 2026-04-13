@@ -369,7 +369,7 @@ export default function RealtimeChart({
 }: RealtimeChartProps = {}) {
   const [period, setPeriod] = useState("1D");
   const [filterType, setFilterType] = useState<string | null>("Pemasok");
-  const [pemasok, setPemasok] = useState<string | null>(null);
+  const [pemasok, setPemasok] = useState<string[]>(["Semua Pemasok"]);
   const [pembangkit, setPembangkit] = useState<string | null>(null);
   const [transportir, setTransportir] = useState<string | null>(null);
   const [openModal, setOpenModal] = useState(false);
@@ -400,9 +400,11 @@ export default function RealtimeChart({
 
   // Derive filter options from API data or fallback to hardcoded
   const pemasokOptions = useMemo(() => {
-    if (filtersData?.pemasok)
-      return filtersData.pemasok.map((p: FilterOption) => p.name);
-    return ["Pemasok A", "Pemasok B"];
+    let opts = ["Pemasok A", "Pemasok B"];
+    if (filtersData?.pemasok) {
+      opts = filtersData.pemasok.map((p: FilterOption) => p.name);
+    }
+    return ["Semua Pemasok", ...opts];
   }, [filtersData]);
 
   const pembangkitOptions = useMemo(() => {
@@ -557,7 +559,7 @@ export default function RealtimeChart({
           <div>
             <div className="flex justify-between mb-6">
               <h3 className="text-lg font-semibold text-gray-900">
-                Grafik Penyaluran Gas - {pemasok}{" "}
+                Grafik Penyaluran Gas - {Array.isArray(pemasok) ? pemasok.join(", ") : pemasok}{" "}
                 {filterType == "Pemasok"
                   ? pembangkit
                     ? " Ke "
@@ -795,16 +797,42 @@ export default function RealtimeChart({
             />
             {filterType == "Pemasok" && (
               <FilterAutocomplete
+                multiple
                 label="Pemasok"
                 options={pemasokOptions}
                 value={pemasok}
                 onChange={(val) => {
-                  setPemasok(val);
+                  let selectedArr = (val as string[]) || [];
+                  if (
+                    selectedArr.includes("Semua Pemasok") &&
+                    !pemasok.includes("Semua Pemasok")
+                  ) {
+                    selectedArr = ["Semua Pemasok"];
+                  } else if (
+                    selectedArr.includes("Semua Pemasok") &&
+                    selectedArr.length > 1
+                  ) {
+                    selectedArr = selectedArr.filter((v) => v !== "Semua Pemasok");
+                  }
+                  if (selectedArr.length === 0) {
+                    selectedArr = ["Semua Pemasok"];
+                  }
+                  
+                  setPemasok(selectedArr);
                   if (onPemasokChange) {
-                    const found = filtersData?.pemasok?.find(
-                      (p: FilterOption) => p.name === val,
-                    );
-                    onPemasokChange(found?.id ?? null);
+                    if (selectedArr.includes("Semua Pemasok")) {
+                      onPemasokChange(null);
+                    } else {
+                      const ids = selectedArr
+                        .map((name) => {
+                          const found = filtersData?.pemasok?.find(
+                            (p: FilterOption) => p.name === name,
+                          );
+                          return found?.id;
+                        })
+                        .filter(Boolean);
+                      onPemasokChange(ids.length > 0 ? ids.join(",") : null);
+                    }
                   }
                 }}
                 placeholder="Pilih Pemasok"
@@ -827,18 +855,44 @@ export default function RealtimeChart({
                 placeholder="Pilih Pembangkit"
               />
             )}
-            {pembangkit && (!pemasok || filterType == "Pembangkit") && (
+            {pembangkit && (!pemasok || pemasok.length === 0 || filterType == "Pembangkit") && (
               <FilterAutocomplete
+                multiple
                 label="Pemasok"
                 options={pemasokOptions}
                 value={pemasok}
                 onChange={(val) => {
-                  setPemasok(val);
+                  let selectedArr = (val as string[]) || [];
+                  if (
+                    selectedArr.includes("Semua Pemasok") &&
+                    !pemasok.includes("Semua Pemasok")
+                  ) {
+                    selectedArr = ["Semua Pemasok"];
+                  } else if (
+                    selectedArr.includes("Semua Pemasok") &&
+                    selectedArr.length > 1
+                  ) {
+                    selectedArr = selectedArr.filter((v) => v !== "Semua Pemasok");
+                  }
+                  if (selectedArr.length === 0) {
+                    selectedArr = ["Semua Pemasok"];
+                  }
+                  
+                  setPemasok(selectedArr);
                   if (onPemasokChange) {
-                    const found = filtersData?.pemasok?.find(
-                      (p: FilterOption) => p.name === val,
-                    );
-                    onPemasokChange(found?.id ?? null);
+                    if (selectedArr.includes("Semua Pemasok")) {
+                      onPemasokChange(null);
+                    } else {
+                      const ids = selectedArr
+                        .map((name) => {
+                          const found = filtersData?.pemasok?.find(
+                            (p: FilterOption) => p.name === name,
+                          );
+                          return found?.id;
+                        })
+                        .filter(Boolean);
+                      onPemasokChange(ids.length > 0 ? ids.join(",") : null);
+                    }
                   }
                 }}
                 placeholder="Pilih Pemasok"
@@ -868,9 +922,9 @@ export default function RealtimeChart({
                         if (onPeriodChange) {
                           onPeriodChange("hour");
                         } else {
-                          if (pemasok == "Pemasok A")
+                          if (pemasok?.includes("Pemasok A"))
                             setFallbackChartData(dataJamA);
-                          if (pemasok == "Pemasok B")
+                          if (pemasok?.includes("Pemasok B"))
                             setFallbackChartData(dataJamB);
                         }
                       }}
@@ -887,9 +941,9 @@ export default function RealtimeChart({
                         if (onPeriodChange) {
                           onPeriodChange("day");
                         } else {
-                          if (pemasok == "Pemasok A")
+                          if (pemasok?.includes("Pemasok A"))
                             setFallbackChartData(data1MingguA);
-                          if (pemasok == "Pemasok B")
+                          if (pemasok?.includes("Pemasok B"))
                             setFallbackChartData(data1MingguB);
                         }
                       }}
@@ -906,9 +960,9 @@ export default function RealtimeChart({
                         if (onPeriodChange) {
                           onPeriodChange("three_month");
                         } else {
-                          if (pemasok == "Pemasok A")
+                          if (pemasok?.includes("Pemasok A"))
                             setFallbackChartData(data3BulanA);
-                          if (pemasok == "Pemasok B")
+                          if (pemasok?.includes("Pemasok B"))
                             setFallbackChartData(data3BulanB);
                         }
                       }}
@@ -925,9 +979,9 @@ export default function RealtimeChart({
                         if (onPeriodChange) {
                           onPeriodChange("six_month");
                         } else {
-                          if (pemasok == "Pemasok A")
+                          if (pemasok?.includes("Pemasok A"))
                             setFallbackChartData(data6BulanA);
-                          if (pemasok == "Pemasok B")
+                          if (pemasok?.includes("Pemasok B"))
                             setFallbackChartData(data6BulanB);
                         }
                       }}
@@ -944,9 +998,9 @@ export default function RealtimeChart({
                         if (onPeriodChange) {
                           onPeriodChange("one_year");
                         } else {
-                          if (pemasok == "Pemasok A")
+                          if (pemasok?.includes("Pemasok A"))
                             setFallbackChartData(data1TahunA);
-                          if (pemasok == "Pemasok B")
+                          if (pemasok?.includes("Pemasok B"))
                             setFallbackChartData(data1TahunB);
                         }
                       }}
