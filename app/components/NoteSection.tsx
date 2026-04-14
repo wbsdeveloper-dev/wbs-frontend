@@ -37,7 +37,7 @@ export default function NoteSection({ pemasokId, pembangkitId }: Props) {
               {notes.map((note) => (
                 <div key={note.id} className="my-4 border-b border-gray-200 pb-2 last:border-b-0 last:pb-0">
                   <div className="flex gap-3">
-                    <div className="w-[30px] min-w-[30px] bg-[#14a2bb92] rounded-full"></div>
+                    <div className="w-[5px] min-w-[5px] bg-[#14a2bb92] rounded-full"></div>
                     <div className="flex-1">
                       <div className="flex justify-between mb-1">
                         <p className="font-bold">{note.siteName}</p>
