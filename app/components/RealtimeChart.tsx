@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Filter, X, Info } from "lucide-react";
 import {
   CartesianGrid,
@@ -318,7 +318,7 @@ const CustomTooltip = ({
 
   const currentFlowrate = payload.reduce(
     (sum, item) => sum + (Number(item.value) || 0),
-    0
+    0,
   );
 
   return (
@@ -374,6 +374,12 @@ export default function RealtimeChart({
   const [transportir, setTransportir] = useState<string | null>(null);
   const [openModal, setOpenModal] = useState(false);
   const [note, setNote] = useState("");
+  const [selectedPemasokId, setSelectedPemasokId] = useState<
+    string | undefined
+  >(undefined);
+  const [selectedPembangkitId, setSelectedPembangkitId] = useState<
+    string | undefined
+  >(undefined);
   const [topLineActive, setTopLineActive] = useState<boolean | null>(true);
   const [jphLineActive, setJphLineActive] = useState(true);
   const [meanLineActive, setMeanLineActive] = useState(true);
@@ -392,7 +398,7 @@ export default function RealtimeChart({
     year: "numeric",
   }).format(today);
 
-  useMemo(() => {
+  useEffect(() => {
     if (startDate && endDate) {
       onDateRangeChange?.(startDate, endDate);
     }
@@ -498,7 +504,8 @@ export default function RealtimeChart({
   }, [chartFlowData]);
 
   // Use API data if available, otherwise keep fallback for backward compatibility
-  const [fallbackChartData, setFallbackChartData] = useState<ChartItem[]>(dataJamA);
+  const [fallbackChartData, setFallbackChartData] =
+    useState<ChartItem[]>(dataJamA);
   const chartData = apiChartData;
   const meanValues =
     Object.keys(apiMeanValues).length > 0 ? apiMeanValues : dataJamAMean;
@@ -536,7 +543,7 @@ export default function RealtimeChart({
     return [Math.floor(min - padding), Math.ceil(max + padding)];
   }, [chartData]);
 
-  const submitNote = () => { };
+  const submitNote = () => {};
 
   if (topLineActive === null) return null;
 
@@ -559,7 +566,8 @@ export default function RealtimeChart({
           <div>
             <div className="flex justify-between mb-6">
               <h3 className="text-lg font-semibold text-gray-900">
-                Grafik Penyaluran Gas - {Array.isArray(pemasok) ? pemasok.join(", ") : pemasok}{" "}
+                Grafik Penyaluran Gas -{" "}
+                {Array.isArray(pemasok) ? pemasok.join(", ") : pemasok}{" "}
                 {filterType == "Pemasok"
                   ? pembangkit
                     ? " Ke "
@@ -581,9 +589,7 @@ export default function RealtimeChart({
                   <XAxis dataKey="label" />
                   <YAxis domain={yDomain} />
                   <Legend className="z-0" />
-                  <Tooltip
-                    content={<CustomTooltip unit={unit} />}
-                  />
+                  <Tooltip content={<CustomTooltip unit={unit} />} />
                   {chartData.length > 0 &&
                     Array.from(
                       new Set(chartData.flatMap((d) => Object.keys(d.values))),
@@ -595,11 +601,12 @@ export default function RealtimeChart({
                         name={key.toUpperCase()}
                         stroke={seriesColors[key] || COLORS[key] || "#999"}
                         strokeWidth={2}
-                        dot={(props) => {
-                          const { cx, cy, payload, value } = props;
+                        dot={(props: any) => {
+                          const { cx, cy, payload, value, index } = props;
 
                           return (
                             <circle
+                              key={`dot-${key}-${index}`}
                               cx={cx}
                               cy={cy}
                               r={20}
@@ -702,7 +709,10 @@ export default function RealtimeChart({
             />
           </div>
           <div className=" mt-4 border-t border-gray-200 pt-6">
-            <NoteSection />
+            <NoteSection
+              pemasokId={selectedPemasokId}
+              pembangkitId={selectedPembangkitId}
+            />
           </div>
         </div>
       ) : (
@@ -812,12 +822,14 @@ export default function RealtimeChart({
                     selectedArr.includes("Semua Pemasok") &&
                     selectedArr.length > 1
                   ) {
-                    selectedArr = selectedArr.filter((v) => v !== "Semua Pemasok");
+                    selectedArr = selectedArr.filter(
+                      (v) => v !== "Semua Pemasok",
+                    );
                   }
                   if (selectedArr.length === 0) {
                     selectedArr = ["Semua Pemasok"];
                   }
-                  
+
                   setPemasok(selectedArr);
                   if (onPemasokChange) {
                     if (selectedArr.includes("Semua Pemasok")) {
@@ -849,55 +861,61 @@ export default function RealtimeChart({
                     const found = filtersData?.pembangkit?.find(
                       (p: FilterOption) => p.name === val,
                     );
+                    setSelectedPembangkitId(found?.id ?? undefined);
                     onPembangkitChange(found?.id ?? null);
                   }
                 }}
                 placeholder="Pilih Pembangkit"
               />
             )}
-            {pembangkit && (!pemasok || pemasok.length === 0 || filterType == "Pembangkit") && (
-              <FilterAutocomplete
-                multiple
-                label="Pemasok"
-                options={pemasokOptions}
-                value={pemasok}
-                onChange={(val) => {
-                  let selectedArr = (val as string[]) || [];
-                  if (
-                    selectedArr.includes("Semua Pemasok") &&
-                    !pemasok.includes("Semua Pemasok")
-                  ) {
-                    selectedArr = ["Semua Pemasok"];
-                  } else if (
-                    selectedArr.includes("Semua Pemasok") &&
-                    selectedArr.length > 1
-                  ) {
-                    selectedArr = selectedArr.filter((v) => v !== "Semua Pemasok");
-                  }
-                  if (selectedArr.length === 0) {
-                    selectedArr = ["Semua Pemasok"];
-                  }
-                  
-                  setPemasok(selectedArr);
-                  if (onPemasokChange) {
-                    if (selectedArr.includes("Semua Pemasok")) {
-                      onPemasokChange(null);
-                    } else {
-                      const ids = selectedArr
-                        .map((name) => {
-                          const found = filtersData?.pemasok?.find(
-                            (p: FilterOption) => p.name === name,
-                          );
-                          return found?.id;
-                        })
-                        .filter(Boolean);
-                      onPemasokChange(ids.length > 0 ? ids.join(",") : null);
+            {pembangkit &&
+              (!pemasok ||
+                pemasok.length === 0 ||
+                filterType == "Pembangkit") && (
+                <FilterAutocomplete
+                  multiple
+                  label="Pemasok"
+                  options={pemasokOptions}
+                  value={pemasok}
+                  onChange={(val) => {
+                    let selectedArr = (val as string[]) || [];
+                    if (
+                      selectedArr.includes("Semua Pemasok") &&
+                      !pemasok.includes("Semua Pemasok")
+                    ) {
+                      selectedArr = ["Semua Pemasok"];
+                    } else if (
+                      selectedArr.includes("Semua Pemasok") &&
+                      selectedArr.length > 1
+                    ) {
+                      selectedArr = selectedArr.filter(
+                        (v) => v !== "Semua Pemasok",
+                      );
                     }
-                  }
-                }}
-                placeholder="Pilih Pemasok"
-              />
-            )}
+                    if (selectedArr.length === 0) {
+                      selectedArr = ["Semua Pemasok"];
+                    }
+
+                    setPemasok(selectedArr);
+                    if (onPemasokChange) {
+                      if (selectedArr.includes("Semua Pemasok")) {
+                        onPemasokChange(null);
+                      } else {
+                        const ids = selectedArr
+                          .map((name) => {
+                            const found = filtersData?.pemasok?.find(
+                              (p: FilterOption) => p.name === name,
+                            );
+                            return found?.id;
+                          })
+                          .filter(Boolean);
+                        onPemasokChange(ids.length > 0 ? ids.join(",") : null);
+                      }
+                    }
+                  }}
+                  placeholder="Pilih Pemasok"
+                />
+              )}
             <FilterAutocomplete
               label="Transportir"
               options={transportirOptions}
@@ -913,10 +931,11 @@ export default function RealtimeChart({
                 <div className="flex gap-10">
                   <div className="flex gap-4 mb-3">
                     <button
-                      className={`text-[#115d72] ${period == "1D"
-                        ? "bg-[#14a2bb92] w-[45px] rounded-md"
-                        : ""
-                        } cursor-pointer`}
+                      className={`text-[#115d72] ${
+                        period == "1D"
+                          ? "bg-[#14a2bb92] w-[45px] rounded-md"
+                          : ""
+                      } cursor-pointer`}
                       onClick={() => {
                         setPeriod("1D");
                         if (onPeriodChange) {
@@ -932,10 +951,11 @@ export default function RealtimeChart({
                       1D
                     </button>
                     <button
-                      className={`text-[#115d72] ${period == "1W"
-                        ? "bg-[#14a2bb92] w-[45px] rounded-md"
-                        : ""
-                        } cursor-pointer`}
+                      className={`text-[#115d72] ${
+                        period == "1W"
+                          ? "bg-[#14a2bb92] w-[45px] rounded-md"
+                          : ""
+                      } cursor-pointer`}
                       onClick={() => {
                         setPeriod("1W");
                         if (onPeriodChange) {
@@ -951,10 +971,11 @@ export default function RealtimeChart({
                       1W
                     </button>
                     <button
-                      className={`text-[#115d72] ${period == "3M"
-                        ? "bg-[#14a2bb92] w-[45px] rounded-md"
-                        : ""
-                        } cursor-pointer`}
+                      className={`text-[#115d72] ${
+                        period == "3M"
+                          ? "bg-[#14a2bb92] w-[45px] rounded-md"
+                          : ""
+                      } cursor-pointer`}
                       onClick={() => {
                         setPeriod("3M");
                         if (onPeriodChange) {
@@ -970,10 +991,11 @@ export default function RealtimeChart({
                       3M
                     </button>
                     <button
-                      className={`text-[#115d72] ${period == "6M"
-                        ? "bg-[#14a2bb92] w-[45px] rounded-md"
-                        : ""
-                        } cursor-pointer`}
+                      className={`text-[#115d72] ${
+                        period == "6M"
+                          ? "bg-[#14a2bb92] w-[45px] rounded-md"
+                          : ""
+                      } cursor-pointer`}
                       onClick={() => {
                         setPeriod("6M");
                         if (onPeriodChange) {
@@ -989,10 +1011,11 @@ export default function RealtimeChart({
                       6M
                     </button>
                     <button
-                      className={`text-[#115d72] ${period == "1Y"
-                        ? "bg-[#14a2bb92] w-[45px] rounded-md"
-                        : ""
-                        } cursor-pointer`}
+                      className={`text-[#115d72] ${
+                        period == "1Y"
+                          ? "bg-[#14a2bb92] w-[45px] rounded-md"
+                          : ""
+                      } cursor-pointer`}
                       onClick={() => {
                         setPeriod("1Y");
                         if (onPeriodChange) {
@@ -1033,9 +1056,9 @@ export default function RealtimeChart({
                           color: "#14a1bb",
                         },
                         "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
-                        {
-                          backgroundColor: "#14a1bb",
-                        },
+                          {
+                            backgroundColor: "#14a1bb",
+                          },
                       }}
                     />
                   </div>
@@ -1051,9 +1074,9 @@ export default function RealtimeChart({
                           color: "#14a1bb",
                         },
                         "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
-                        {
-                          backgroundColor: "#14a1bb",
-                        },
+                          {
+                            backgroundColor: "#14a1bb",
+                          },
                       }}
                     />
                   </div>
@@ -1069,9 +1092,9 @@ export default function RealtimeChart({
                           color: "#14a1bb",
                         },
                         "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
-                        {
-                          backgroundColor: "#14a1bb",
-                        },
+                          {
+                            backgroundColor: "#14a1bb",
+                          },
                       }}
                     />
                   </div>
@@ -1098,6 +1121,8 @@ export default function RealtimeChart({
           date={formattedDate}
           note={note}
           submitNote={submitNote}
+          pemasokId={selectedPemasokId}
+          pembangkitId={selectedPembangkitId}
         />
       )}
     </div>

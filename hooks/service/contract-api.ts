@@ -155,6 +155,8 @@ export interface Contract {
     price_unit: string;
     hgbt_value: number | null;
     hgbt_unit: string | null;
+    tjk_bbtud?: number | null;
+    tjk_mmscfd?: number | null;
     created_by: string | null;
     created_at: string;
     updated_at: string;
@@ -182,6 +184,8 @@ export interface CreateContractPayload {
     price_unit?: string;
     hgbt_value?: number;
     hgbt_unit?: string;
+    tjk_bbtud?: number;
+    tjk_mmscfd?: number;
 }
 
 export interface UpdateContractPayload {
@@ -200,6 +204,8 @@ export interface UpdateContractPayload {
     price_unit?: string;
     hgbt_value?: number;
     hgbt_unit?: string;
+    tjk_bbtud?: number;
+    tjk_mmscfd?: number;
 }
 
 export interface ContractFilters {
@@ -650,6 +656,33 @@ export async function downloadContractDocument(contractId: string, documentId: s
     // Clean up
     document.body.removeChild(anchor);
     windowUrl.revokeObjectURL(blobUrl);
+}
+
+export async function previewContractDocument(contractId: string, documentId: string) {
+    const accessToken = getAccessToken();
+    const url = `${CONTRACT_API_HOST}/contracts/${contractId}/documents/${documentId}/download`;
+
+    const res = await fetch(url, {
+        method: "GET",
+        headers: {
+            ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
+    });
+
+    if (!res.ok) {
+        throw new Error("Gagal memuat dokumen untuk pratinjau");
+    }
+
+    const blob = await res.blob();
+    const pdfBlob = new Blob([blob], { type: "application/pdf" });
+    const windowUrl = window.URL || window.webkitURL;
+    const blobUrl = windowUrl.createObjectURL(pdfBlob);
+
+    window.open(blobUrl, "_blank");
+
+    setTimeout(() => {
+        windowUrl.revokeObjectURL(blobUrl);
+    }, 1000 * 60);
 }
 
 // ---------------------------------------------------------------------------
