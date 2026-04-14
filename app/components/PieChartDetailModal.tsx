@@ -20,10 +20,12 @@ interface PieChartDetailModalProps {
   data: DataItem[];
   filterType: string | null;
   onFilterTypeChange: (type: string) => void;
-  /** Selected distribution date (YYYY-MM-DD) */
-  selectedDate: string;
+  /** Selected distribution start date (YYYY-MM-DD) */
+  startDate: string;
+  endDate: string;
   /** Called when the user picks a new date */
-  onDateChange: (date: string) => void;
+  onStartDateChange: (date: string) => void;
+  onEndDateChange: (date: string) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -36,21 +38,29 @@ export default function PieChartDetailModal({
   data,
   filterType,
   onFilterTypeChange,
-  selectedDate,
-  onDateChange,
+  startDate,
+  endDate,
+  onStartDateChange,
+  onEndDateChange,
 }: PieChartDetailModalProps) {
   const total = data.reduce((sum, d) => sum + d.value, 0);
 
   /** Format YYYY-MM-DD → human-readable Indonesian date */
   const formattedDate = (() => {
     try {
-      return new Date(selectedDate + "T00:00:00").toLocaleDateString("id-ID", {
+      const start = new Date(startDate + "T00:00:00").toLocaleDateString("id-ID", {
         day: "numeric",
-        month: "long",
+        month: "short",
         year: "numeric",
       });
+      const end = new Date(endDate + "T00:00:00").toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      });
+      return `${start} - ${end}`;
     } catch {
-      return selectedDate;
+      return `${startDate} - ${endDate}`;
     }
   })();
 
@@ -77,16 +87,29 @@ export default function PieChartDetailModal({
             ))}
           </div>
 
-          {/* Date picker */}
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => onDateChange(e.target.value)}
-            className="px-3 py-1.5 rounded-lg text-sm border border-gray-300
-                       bg-white text-gray-700
-                       focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/40 focus:border-[#14a2bb]
-                       transition-all duration-200"
-          />
+          {/* Date pickers */}
+          <div className="flex items-center gap-2">
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => onStartDateChange(e.target.value)}
+              className="px-3 py-1.5 rounded-lg text-sm border border-gray-300
+                         bg-white text-gray-700
+                         focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/40 focus:border-[#14a2bb]
+                         transition-all duration-200"
+            />
+            <span className="text-gray-500">-</span>
+            <input
+              type="date"
+              value={endDate}
+              min={startDate}
+              onChange={(e) => onEndDateChange(e.target.value)}
+              className="px-3 py-1.5 rounded-lg text-sm border border-gray-300
+                         bg-white text-gray-700
+                         focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/40 focus:border-[#14a2bb]
+                         transition-all duration-200"
+            />
+          </div>
         </div>
       </div>
 

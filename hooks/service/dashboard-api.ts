@@ -276,8 +276,8 @@ export const dashboardKeys = {
   all: ["dashboard"] as const,
   mapLocations: (region?: string) =>
     [...dashboardKeys.all, "map-locations", region] as const,
-  distribution: (date: string, by: string) =>
-    [...dashboardKeys.all, "distribution", date, by] as const,
+  distribution: (startDate: string, endDate: string, by: string) =>
+    [...dashboardKeys.all, "distribution", startDate, endDate, by] as const,
   topSuppliers: (startDate: string, endDate: string, limit?: number) =>
     [...dashboardKeys.all, "top-suppliers", startDate, endDate, limit] as const,
   topPlants: (startDate: string, endDate: string, limit?: number) =>
@@ -333,9 +333,9 @@ export async function getMapLocations(region?: string) {
   );
 }
 
-export async function getDistribution(date: string, by: "supplier" | "plant") {
+export async function getDistribution(startDate: string, endDate: string, by: "supplier" | "plant") {
   return dashboardFetch<DistributionResponse>(
-    `/dashboard/distribution${buildQuery({ date, by })}`,
+    `/dashboard/distribution${buildQuery({ startDate, endDate, by })}`,
   );
 }
 
@@ -429,13 +429,14 @@ export function useMapLocations(
 }
 
 export function useDistribution(
-  date: string,
+  startDate: string,
+  endDate: string,
   by: "supplier" | "plant",
   options?: Partial<UseQueryOptions<DistributionResponse>>,
 ) {
   return useQuery({
-    queryKey: dashboardKeys.distribution(date, by),
-    queryFn: () => getDistribution(date, by),
+    queryKey: dashboardKeys.distribution(startDate, endDate, by),
+    queryFn: () => getDistribution(startDate, endDate, by),
     ...options,
   });
 }

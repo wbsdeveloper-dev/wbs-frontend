@@ -23,10 +23,12 @@ type Props = {
   data: DataPieChart[];
   changeFilterType: (value: string | null) => void;
   filterType: string | null;
-  /** Selected distribution date (YYYY-MM-DD) */
-  selectedDate: string;
+  /** Selected distribution start date (YYYY-MM-DD) */
+  startDate: string;
+  endDate: string;
   /** Called when the user picks a new date */
-  onDateChange: (date: string) => void;
+  onStartDateChange: (date: string) => void;
+  onEndDateChange: (date: string) => void;
 };
 
 export default function FuelTypeDonutChart({
@@ -34,21 +36,29 @@ export default function FuelTypeDonutChart({
   data,
   changeFilterType,
   filterType,
-  selectedDate,
-  onDateChange,
+  startDate,
+  endDate,
+  onStartDateChange,
+  onEndDateChange,
 }: Props) {
   const [showDateFilter, setShowDateFilter] = useState(false);
 
   /** Format YYYY-MM-DD → human-readable Indonesian date */
   const formattedDate = (() => {
     try {
-      return new Date(selectedDate + "T00:00:00").toLocaleDateString("id-ID", {
+      const start = new Date(startDate + "T00:00:00").toLocaleDateString("id-ID", {
         day: "numeric",
-        month: "long",
+        month: "short",
         year: "numeric",
       });
+      const end = new Date(endDate + "T00:00:00").toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      });
+      return `${start} - ${end}`;
     } catch {
-      return selectedDate;
+      return `${startDate} - ${endDate}`;
     }
   })();
 
@@ -87,20 +97,40 @@ export default function FuelTypeDonutChart({
       </div>
 
       {/* Collapsible date picker */}
+      {/* Collapsible Date Range Filter */}
       {showDateFilter && (
-        <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
-          <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
-            Tanggal Distribusi
-          </label>
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => onDateChange(e.target.value)}
-            className="w-full px-3 py-2 rounded-lg text-sm border border-gray-300
-                       bg-white text-gray-700
-                       focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/40 focus:border-[#14a2bb]
-                       transition-all duration-200"
-          />
+        <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200 animate-in slide-in-from-top-1">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
+                Tanggal Awal
+              </label>
+              <input
+                type="date"
+                value={startDate ?? ""}
+                onChange={(e) => onStartDateChange?.(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg text-sm border border-gray-300
+                         bg-white text-gray-700
+                         focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/40 focus:border-[#14a2bb]
+                         transition-all duration-200"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
+                Tanggal Akhir
+              </label>
+              <input
+                type="date"
+                value={endDate ?? ""}
+                min={startDate ?? undefined}
+                onChange={(e) => onEndDateChange?.(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg text-sm border border-gray-300
+                         bg-white text-gray-700
+                         focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/40 focus:border-[#14a2bb]
+                         transition-all duration-200"
+              />
+            </div>
+          </div>
         </div>
       )}
 

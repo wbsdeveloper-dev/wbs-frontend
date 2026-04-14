@@ -43,8 +43,9 @@ export default function GasDashboard() {
   const [filterType, setFilterType] = useState<string | null>("Pemasok");
 
   const todayDate = useMemo(() => new Date().toISOString().split("T")[0], []);
-  const [distributionDate, setDistributionDate] = useState(todayDate);
   const { startDate, endDate } = useMemo(() => getCurrentMonthRange(), []);
+  const [distributionStartDate, setDistributionStartDate] = useState(startDate);
+  const [distributionEndDate, setDistributionEndDate] = useState(endDate);
   const [startDateFilter, setStartDateFilter] = useState<string | null>(
     todayDate,
   );
@@ -63,7 +64,8 @@ export default function GasDashboard() {
   // Fetch distribution data based on filter type
   const distributionBy = filterType === "Pemasok" ? "supplier" : "plant";
   const { data: distributionData, isLoading: isDistLoading } = useDistribution(
-    distributionDate,
+    distributionStartDate,
+    distributionEndDate,
     distributionBy as "supplier" | "plant",
   );
 
@@ -249,8 +251,10 @@ export default function GasDashboard() {
                   data={dataPieChart}
                   changeFilterType={setFilterType}
                   filterType={filterType}
-                  selectedDate={distributionDate}
-                  onDateChange={setDistributionDate}
+                  startDate={distributionStartDate}
+                  endDate={distributionEndDate}
+                  onStartDateChange={setDistributionStartDate}
+                  onEndDateChange={setDistributionEndDate}
                 />
               )}
               {isSuppliersLoading ? (
@@ -311,8 +315,10 @@ export default function GasDashboard() {
         data={dataPieChart}
         filterType={filterType}
         onFilterTypeChange={setFilterType}
-        selectedDate={distributionDate}
-        onDateChange={setDistributionDate}
+        startDate={distributionStartDate}
+        endDate={distributionEndDate}
+        onStartDateChange={setDistributionStartDate}
+        onEndDateChange={setDistributionEndDate}
       />
     </div>
   );
