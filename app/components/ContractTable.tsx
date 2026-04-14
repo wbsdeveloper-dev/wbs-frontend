@@ -34,7 +34,8 @@ import {
     X,
     RefreshCw,
     Download,
-    Upload
+    Upload,
+    Eye
 } from "lucide-react";
 import {
     useContracts,
@@ -58,6 +59,7 @@ import {
     useUploadContractPdf,
     getContractDocuments,
     downloadContractDocument,
+    previewContractDocument,
 } from "@/hooks/service/contract-api";
 import { useSites } from "@/hooks/service/site-api";
 import * as XLSX from "xlsx";
@@ -82,6 +84,7 @@ interface ContractTableRow {
     akhirPerjanjian: string;
     hargaPJBG: string;
     hgbt: string;
+    TJK: string;
     volumeJPMH: string;
     unitSwitch: string;
     // Keep original contract data for API calls
@@ -93,6 +96,8 @@ interface ContractTableRow {
     // Hidden unit-specific base values
     _bbtud_volumeJPMH: string;
     _mmscfd_volumeJPMH: string;
+    _bbtud_TJK: string;
+    _mmscfd_TJK: string;
     // Year tracking for dynamic volume columns
     _awalPerjanjianYear: number | null;
     _akhirPerjanjianYear: number | null;
@@ -201,6 +206,7 @@ function mapContractToRow(
         akhirPerjanjian: formatDate(contract.akhir_perjanjian),
         hargaPJBG: contract.price_value != null ? String(contract.price_value) : "",
         hgbt: contract.hgbt_value != null ? String(contract.hgbt_value) : "",
+        TJK: contract.tjk_bbtud != null ? String(contract.tjk_bbtud) : "",
         volumeJPMH: contract.volume_jpmh_bbtud != null
             ? String(contract.volume_jpmh_bbtud)
             : "",
@@ -214,6 +220,8 @@ function mapContractToRow(
         // Hidden unit-specific base values
         _bbtud_volumeJPMH: contract.volume_jpmh_bbtud != null ? String(contract.volume_jpmh_bbtud) : "",
         _mmscfd_volumeJPMH: contract.volume_jpmh_mmscfd != null ? String(contract.volume_jpmh_mmscfd) : "",
+        _bbtud_TJK: contract.tjk_bbtud != null ? String(contract.tjk_bbtud) : "",
+        _mmscfd_TJK: contract.tjk_mmscfd != null ? String(contract.tjk_mmscfd) : "",
 
         document,
     };
@@ -268,6 +276,7 @@ function createEmptyRow(rowNumber: number, years: number[] = []): ContractTableR
         akhirPerjanjian: "",
         hargaPJBG: "",
         hgbt: "",
+        TJK: "",
         volumeJPMH: "",
         unitSwitch: "BBTUD",
         _contractId: newId,
@@ -280,6 +289,8 @@ function createEmptyRow(rowNumber: number, years: number[] = []): ContractTableR
         // Hidden unit-specific base values
         _bbtud_volumeJPMH: "",
         _mmscfd_volumeJPMH: "",
+        _bbtud_TJK: "",
+        _mmscfd_TJK: "",
 
         document: null,
     };
@@ -560,6 +571,15 @@ function buildColumns(
             editable: isEditMode,
             renderCell,
         },
+        {
+            field: "TJK",
+            headerName: "TJK",
+            width: 100,
+            headerAlign: "center",
+            align: "center",
+            editable: isEditMode,
+            renderCell,
+        },
     ];
 
     // Add dynamic volume year group columns (JPH, TOP, %TOP, Jumlah Kontrak Tahunan, Volume Kepmen)
@@ -819,7 +839,7 @@ export default function ContractTable() {
             "No", "Region", "Pemasok", "Pembangkit", "Pemilik KIT",
             "Jenis Dokumen", "No Kontrak Awal", "Jenis Dokumen Tambahan", "No Kontrak Terbaru",
             "Awal Perjanjian", "Tanggal Efektif", "Akhir Perjanjian",
-            "Harga PJBG", "Harga HGBT", "Unit", "Volume JPMH"
+            "Harga PJBG", "Harga HGBT", "Unit", "Volume JPMH", "TJK"
         ];
 
         for (const year of yearRange) {
@@ -848,6 +868,7 @@ export default function ContractTable() {
                 "Harga HGBT": row.hgbt,
                 "Unit": row.unitSwitch,
                 "Volume JPMH": row.volumeJPMH,
+                "TJK": row.TJK,
             };
 
             for (const year of yearRange) {
@@ -872,7 +893,7 @@ export default function ContractTable() {
         const worksheet = XLSX.utils.json_to_sheet(excelData, { header: headers });
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Kontrak Gas Pipa");
-        
+
         XLSX.writeFile(workbook, `kontrak_gas_pipa_${new Date().toISOString().slice(0, 10)}.xlsx`);
     }, [rows, yearRange]);
 
@@ -945,6 +966,7 @@ export default function ContractTable() {
             const currentPrefix = row.unitSwitch === "BBTUD" ? "_bbtud_" : "_mmscfd_";
             const volumeFieldNames = [
                 "volumeJPMH",
+                "TJK",
                 ...yearRange.flatMap(y => [
                     `volume${y}JPH`, `volume${y}TOP`, `volume${y}PercentTOP`,
                     `jumlahKontrakTahunan${y}`, `volumeKepmen${y}`,
@@ -1115,6 +1137,10 @@ export default function ContractTable() {
                         createPayload.volume_jpmh_bbtud = parseFloat(String(row._bbtud_volumeJPMH));
                     if (row._mmscfd_volumeJPMH)
                         createPayload.volume_jpmh_mmscfd = parseFloat(String(row._mmscfd_volumeJPMH));
+                    if (row._bbtud_TJK)
+                        createPayload.tjk_bbtud = parseFloat(String(row._bbtud_TJK));
+                    if (row._mmscfd_TJK)
+                        createPayload.tjk_mmscfd = parseFloat(String(row._mmscfd_TJK));
                     if (row.hargaPJBG)
                         createPayload.price_value = parseFloat(row.hargaPJBG);
                     if (row.hgbt)
@@ -1154,6 +1180,7 @@ export default function ContractTable() {
                     // Sync visible volumeJPMH to correct hidden field
                     const jpmhPrefix = row.unitSwitch === "BBTUD" ? "_bbtud_" : "_mmscfd_";
                     (row as any)[`${jpmhPrefix}volumeJPMH`] = row.volumeJPMH;
+                    (row as any)[`${jpmhPrefix}TJK`] = row.TJK;
 
                     const newVolBbtud = row._bbtud_volumeJPMH ? parseFloat(row._bbtud_volumeJPMH) : null;
                     if (newVolBbtud !== original.volume_jpmh_bbtud)
@@ -1162,6 +1189,14 @@ export default function ContractTable() {
                     const newVolMmscfd = row._mmscfd_volumeJPMH ? parseFloat(row._mmscfd_volumeJPMH) : null;
                     if (newVolMmscfd !== original.volume_jpmh_mmscfd)
                         payload.volume_jpmh_mmscfd = newVolMmscfd;
+
+                    const newTjkBbtud = row._bbtud_TJK ? parseFloat(row._bbtud_TJK) : null;
+                    if (newTjkBbtud !== original.tjk_bbtud)
+                        payload.tjk_bbtud = newTjkBbtud;
+
+                    const newTjkMmscfd = row._mmscfd_TJK ? parseFloat(row._mmscfd_TJK) : null;
+                    if (newTjkMmscfd !== original.tjk_mmscfd)
+                        payload.tjk_mmscfd = newTjkMmscfd;
 
                     // Update contract party fields (region, pemilikKIT, pemasok_site_id, pembangkit_site_id)
                     const partyPayload: Record<string, unknown> = {};
@@ -1231,6 +1266,7 @@ export default function ContractTable() {
                         const oldPrefix = row.unitSwitch === "BBTUD" ? "_bbtud_" : "_mmscfd_";
                         const volumeFields = [
                             "volumeJPMH",
+                            "TJK",
                             ...yearRange.flatMap(y => [
                                 `volume${y}JPH`, `volume${y}TOP`, `volume${y}PercentTOP`,
                                 `jumlahKontrakTahunan${y}`, `volumeKepmen${y}`,
@@ -1752,6 +1788,20 @@ export default function ContractTable() {
                                                 </Typography>
                                             </div>
                                             <div className="flex items-center gap-1 shrink-0 ml-2">
+                                                <IconButton
+                                                    size="small"
+                                                    sx={{ color: "#115d72", "&:hover": { color: "#0d4a5c", backgroundColor: "#eff6ff" } }}
+                                                    title="Pratinjau Dokumen"
+                                                    onClick={async () => {
+                                                        try {
+                                                            await previewContractDocument(row._contractId, doc.id);
+                                                        } catch {
+                                                            setSnackbar({ open: true, message: "Gagal memuat dokumen untuk pratinjau", severity: "error" });
+                                                        }
+                                                    }}
+                                                >
+                                                    <Eye size={16} />
+                                                </IconButton>
                                                 <IconButton
                                                     size="small"
                                                     sx={{ color: "#115d72", "&:hover": { color: "#0d4a5c", backgroundColor: "#eff6ff" } }}

@@ -199,16 +199,16 @@ export default function EditDataTable({
 }: EditDataTableProps) {
   const router = useRouter();
 
-  // Client-side pagination state
-  const [currentPage, setCurrentPage] = useState(0);
-  const [itemsPerPage, setItemsPerPage] = useState(pagination.limit || 10);
-
-  // Derive pagination values from actual records
-  const totalItems = records.length;
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  // Server-side pagination mapping
+  const totalItems = pagination.total || 0;
+  const totalPages = Math.max(1, pagination.totalPages || 1);
+  const apiPage = pagination.page || 1;
+  const currentPage = apiPage - 1;
+  const itemsPerPage = pagination.limit || 10;
+  
   const startIndex = currentPage * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const paginatedRecords = records.slice(startIndex, endIndex);
+  const paginatedRecords = records;
 
   // Only show filter UI if the parent provides onFilterChange
   const filtersEnabled = !!onFilterChange;
@@ -732,8 +732,7 @@ export default function EditDataTable({
                   id="page-size"
                   value={itemsPerPage}
                   onChange={(e) => {
-                    setItemsPerPage(Number(e.target.value));
-                    setCurrentPage(0);
+                    onPageChange(1, Number(e.target.value));
                   }}
                   className="px-2 py-1 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/40 focus:border-[#14a2bb] transition-all duration-200"
                 >
@@ -751,7 +750,7 @@ export default function EditDataTable({
               <div className="flex items-center gap-1">
                 {/* Previous */}
                 <button
-                  onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
+                  onClick={() => onPageChange(apiPage - 1, itemsPerPage)}
                   disabled={currentPage === 0}
                   className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -784,7 +783,7 @@ export default function EditDataTable({
                     ) : (
                       <button
                         key={p}
-                        onClick={() => setCurrentPage((p as number) - 1)}
+                        onClick={() => onPageChange(p as number, itemsPerPage)}
                         className={`min-w-[2rem] h-8 rounded-lg text-sm font-medium transition-all duration-200 ${
                           p === displayPage
                             ? "bg-[#115d72] text-white shadow-sm"
@@ -799,9 +798,7 @@ export default function EditDataTable({
 
                 {/* Next */}
                 <button
-                  onClick={() =>
-                    setCurrentPage((p) => Math.min(totalPages - 1, p + 1))
-                  }
+                  onClick={() => onPageChange(apiPage + 1, itemsPerPage)}
                   disabled={currentPage >= totalPages - 1}
                   className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >

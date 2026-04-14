@@ -78,6 +78,14 @@ export default function SupplierResumeTable({
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-[120px_1fr] border-b border-gray-300 mb-1 border-dashed">
+              <div className="bg-white font-semibold px-2">TJK</div>
+              <div className="bg-white px-2">
+                {contract.tjk_bbtud != null
+                  ? `${contract.tjk_bbtud} BBTUD`
+                  : "-"}
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-[120px_1fr] border-b border-gray-300 mb-1 border-dashed">
               <div className="bg-white font-semibold px-2">Pembangkit</div>
               <div className="bg-white px-2">{contract.pembangkit_name || "-"}</div>
             </div>

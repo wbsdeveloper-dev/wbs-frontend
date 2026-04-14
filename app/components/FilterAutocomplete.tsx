@@ -1,6 +1,6 @@
 "use client";
 
-import { Autocomplete, TextField } from "@mui/material";
+import { Autocomplete, TextField, Checkbox } from "@mui/material";
 import { styled } from "@mui/material/styles";
 
 const StyledAutocomplete = styled(Autocomplete)({
@@ -31,9 +31,10 @@ const StyledAutocomplete = styled(Autocomplete)({
 interface FilterAutocompleteProps {
   label: string;
   options: string[];
-  value: string | null;
-  onChange: (value: string | null) => void;
+  value: any;
+  onChange: (value: any) => void;
   placeholder?: string;
+  multiple?: boolean;
 }
 
 export default function FilterAutocomplete({
@@ -42,6 +43,7 @@ export default function FilterAutocomplete({
   value,
   onChange,
   placeholder = "Choose option",
+  multiple = false,
 }: FilterAutocompleteProps) {
   return (
     <div>
@@ -51,9 +53,20 @@ export default function FilterAutocomplete({
         </label>
       )}
       <StyledAutocomplete
+        multiple={multiple}
+        disableCloseOnSelect={multiple}
         options={options}
-        value={value}
-        onChange={(_, newValue) => onChange(newValue as string | null)}
+        value={multiple ? (value || []) : (value || null)}
+        onChange={(_, newValue) => onChange(newValue)}
+        renderOption={multiple ? (props, option, { selected }) => {
+          const { key, ...otherProps } = props as any;
+          return (
+            <li key={key} {...otherProps}>
+              <Checkbox style={{ marginRight: 8 }} checked={selected} size="small" />
+              {option}
+            </li>
+          );
+        } : undefined}
         renderInput={(params) => (
           <TextField
             {...params}

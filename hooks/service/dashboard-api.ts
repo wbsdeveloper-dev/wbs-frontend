@@ -3,7 +3,7 @@
 
 import { ApiError, type ApiResponse } from "./bot-api";
 import { getAccessToken } from "@/lib/auth";
-import { useQuery, type UseQueryOptions } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, type UseQueryOptions, type UseMutationOptions } from "@tanstack/react-query";
 
 export const DASHBOARD_API_HOST = process.env.NEXT_PUBLIC_API_HOST || "http://localhost:3005/api";
 
@@ -175,6 +175,16 @@ export interface DashboardEvent {
   severity: "INFO" | "WARNING" | "CRITICAL";
 }
 
+/** POST /dashboard/events */
+export interface CreateEventPayload {
+  siteId?: string;
+  siteName: string;
+  occurredAt: string;
+  title: string;
+  description: string;
+  severity?: "INFO" | "WARNING" | "CRITICAL";
+}
+
 export interface EventsPagination {
   page: number;
   limit: number;
@@ -276,8 +286,8 @@ export const dashboardKeys = {
   all: ["dashboard"] as const,
   mapLocations: (region?: string) =>
     [...dashboardKeys.all, "map-locations", region] as const,
-  distribution: (date: string, by: string) =>
-    [...dashboardKeys.all, "distribution", date, by] as const,
+  distribution: (startDate: string, endDate: string, by: string) =>
+    [...dashboardKeys.all, "distribution", startDate, endDate, by] as const,
   topSuppliers: (startDate: string, endDate: string, limit?: number) =>
     [...dashboardKeys.all, "top-suppliers", startDate, endDate, limit] as const,
   topPlants: (startDate: string, endDate: string, limit?: number) =>
@@ -302,8 +312,8 @@ export const dashboardKeys = {
     ] as const,
   contractInfo: (pemasokId?: string, pembangkitId?: string) =>
     [...dashboardKeys.all, "contract-info", pemasokId, pembangkitId] as const,
-  events: (startDate: string, endDate: string, limit?: number, page?: number) =>
-    [...dashboardKeys.all, "events", startDate, endDate, limit, page] as const,
+  events: (startDate: string, endDate: string, limit?: number, page?: number, siteId?: string, severity?: string) =>
+    [...dashboardKeys.all, "events", startDate, endDate, limit, page, siteId, severity] as const,
   filters: (pemasokId?: string, pembangkitId?: string) =>
     [...dashboardKeys.all, "filters", pemasokId, pembangkitId] as const,
   summary: (startDate: string, endDate: string) =>
@@ -333,9 +343,9 @@ export async function getMapLocations(region?: string) {
   );
 }
 
-export async function getDistribution(date: string, by: "supplier" | "plant") {
+export async function getDistribution(startDate: string, endDate: string, by: "supplier" | "plant") {
   return dashboardFetch<DistributionResponse>(
-    `/dashboard/distribution${buildQuery({ date, by })}`,
+    `/dashboard/distribution${buildQuery({ startDate, endDate, by })}`,
   );
 }
 
@@ -401,6 +411,13 @@ export async function getEvents(
   );
 }
 
+export async function createEvent(payload: CreateEventPayload) {
+  return dashboardFetch<DashboardEvent>("/dashboard/events", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function getFilters(pemasokId?: string, pembangkitId?: string) {
   return dashboardFetch<DashboardFilters>(
     `/dashboard/filters${buildQuery({ pemasokId, pembangkitId })}`,
@@ -429,13 +446,14 @@ export function useMapLocations(
 }
 
 export function useDistribution(
-  date: string,
+  startDate: string,
+  endDate: string,
   by: "supplier" | "plant",
   options?: Partial<UseQueryOptions<DistributionResponse>>,
 ) {
   return useQuery({
-    queryKey: dashboardKeys.distribution(date, by),
-    queryFn: () => getDistribution(date, by),
+    queryKey: dashboardKeys.distribution(startDate, endDate, by),
+    queryFn: () => getDistribution(startDate, endDate, by),
     ...options,
   });
 }
@@ -526,8 +544,23 @@ export function useEvents(
   options?: Partial<UseQueryOptions<EventsResponse>>,
 ) {
   return useQuery({
-    queryKey: dashboardKeys.events(startDate, endDate, limit, page),
+    queryKey: dashboardKeys.events(startDate, endDate, limit, page, siteId, severity),
     queryFn: () => getEvents(startDate, endDate, limit, page, siteId, severity),
+    ...options,
+  });
+}
+
+export function useCreateEvent(
+  options?: Partial<
+    UseMutationOptions<DashboardEvent, Error, CreateEventPayload>
+  >,
+) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: CreateEventPayload) => createEvent(payload),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: dashboardKeys.all });
+    },
     ...options,
   });
 }

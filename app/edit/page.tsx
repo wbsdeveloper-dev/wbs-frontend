@@ -12,16 +12,9 @@ export default function Home() {
   const [pageSize, setPageSize] = useState(10);
   const [filters, setFilters] = useState<MonitoringParams>({});
 
-  // Get current month date range for default view
-  const today = new Date();
-  const startDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-01`;
-  const endDate = today.toISOString().split("T")[0];
-
   const { data, isLoading } = useMonitoringRecords({
     page,
     limit: pageSize,
-    startDate,
-    endDate,
     ...filters,
   });
 
@@ -45,7 +38,7 @@ export default function Home() {
           <div className="mb-6 md:mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-                Tabel Edit Gas Pipa
+                Manajemen Data
               </h1>
               <p className="text-gray-600 mt-1 text-sm md:text-base">
                 Tabel edit untuk melakukan penyesuaian data pada kegiatan gas

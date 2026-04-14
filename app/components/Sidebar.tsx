@@ -20,6 +20,7 @@ import {
   Briefcase,
 } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
@@ -227,42 +228,48 @@ export default function Sidebar() {
             return (
               <div key={index}>
                 {/* Parent menu */}
-                <button
-                  onClick={() =>
-                    menu.children
-                      ? setSubMenuOpen(!subMenuOpen)
-                      : menu.path && router.push(menu.path)
-                  }
-                  className={
-                    isParentActive || isSubmenuOpen ? menuActive : menuNonActive
-                  }
-                >
-                  {Icon && <Icon className="w-5 h-5" />}
-                  {(!isCollapsed || isMobile) && (
-                    <span className="flex-1 text-left">{menu.title}</span>
-                  )}
+                {menu.children ? (
+                  <button
+                    onClick={() => setSubMenuOpen(!subMenuOpen)}
+                    className={
+                      isParentActive || isSubmenuOpen ? menuActive : menuNonActive
+                    }
+                  >
+                    {Icon && <Icon className="w-5 h-5" />}
+                    {(!isCollapsed || isMobile) && (
+                      <span className="flex-1 text-left">{menu.title}</span>
+                    )}
 
-                  {/* Chevron */}
-                  {menu.children &&
-                    subMenuOpen &&
-                    (!isCollapsed || isMobile) && (
+                    {/* Chevron */}
+                    {subMenuOpen && (!isCollapsed || isMobile) && (
                       <ChevronUp className={chevronBase} size={18} />
                     )}
-                  {menu.children &&
-                    !subMenuOpen &&
-                    (!isCollapsed || isMobile) && (
+                    {!subMenuOpen && (!isCollapsed || isMobile) && (
                       <ChevronDown className={chevronBase} size={18} />
                     )}
-                </button>
+                  </button>
+                ) : (
+                  <Link
+                    href={menu.path || "#"}
+                    className={
+                      isParentActive || isSubmenuOpen ? menuActive : menuNonActive
+                    }
+                  >
+                    {Icon && <Icon className="w-5 h-5" />}
+                    {(!isCollapsed || isMobile) && (
+                      <span className="flex-1 text-left">{menu.title}</span>
+                    )}
+                  </Link>
+                )}
                 {/* Submenu (auto open only when active) */}
                 {menu.children && (isSubmenuOpen || subMenuOpen) && (
                   <div className={submenuWrapper}>
                     {menu.children.map((child, idx) => {
                       const isChildActive = pathname === child.path;
                       return (
-                        <button
+                        <Link
                           key={idx}
-                          onClick={() => router.push(child.path)}
+                          href={child.path}
                           className={`flex items-center gap-3 px-3 py-2 text-sm rounded-lg w-full cursor-pointer transition-all duration-200 hover:scale-[1.02]
                             ${
                               isChildActive
@@ -273,7 +280,7 @@ export default function Sidebar() {
                         `}
                         >
                           {child.title}
-                        </button>
+                        </Link>
                       );
                     })}
                   </div>
@@ -288,13 +295,13 @@ export default function Sidebar() {
       <div className="mx-4 h-px bg-linear-to-r from-transparent via-gray-200 to-transparent" />
       <div className="py-2">
         <nav className="space-y-1 px-2 pb-3">
-          <button
+          <Link
+            href="/landingpage"
             className={`flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-gray-600 hover:text-[#115d72] hover:bg-gray-100 rounded-xl mt-2 cursor-pointer w-full transition-all duration-200 hover:scale-[1.03] ${isCollapsed && !isMobile ? "justify-center" : ""}`}
-            onClick={() => router.push("/landingpage")}
           >
             <Reply className="w-5 h-5" />
             {(!isCollapsed || isMobile) && <span>Pilih Dashboard</span>}
-          </button>
+          </Link>
           <button
             className={`flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-gray-600 hover:text-[#115d72] hover:bg-gray-100 rounded-xl cursor-pointer w-full transition-all duration-200 hover:scale-[1.03] ${isCollapsed && !isMobile ? "justify-center" : ""}`}
           >

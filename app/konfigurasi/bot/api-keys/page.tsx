@@ -55,7 +55,7 @@ export default function ApiKeyManagerPage() {
   const handleCopySecret = async () => {
     if (newlyGeneratedKey?.apiKey) {
       const textToCopy = newlyGeneratedKey.apiKey;
-      
+
       // Try modern clipboard API first (only works on HTTPS/localhost)
       if (navigator?.clipboard && window.isSecureContext) {
         await navigator.clipboard.writeText(textToCopy);
@@ -63,12 +63,12 @@ export default function ApiKeyManagerPage() {
         // Fallback for HTTP environments
         const textArea = document.createElement("textarea");
         textArea.value = textToCopy;
-        
+
         // Hide it from view
         textArea.style.position = "absolute";
         textArea.style.left = "-999999px";
         textArea.style.top = "-999999px";
-        
+
         document.body.appendChild(textArea);
         textArea.select();
 
@@ -80,7 +80,7 @@ export default function ApiKeyManagerPage() {
           document.body.removeChild(textArea);
         }
       }
-      
+
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
@@ -130,7 +130,7 @@ export default function ApiKeyManagerPage() {
           action={
             <button
               onClick={() => setIsGenerateModalOpen(true)}
-              className="flex items-center gap-2 bg-[#14a2bb] hover:bg-[#108b9f] text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#14a2bb]"
+              className="flex items-center gap-2 px-4 py-2.5 bg-[#115d72] text-white text-sm font-medium rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
             >
               <Plus className="w-4 h-4" />
               Buat API Key
@@ -200,15 +200,15 @@ export default function ApiKeyManagerPage() {
                     <td className="px-4 py-3 text-gray-600">
                       {keyItem.lastUsedAt
                         ? new Date(keyItem.lastUsedAt).toLocaleDateString(
-                            "id-ID",
-                            {
-                              day: "numeric",
-                              month: "short",
-                              year: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            },
-                          )
+                          "id-ID",
+                          {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          },
+                        )
                         : "-"}
                     </td>
                     <td className="px-4 py-3 text-right">
@@ -281,7 +281,7 @@ export default function ApiKeyManagerPage() {
             <button
               type="submit"
               disabled={generateApiKey.isPending || !newServiceName}
-              className="px-4 py-2 text-sm font-medium text-white bg-[#14a2bb] hover:bg-[#108b9f] rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
+              className="flex items-center gap-2 px-4 py-2.5 bg-[#115d72] text-white text-sm font-medium rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
             >
               {generateApiKey.isPending && (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -344,7 +344,7 @@ export default function ApiKeyManagerPage() {
             <button
               type="button"
               onClick={closeResultModal}
-              className="px-6 py-2.5 text-sm font-medium text-white bg-[#14a2bb] hover:bg-[#108b9f] rounded-lg transition-colors w-full sm:w-auto"
+              className="flex items-center gap-2 px-4 py-2.5 bg-[#115d72] text-white text-sm font-medium rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
             >
               Saya Sudah Menyimpannya
             </button>
