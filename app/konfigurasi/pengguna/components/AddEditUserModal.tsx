@@ -312,7 +312,7 @@ export function AddEditUserModal({
           <button
             type="submit"
             form="user-form"
-            className="px-5 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-[#115d72] to-[#14a2bb] rounded-xl hover:shadow-lg hover:shadow-[#115d72]/20 active:scale-95 transition-all flex items-center justify-center min-w-[120px]"
+            className="px-5 py-2.5 text-sm font-medium text-white bg-[#115d72] rounded-xl hover:shadow-lg hover:bg-[#0d4a5c] active:scale-95 transition-all flex items-center justify-center min-w-[120px]"
             disabled={isSaving}
           >
             {isSaving ? (

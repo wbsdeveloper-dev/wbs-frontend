@@ -938,6 +938,7 @@ export default function RealtimeChart({
                       } cursor-pointer`}
                       onClick={() => {
                         setPeriod("1D");
+                        if (startDate) setEndDate(startDate);
                         if (onPeriodChange) {
                           onPeriodChange("hour");
                         } else {
@@ -1037,6 +1038,7 @@ export default function RealtimeChart({
                   endDate={endDate}
                   setStartDate={setStartDate}
                   setEndDate={setEndDate}
+                  isSingleDate={period === "1D"}
                 />
               </div>
             </div>

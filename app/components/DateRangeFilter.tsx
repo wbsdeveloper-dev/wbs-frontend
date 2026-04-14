@@ -5,6 +5,7 @@ type Props = {
   endDate: string | null;
   setStartDate: (value: string) => void;
   setEndDate: (value: string) => void;
+  isSingleDate?: boolean;
 };
 
 export default function DateFilter({
@@ -12,7 +13,30 @@ export default function DateFilter({
   endDate,
   setStartDate,
   setEndDate,
+  isSingleDate,
 }: Props) {
+  if (isSingleDate) {
+    return (
+      <div className="flex flex-col gap-2">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Tanggal
+          </label>
+          <input
+            type="date"
+            value={startDate ?? ""}
+            onChange={(e) => {
+              setStartDate(e.target.value);
+              setEndDate(e.target.value);
+            }}
+            className="w-full px-4 py-2 rounded-lg text-[0.875rem] border border-gray-300
+                     focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/40 focus:border-[#14a2bb] text-gray-700"
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-2">
       <div>
