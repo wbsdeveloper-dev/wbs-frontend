@@ -166,7 +166,11 @@ export default function GasDashboard() {
     (startDate: string | null, endDate: string | null) => {
       setStartDateFilter(startDate);
       setEndDateFilter(endDate);
-      setGranularity("day");
+      if (startDate && startDate === endDate) {
+        setGranularity("hour");
+      } else {
+        setGranularity("day");
+      }
     },
     [],
   );
