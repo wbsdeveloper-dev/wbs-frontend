@@ -314,6 +314,8 @@ export const configKeys = {
   aiModels: () => [...configKeys.all, "ai-models"] as const,
   spreadsheetSources: () => [...configKeys.all, "spreadsheet-sources"] as const,
   spreadsheetSource: (id: string) => [...configKeys.all, "spreadsheet-sources", id] as const,
+  emailSources: () => [...configKeys.all, "email-sources"] as const,
+  emailSource: (id: string) => [...configKeys.all, "email-sources", id] as const,
 };
 
 // ---------------------------------------------------------------------------
@@ -712,6 +714,159 @@ export function useDeleteSpreadsheetSource(
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: configKeys.spreadsheetSources() });
     },
+    ...options,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Types — Email Sources
+// ---------------------------------------------------------------------------
+
+export interface EmailSource {
+  id: string;
+  name: string;
+  provider: string;
+  emailAddress: string;
+  isEnabled: boolean;
+  cronSchedule: string | null;
+  lastPolledAt: string | null;
+  lastHistoryId: string | null;
+  subjectFilter: string | null;
+  senderFilter: string | null;
+  labelFilter: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateEmailSourcePayload {
+  name: string;
+  emailAddress: string;
+  cronSchedule?: string;
+  subjectFilter?: string;
+  senderFilter?: string;
+  labelFilter?: string;
+}
+
+export interface UpdateEmailSourcePayload {
+  name?: string;
+  emailAddress?: string;
+  isEnabled?: boolean;
+  cronSchedule?: string;
+  subjectFilter?: string;
+  senderFilter?: string;
+  labelFilter?: string;
+}
+
+// ---------------------------------------------------------------------------
+// API functions — Email Sources
+// ---------------------------------------------------------------------------
+
+export function getEmailSources() {
+  return configFetch<EmailSource[]>("/config/email-sources");
+}
+
+export function getEmailSource(id: string) {
+  return configFetch<EmailSource>(`/config/email-sources/${id}`);
+}
+
+export function createEmailSourceApi(payload: CreateEmailSourcePayload) {
+  return configFetch<EmailSource>("/config/email-sources", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateEmailSourceApi(id: string, payload: UpdateEmailSourcePayload) {
+  return configFetch<EmailSource>(`/config/email-sources/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteEmailSourceApi(id: string) {
+  return configFetch<{ deleted: boolean }>(`/config/email-sources/${id}`, {
+    method: "DELETE",
+  });
+}
+
+export function triggerEmailPollApi(id: string) {
+  return configFetch<{ jobId: string; triggered: boolean }>(`/config/email-sources/${id}/poll`, {
+    method: "POST",
+  });
+}
+
+export function testEmailParseApi(id: string) {
+  return configFetch<{ jobId: string; testTriggered: boolean }>(`/config/email-sources/${id}/test-parse`, {
+    method: "POST",
+  });
+}
+
+// ---------------------------------------------------------------------------
+// React Query hooks — Email Sources
+// ---------------------------------------------------------------------------
+
+export function useEmailSources(options?: Partial<UseQueryOptions<EmailSource[]>>) {
+  return useQuery({
+    queryKey: configKeys.emailSources(),
+    queryFn: () => getEmailSources(),
+    ...options,
+  });
+}
+
+export function useCreateEmailSource(
+  options?: Partial<UseMutationOptions<EmailSource, Error, CreateEmailSourcePayload>>,
+) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: CreateEmailSourcePayload) => createEmailSourceApi(payload),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: configKeys.emailSources() });
+    },
+    ...options,
+  });
+}
+
+export function useUpdateEmailSource(
+  options?: Partial<UseMutationOptions<EmailSource, Error, { id: string; payload: UpdateEmailSourcePayload }>>,
+) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: UpdateEmailSourcePayload }) =>
+      updateEmailSourceApi(id, payload),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: configKeys.emailSources() });
+    },
+    ...options,
+  });
+}
+
+export function useDeleteEmailSource(
+  options?: Partial<UseMutationOptions<{ deleted: boolean }, Error, string>>,
+) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteEmailSourceApi(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: configKeys.emailSources() });
+    },
+    ...options,
+  });
+}
+
+export function useTriggerEmailPoll(
+  options?: Partial<UseMutationOptions<{ jobId: string; triggered: boolean }, Error, string>>,
+) {
+  return useMutation({
+    mutationFn: (id: string) => triggerEmailPollApi(id),
+    ...options,
+  });
+}
+
+export function useTestEmailParse(
+  options?: Partial<UseMutationOptions<{ jobId: string; testTriggered: boolean }, Error, string>>,
+) {
+  return useMutation({
+    mutationFn: (id: string) => testEmailParseApi(id),
     ...options,
   });
 }

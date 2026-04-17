@@ -1,14 +1,14 @@
 "use client";
 
 import React from "react";
-import { Pencil, Trash2, CheckCircle } from "lucide-react";
-import { EmailAddress } from "../page";
+import { Pencil, Trash2, CheckCircle, XCircle } from "lucide-react";
+import type { EmailSource } from "../page";
 
 interface EmailTableProps {
-  emails: EmailAddress[];
+  emails: EmailSource[];
   selectedRows: string[];
   onSelectRows: (ids: string[]) => void;
-  onRowClick: (email: EmailAddress) => void;
+  onRowClick: (email: EmailSource) => void;
   onDelete: (id: string) => void;
 }
 
@@ -35,6 +35,21 @@ export default function EmailTable({
     }
   };
 
+  const formatDate = (dateStr: string | null) => {
+    if (!dateStr) return "—";
+    try {
+      return new Date(dateStr).toLocaleString("id-ID", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch {
+      return dateStr;
+    }
+  };
+
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden animate-fadeIn">
       <div className="overflow-x-auto">
@@ -57,19 +72,13 @@ export default function EmailTable({
               </th>
               <th className="px-4 py-4 text-left">
                 <div className="flex items-center gap-1 text-sm font-semibold text-gray-700">
-                  Provider
-                  <span className="text-gray-400">↕</span>
+                  Cron Schedule
                 </div>
               </th>
               <th className="px-4 py-4 text-left">
                 <div className="flex items-center gap-1 text-sm font-semibold text-gray-700">
-                  Site Mapping
+                  Last Polled
                   <span className="text-gray-400">↕</span>
-                </div>
-              </th>
-              <th className="px-4 py-4 text-left">
-                <div className="flex items-center gap-1 text-sm font-semibold text-gray-700">
-                  Template
                 </div>
               </th>
               <th className="px-4 py-4 text-center">
@@ -81,7 +90,6 @@ export default function EmailTable({
               <th className="px-4 py-4 text-center">
                 <div className="text-sm font-semibold text-gray-700">
                   Aksi
-                  <span className="text-gray-400 ml-1">↕</span>
                 </div>
               </th>
             </tr>
@@ -111,34 +119,35 @@ export default function EmailTable({
                 <td className="px-4 py-4">
                   <div>
                     <div className="text-sm font-medium text-gray-900">
-                      {email.email}
+                      {email.emailAddress}
                     </div>
-                    <div className="text-xs text-gray-500">{email.label}</div>
+                    <div className="text-xs text-gray-500">{email.name}</div>
                   </div>
                 </td>
                 <td className="px-4 py-4">
-                  <span className="text-sm text-gray-700">{email.provider}</span>
+                  <code className="text-xs text-gray-600 bg-gray-50 px-1.5 py-0.5 rounded font-mono">
+                    {email.cronSchedule || "—"}
+                  </code>
                 </td>
                 <td className="px-4 py-4">
-                  <span className={`text-sm ${email.siteMapping ? "text-gray-700" : "text-gray-400 italic"}`}>
-                    {email.siteMapping || "Belum dimapping"}
-                  </span>
-                </td>
-                <td className="px-4 py-4">
-                  <span className={`text-sm ${email.appliedTemplate ? "text-gray-700" : "text-gray-400 italic"}`}>
-                    {email.appliedTemplate || "Tidak ada"}
+                  <span className="text-sm text-gray-600">
+                    {formatDate(email.lastPolledAt)}
                   </span>
                 </td>
                 <td className="px-4 py-4 text-center">
                   <span
                     className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
-                      email.status === "active"
+                      email.isEnabled
                         ? "bg-green-50 text-green-700"
                         : "bg-red-50 text-red-700"
                     }`}
                   >
-                    <CheckCircle size={12} />
-                    {email.status === "active" ? "Aktif" : "Nonaktif"}
+                    {email.isEnabled ? (
+                      <CheckCircle size={12} />
+                    ) : (
+                      <XCircle size={12} />
+                    )}
+                    {email.isEnabled ? "Aktif" : "Nonaktif"}
                   </span>
                 </td>
                 <td className="px-4 py-4">
@@ -169,7 +178,7 @@ export default function EmailTable({
             ))}
             {emails.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-12 text-center text-gray-500">
+                <td colSpan={6} className="px-4 py-12 text-center text-gray-500">
                   Tidak ada data email ditemukan
                 </td>
               </tr>
@@ -181,18 +190,7 @@ export default function EmailTable({
       {/* Pagination */}
       <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200">
         <div className="text-sm text-gray-600">
-          Menampilkan {emails.length} email
-        </div>
-        <div className="flex items-center gap-2">
-          <button className="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-            Previous
-          </button>
-          <button className="px-3 py-1.5 text-sm text-white bg-[#115d72] rounded-lg">
-            1
-          </button>
-          <button className="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-            Next
-          </button>
+          Menampilkan {emails.length} email source
         </div>
       </div>
     </div>
