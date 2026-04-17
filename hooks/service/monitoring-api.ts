@@ -313,3 +313,153 @@ export function useDeleteMonitoringRecord() {
     },
   });
 }
+
+// ---------------------------------------------------------------------------
+// API function — create single reconciliation record (POST)
+// ---------------------------------------------------------------------------
+
+export interface CreateReconciliationRecordPayload {
+  reportDate?: string;
+  siteId?: string;
+  siteName?: string;
+  supplierName?: string;
+  metricType: string;
+  periodType: string;
+  periodValue: string;
+  waValue?: number | null;
+  plnValue?: number | null;
+  sheetValue?: number | null;
+  finalValue?: number | null;
+  finalSource?: string | null;
+  resolution?: string | null;
+}
+
+export async function createReconciliationRecord(
+  payload: CreateReconciliationRecordPayload,
+): Promise<MonitoringRecord> {
+  const url = `${DASHBOARD_API_HOST}/reconciliation-input`;
+  const accessToken = getAccessToken();
+  
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    throw new Error(`Monitoring API error: ${res.statusText}`);
+  }
+
+  const body = await res.json();
+
+  if (!body.success) {
+    throw new Error(body.message || "Unknown monitoring API error");
+  }
+
+  return body.data as MonitoringRecord;
+}
+
+export function useCreateReconciliationRecord(
+  options?: Partial<
+    UseMutationOptions<
+      MonitoringRecord,
+      Error,
+      CreateReconciliationRecordPayload
+    >
+  >,
+) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: CreateReconciliationRecordPayload) =>
+      createReconciliationRecord(payload),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: monitoringKeys.records() });
+    },
+    ...options,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// API function — bulk upload reconciliation records (POST)
+// ---------------------------------------------------------------------------
+
+export async function bulkUploadReconciliationRecords(
+  file: File,
+): Promise<{ message: string; insertedCount: number }> {
+  const url = `${DASHBOARD_API_HOST}/reconciliation-input/bulk`;
+  const accessToken = getAccessToken();
+  
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
+    body: formData,
+  });
+
+  if (!res.ok) {
+    throw new Error(`Monitoring API error: ${res.statusText}`);
+  }
+
+  const body = await res.json();
+
+  if (!body.success) {
+    throw new Error(body.message || "Unknown monitoring API error");
+  }
+
+  return body.data;
+}
+
+export function useBulkUploadReconciliationRecords(
+  options?: Partial<
+    UseMutationOptions<
+      { message: string; insertedCount: number },
+      Error,
+      File
+    >
+  >,
+) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (file: File) => bulkUploadReconciliationRecords(file),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: monitoringKeys.records() });
+    },
+    ...options,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// API function — download template
+// ---------------------------------------------------------------------------
+
+export async function downloadReconciliationTemplate(): Promise<void> {
+  const url = `${DASHBOARD_API_HOST}/reconciliation-input/template`;
+  const accessToken = getAccessToken();
+  
+  const res = await fetch(url, {
+    headers: {
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error(`Monitoring API error: ${res.statusText}`);
+  }
+
+  const blob = await res.blob();
+  const downloadUrl = window.URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = downloadUrl;
+  a.download = "Reconciliation_Template.xlsx";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.URL.revokeObjectURL(downloadUrl);
+}

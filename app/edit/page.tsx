@@ -1,7 +1,10 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { Plus, Upload } from "lucide-react";
 import EditDataTable from "../components/EditDataTable";
+import AddReconciliationModal from "../components/AddReconciliationModal";
+import BulkUploadReconciliationModal from "../components/BulkUploadReconciliationModal";
 import {
   useMonitoringRecords,
   type MonitoringParams,
@@ -11,6 +14,9 @@ export default function Home() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [filters, setFilters] = useState<MonitoringParams>({});
+
+  const [openAddModal, setOpenAddModal] = useState(false);
+  const [openBulkModal, setOpenBulkModal] = useState(false);
 
   const { data, isLoading } = useMonitoringRecords({
     page,
@@ -45,6 +51,20 @@ export default function Home() {
                 pipa
               </p>
             </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setOpenAddModal(true)}
+                className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg flex items-center gap-2 hover:bg-gray-50 text-sm font-medium transition-colors cursor-pointer shadow-sm"
+              >
+                <Plus size={16} /> Data Tunggal
+              </button>
+              <button
+                onClick={() => setOpenBulkModal(true)}
+                className="px-4 py-2 bg-[#115d72] text-white rounded-lg flex items-center gap-2 text-sm font-medium hover:bg-[#0d4a5c] transition-colors cursor-pointer shadow-sm"
+              >
+                <Upload size={16} /> Bulk Upload
+              </button>
+            </div>
           </div>
 
           <div className="mb-6 md:mb-8">
@@ -68,6 +88,13 @@ export default function Home() {
           </div>
         </div>
       </main>
+
+      {openAddModal && (
+        <AddReconciliationModal setOpenModal={setOpenAddModal} />
+      )}
+      {openBulkModal && (
+        <BulkUploadReconciliationModal setOpenModal={setOpenBulkModal} />
+      )}
     </div>
   );
 }
