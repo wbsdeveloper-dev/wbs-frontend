@@ -140,6 +140,16 @@ export interface UpdateUserPayload {
   roles?: string[];
 }
 
+export interface PrivilegeMapping {
+  resource: string;
+  actions: string[];
+}
+
+export interface RoleResourcesResponse {
+  resources: string[];
+  actions: string[];
+}
+
 // ---------------------------------------------------------------------------
 // Helper to build query string
 // ---------------------------------------------------------------------------
@@ -165,6 +175,8 @@ function buildQuery(
 export const userKeys = {
   all: ["users"] as const,
   roles: () => [...userKeys.all, "roles"] as const,
+  roleResources: () => [...userKeys.roles(), "resources"] as const,
+  rolePrivileges: (id: string) => [...userKeys.roles(), "privileges", id] as const,
   users: (filters?: {
     page?: number;
     limit?: number;
@@ -242,6 +254,21 @@ export function deleteRole(id: string) {
   });
 }
 
+export function getRoleResources() {
+  return userFetchData<RoleResourcesResponse>("/roles/resources");
+}
+
+export function getRolePrivileges(id: string) {
+  return userFetchData<{ privileges: PrivilegeMapping[] }>(`/roles/${id}/privileges`);
+}
+
+export function updateRolePrivileges(id: string, payload: { privileges: PrivilegeMapping[] }) {
+  return userFetchData<{ success: boolean }>(`/roles/${id}/privileges`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
 // ---------------------------------------------------------------------------
 // React Query hooks
 // ---------------------------------------------------------------------------
@@ -277,6 +304,37 @@ export function useDeleteRole(
     onSuccess: (...args) => {
       qc.invalidateQueries({ queryKey: userKeys.roles() });
       options?.onSuccess?.(...args);
+    },
+    ...options,
+  });
+}
+
+export function useRoleResources(options?: Partial<UseQueryOptions<RoleResourcesResponse>>) {
+  return useQuery({
+    queryKey: userKeys.roleResources(),
+    queryFn: () => getRoleResources(),
+    ...options,
+  });
+}
+
+export function useRolePrivileges(id: string, options?: Partial<UseQueryOptions<{ privileges: PrivilegeMapping[] }>>) {
+  return useQuery({
+    queryKey: userKeys.rolePrivileges(id),
+    queryFn: () => getRolePrivileges(id),
+    enabled: !!id,
+    ...options,
+  });
+}
+
+export function useUpdateRolePrivileges(
+  options?: Partial<UseMutationOptions<{ success: boolean }, Error, { id: string; payload: { privileges: PrivilegeMapping[] } }>>
+) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }) => updateRolePrivileges(id, payload),
+    onSuccess: (_, { id }, ...args) => {
+      qc.invalidateQueries({ queryKey: userKeys.rolePrivileges(id) });
+      options?.onSuccess?.(_, { id }, ...args);
     },
     ...options,
   });
