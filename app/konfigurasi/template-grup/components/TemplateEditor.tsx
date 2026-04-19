@@ -15,13 +15,15 @@ import {
   CheckCircle,
   Upload,
   Download,
+  Info,
 } from "lucide-react";
 import { downloadFieldsCSV } from "../utils/csvExport";
 import CSVImportModal from "./CSVImportModal";
 import Card, { CardHeader } from "@/app/components/ui/Card";
 import { Modal } from "@/app/components/ui";
+import { Tooltip } from "@mui/material";
 import type { Template, TemplateField } from "@/hooks/service/config-api";
-import { useAiModels } from "@/hooks/service/config-api";
+import { useAiModels, useEmailSources } from "@/hooks/service/config-api";
 
 interface TemplateEditorProps {
   template: Template;
@@ -44,29 +46,53 @@ interface TemplateEditorProps {
   spreadsheetSources: { id: string; name: string }[];
 }
 
-const FIELD_KEY_OPTIONS = [
-  "report_date",
-  "site_name",
-  "metric_type",
-  "period_value",
-  "value",
-  "unit",
-  "supplier",
-  "transportir",
-  "records",
-  "notes",
-  "custom",
-];
+const FIELD_KEY_LABELS: Record<string, string> = {
+  report_date: "Tanggal Laporan",
+  site_name: "Nama Site / Pembangkit",
+  metric_type: "Tipe Metrik",
+  period_value: "Nilai Periode",
+  value: "Nilai Utama",
+  unit: "Satuan",
+  supplier: "Pemasok",
+  transportir: "Transportir",
+  records: "Baris Data (JSON)",
+  notes: "Catatan",
+  custom: "Field Kustom",
+};
+
+const FIELD_KEY_OPTIONS = Object.keys(FIELD_KEY_LABELS);
 
 const SOURCE_KIND_OPTIONS: {
   value: TemplateField["sourceKind"];
   label: string;
+  getLabel?: (scope: Template["scope"]) => string;
 }[] = [
-  { value: "SHEET_COLUMN", label: "Sheet Column" },
-  { value: "WA_REGEX", label: "WA Regex" },
-  { value: "WA_REGEX_RECORDS", label: "WA Regex Records" },
-  { value: "WA_FIXED", label: "WA Fixed Value" },
-  { value: "AI_JSON_PATH", label: "AI JSON Path" },
+  {
+    value: "SHEET_COLUMN",
+    label: "Kolom Spreadsheet",
+  },
+  {
+    value: "WA_REGEX",
+    label: "Regular Expression",
+    getLabel: (scope) =>
+      scope === "EMAIL_INGEST" ? "Regex Pesan/Subjek" : "Regular Expression",
+  },
+  {
+    value: "WA_REGEX_RECORDS",
+    label: "Multi-record Regex (JSON)",
+    getLabel: (scope) =>
+      scope === "EMAIL_INGEST" ? "Multi-record Regex" : "Multi-record Regex (JSON)",
+  },
+  {
+    value: "WA_FIXED",
+    label: "Nilai Statis",
+    getLabel: (scope) =>
+      scope === "EMAIL_INGEST" ? "Nilai Tetap (Requirement)" : "Nilai Statis",
+  },
+  {
+    value: "AI_JSON_PATH",
+    label: "Jalur Data AI (JSON)",
+  },
 ];
 
 function generateId() {
@@ -108,6 +134,7 @@ export default function TemplateEditor({
   const [formData, setFormData] = useState<Template>(normalizedTemplate);
   const [isCSVImportModalOpen, setIsCSVImportModalOpen] = useState(false);
   const { data: aiModels = [], isLoading: isLoadingModels } = useAiModels();
+  const { data: emailSources = [] } = useEmailSources();
   const [isFieldModalOpen, setIsFieldModalOpen] = useState(false);
   const [editingField, setEditingField] = useState<TemplateField | null>(null);
   const [testInput, setTestInput] = useState("");
@@ -382,7 +409,13 @@ export default function TemplateEditor({
       <Card>
         <CardHeader
           title={formData.name}
-          description={`Version ${formData.version} • ${formData.status}`}
+          description={`Versi ${formData.version} • ${
+            formData.status === "ACTIVE"
+              ? "Aktif"
+              : formData.status === "DRAFT"
+                ? "Rancangan (Draft)"
+                : "Diarsipkan"
+          }`}
           action={
             <div className="flex items-center gap-2">
               <button
@@ -405,7 +438,7 @@ export default function TemplateEditor({
                   className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-all duration-200"
                 >
                   <Rocket size={16} />
-                  Activate
+                  Aktifkan
                 </button>
               )}
             </div>
@@ -430,9 +463,18 @@ export default function TemplateEditor({
 
           {/* Scope */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Scope
-            </label>
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <label className="block text-sm font-medium text-gray-700">
+                Cakupan (Scope)
+              </label>
+              <Tooltip
+                title="Menentukan dari mana data akan diambil (WA, Spreadsheet, atau Email)."
+                arrow
+                placement="top"
+              >
+                <Info className="w-4 h-4 text-gray-400 cursor-help" />
+              </Tooltip>
+            </div>
             <div className="relative">
               <select
                 value={formData.scope}
@@ -445,8 +487,8 @@ export default function TemplateEditor({
                 className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white cursor-pointer pr-10"
                 disabled={formData.status === "ACTIVE"}
               >
-                <option value="WA_GROUP">WA Group</option>
-                <option value="SPREADSHEET_SOURCE">Spreadsheet Source</option>
+                <option value="WA_GROUP">WhatsApp Grup</option>
+                <option value="SPREADSHEET_SOURCE">Sumber Spreadsheet</option>
                 <option value="EMAIL_INGEST">Email Ingest</option>
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
@@ -455,9 +497,18 @@ export default function TemplateEditor({
 
           {/* Parser Mode */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Parser Mode
-            </label>
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <label className="block text-sm font-medium text-gray-700">
+                Mode Pemroses
+              </label>
+              <Tooltip
+                title="Pilih 'Rule Based' untuk parsing dengan pola regex manual, atau 'AI Assisted' untuk menggunakan kecerdasan buatan."
+                arrow
+                placement="top"
+              >
+                <Info className="w-4 h-4 text-gray-400 cursor-help" />
+              </Tooltip>
+            </div>
             <div className="relative">
               <select
                 value={formData.parserMode}
@@ -469,8 +520,8 @@ export default function TemplateEditor({
                 }
                 className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white cursor-pointer pr-10"
               >
-                <option value="RULE_BASED">Rule Based</option>
-                <option value="AI_ASSISTED">AI Assisted</option>
+                <option value="RULE_BASED">Berdasarkan Aturan (Rule Based)</option>
+                <option value="AI_ASSISTED">Bantuan AI (AI Assisted)</option>
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             </div>
@@ -479,9 +530,18 @@ export default function TemplateEditor({
           {/* Group Config (for WA_GROUP) */}
           {formData.scope === "WA_GROUP" && (
             <div className="lg:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Group Config
-              </label>
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <label className="block text-sm font-medium text-gray-700">
+                  Konfigurasi Grup WhatsApp
+                </label>
+                <Tooltip
+                  title="Hubungkan template ini dengan grup WhatsApp tertentu yang akan dipantau oleh bot."
+                  arrow
+                  placement="top"
+                >
+                  <Info className="w-4 h-4 text-gray-400 cursor-help" />
+                </Tooltip>
+              </div>
               <div className="flex gap-2">
                 <div className="relative flex-1">
                   <select
@@ -494,7 +554,7 @@ export default function TemplateEditor({
                     }
                     className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white cursor-pointer pr-10"
                   >
-                    <option value="">Pilih Group</option>
+                    <option value="">Pilih Grup</option>
                     {groupConfigs
                       .filter((gc) => gc.isEnabled)
                       .map((gc) => (
@@ -503,13 +563,13 @@ export default function TemplateEditor({
                         </option>
                       ))}
                     {groupConfigs.some((gc) => !gc.isEnabled) && (
-                      <option disabled>── Disabled Groups ──</option>
+                      <option disabled>── Grup Nonaktif ──</option>
                     )}
                     {groupConfigs
                       .filter((gc) => !gc.isEnabled)
                       .map((gc) => (
                         <option key={gc.id} value={gc.id}>
-                          ⛔ {gc.name} ({gc.groupId}) — Disabled
+                          ⛔ {gc.name} ({gc.groupId}) — Nonaktif
                         </option>
                       ))}
                   </select>
@@ -520,7 +580,7 @@ export default function TemplateEditor({
                     type="button"
                     onClick={() => setIsAddingGroup(true)}
                     className="shrink-0 px-2.5 py-2.5 text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 active:scale-95"
-                    title="Tambah Group Baru"
+                    title="Tambah Grup Baru"
                   >
                     <Plus size={16} />
                   </button>
@@ -559,9 +619,18 @@ export default function TemplateEditor({
           {/* Spreadsheet Source (for SPREADSHEET_SOURCE) */}
           {formData.scope === "SPREADSHEET_SOURCE" && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Spreadsheet Source
-              </label>
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <label className="block text-sm font-medium text-gray-700">
+                  Sumber Spreadsheet
+                </label>
+                <Tooltip
+                  title="Pilih file spreadsheet yang akan digunakan sebagai sumber data."
+                  arrow
+                  placement="top"
+                >
+                  <Info className="w-4 h-4 text-gray-400 cursor-help" />
+                </Tooltip>
+              </div>
               <div className="relative">
                 <select
                   value={formData.spreadsheetSourceId || ""}
@@ -573,10 +642,48 @@ export default function TemplateEditor({
                   }
                   className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white cursor-pointer pr-10"
                 >
-                  <option value="">Pilih Source</option>
+                  <option value="">Pilih Sumber</option>
                   {spreadsheetSources.map((ss) => (
                     <option key={ss.id} value={ss.id}>
                       {ss.name}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              </div>
+            </div>
+          )}
+
+          {/* Email Source (for EMAIL_INGEST) */}
+          {formData.scope === "EMAIL_INGEST" && (
+            <div>
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <label className="block text-sm font-medium text-gray-700">
+                  Sumber Email
+                </label>
+                <Tooltip
+                  title="Pilih email source yang akan memicu template ini ketika ada email masuk."
+                  arrow
+                  placement="top"
+                >
+                  <Info className="w-4 h-4 text-gray-400 cursor-help" />
+                </Tooltip>
+              </div>
+              <div className="relative">
+                <select
+                  value={formData.emailSourceId || ""}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      emailSourceId: e.target.value || null,
+                    })
+                  }
+                  className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white cursor-pointer pr-10"
+                >
+                  <option value="">Pilih Sumber</option>
+                  {emailSources.map((es) => (
+                    <option key={es.id} value={es.id}>
+                      {es.name} ({es.emailAddress})
                     </option>
                   ))}
                 </select>
@@ -596,100 +703,126 @@ export default function TemplateEditor({
                 }
                 className="w-4 h-4 text-[#115d72] border-gray-300 rounded focus:ring-[#14a2bb]"
               />
-              <span className="text-sm text-gray-700">Set as Default</span>
+              <span className="text-sm text-gray-700 font-medium">
+                Tetapkan sebagai Utama (Default)
+              </span>
             </label>
+            <Tooltip
+              title="Jika diaktifkan, template ini akan digunakan secara otomatis jika tidak ada template lain yang cocok."
+              arrow
+              placement="right"
+            >
+              <Info className="w-3.5 h-3.5 text-gray-400 cursor-help" />
+            </Tooltip>
           </div>
         </div>
 
         {/* Hints Section */}
-        <div className="mt-4 pt-4 border-t border-gray-200">
-          <h4 className="text-sm font-medium text-gray-700 mb-3">
-            Hints & Config
-          </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {formData.scope === "WA_GROUP" && (
-              <>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">
-                    WA Keyword Hint
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.waKeywordHint || ""}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        waKeywordHint: e.target.value,
-                      })
-                    }
-                    placeholder="e.g., LAPORAN HARIAN"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">
-                    WA Sender Hint
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.waSenderHint || ""}
-                    onChange={(e) =>
-                      setFormData({ ...formData, waSenderHint: e.target.value })
-                    }
-                    placeholder="e.g., PLN"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]"
-                  />
-                </div>
-              </>
-            )}
-            {formData.scope === "SPREADSHEET_SOURCE" && (
-              <>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">
-                    Sheet Tab Hint
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.sheetTabHint || ""}
-                    onChange={(e) =>
-                      setFormData({ ...formData, sheetTabHint: e.target.value })
-                    }
-                    placeholder="e.g., Gas Pipa"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">
-                    Sheet Header Row
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.sheetHeaderRow || ""}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        sheetHeaderRow: parseInt(e.target.value) || null,
-                      })
-                    }
-                    placeholder="1"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]"
-                  />
-                </div>
-              </>
-            )}
+        {formData.scope !== "EMAIL_INGEST" && (
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <h4 className="text-sm font-medium text-gray-700 mb-3">
+              Petunjuk & Konfigurasi (Hints)
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {formData.scope === "WA_GROUP" && (
+                <>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">
+                      Kata Kunci WA (Hint)
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.waKeywordHint || ""}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          waKeywordHint: e.target.value,
+                        })
+                      }
+                      placeholder="e.g., LAPORAN HARIAN"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">
+                      Pengirim WA (Hint)
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.waSenderHint || ""}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          waSenderHint: e.target.value,
+                        })
+                      }
+                      placeholder="e.g., PLN"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]"
+                    />
+                  </div>
+                </>
+              )}
+              {formData.scope === "SPREADSHEET_SOURCE" && (
+                <>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">
+                      Tab Sheet (Hint)
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.sheetTabHint || ""}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          sheetTabHint: e.target.value,
+                        })
+                      }
+                      placeholder="e.g., Gas Pipa"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">
+                      Baris Header Sheet
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.sheetHeaderRow || ""}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          sheetHeaderRow: parseInt(e.target.value) || null,
+                        })
+                      }
+                      placeholder="1"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]"
+                    />
+                  </div>
+                </>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* AI Settings */}
         {formData.parserMode === "AI_ASSISTED" && (
           <div className="mt-4 pt-4 border-t border-gray-200">
-            <h4 className="text-sm font-medium text-gray-700 mb-3">
-              AI Settings
-            </h4>
+            <div className="flex items-center gap-1.5 mb-3">
+              <h4 className="text-sm font-medium text-gray-700">
+                Pengaturan AI
+              </h4>
+              <Tooltip
+                title="Konfigurasi model AI untuk mengekstrak data dari pesan menggunakan kecerdasan buatan."
+                arrow
+                placement="top"
+              >
+                <Info className="w-3.5 h-3.5 text-gray-400 cursor-help" />
+              </Tooltip>
+            </div>
             <div className="space-y-4">
               <div>
                 <label className="block text-xs text-gray-500 mb-1">
-                  AI Model
+                  Model AI
                 </label>
                 <div className="relative">
                   <select
@@ -715,9 +848,18 @@ export default function TemplateEditor({
                 </div>
               </div>
               <div>
-                <label className="block text-xs text-gray-500 mb-1">
-                  AI Prompt Template
-                </label>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <label className="block text-xs text-gray-500">
+                    Templat Prompt AI
+                  </label>
+                  <Tooltip
+                    title="Instruksi spesifik yang dikirimkan ke AI untuk memberitahu cara ekstraksi."
+                    arrow
+                    placement="top"
+                  >
+                    <Info className="w-3.5 h-3.5 text-gray-400 cursor-help" />
+                  </Tooltip>
+                </div>
                 <textarea
                   value={formData.aiPromptTemplate || ""}
                   onChange={(e) =>
@@ -732,9 +874,18 @@ export default function TemplateEditor({
                 />
               </div>
               <div>
-                <label className="block text-xs text-gray-500 mb-1">
-                  AI Output Schema (JSON)
-                </label>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <label className="block text-xs text-gray-500">
+                    Skema Output AI (JSON)
+                  </label>
+                  <Tooltip
+                    title="Struktur data JSON yang akan dihasilkan oleh AI."
+                    arrow
+                    placement="top"
+                  >
+                    <Info className="w-3.5 h-3.5 text-gray-400 cursor-help" />
+                  </Tooltip>
+                </div>
                 <textarea
                   value={
                     formData.aiOutputSchema
@@ -771,8 +922,8 @@ export default function TemplateEditor({
       {/* Fields Table Section */}
       <Card>
         <CardHeader
-          title="Template Fields"
-          description={`${formData.fields.length} field(s) defined`}
+          title="Daftar Bidang (Template Fields)"
+          description={`${formData.fields.length} bidang dikonfigurasi`}
           action={
             <div className="flex items-center gap-2">
               <button
@@ -781,7 +932,7 @@ export default function TemplateEditor({
                 title="Import Fields from CSV"
               >
                 <Upload size={16} />
-                <span className="hidden sm:inline">Import</span>
+                <span className="hidden sm:inline">Impor</span>
               </button>
               <button
                 onClick={handleExportCSV}
@@ -789,7 +940,7 @@ export default function TemplateEditor({
                 title="Export Fields to CSV"
               >
                 <Download size={16} />
-                <span className="hidden sm:inline">Export</span>
+                <span className="hidden sm:inline">Ekspor</span>
               </button>
               <button
                 onClick={() => {
@@ -799,7 +950,7 @@ export default function TemplateEditor({
                 className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-all duration-200"
               >
                 <Plus size={16} />
-                Add Field
+                Tambah Bidang
               </button>
             </div>
           }
@@ -821,19 +972,19 @@ export default function TemplateEditor({
                     #
                   </th>
                   <th className="px-3 py-3 text-left text-xs font-semibold text-gray-600">
-                    Field Key
+                    Target Property
                   </th>
                   <th className="px-3 py-3 text-left text-xs font-semibold text-gray-600">
-                    Source Kind
+                    Metode Ekstraksi
                   </th>
                   <th className="px-3 py-3 text-left text-xs font-semibold text-gray-600">
-                    Source Ref
+                    Pola / Referensi
                   </th>
                   <th className="px-3 py-3 text-left text-xs font-semibold text-gray-600">
-                    Required
+                    Wajib
                   </th>
                   <th className="w-24 px-3 py-3 text-right text-xs font-semibold text-gray-600">
-                    Actions
+                    Aksi
                   </th>
                 </tr>
               </thead>
@@ -858,11 +1009,17 @@ export default function TemplateEditor({
                       </div>
                     </td>
                     <td className="px-3 py-3 font-medium text-gray-900">
-                      {field.fieldKey}
+                      {FIELD_KEY_LABELS[field.fieldKey] || field.fieldKey}
                     </td>
                     <td className="px-3 py-3">
                       <span className="px-2 py-0.5 text-xs bg-gray-100 text-gray-700 rounded">
-                        {field.sourceKind}
+                        {SOURCE_KIND_OPTIONS.find(
+                          (o) => o.value === field.sourceKind,
+                        )?.getLabel?.(formData.scope) ||
+                          SOURCE_KIND_OPTIONS.find(
+                            (o) => o.value === field.sourceKind,
+                          )?.label ||
+                          field.sourceKind}
                       </span>
                     </td>
                     <td className="px-3 py-3 font-mono text-xs text-gray-600 max-w-[200px] truncate">
@@ -971,21 +1128,38 @@ export default function TemplateEditor({
       >
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Field Key
-            </label>
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <label className="block text-sm font-medium text-gray-700">
+                Target Property
+              </label>
+              <Tooltip
+                title="Field data di sistem tempat nilai hasil ekstraksi akan disimpan (misal: SITE_NAME, VALUE)."
+                arrow
+                placement="top"
+              >
+                <Info className="w-4 h-4 text-gray-400 cursor-help" />
+              </Tooltip>
+            </div>
             <div className="relative">
               <select
                 value={fieldForm.fieldKey}
-                onChange={(e) =>
-                  setFieldForm({ ...fieldForm, fieldKey: e.target.value })
-                }
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setFieldForm({
+                    ...fieldForm,
+                    fieldKey: val,
+                    sourceKind:
+                      val === "records"
+                        ? "WA_REGEX_RECORDS"
+                        : fieldForm.sourceKind,
+                  });
+                }}
                 className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] bg-white cursor-pointer pr-10"
               >
-                <option value="">Pilih Field Key</option>
+                <option value="">Pilih Target Property</option>
                 {FIELD_KEY_OPTIONS.map((key) => (
                   <option key={key} value={key}>
-                    {key}
+                    {FIELD_KEY_LABELS[key] || key}
                   </option>
                 ))}
               </select>
@@ -996,7 +1170,7 @@ export default function TemplateEditor({
           {fieldForm.fieldKey === "custom" && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Custom Field Key
+                Target Property (Kustom)
               </label>
               <input
                 type="text"
@@ -1011,9 +1185,18 @@ export default function TemplateEditor({
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Source Kind
-            </label>
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <label className="block text-sm font-medium text-gray-700">
+                Metode Ekstraksi
+              </label>
+              <Tooltip
+                title="Logika yang digunakan untuk mencari data (misal: Regular Expression untuk pesan text, Kolom Sheet untuk Excel)."
+                arrow
+                placement="top"
+              >
+                <Info className="w-4 h-4 text-gray-400 cursor-help" />
+              </Tooltip>
+            </div>
             <div className="relative">
               <select
                 value={fieldForm.sourceKind}
@@ -1027,7 +1210,7 @@ export default function TemplateEditor({
               >
                 {SOURCE_KIND_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>
-                    {opt.label}
+                    {opt.getLabel?.(formData.scope) || opt.label}
                   </option>
                 ))}
               </select>
@@ -1035,36 +1218,66 @@ export default function TemplateEditor({
             </div>
           </div>
 
-          {fieldForm.sourceKind === "WA_REGEX_RECORDS" ? (
+          {fieldForm.sourceKind === "WA_REGEX_RECORDS" ||
+          fieldForm.fieldKey === "records" ? (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Source Ref
-                <span className="text-xs text-gray-400 ml-1">
-                  (JSON array of record configs)
-                </span>
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <div className="flex items-center gap-1.5">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Pola / Referensi (JSON Editor)
+                  </label>
+                  <Tooltip
+                    title="Pola (JSON array) yang digunakan untuk menemukan baris-baris data secara berulang."
+                    arrow
+                    placement="top"
+                  >
+                    <Info className="w-4 h-4 text-gray-400 cursor-help" />
+                  </Tooltip>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    try {
+                      const parsed = JSON.parse(fieldForm.sourceRef);
+                      setFieldForm({
+                        ...fieldForm,
+                        sourceRef: JSON.stringify(parsed, null, 2),
+                      });
+                    } catch {
+                      alert("Format JSON tidak valid");
+                    }
+                  }}
+                  className="px-2 py-0.5 text-[10px] font-semibold text-[#115d72] bg-[#115d72]/5 rounded hover:bg-[#115d72]/10 transition-colors border border-[#115d72]/20"
+                >
+                  Rapikan JSON (Tidy)
+                </button>
+              </div>
               <textarea
                 value={fieldForm.sourceRef}
                 onChange={(e) =>
                   setFieldForm({ ...fieldForm, sourceRef: e.target.value })
                 }
-                rows={6}
+                rows={12}
                 placeholder={
-                  '[\n  {"metric_type": "FLOWRATE_MMSCFD", "period_type": "hour", "regex": "Flow[\\s\\S]*?Current\\s+Rate\\s*:\\s*([\\d.,]+)\\s*MMSCFD", "unit": "MMSCFD"}\n]'
+                  '[\n  {"metric_type": "FLOWRATE", "regex": "Flow:\\s*([\\d.]+)"}\n]'
                 }
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] font-mono resize-none"
+                className="w-full px-3 py-3 border border-gray-300 rounded-lg text-[13px] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] font-mono resize-none bg-gray-50/80 shadow-inner leading-relaxed"
               />
             </div>
           ) : (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Source Ref
-                {fieldForm.sourceKind === "WA_REGEX" && (
-                  <span className="text-xs text-gray-400 ml-1">
-                    (Regex pattern)
-                  </span>
-                )}
-              </label>
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <label className="block text-sm font-medium text-gray-700">
+                  Pola / Referensi
+                </label>
+                <Tooltip
+                  title="Pola (Regex) atau referensi sel yang digunakan untuk menemukan nilai data."
+                  arrow
+                  placement="top"
+                >
+                  <Info className="w-4 h-4 text-gray-400 cursor-help" />
+                </Tooltip>
+              </div>
               <input
                 type="text"
                 value={fieldForm.sourceRef}
@@ -1086,10 +1299,18 @@ export default function TemplateEditor({
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Transform{" "}
-              <span className="text-xs text-gray-400">(Optional)</span>
-            </label>
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <label className="block text-sm font-medium text-gray-700">
+                Pembersihan Data
+              </label>
+              <Tooltip
+                title="Langkah opsional untuk memformat data setelah diekstraksi (misal: mengubah teks menjadi angka)."
+                arrow
+                placement="top"
+              >
+                <Info className="w-4 h-4 text-gray-400 cursor-help" />
+              </Tooltip>
+            </div>
             <div className="relative">
               <select
                 value={fieldForm.transform}
@@ -1120,7 +1341,18 @@ export default function TemplateEditor({
                 }
                 className="w-4 h-4 text-[#115d72] border-gray-300 rounded focus:ring-[#14a2bb]"
               />
-              <span className="text-sm text-gray-700">Required Field</span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-sm text-gray-700 font-medium">
+                  Wajib Diisi
+                </span>
+                <Tooltip
+                  title="Jika diaktifkan, sistem akan menganggap gagal jika field ini tidak ditemukan."
+                  arrow
+                  placement="right"
+                >
+                  <Info className="w-3.5 h-3.5 text-gray-400 cursor-help" />
+                </Tooltip>
+              </div>
             </label>
           </div>
 
@@ -1135,7 +1367,7 @@ export default function TemplateEditor({
               onClick={handleAddField}
               className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-all duration-200"
             >
-              {editingField ? "Update" : "Add"}
+              {editingField ? "Simpan Perubahan" : "Tambah Bidang"}
             </button>
           </div>
         </div>

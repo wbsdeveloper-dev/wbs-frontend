@@ -376,17 +376,17 @@ function GroupsSection({
       <div className="flex items-center gap-2 mb-2">
         <button
           onClick={handleSelectAll}
-          disabled={updateGroups.isPending}
-          className="px-3 py-1.5 text-xs font-medium text-[#115d72] bg-[#14a2bb]/10 rounded-lg hover:bg-[#14a2bb]/20 transition-all disabled:opacity-50"
+          disabled={updateGroups.isPending || activeCount === list.length}
+          className="px-3 py-1.5 text-xs font-medium text-[#115d72] bg-[#14a2bb]/10 rounded-lg hover:bg-[#14a2bb]/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Select All
+          Pilih Semua
         </button>
         <button
           onClick={handleUnselectAll}
-          disabled={updateGroups.isPending}
-          className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-all disabled:opacity-50"
+          disabled={updateGroups.isPending || activeCount === 0}
+          className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Unselect All
+          Batalkan Semua
         </button>
       </div>
 
