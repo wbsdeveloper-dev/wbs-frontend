@@ -50,7 +50,7 @@ export default function TemplateList({
       return (
         <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 rounded-full">
           <CheckCircle size={10} />
-          Active
+          Aktif
         </span>
       );
     }
@@ -65,16 +65,16 @@ export default function TemplateList({
     return (
       <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-600 rounded-full">
         <AlertTriangle size={10} />
-        Deprecated
+        Diarsipkan
       </span>
     );
   };
 
   const getHintPreview = (template: Template) => {
     if (template.scope === "WA_GROUP") {
-      return template.waKeywordHint || template.waSenderHint || "No hint";
+      return template.waKeywordHint || template.waSenderHint || "Tidak ada petunjuk";
     }
-    return template.sheetTabHint || "No hint";
+    return template.sheetTabHint || "Tidak ada petunjuk";
   };
 
   if (templates.length === 0) {
@@ -123,7 +123,7 @@ export default function TemplateList({
               )}
               {template.groupConfigId && (
                 <span className="px-2 py-0.5 text-xs font-medium bg-indigo-100 text-indigo-700 rounded-full">
-                  Group Mapped
+                  Grup Terhubung
                 </span>
               )}
             </div>

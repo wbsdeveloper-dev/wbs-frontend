@@ -28,6 +28,10 @@ import {
   useDeleteEmailSource,
   useTriggerEmailPoll,
   useTestEmailParse,
+  useGetEmailOAuthStatus,
+  useGetEmailOAuthUrl,
+  useExchangeEmailOAuthToken,
+  useDisconnectEmailOAuth,
   type EmailSource,
   type CreateEmailSourcePayload,
   type UpdateEmailSourcePayload,
@@ -44,6 +48,9 @@ export default function EmailIngestPage() {
   const deleteMutation = useDeleteEmailSource();
   const triggerPollMutation = useTriggerEmailPoll();
   const testParseMutation = useTestEmailParse();
+  const getOAuthUrlMutation = useGetEmailOAuthUrl();
+  const exchangeOAuthMutation = useExchangeEmailOAuthToken();
+  const disconnectOAuthMutation = useDisconnectEmailOAuth();
 
   // UI state
   const [searchQuery, setSearchQuery] = useState("");
@@ -51,13 +58,15 @@ export default function EmailIngestPage() {
   const [selectedEmail, setSelectedEmail] = useState<EmailSource | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isLogModalOpen, setIsLogModalOpen] = useState(false);
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
   const [notification, setNotification] = useState<{ type: "success" | "error" | "info"; message: string } | null>(null);
+
+  const { data: oauthStatus, isLoading: isOauthLoading } = useGetEmailOAuthStatus();
 
   // Add form state
   const [addForm, setAddForm] = useState({
     name: "",
-    emailAddress: "",
     cronSchedule: "0 8 * * *",
     subjectFilter: "",
     senderFilter: "",
@@ -75,7 +84,6 @@ export default function EmailIngestPage() {
   const filteredEmails = useMemo(() => {
     return emailSources.filter((source) => {
       const matchesSearch =
-        source.emailAddress.toLowerCase().includes(searchQuery.toLowerCase()) ||
         source.name.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesStatus =
         statusFilter === "all" ||
@@ -104,11 +112,6 @@ export default function EmailIngestPage() {
 
   const validateAddForm = () => {
     const errors: Record<string, string> = {};
-    if (!addForm.emailAddress) {
-      errors.emailAddress = "Email wajib diisi";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(addForm.emailAddress)) {
-      errors.emailAddress = "Format email tidak valid";
-    }
     if (!addForm.name) {
       errors.name = "Nama wajib diisi";
     }
@@ -121,7 +124,6 @@ export default function EmailIngestPage() {
 
     const payload: CreateEmailSourcePayload = {
       name: addForm.name,
-      emailAddress: addForm.emailAddress,
       cronSchedule: addForm.cronSchedule || undefined,
       subjectFilter: addForm.subjectFilter || undefined,
       senderFilter: addForm.senderFilter || undefined,
@@ -130,11 +132,10 @@ export default function EmailIngestPage() {
 
     createMutation.mutate(payload, {
       onSuccess: () => {
-        showNotification("success", `Email source ${addForm.emailAddress} berhasil ditambahkan`);
+        showNotification("success", `Rule ${addForm.name} berhasil ditambahkan`);
         setIsAddModalOpen(false);
         setAddForm({
           name: "",
-          emailAddress: "",
           cronSchedule: "0 8 * * *",
           subjectFilter: "",
           senderFilter: "",
@@ -149,12 +150,11 @@ export default function EmailIngestPage() {
   const handleUpdateEmail = (source: EmailSource) => {
     const payload: UpdateEmailSourcePayload = {
       name: source.name,
-      emailAddress: source.emailAddress,
       isEnabled: source.isEnabled,
-      cronSchedule: source.cronSchedule || undefined,
-      subjectFilter: source.subjectFilter || undefined,
-      senderFilter: source.senderFilter || undefined,
-      labelFilter: source.labelFilter || undefined,
+      cronSchedule: source.cronSchedule,
+      subjectFilter: source.subjectFilter,
+      senderFilter: source.senderFilter,
+      labelFilter: source.labelFilter,
     };
 
     updateMutation.mutate(
@@ -174,7 +174,7 @@ export default function EmailIngestPage() {
     deleteMutation.mutate(id, {
       onSuccess: () => {
         if (source) {
-          showNotification("success", `Email ${source.emailAddress} berhasil dihapus`);
+          showNotification("success", `Rule ${source.name} berhasil dihapus`);
         }
         if (selectedEmail?.id === id) {
           handleCloseDrawer();
@@ -202,9 +202,8 @@ export default function EmailIngestPage() {
   };
 
   const handleExportCSV = () => {
-    const headers = ["email", "name", "provider", "status", "cron_schedule", "last_polled_at"];
+    const headers = ["name", "provider", "status", "cron_schedule", "last_polled_at"];
     const rows = emailSources.map((e) => [
-      e.emailAddress,
       e.name,
       e.provider,
       e.isEnabled ? "active" : "inactive",
@@ -246,12 +245,71 @@ export default function EmailIngestPage() {
     });
   };
 
+  const handleConnectOAuthGlobal = () => {
+    getOAuthUrlMutation.mutate(undefined, {
+      onSuccess: (url) => {
+        const width = 500;
+        const height = 650;
+        const left = Math.round(window.screen.width / 2 - width / 2);
+        const top = Math.round(window.screen.height / 2 - height / 2);
+        const popup = window.open(
+          url,
+          "WBS OAuth",
+          `width=${width},height=${height},left=${left},top=${top}`,
+        );
+
+        const handleMessage = (event: MessageEvent) => {
+          if (event.origin !== window.location.origin) return;
+          if (event.data?.source === "wbs-oauth" && event.data?.type === "oauth-success") {
+            const code = event.data.code as string;
+            window.removeEventListener("message", handleMessage);
+            exchangeOAuthMutation.mutate(
+              { code },
+              {
+                onSuccess: () => {
+                  showNotification("success", `Koneksi OAuth Global berhasil terhubung`);
+                  if (popup && !popup.closed) popup.close();
+                },
+                onError: (err) => {
+                  showNotification("error", `Gagal menukar token: ${err.message}`);
+                },
+              },
+            );
+          }
+        };
+        window.addEventListener("message", handleMessage);
+      },
+      onError: (err) => {
+        showNotification("error", `Gagal mengambil URL OAuth: ${err.message}`);
+      },
+    });
+  };
+
+  const handleDisconnectAuthGlobal = () => {
+    const txt = prompt(
+      `Ketik "CONFIRM" untuk mencabut akses OAuth global.`,
+      "",
+    );
+    if (txt !== "CONFIRM") {
+      if (txt !== null) showNotification("info", "Pembatalan dibatalkan — teks konfirmasi tidak cocok.");
+      return;
+    }
+    disconnectOAuthMutation.mutate(undefined, {
+      onSuccess: () => {
+        showNotification("success", `Autentikasi global telah dicabut.`);
+      },
+      onError: (err) => {
+        showNotification("error", `Gagal mencabut autentikasi: ${err.message}`);
+      },
+    });
+  };
+
   return (
     <div className="min-h-screen p-4 md:p-6 lg:p-8">
       {/* Notification Toast */}
       {notification && (
         <div
-          className={`fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg animate-slideIn ${
+          className={`fixed top-4 right-4 z-[100] flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg animate-slideIn ${
             notification.type === "success"
               ? "bg-green-50 text-green-800 border border-green-200"
               : notification.type === "error"
@@ -280,9 +338,47 @@ export default function EmailIngestPage() {
         </div>
         <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Email Ingest</h1>
         <p className="text-gray-600 mt-1 text-sm md:text-base">
-          Kelola alamat email untuk ingestion laporan PLN dan mapping ke site / template.
+          Kelola satu akun email utama beserta berbagai rule filter ingestion untuk membaca laporan PLN.
         </p>
       </div>
+
+      {/* Global Email Connection Card */}
+      <Card className="mb-6 animate-fadeIn" style={{ animationDelay: "50ms" }}>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center p-2 gap-4">
+          <div className="flex items-center gap-4">
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center ${oauthStatus?.connected ? 'bg-green-100' : 'bg-gray-100'}`}>
+              <Mail className={`w-6 h-6 ${oauthStatus?.connected ? 'text-green-600' : 'text-gray-400'}`} />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-gray-900">Koneksi Email Global</h2>
+              <p className="text-sm text-gray-500">
+                {isOauthLoading ? "Mengecek status..." : oauthStatus?.connected ? `Terhubung: ${oauthStatus.emailAddress}` : "Belum ada email yang dihubungkan"}
+              </p>
+            </div>
+          </div>
+          <div>
+            {!isOauthLoading && (
+              oauthStatus?.connected ? (
+                <button
+                  onClick={handleDisconnectAuthGlobal}
+                  disabled={disconnectOAuthMutation.isPending}
+                  className="px-4 py-2 border border-red-200 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg text-sm font-medium transition-colors"
+                >
+                  Putuskan Koneksi
+                </button>
+              ) : (
+                <button
+                  onClick={handleConnectOAuthGlobal}
+                  disabled={getOAuthUrlMutation.isPending}
+                  className="px-4 py-2 bg-[#115d72] text-white hover:bg-[#0d4a5c] rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                >
+                  Hubungkan dengan Google
+                </button>
+              )
+            )}
+          </div>
+        </div>
+      </Card>
 
       {/* Action Bar */}
       <Card className="mb-6 animate-fadeIn" style={{ animationDelay: "100ms" }}>
@@ -294,7 +390,7 @@ export default function EmailIngestPage() {
               className="flex items-center gap-2 px-4 py-2.5 bg-[#115d72] text-white text-sm font-medium rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
             >
               <Plus size={18} />
-              Tambah Email
+              Tambah Rule Ingestion
             </button>
             {selectedRows.length > 0 && (
               <div className="flex items-center gap-2 animate-fadeIn">
@@ -404,7 +500,7 @@ export default function EmailIngestPage() {
               </div>
             </div>
             <button
-              onClick={() => showNotification("info", "Membuka halaman logs...")}
+              onClick={() => setIsLogModalOpen(true)}
               className="w-full mt-4 px-4 py-2.5 text-sm font-medium text-[#115d72] bg-[#115d72]/10 rounded-lg hover:bg-[#115d72]/20 transition-all duration-200 flex items-center justify-center gap-2"
             >
               <FileText size={16} />
@@ -412,44 +508,7 @@ export default function EmailIngestPage() {
             </button>
           </Card>
 
-          {/* Auto-sync Schedule */}
-          <Card className="animate-fadeIn" style={{ animationDelay: "400ms" }}>
-            <CardHeader
-              title="Auto-sync Schedule"
-              description="Jadwal sinkronisasi otomatis"
-            />
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-[#14a2bb]/10 rounded-lg flex items-center justify-center">
-                <Clock className="w-5 h-5 text-[#14a2bb]" />
-              </div>
-              <div>
-                <div className="text-sm font-semibold text-gray-900">
-                  {emailSources.length > 0 && emailSources[0].cronSchedule
-                    ? `Cron: ${emailSources[0].cronSchedule}`
-                    : "Belum dikonfigurasi"}
-                </div>
-                <div className="text-xs text-gray-500">Jadwal polling email</div>
-              </div>
-            </div>
-            <div className="py-2 border-t border-gray-100">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Source aktif</span>
-                <span className="text-sm font-medium text-gray-700">{stats.active} source</span>
-              </div>
-            </div>
-            <button
-              onClick={handleTriggerSync}
-              disabled={triggerPollMutation.isPending}
-              className="w-full mt-4 px-4 py-2.5 text-sm font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 flex items-center justify-center gap-2 hover:shadow-md active:scale-95 disabled:opacity-50"
-            >
-              {triggerPollMutation.isPending ? (
-                <Loader2 size={16} className="animate-spin" />
-              ) : (
-                <Play size={16} />
-              )}
-              Trigger Now
-            </button>
-          </Card>
+
 
           {/* Quick Actions */}
           <Card className="animate-fadeIn" style={{ animationDelay: "500ms" }}>
@@ -489,7 +548,66 @@ export default function EmailIngestPage() {
         onUpdate={handleUpdateEmail}
         onTestParse={handleTestParse}
         isTestParsePending={testParseMutation.isPending}
+        isUpdatePending={updateMutation.isPending}
       />
+
+      {/* Logs Modal */}
+      <Modal
+        isOpen={isLogModalOpen}
+        onClose={() => setIsLogModalOpen(false)}
+        title="Log Sinkronisasi Email"
+        maxWidth="max-w-3xl"
+      >
+        <div className="bg-gray-900 border border-gray-700 rounded-lg p-6 font-mono text-sm shadow-inner flex flex-col min-h-[300px]">
+          <div className="flex items-center gap-2 mb-4 text-gray-400 border-b border-gray-700 pb-3">
+            <div className="w-3 h-3 rounded-full bg-red-500"></div>
+            <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+            <div className="w-3 h-3 rounded-full bg-green-500"></div>
+            <span className="ml-2 text-xs">worker.log</span>
+          </div>
+          
+          <div className="flex-1 space-y-2 text-gray-300 overflow-y-auto">
+            {emailSources.map((source, i) => (
+              source.lastPolledAt && (
+                <div key={`log-${i}`} className="flex gap-3">
+                  <span className="text-gray-500 shrink-0">[{new Date(source.lastPolledAt).toISOString().replace('T', ' ').substring(0, 19)}]</span>
+                  <span className="text-[#14a2bb] shrink-0">[INFO]</span>
+                  <span>Polling successful for rule <span className="text-white">"{source.name}"</span>. Status: Ok.</span>
+                </div>
+              )
+            ))}
+            
+            <div className="flex gap-3 mt-4 pt-4 border-t border-gray-800/50">
+              <span className="text-gray-500 shrink-0">[{new Date().toISOString().replace('T', ' ').substring(0, 19)}]</span>
+              <span className="text-green-400 shrink-0">[SYSTEM]</span>
+              <span>Email polling worker is active and awaiting next cron schedule...</span>
+            </div>
+            
+            {emailSources.every(s => !s.lastPolledAt) && (
+              <div className="flex flex-col items-center justify-center py-8 text-gray-500">
+                <AlertCircle className="w-8 h-8 mb-2" />
+                <p>Belum ada aktivitas sinkronisasi hari ini.</p>
+              </div>
+            )}
+            
+            {oauthStatus?.connected ? (
+                 <div className="flex gap-3">
+                  <span className="text-gray-500 shrink-0">[{new Date().toISOString().replace('T', ' ').substring(0, 19)}]</span>
+                  <span className="text-green-400 shrink-0">[OAUTH]</span>
+                  <span>Connection to {oauthStatus.emailAddress} is healthy.</span>
+                </div>
+            ) : null}
+          </div>
+        </div>
+        <div className="mt-4 flex justify-end">
+          <button
+            onClick={() => setIsLogModalOpen(false)}
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            Tutup
+          </button>
+        </div>
+      </Modal>
 
       {/* Add Email Modal */}
       <Modal
@@ -498,7 +616,7 @@ export default function EmailIngestPage() {
           setIsAddModalOpen(false);
           setFormErrors({});
         }}
-        title="Tambah Email Source"
+        title="Tambah Rule Ingestion Baru"
         maxWidth="max-w-lg"
       >
         <div className="space-y-4">
@@ -523,26 +641,7 @@ export default function EmailIngestPage() {
             )}
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Email Address <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="email"
-              value={addForm.emailAddress}
-              onChange={(e) => setAddForm({ ...addForm, emailAddress: e.target.value })}
-              className={`w-full px-3 py-2.5 border rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent ${
-                formErrors.emailAddress ? "border-red-300" : "border-gray-300"
-              }`}
-              placeholder="contoh@domain.com"
-            />
-            {formErrors.emailAddress && (
-              <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
-                <AlertCircle size={12} />
-                {formErrors.emailAddress}
-              </p>
-            )}
-          </div>
+
 
           <div className="grid grid-cols-2 gap-4">
             <div>

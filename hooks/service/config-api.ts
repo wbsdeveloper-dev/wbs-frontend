@@ -133,11 +133,12 @@ export interface TemplateField {
 export interface Template {
   id: string;
   name: string;
-  scope: "WA_GROUP" | "SPREADSHEET_SOURCE";
+  scope: "WA_GROUP" | "SPREADSHEET_SOURCE" | "EMAIL_INGEST";
   status: "DRAFT" | "ACTIVE" | "DEPRECATED";
   parserMode: "RULE_BASED" | "AI_ASSISTED";
   groupConfigId: string | null;
   spreadsheetSourceId: string | null;
+  emailSourceId: string | null;
   version: number;
   isDefault: boolean;
   waKeywordHint: string | null;
@@ -159,6 +160,7 @@ export interface CreateTemplatePayload {
   parserMode?: "RULE_BASED" | "AI_ASSISTED";
   groupConfigId?: string;
   spreadsheetSourceId?: string;
+  emailSourceId?: string;
   waKeywordHint?: string;
   waSenderHint?: string;
   sheetTabHint?: string;
@@ -178,10 +180,12 @@ export interface CreateTemplatePayload {
 
 export interface UpdateTemplatePayload {
   name?: string;
-  scope?: "WA_GROUP" | "SPREADSHEET_SOURCE";
+  scope?: "WA_GROUP" | "SPREADSHEET_SOURCE" | "EMAIL_INGEST";
   parserMode?: "RULE_BASED" | "AI_ASSISTED";
+  isDefault?: boolean;
   groupConfigId?: string | null;
   spreadsheetSourceId?: string | null;
+  emailSourceId?: string | null;
   waKeywordHint?: string | null;
   waSenderHint?: string | null;
   sheetTabHint?: string | null;
@@ -726,7 +730,6 @@ export interface EmailSource {
   id: string;
   name: string;
   provider: string;
-  emailAddress: string;
   isEnabled: boolean;
   cronSchedule: string | null;
   lastPolledAt: string | null;
@@ -740,7 +743,6 @@ export interface EmailSource {
 
 export interface CreateEmailSourcePayload {
   name: string;
-  emailAddress: string;
   cronSchedule?: string;
   subjectFilter?: string;
   senderFilter?: string;
@@ -749,12 +751,11 @@ export interface CreateEmailSourcePayload {
 
 export interface UpdateEmailSourcePayload {
   name?: string;
-  emailAddress?: string;
   isEnabled?: boolean;
-  cronSchedule?: string;
-  subjectFilter?: string;
-  senderFilter?: string;
-  labelFilter?: string;
+  cronSchedule?: string | null;
+  subjectFilter?: string | null;
+  senderFilter?: string | null;
+  labelFilter?: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -850,6 +851,59 @@ export function useDeleteEmailSource(
       qc.invalidateQueries({ queryKey: configKeys.emailSources() });
     },
     ...options,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Email OAuth Operations
+// ---------------------------------------------------------------------------
+
+// A new key for global OAuth status
+export const emailOAuthKeys = {
+  status: ["email-oauth-status"],
+};
+
+export function useGetEmailOAuthStatus(options?: Partial<UseQueryOptions<{ connected: boolean; emailAddress?: string }>>) {
+  return useQuery({
+    queryKey: emailOAuthKeys.status,
+    queryFn: () => configFetch<{ connected: boolean; emailAddress?: string }>("/config/email-oauth/status"),
+    ...options,
+  });
+}
+
+export function useGetEmailOAuthUrl() {
+  return useMutation({
+    mutationFn: async () => {
+      const result = await configFetch<{ url: string }>(`/config/email-oauth/url`);
+      return result.url;
+    },
+  });
+}
+
+export function useExchangeEmailOAuthToken() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ code }: { code: string }) =>
+      configFetch<{ connected: boolean; emailAddress?: string }>(`/config/email-oauth/exchange`, {
+        method: "POST",
+        body: JSON.stringify({ code }),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: emailOAuthKeys.status });
+    },
+  });
+}
+
+export function useDisconnectEmailOAuth() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      configFetch<{ connected: boolean }>(`/config/email-oauth`, {
+        method: "DELETE",
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: emailOAuthKeys.status });
+    },
   });
 }
 

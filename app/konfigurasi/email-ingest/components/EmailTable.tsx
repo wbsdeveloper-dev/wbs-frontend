@@ -66,7 +66,7 @@ export default function EmailTable({
               </th>
               <th className="px-4 py-4 text-left">
                 <div className="flex items-center gap-1 text-sm font-semibold text-gray-700">
-                  Email
+                  Rule Name
                   <span className="text-gray-400">↕</span>
                 </div>
               </th>
@@ -119,9 +119,8 @@ export default function EmailTable({
                 <td className="px-4 py-4">
                   <div>
                     <div className="text-sm font-medium text-gray-900">
-                      {email.emailAddress}
+                      {email.name}
                     </div>
-                    <div className="text-xs text-gray-500">{email.name}</div>
                   </div>
                 </td>
                 <td className="px-4 py-4">
@@ -190,7 +189,7 @@ export default function EmailTable({
       {/* Pagination */}
       <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200">
         <div className="text-sm text-gray-600">
-          Menampilkan {emails.length} email source
+          Menampilkan {emails.length} rule ingestion
         </div>
       </div>
     </div>
