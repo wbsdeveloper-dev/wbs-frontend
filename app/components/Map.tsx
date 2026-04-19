@@ -28,6 +28,7 @@ import {
   type MapLegend,
 } from "@/hooks/service/dashboard-api";
 import { useRelations } from "@/hooks/service/site-api";
+import { usePrivilege } from "@/hooks/usePrivilege";
 
 interface LeafletIconPrototype {
   _getIconUrl?: () => string;
@@ -78,7 +79,12 @@ const buildIcons = (legend: MapLegend): Record<string, L.DivIcon> => {
 export default function Map() {
   // ---- API data -----------------------------------------------------------
   const { data, isLoading, isError, error } = useMapLocations();
-  const { data: relations } = useRelations(true); // fetch active relations
+  
+  const { hasPrivilege } = usePrivilege();
+  const canReadSites = hasPrivilege("site_management", "READ");
+  const { data: relations } = useRelations(true, {
+    enabled: canReadSites
+  }); // fetch active relations only if permitted
 
   // ---- UI state -----------------------------------------------------------
   const [legendExpanded, setLegendExpanded] = useState(false);

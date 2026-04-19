@@ -26,6 +26,7 @@ export interface UserProfile {
   userId: string;
   email: string;
   roles: string[];
+  privileges: Record<string, string[]>;
 }
 
 // ---------------------------------------------------------------------------
