@@ -334,7 +334,12 @@ export function useUpdateRolePrivileges(
     mutationFn: ({ id, payload }) => updateRolePrivileges(id, payload),
     onSuccess: (_, { id }, ...args) => {
       qc.invalidateQueries({ queryKey: userKeys.rolePrivileges(id) });
-      options?.onSuccess?.(_, { id }, ...args);
+      options?.onSuccess?.(_, {
+        id,
+        payload: {
+          privileges: []
+        }
+      }, ...args);
     },
     ...options,
   });
