@@ -730,7 +730,9 @@ export interface EmailSource {
   id: string;
   name: string;
   provider: string;
+  emailAddress: string;
   isEnabled: boolean;
+  isAuthenticated: boolean;
   cronSchedule: string | null;
   lastPolledAt: string | null;
   lastHistoryId: string | null;
@@ -743,6 +745,7 @@ export interface EmailSource {
 
 export interface CreateEmailSourcePayload {
   name: string;
+  emailAddress?: string;
   cronSchedule?: string;
   subjectFilter?: string;
   senderFilter?: string;
@@ -751,6 +754,7 @@ export interface CreateEmailSourcePayload {
 
 export interface UpdateEmailSourcePayload {
   name?: string;
+  emailAddress?: string;
   isEnabled?: boolean;
   cronSchedule?: string | null;
   subjectFilter?: string | null;
