@@ -34,9 +34,9 @@ export function RolePrivilegeModal({ open, onClose, role }: RolePrivilegeModalPr
 
   // Sync incoming API data into local state
   useEffect(() => {
-    if (privilegesData?.privileges) {
+    if (privilegesData) {
       const initialMap: Record<string, Set<string>> = {};
-      privilegesData.privileges.forEach((p) => {
+      privilegesData.forEach((p) => {
         initialMap[p.resource] = new Set(p.actions);
       });
       setPrivilegeMap(initialMap);
@@ -69,22 +69,28 @@ export function RolePrivilegeModal({ open, onClose, role }: RolePrivilegeModalPr
     });
   };
 
-  const handleToggleRow = (resource: string) => {
-    if (!resourcesData?.actions) return;
+  const handleToggleRow = (resourceKey: string) => {
+    const resourceDef = resourcesData?.find(r => r.key === resourceKey);
+    if (!resourceDef?.actions) return;
+    
     setPrivilegeMap((prev) => {
       const next = { ...prev };
-      const currentActions = next[resource] ? new Set(next[resource]) : new Set<string>();
+      const currentActions = next[resourceKey] ? new Set(next[resourceKey]) : new Set<string>();
       
-      // If all are selected, deselect all. Else, select all.
-      if (currentActions.size === resourcesData.actions.length) {
-        next[resource] = new Set();
+      // If all are selected, deselect all. Else, select all available actions for this explicit resource.
+      if (currentActions.size === resourceDef.actions.length) {
+        next[resourceKey] = new Set();
       } else {
-        next[resource] = new Set(resourcesData.actions);
+        next[resourceKey] = new Set(resourceDef.actions);
       }
       
       return next;
     });
   };
+
+  const allPossibleActions = Array.from(
+    new Set(resourcesData?.flatMap((r) => r.actions) || [])
+  );
 
   const handleSave = () => {
     if (!role.id) return;
@@ -144,7 +150,7 @@ export function RolePrivilegeModal({ open, onClose, role }: RolePrivilegeModalPr
                 <thead className="bg-[#115d72] text-white">
                   <tr>
                     <th className="px-4 py-3 text-left font-medium w-48 border-r border-[#0d4a5c]">Resource / Modul</th>
-                    {resourcesData?.actions?.map(action => (
+                    {allPossibleActions.map(action => (
                       <th key={action} className="px-4 py-3 text-center font-semibold tracking-wider uppercase text-xs border-r border-[#0d4a5c]">
                         {action}
                       </th>
@@ -152,33 +158,45 @@ export function RolePrivilegeModal({ open, onClose, role }: RolePrivilegeModalPr
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {resourcesData?.resources?.map((resource, i) => {
+                  {resourcesData?.map((resourceDef, i) => {
+                    const resourceKey = resourceDef.key;
+                    const availableActions = resourceDef.actions || [];
                     const isEven = i % 2 === 0;
-                    const rowSet = privilegeMap[resource] || new Set();
-                    const isAllSelected = !!resourcesData?.actions?.length && rowSet.size === resourcesData.actions.length;
+                    const rowSet = privilegeMap[resourceKey] || new Set();
+                    const isAllSelected = !!availableActions.length && rowSet.size === availableActions.length;
 
                     return (
-                      <tr key={resource} className={`hover:bg-[#14a2bb]/5 transition-colors ${isEven ? 'bg-white' : 'bg-gray-50/50'}`}>
+                      <tr key={resourceKey} className={`hover:bg-[#14a2bb]/5 transition-colors ${isEven ? 'bg-white' : 'bg-gray-50/50'}`}>
                         <td className="px-4 py-3 border-r border-gray-200 font-medium text-gray-700 uppercase tracking-wide text-xs">
                           <label className="flex items-center gap-2 cursor-pointer w-full h-full group">
                             <input 
                               type="checkbox"
                               checked={isAllSelected}
-                              onChange={() => handleToggleRow(resource)}
+                              onChange={() => handleToggleRow(resourceKey)}
                               className="w-4 h-4 text-[#115d72] border-gray-300 rounded focus:ring-[#115d72] cursor-pointer"
                             />
-                            <span className="group-hover:text-[#115d72] transition-colors">{resource.replace(/_/g, " ")}</span>
+                            <span className="group-hover:text-[#115d72] transition-colors">{resourceKey.replace(/_/g, " ")}</span>
                           </label>
                         </td>
-                        {resourcesData?.actions?.map(action => {
+                        {allPossibleActions.map(action => {
+                          const isAvailable = availableActions.includes(action);
                           const isChecked = rowSet.has(action);
+                          
+                          if (!isAvailable) {
+                            return (
+                              <td key={action} className="px-4 py-3 border-r border-gray-200 text-center bg-gray-50/50">
+                                <div className="w-4 h-4 mx-auto border border-gray-200 rounded block bg-gray-100" />
+                              </td>
+                            );
+                          }
+
                           return (
                             <td key={action} className="px-4 py-3 border-r border-gray-200 text-center">
                               <label className="flex items-center justify-center w-full h-full cursor-pointer">
                                 <input
                                   type="checkbox"
                                   checked={isChecked}
-                                  onChange={() => handleToggle(resource, action)}
+                                  onChange={() => handleToggle(resourceKey, action)}
                                   className="w-4 h-4 text-[#14a2bb] border-gray-300 rounded focus:ring-[#14a2bb] cursor-pointer"
                                 />
                               </label>

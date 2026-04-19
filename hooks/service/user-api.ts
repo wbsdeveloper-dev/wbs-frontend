@@ -145,8 +145,8 @@ export interface PrivilegeMapping {
   actions: string[];
 }
 
-export interface RoleResourcesResponse {
-  resources: string[];
+export interface ResourceDefinition {
+  key: string;
   actions: string[];
 }
 
@@ -255,11 +255,11 @@ export function deleteRole(id: string) {
 }
 
 export function getRoleResources() {
-  return userFetchData<RoleResourcesResponse>("/roles/resources");
+  return userFetchData<ResourceDefinition[]>("/roles/resources");
 }
 
 export function getRolePrivileges(id: string) {
-  return userFetchData<{ privileges: PrivilegeMapping[] }>(`/roles/${id}/privileges`);
+  return userFetchData<PrivilegeMapping[]>(`/roles/${id}/privileges`);
 }
 
 export function updateRolePrivileges(id: string, payload: { privileges: PrivilegeMapping[] }) {
@@ -309,7 +309,7 @@ export function useDeleteRole(
   });
 }
 
-export function useRoleResources(options?: Partial<UseQueryOptions<RoleResourcesResponse>>) {
+export function useRoleResources(options?: Partial<UseQueryOptions<ResourceDefinition[]>>) {
   return useQuery({
     queryKey: userKeys.roleResources(),
     queryFn: () => getRoleResources(),
@@ -317,7 +317,7 @@ export function useRoleResources(options?: Partial<UseQueryOptions<RoleResources
   });
 }
 
-export function useRolePrivileges(id: string, options?: Partial<UseQueryOptions<{ privileges: PrivilegeMapping[] }>>) {
+export function useRolePrivileges(id: string, options?: Partial<UseQueryOptions<PrivilegeMapping[]>>) {
   return useQuery({
     queryKey: userKeys.rolePrivileges(id),
     queryFn: () => getRolePrivileges(id),
