@@ -15,122 +15,62 @@ import {
   FileText,
   AlertCircle,
   X,
+  Loader2,
 } from "lucide-react";
 import EmailTable from "./components/EmailTable";
 import DetailDrawer from "./components/DetailDrawer";
 import Card, { CardHeader } from "@/app/components/ui/Card";
 import { Modal } from "@/app/components/ui";
+import {
+  useEmailSources,
+  useCreateEmailSource,
+  useUpdateEmailSource,
+  useDeleteEmailSource,
+  useTriggerEmailPoll,
+  useTestEmailParse,
+  useGetEmailOAuthStatus,
+  useGetEmailOAuthUrl,
+  useExchangeEmailOAuthToken,
+  useDisconnectEmailOAuth,
+  type EmailSource,
+  type CreateEmailSourcePayload,
+  type UpdateEmailSourcePayload,
+} from "@/hooks/service/config-api";
 
-// Types
-export interface EmailAddress {
-  id: string;
-  email: string;
-  label: string;
-  provider: "PLN" | "Internal" | "Other";
-  siteMapping: string | null;
-  appliedTemplate: string | null;
-  lastSync: string | null;
-  status: "active" | "inactive";
-  errorCount: number;
-  notes?: string;
-}
-
-// Mock data
-const MOCK_EMAILS: EmailAddress[] = [
-  {
-    id: "1",
-    email: "monitoring@pln-jakarta.co.id",
-    label: "PLN Jakarta Monitoring",
-    provider: "PLN",
-    siteMapping: "PLN IP Jakarta",
-    appliedTemplate: "Template Report Harian",
-    lastSync: "2026-02-08 14:30:00",
-    status: "active",
-    errorCount: 0,
-  },
-  {
-    id: "2",
-    email: "laporan@pln-gresik.co.id",
-    label: "PLN Gresik Daily Report",
-    provider: "PLN",
-    siteMapping: "PLN IP Gresik",
-    appliedTemplate: "Template Gas Pipa",
-    lastSync: "2026-02-08 12:15:00",
-    status: "active",
-    errorCount: 0,
-  },
-  {
-    id: "3",
-    email: "data.cilegon@internal.pln.com",
-    label: "Internal Cilegon",
-    provider: "Internal",
-    siteMapping: "PLN IP Cilegon",
-    appliedTemplate: null,
-    lastSync: "2026-02-07 23:45:00",
-    status: "active",
-    errorCount: 2,
-  },
-  {
-    id: "4",
-    email: "report@supplier-gas.com",
-    label: "Supplier Gas Report",
-    provider: "Other",
-    siteMapping: null,
-    appliedTemplate: "Template External",
-    lastSync: null,
-    status: "inactive",
-    errorCount: 0,
-  },
-  {
-    id: "5",
-    email: "monitoring@pln-surabaya.co.id",
-    label: "PLN Surabaya Monitoring",
-    provider: "PLN",
-    siteMapping: "PLN IP Surabaya",
-    appliedTemplate: "Template Report Harian",
-    lastSync: "2026-02-08 08:00:00",
-    status: "active",
-    errorCount: 1,
-  },
-];
-
-const MOCK_TEMPLATES = [
-  "Template Report Harian",
-  "Template Gas Pipa",
-  "Template External",
-  "Template BBM",
-];
-
-const MOCK_SITES = [
-  "PLN IP Jakarta",
-  "PLN IP Gresik",
-  "PLN IP Cilegon",
-  "PLN IP Surabaya",
-  "PLN IP Semarang",
-];
+// Re-export for child components
+export type { EmailSource };
 
 export default function EmailIngestPage() {
-  const [emails, setEmails] = useState<EmailAddress[]>(MOCK_EMAILS);
+  // API hooks
+  const { data: emailSources = [], isLoading, isError } = useEmailSources();
+  const createMutation = useCreateEmailSource();
+  const updateMutation = useUpdateEmailSource();
+  const deleteMutation = useDeleteEmailSource();
+  const triggerPollMutation = useTriggerEmailPoll();
+  const testParseMutation = useTestEmailParse();
+  const getOAuthUrlMutation = useGetEmailOAuthUrl();
+  const exchangeOAuthMutation = useExchangeEmailOAuthToken();
+  const disconnectOAuthMutation = useDisconnectEmailOAuth();
+
+  // UI state
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [providerFilter, setProviderFilter] = useState<string>("all");
-  const [selectedEmail, setSelectedEmail] = useState<EmailAddress | null>(null);
+  const [selectedEmail, setSelectedEmail] = useState<EmailSource | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isLogModalOpen, setIsLogModalOpen] = useState(false);
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
-  const [isTestParseOpen, setIsTestParseOpen] = useState(false);
-  const [testParseEmail, setTestParseEmail] = useState<EmailAddress | null>(null);
   const [notification, setNotification] = useState<{ type: "success" | "error" | "info"; message: string } | null>(null);
-  
+
+  const { data: oauthStatus, isLoading: isOauthLoading } = useGetEmailOAuthStatus();
+
   // Add form state
   const [addForm, setAddForm] = useState({
-    email: "",
-    label: "",
-    provider: "PLN" as "PLN" | "Internal" | "Other",
-    siteMapping: "",
-    appliedTemplate: "",
-    status: "active" as "active" | "inactive",
-    notes: "",
+    name: "",
+    cronSchedule: "0 8 * * *",
+    subjectFilter: "",
+    senderFilter: "",
+    labelFilter: "INBOX",
   });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
@@ -142,30 +82,26 @@ export default function EmailIngestPage() {
 
   // Filter emails
   const filteredEmails = useMemo(() => {
-    return emails.filter((email) => {
+    return emailSources.filter((source) => {
       const matchesSearch =
-        email.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        email.label.toLowerCase().includes(searchQuery.toLowerCase());
+        source.name.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesStatus =
         statusFilter === "all" ||
-        (statusFilter === "active" && email.status === "active") ||
-        (statusFilter === "inactive" && email.status === "inactive");
-      const matchesProvider =
-        providerFilter === "all" || email.provider === providerFilter;
-      return matchesSearch && matchesStatus && matchesProvider;
+        (statusFilter === "active" && source.isEnabled) ||
+        (statusFilter === "inactive" && !source.isEnabled);
+      return matchesSearch && matchesStatus;
     });
-  }, [emails, searchQuery, statusFilter, providerFilter]);
+  }, [emailSources, searchQuery, statusFilter]);
 
   // Stats
   const stats = useMemo(() => {
-    const total = emails.length;
-    const active = emails.filter((e) => e.status === "active").length;
-    const errorsLast7Days = emails.filter((e) => e.errorCount > 0).length;
-    return { total, active, errorsLast7Days };
-  }, [emails]);
+    const total = emailSources.length;
+    const active = emailSources.filter((e) => e.isEnabled).length;
+    return { total, active };
+  }, [emailSources]);
 
-  const handleRowClick = (email: EmailAddress) => {
-    setSelectedEmail(email);
+  const handleRowClick = (source: EmailSource) => {
+    setSelectedEmail(source);
     setIsDrawerOpen(true);
   };
 
@@ -176,12 +112,8 @@ export default function EmailIngestPage() {
 
   const validateAddForm = () => {
     const errors: Record<string, string> = {};
-    if (!addForm.email) {
-      errors.email = "Email wajib diisi";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(addForm.email)) {
-      errors.email = "Format email tidak valid";
-    } else if (emails.some((e) => e.email === addForm.email)) {
-      errors.email = "Email sudah terdaftar";
+    if (!addForm.name) {
+      errors.name = "Nama wajib diisi";
     }
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -189,79 +121,94 @@ export default function EmailIngestPage() {
 
   const handleAddEmail = () => {
     if (!validateAddForm()) return;
-    
-    const newEmail: EmailAddress = {
-      id: String(Date.now()),
-      email: addForm.email,
-      label: addForm.label,
-      provider: addForm.provider,
-      siteMapping: addForm.siteMapping || null,
-      appliedTemplate: addForm.appliedTemplate || null,
-      lastSync: null,
-      status: addForm.status,
-      errorCount: 0,
-      notes: addForm.notes || undefined,
+
+    const payload: CreateEmailSourcePayload = {
+      name: addForm.name,
+      cronSchedule: addForm.cronSchedule || undefined,
+      subjectFilter: addForm.subjectFilter || undefined,
+      senderFilter: addForm.senderFilter || undefined,
+      labelFilter: addForm.labelFilter || undefined,
     };
-    setEmails([...emails, newEmail]);
-    setIsAddModalOpen(false);
-    setAddForm({
-      email: "",
-      label: "",
-      provider: "PLN",
-      siteMapping: "",
-      appliedTemplate: "",
-      status: "active",
-      notes: "",
+
+    createMutation.mutate(payload, {
+      onSuccess: () => {
+        showNotification("success", `Rule ${addForm.name} berhasil ditambahkan`);
+        setIsAddModalOpen(false);
+        setAddForm({
+          name: "",
+          cronSchedule: "0 8 * * *",
+          subjectFilter: "",
+          senderFilter: "",
+          labelFilter: "INBOX",
+        });
+        setFormErrors({});
+      },
+      onError: (err) => showNotification("error", err.message),
     });
-    setFormErrors({});
-    showNotification("success", `Email ${newEmail.email} berhasil ditambahkan`);
   };
 
-  const handleUpdateEmail = (updatedEmail: EmailAddress) => {
-    setEmails(emails.map((e) => (e.id === updatedEmail.id ? updatedEmail : e)));
-    setSelectedEmail(updatedEmail);
-    showNotification("success", "Email berhasil diperbarui");
+  const handleUpdateEmail = (source: EmailSource) => {
+    const payload: UpdateEmailSourcePayload = {
+      name: source.name,
+      isEnabled: source.isEnabled,
+      cronSchedule: source.cronSchedule,
+      subjectFilter: source.subjectFilter,
+      senderFilter: source.senderFilter,
+      labelFilter: source.labelFilter,
+    };
+
+    updateMutation.mutate(
+      { id: source.id, payload },
+      {
+        onSuccess: (updated) => {
+          setSelectedEmail(updated);
+          showNotification("success", "Email source berhasil diperbarui");
+        },
+        onError: (err) => showNotification("error", err.message),
+      },
+    );
   };
-
-
 
   const handleDeleteEmail = (id: string) => {
-    const email = emails.find((e) => e.id === id);
-    setEmails(emails.filter((e) => e.id !== id));
-    if (email) {
-      showNotification("success", `Email ${email.email} berhasil dihapus`);
-    }
+    const source = emailSources.find((e) => e.id === id);
+    deleteMutation.mutate(id, {
+      onSuccess: () => {
+        if (source) {
+          showNotification("success", `Rule ${source.name} berhasil dihapus`);
+        }
+        if (selectedEmail?.id === id) {
+          handleCloseDrawer();
+        }
+      },
+      onError: (err) => showNotification("error", err.message),
+    });
   };
 
   const handleBulkToggle = (enable: boolean) => {
     const count = selectedRows.length;
-    setEmails(
-      emails.map((e) =>
-        selectedRows.includes(e.id)
-          ? { ...e, status: enable ? "active" : "inactive" }
-          : e
-      )
+    // Update each selected row
+    const promises = selectedRows.map((id) =>
+      updateMutation.mutateAsync({ id, payload: { isEnabled: enable } }),
     );
-    setSelectedRows([]);
-    showNotification(
-      "success",
-      `${count} email berhasil ${enable ? "diaktifkan" : "dinonaktifkan"}`
-    );
+    Promise.all(promises)
+      .then(() => {
+        setSelectedRows([]);
+        showNotification(
+          "success",
+          `${count} email berhasil ${enable ? "diaktifkan" : "dinonaktifkan"}`,
+        );
+      })
+      .catch((err) => showNotification("error", err.message));
   };
 
-
-
-
-
   const handleExportCSV = () => {
-    const headers = ["email", "label", "provider", "site_mapping", "template", "status"];
-    const rows = emails.map((e) => [
-      e.email,
-      e.label,
+    const headers = ["name", "provider", "status", "cron_schedule", "last_polled_at"];
+    const rows = emailSources.map((e) => [
+      e.name,
       e.provider,
-      e.siteMapping || "",
-      e.appliedTemplate || "",
-      e.status,
+      e.isEnabled ? "active" : "inactive",
+      e.cronSchedule || "",
+      e.lastPolledAt || "",
     ]);
     const csvContent = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
     const blob = new Blob([csvContent], { type: "text/csv" });
@@ -275,10 +222,86 @@ export default function EmailIngestPage() {
   };
 
   const handleTriggerSync = () => {
-    showNotification("info", "Memulai sinkronisasi...");
-    setTimeout(() => {
-      showNotification("success", "Sinkronisasi berhasil dilakukan");
-    }, 2000);
+    // Trigger poll for all enabled sources
+    const enabledSources = emailSources.filter((s) => s.isEnabled);
+    if (enabledSources.length === 0) {
+      showNotification("info", "Tidak ada email source yang aktif");
+      return;
+    }
+
+    showNotification("info", "Memulai polling untuk semua email source aktif...");
+    const promises = enabledSources.map((s) => triggerPollMutation.mutateAsync(s.id));
+    Promise.all(promises)
+      .then(() => showNotification("success", `Polling berhasil di-trigger untuk ${enabledSources.length} source`))
+      .catch((err) => showNotification("error", err.message));
+  };
+
+  const handleTestParse = (source: EmailSource) => {
+    testParseMutation.mutate(source.id, {
+      onSuccess: ({ jobId }) => {
+        showNotification("success", `Test parse di-trigger (Job: ${jobId.slice(0, 8)}...)`);
+      },
+      onError: (err) => showNotification("error", err.message),
+    });
+  };
+
+  const handleConnectOAuthGlobal = () => {
+    getOAuthUrlMutation.mutate(undefined, {
+      onSuccess: (url) => {
+        const width = 500;
+        const height = 650;
+        const left = Math.round(window.screen.width / 2 - width / 2);
+        const top = Math.round(window.screen.height / 2 - height / 2);
+        const popup = window.open(
+          url,
+          "WBS OAuth",
+          `width=${width},height=${height},left=${left},top=${top}`,
+        );
+
+        const handleMessage = (event: MessageEvent) => {
+          if (event.origin !== window.location.origin) return;
+          if (event.data?.source === "wbs-oauth" && event.data?.type === "oauth-success") {
+            const code = event.data.code as string;
+            window.removeEventListener("message", handleMessage);
+            exchangeOAuthMutation.mutate(
+              { code },
+              {
+                onSuccess: () => {
+                  showNotification("success", `Koneksi OAuth Global berhasil terhubung`);
+                  if (popup && !popup.closed) popup.close();
+                },
+                onError: (err) => {
+                  showNotification("error", `Gagal menukar token: ${err.message}`);
+                },
+              },
+            );
+          }
+        };
+        window.addEventListener("message", handleMessage);
+      },
+      onError: (err) => {
+        showNotification("error", `Gagal mengambil URL OAuth: ${err.message}`);
+      },
+    });
+  };
+
+  const handleDisconnectAuthGlobal = () => {
+    const txt = prompt(
+      `Ketik "CONFIRM" untuk mencabut akses OAuth global.`,
+      "",
+    );
+    if (txt !== "CONFIRM") {
+      if (txt !== null) showNotification("info", "Pembatalan dibatalkan — teks konfirmasi tidak cocok.");
+      return;
+    }
+    disconnectOAuthMutation.mutate(undefined, {
+      onSuccess: () => {
+        showNotification("success", `Autentikasi global telah dicabut.`);
+      },
+      onError: (err) => {
+        showNotification("error", `Gagal mencabut autentikasi: ${err.message}`);
+      },
+    });
   };
 
   return (
@@ -286,7 +309,7 @@ export default function EmailIngestPage() {
       {/* Notification Toast */}
       {notification && (
         <div
-          className={`fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg animate-slideIn ${
+          className={`fixed top-4 right-4 z-[100] flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg animate-slideIn ${
             notification.type === "success"
               ? "bg-green-50 text-green-800 border border-green-200"
               : notification.type === "error"
@@ -315,9 +338,47 @@ export default function EmailIngestPage() {
         </div>
         <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Email Ingest</h1>
         <p className="text-gray-600 mt-1 text-sm md:text-base">
-          Kelola alamat email untuk ingestion laporan PLN dan mapping ke site / template.
+          Kelola satu akun email utama beserta berbagai rule filter ingestion untuk membaca laporan PLN.
         </p>
       </div>
+
+      {/* Global Email Connection Card */}
+      <Card className="mb-6 animate-fadeIn" style={{ animationDelay: "50ms" }}>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center p-2 gap-4">
+          <div className="flex items-center gap-4">
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center ${oauthStatus?.connected ? 'bg-green-100' : 'bg-gray-100'}`}>
+              <Mail className={`w-6 h-6 ${oauthStatus?.connected ? 'text-green-600' : 'text-gray-400'}`} />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-gray-900">Koneksi Email Global</h2>
+              <p className="text-sm text-gray-500">
+                {isOauthLoading ? "Mengecek status..." : oauthStatus?.connected ? `Terhubung: ${oauthStatus.emailAddress}` : "Belum ada email yang dihubungkan"}
+              </p>
+            </div>
+          </div>
+          <div>
+            {!isOauthLoading && (
+              oauthStatus?.connected ? (
+                <button
+                  onClick={handleDisconnectAuthGlobal}
+                  disabled={disconnectOAuthMutation.isPending}
+                  className="px-4 py-2 border border-red-200 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg text-sm font-medium transition-colors"
+                >
+                  Putuskan Koneksi
+                </button>
+              ) : (
+                <button
+                  onClick={handleConnectOAuthGlobal}
+                  disabled={getOAuthUrlMutation.isPending}
+                  className="px-4 py-2 bg-[#115d72] text-white hover:bg-[#0d4a5c] rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                >
+                  Hubungkan dengan Google
+                </button>
+              )
+            )}
+          </div>
+        </div>
+      </Card>
 
       {/* Action Bar */}
       <Card className="mb-6 animate-fadeIn" style={{ animationDelay: "100ms" }}>
@@ -329,7 +390,7 @@ export default function EmailIngestPage() {
               className="flex items-center gap-2 px-4 py-2.5 bg-[#115d72] text-white text-sm font-medium rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
             >
               <Plus size={18} />
-              Tambah Email
+              Tambah Rule Ingestion
             </button>
             {selectedRows.length > 0 && (
               <div className="flex items-center gap-2 animate-fadeIn">
@@ -362,7 +423,7 @@ export default function EmailIngestPage() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Cari email atau label..."
+                placeholder="Cari email atau nama..."
                 className="w-full md:w-64 pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200"
               />
             </div>
@@ -378,19 +439,6 @@ export default function EmailIngestPage() {
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             </div>
-            <div className="relative">
-              <select
-                value={providerFilter}
-                onChange={(e) => setProviderFilter(e.target.value)}
-                className="appearance-none pl-4 pr-10 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white cursor-pointer transition-all duration-200"
-              >
-                <option value="all">Semua Provider</option>
-                <option value="PLN">PLN</option>
-                <option value="Internal">Internal</option>
-                <option value="Other">Other</option>
-              </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-            </div>
           </div>
         </div>
       </Card>
@@ -399,13 +447,29 @@ export default function EmailIngestPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - Email Table (2/3) */}
         <div className="lg:col-span-2 animate-fadeIn" style={{ animationDelay: "200ms" }}>
-          <EmailTable
-            emails={filteredEmails}
-            selectedRows={selectedRows}
-            onSelectRows={setSelectedRows}
-            onRowClick={handleRowClick}
-            onDelete={handleDeleteEmail}
-          />
+          {isLoading ? (
+            <Card className="flex items-center justify-center py-16">
+              <div className="text-center text-gray-500">
+                <Loader2 className="w-8 h-8 mx-auto mb-3 animate-spin text-[#14a2bb]" />
+                <p className="text-sm">Memuat email sources...</p>
+              </div>
+            </Card>
+          ) : isError ? (
+            <Card className="flex items-center justify-center py-16">
+              <div className="text-center text-red-500">
+                <AlertCircle className="w-8 h-8 mx-auto mb-3" />
+                <p className="text-sm">Gagal memuat data email sources</p>
+              </div>
+            </Card>
+          ) : (
+            <EmailTable
+              emails={filteredEmails}
+              selectedRows={selectedRows}
+              onSelectRows={setSelectedRows}
+              onRowClick={handleRowClick}
+              onDelete={handleDeleteEmail}
+            />
+          )}
         </div>
 
         {/* Right Column - System Health (1/3) */}
@@ -422,7 +486,7 @@ export default function EmailIngestPage() {
               </div>
               <div>
                 <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
-                <div className="text-xs text-gray-500">Total alamat</div>
+                <div className="text-xs text-gray-500">Total email source</div>
               </div>
             </div>
             <div className="space-y-3">
@@ -431,14 +495,12 @@ export default function EmailIngestPage() {
                 <span className="text-sm font-semibold text-green-600">{stats.active}</span>
               </div>
               <div className="flex justify-between items-center py-2 border-t border-gray-100">
-                <span className="text-sm text-gray-600">Error (7 hari)</span>
-                <span className={`text-sm font-semibold ${stats.errorsLast7Days > 0 ? "text-red-600" : "text-gray-900"}`}>
-                  {stats.errorsLast7Days}
-                </span>
+                <span className="text-sm text-gray-600">Nonaktif</span>
+                <span className="text-sm font-semibold text-gray-500">{stats.total - stats.active}</span>
               </div>
             </div>
             <button
-              onClick={() => showNotification("info", "Membuka halaman logs...")}
+              onClick={() => setIsLogModalOpen(true)}
               className="w-full mt-4 px-4 py-2.5 text-sm font-medium text-[#115d72] bg-[#115d72]/10 rounded-lg hover:bg-[#115d72]/20 transition-all duration-200 flex items-center justify-center gap-2"
             >
               <FileText size={16} />
@@ -446,35 +508,7 @@ export default function EmailIngestPage() {
             </button>
           </Card>
 
-          {/* Auto-sync Schedule */}
-          <Card className="animate-fadeIn" style={{ animationDelay: "400ms" }}>
-            <CardHeader
-              title="Auto-sync Schedule"
-              description="Jadwal sinkronisasi otomatis"
-            />
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-[#14a2bb]/10 rounded-lg flex items-center justify-center">
-                <Clock className="w-5 h-5 text-[#14a2bb]" />
-              </div>
-              <div>
-                <div className="text-sm font-semibold text-gray-900">08 Feb 2026, 15:00</div>
-                <div className="text-xs text-gray-500">Sinkronisasi selanjutnya</div>
-              </div>
-            </div>
-            <div className="py-2 border-t border-gray-100">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Frekuensi</span>
-                <span className="text-sm font-medium text-gray-700">Setiap 30 menit</span>
-              </div>
-            </div>
-            <button
-              onClick={handleTriggerSync}
-              className="w-full mt-4 px-4 py-2.5 text-sm font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 flex items-center justify-center gap-2 hover:shadow-md active:scale-95"
-            >
-              <Play size={16} />
-              Trigger Now
-            </button>
-          </Card>
+
 
           {/* Quick Actions */}
           <Card className="animate-fadeIn" style={{ animationDelay: "500ms" }}>
@@ -492,7 +526,7 @@ export default function EmailIngestPage() {
               </button>
               <button
                 onClick={() => {
-                  const allIds = emails.map((e) => e.id);
+                  const allIds = emailSources.map((e) => e.id);
                   setSelectedRows(allIds);
                   showNotification("info", `${allIds.length} email dipilih`);
                 }}
@@ -512,9 +546,68 @@ export default function EmailIngestPage() {
         isOpen={isDrawerOpen}
         onClose={handleCloseDrawer}
         onUpdate={handleUpdateEmail}
-        templates={MOCK_TEMPLATES}
-        sites={MOCK_SITES}
+        onTestParse={handleTestParse}
+        isTestParsePending={testParseMutation.isPending}
+        isUpdatePending={updateMutation.isPending}
       />
+
+      {/* Logs Modal */}
+      <Modal
+        isOpen={isLogModalOpen}
+        onClose={() => setIsLogModalOpen(false)}
+        title="Log Sinkronisasi Email"
+        maxWidth="max-w-3xl"
+      >
+        <div className="bg-gray-900 border border-gray-700 rounded-lg p-6 font-mono text-sm shadow-inner flex flex-col min-h-[300px]">
+          <div className="flex items-center gap-2 mb-4 text-gray-400 border-b border-gray-700 pb-3">
+            <div className="w-3 h-3 rounded-full bg-red-500"></div>
+            <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+            <div className="w-3 h-3 rounded-full bg-green-500"></div>
+            <span className="ml-2 text-xs">worker.log</span>
+          </div>
+          
+          <div className="flex-1 space-y-2 text-gray-300 overflow-y-auto">
+            {emailSources.map((source, i) => (
+              source.lastPolledAt && (
+                <div key={`log-${i}`} className="flex gap-3">
+                  <span className="text-gray-500 shrink-0">[{new Date(source.lastPolledAt).toISOString().replace('T', ' ').substring(0, 19)}]</span>
+                  <span className="text-[#14a2bb] shrink-0">[INFO]</span>
+                  <span>Polling successful for rule <span className="text-white">"{source.name}"</span>. Status: Ok.</span>
+                </div>
+              )
+            ))}
+            
+            <div className="flex gap-3 mt-4 pt-4 border-t border-gray-800/50">
+              <span className="text-gray-500 shrink-0">[{new Date().toISOString().replace('T', ' ').substring(0, 19)}]</span>
+              <span className="text-green-400 shrink-0">[SYSTEM]</span>
+              <span>Email polling worker is active and awaiting next cron schedule...</span>
+            </div>
+            
+            {emailSources.every(s => !s.lastPolledAt) && (
+              <div className="flex flex-col items-center justify-center py-8 text-gray-500">
+                <AlertCircle className="w-8 h-8 mb-2" />
+                <p>Belum ada aktivitas sinkronisasi hari ini.</p>
+              </div>
+            )}
+            
+            {oauthStatus?.connected ? (
+                 <div className="flex gap-3">
+                  <span className="text-gray-500 shrink-0">[{new Date().toISOString().replace('T', ' ').substring(0, 19)}]</span>
+                  <span className="text-green-400 shrink-0">[OAUTH]</span>
+                  <span>Connection to {oauthStatus.emailAddress} is healthy.</span>
+                </div>
+            ) : null}
+          </div>
+        </div>
+        <div className="mt-4 flex justify-end">
+          <button
+            onClick={() => setIsLogModalOpen(false)}
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            Tutup
+          </button>
+        </div>
+      </Modal>
 
       {/* Add Email Modal */}
       <Modal
@@ -523,124 +616,86 @@ export default function EmailIngestPage() {
           setIsAddModalOpen(false);
           setFormErrors({});
         }}
-        title="Tambah Alamat Email"
+        title="Tambah Rule Ingestion Baru"
         maxWidth="max-w-lg"
       >
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Email <span className="text-red-500">*</span>
+              Nama <span className="text-red-500">*</span>
             </label>
             <input
-              type="email"
-              value={addForm.email}
-              onChange={(e) => setAddForm({ ...addForm, email: e.target.value })}
+              type="text"
+              value={addForm.name}
+              onChange={(e) => setAddForm({ ...addForm, name: e.target.value })}
               className={`w-full px-3 py-2.5 border rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent ${
-                formErrors.email ? "border-red-300" : "border-gray-300"
+                formErrors.name ? "border-red-300" : "border-gray-300"
               }`}
-              placeholder="contoh@domain.com"
+              placeholder="Contoh: PLN Laporan Harian"
             />
-            {formErrors.email && (
+            {formErrors.name && (
               <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
                 <AlertCircle size={12} />
-                {formErrors.email}
+                {formErrors.name}
               </p>
             )}
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Label / Keterangan
-            </label>
-            <input
-              type="text"
-              value={addForm.label}
-              onChange={(e) => setAddForm({ ...addForm, label: e.target.value })}
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent"
-              placeholder="Deskripsi singkat email"
-            />
-          </div>
+
 
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Provider
+                Cron Schedule
               </label>
-              <div className="relative">
-                <select
-                  value={addForm.provider}
-                  onChange={(e) => setAddForm({ ...addForm, provider: e.target.value as "PLN" | "Internal" | "Other" })}
-                  className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white cursor-pointer pr-10"
-                >
-                  <option value="PLN">PLN</option>
-                  <option value="Internal">Internal</option>
-                  <option value="Other">Other</option>
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-              </div>
+              <input
+                type="text"
+                value={addForm.cronSchedule}
+                onChange={(e) => setAddForm({ ...addForm, cronSchedule: e.target.value })}
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent font-mono"
+                placeholder="0 8 * * *"
+              />
             </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Site Mapping
+                Label Filter
               </label>
-              <div className="relative">
-                <select
-                  value={addForm.siteMapping}
-                  onChange={(e) => setAddForm({ ...addForm, siteMapping: e.target.value })}
-                  className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white cursor-pointer pr-10"
-                >
-                  <option value="">Pilih Site</option>
-                  {MOCK_SITES.map((site) => (
-                    <option key={site} value={site}>{site}</option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Template Parsing
-            </label>
-            <div className="relative">
-              <select
-                value={addForm.appliedTemplate}
-                onChange={(e) => setAddForm({ ...addForm, appliedTemplate: e.target.value })}
-                className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white cursor-pointer pr-10"
-              >
-                <option value="">Pilih Template</option>
-                {MOCK_TEMPLATES.map((template) => (
-                  <option key={template} value={template}>{template}</option>
-                ))}
-              </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <label className="flex items-center gap-2 cursor-pointer">
               <input
-                type="checkbox"
-                checked={addForm.status === "active"}
-                onChange={(e) => setAddForm({ ...addForm, status: e.target.checked ? "active" : "inactive" })}
-                className="w-4 h-4 text-[#115d72] border-gray-300 rounded focus:ring-[#14a2bb]"
+                type="text"
+                value={addForm.labelFilter}
+                onChange={(e) => setAddForm({ ...addForm, labelFilter: e.target.value })}
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent"
+                placeholder="INBOX"
               />
-              <span className="text-sm text-gray-700">Aktifkan email</span>
-            </label>
+            </div>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Notes (Opsional)
+              Subject Filter
             </label>
-            <textarea
-              value={addForm.notes}
-              onChange={(e) => setAddForm({ ...addForm, notes: e.target.value })}
-              rows={3}
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent resize-none"
-              placeholder="Catatan tambahan..."
+            <input
+              type="text"
+              value={addForm.subjectFilter}
+              onChange={(e) => setAddForm({ ...addForm, subjectFilter: e.target.value })}
+              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent"
+              placeholder="Contoh: Laporan Harian, Report Gas"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Comma-separated keywords untuk filter subject email
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Sender Filter
+            </label>
+            <input
+              type="text"
+              value={addForm.senderFilter}
+              onChange={(e) => setAddForm({ ...addForm, senderFilter: e.target.value })}
+              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent"
+              placeholder="Contoh: noreply@pln.co.id"
             />
           </div>
 
@@ -656,73 +711,20 @@ export default function EmailIngestPage() {
             </button>
             <button
               onClick={handleAddEmail}
-              className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
+              disabled={createMutation.isPending}
+              className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95 disabled:opacity-50"
             >
-              Simpan
+              {createMutation.isPending ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Loader2 size={14} className="animate-spin" />
+                  Menyimpan...
+                </span>
+              ) : (
+                "Simpan"
+              )}
             </button>
           </div>
         </div>
-      </Modal>
-
-      {/* Test Parse Modal */}
-      <Modal
-        isOpen={isTestParseOpen}
-        onClose={() => {
-          setIsTestParseOpen(false);
-          setTestParseEmail(null);
-        }}
-        title={`Test Parse - ${testParseEmail?.email || ""}`}
-        maxWidth="max-w-lg"
-      >
-        {testParseEmail && (
-          <div className="space-y-4">
-            <div className="bg-gray-50 rounded-lg p-4">
-              <p className="text-sm font-medium text-gray-700 mb-3">Hasil parsing terakhir:</p>
-              <div className="space-y-2.5">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">site_name</span>
-                  <span className="font-mono text-gray-900 bg-white px-2 py-0.5 rounded">{testParseEmail.siteMapping || "N/A"}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">metric_type</span>
-                  <span className="font-mono text-gray-900 bg-white px-2 py-0.5 rounded">gas_consumption</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">value</span>
-                  <span className="font-mono text-gray-900 bg-white px-2 py-0.5 rounded">1250.5</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">period</span>
-                  <span className="font-mono text-gray-900 bg-white px-2 py-0.5 rounded">2026-02-08</span>
-                </div>
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() => {
-                  setIsTestParseOpen(false);
-                  setTestParseEmail(null);
-                }}
-                className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200"
-              >
-                Tutup
-              </button>
-              <button
-                onClick={() => {
-                  showNotification("info", "Menjalankan test parse...");
-                  setTimeout(() => {
-                    showNotification("success", "Test parse berhasil");
-                    setIsTestParseOpen(false);
-                    setTestParseEmail(null);
-                  }, 1500);
-                }}
-                className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
-              >
-                Run Test Parse
-              </button>
-            </div>
-          </div>
-        )}
       </Modal>
 
       {/* CSS Animations */}
