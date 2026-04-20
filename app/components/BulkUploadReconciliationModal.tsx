@@ -43,7 +43,9 @@ export default function BulkUploadReconciliationModal({
 
     try {
       const result = await bulkUpload.mutateAsync(file);
-      alert(`Upload berhasil! ${result.insertedCount} data ditambahkan/diperbarui.`);
+      alert(
+        `Upload berhasil! ${result.insertedCount} data ditambahkan/diperbarui.`,
+      );
       if (onSuccess) onSuccess();
       setOpenModal(false);
     } catch (err) {
@@ -60,7 +62,7 @@ export default function BulkUploadReconciliationModal({
       />
       <div className="relative bg-white w-full max-w-md rounded-xl shadow-lg p-6 z-10">
         <div className="flex justify-between items-center mb-6">
-          <h3 className="text-xl font-bold text-gray-900">Upload Bulk Data</h3>
+          <h3 className="text-xl font-bold text-gray-900">Multi Input Data</h3>
           <button
             onClick={() => setOpenModal(false)}
             className="cursor-pointer text-gray-500 hover:text-gray-700"
@@ -81,8 +83,10 @@ export default function BulkUploadReconciliationModal({
         </div>
 
         <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Pilih File Excel (.xlsx)</label>
-          <div 
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Pilih File Excel (.xlsx)
+          </label>
+          <div
             className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:bg-gray-50 cursor-pointer"
             onClick={() => fileInputRef.current?.click()}
           >

@@ -219,27 +219,27 @@ export default function EditRecordPage() {
           </div>
           <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             <NumberField
-              label="WA Value (BBTUD)"
+              label="Niali Dari WA (BBTUD)"
               value={form.waValue}
               onChange={(v) => handleNumberChange("waValue", v)}
             />
             <NumberField
-              label="PLN Value (BBTUD)"
+              label="Nilai Dari Email (BBTUD)"
               value={form.plnValue}
               onChange={(v) => handleNumberChange("plnValue", v)}
             />
             <NumberField
-              label="Sheet Value (BBTUD)"
+              label="Nilai Dari Spreadsheet (BBTUD)"
               value={form.sheetValue}
               onChange={(v) => handleNumberChange("sheetValue", v)}
             />
             <NumberField
-              label="Final Value (BBTUD)"
+              label="Nilai Final (BBTUD)"
               value={form.finalValue}
               onChange={(v) => handleNumberChange("finalValue", v)}
             />
             <ReadOnlyField
-              label="Final Source"
+              label="Sumber Final"
               value={form.finalSource ?? ""}
             />
           </div>

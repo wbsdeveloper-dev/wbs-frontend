@@ -320,7 +320,9 @@ const CustomTooltip = ({
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg shadow-md p-3 text-sm text-gray-900 min-w-[300px] max-w-sm z-100">
-      <p className="font-semibold mb-3 border-b border-gray-100 pb-2">{label}</p>
+      <p className="font-semibold mb-3 border-b border-gray-100 pb-2">
+        {label}
+      </p>
 
       <ul className="space-y-3">
         {payload.map((item, index) => {
@@ -398,6 +400,10 @@ export default function RealtimeChart({
   const [startDate, setStartDate] = useState<string | null>(null);
   const [endDate, setEndDate] = useState<string | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [formattedStartDate, setFormattedStartDate] = useState<string | null>(
+    null,
+  );
+  const [formattedEndDate, setFormattedEndDate] = useState<string | null>(null);
 
   const today = new Date();
 
@@ -411,6 +417,21 @@ export default function RealtimeChart({
     if (startDate && endDate) {
       onDateRangeChange?.(startDate, endDate);
     }
+
+    const formattedStartDate = new Intl.DateTimeFormat("id-ID", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    }).format(new Date(startDate ?? new Date()));
+
+    const formattedEndDate = new Intl.DateTimeFormat("id-ID", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    }).format(new Date(endDate ?? new Date()));
+
+    setFormattedStartDate(formattedStartDate);
+    setFormattedEndDate(formattedEndDate);
   }, [startDate, endDate, onDateRangeChange]);
 
   // Derive filter options from API data or fallback to hardcoded
@@ -473,7 +494,10 @@ export default function RealtimeChart({
     const seriesLookups = chartFlowData.series.map((series) => {
       const lookup = new Map<string, { value: number; flowrate: number }>();
       series.dataPoints.forEach((dp) => {
-        lookup.set(dp.timestamp, { value: dp.value, flowrate: dp.flowrate || 0 });
+        lookup.set(dp.timestamp, {
+          value: dp.value,
+          flowrate: dp.flowrate || 0,
+        });
       });
       return { name: series.name, lookup };
     });
@@ -587,7 +611,14 @@ export default function RealtimeChart({
                 {pembangkit ?? pembangkit}
               </h3>
               <div>
-                <p className="text-gray-700 font-bold">{formattedDate}</p>
+                <p className="text-gray-700 font-bold">
+                  {formattedStartDate}{" "}
+                  {formattedEndDate
+                    ? formattedEndDate == formattedStartDate
+                      ? ""
+                      : ` - ${formattedEndDate}`
+                    : ""}
+                </p>
               </div>
             </div>
             {chartData.length > 0 ? (
@@ -678,29 +709,6 @@ export default function RealtimeChart({
                       label={`TOP`}
                     />
                   )}
-
-                  <ReferenceDot
-                    x="04.00"
-                    y={10}
-                    shape={({ cx, cy }) => (
-                      <g style={{ cursor: "pointer" }}>
-                        <polygon
-                          points={`${cx},${cy - 10} ${cx - 10},${cy + 8} ${cx + 10},${cy + 8}`}
-                          fill="#f59e0b"
-                        />
-                        <text
-                          x={cx}
-                          y={cy + 6}
-                          textAnchor="middle"
-                          fontSize={12}
-                          fill="white"
-                        >
-                          !
-                        </text>
-                      </g>
-                    )}
-                    strokeWidth={2}
-                  />
                 </LineChart>
               </ResponsiveContainer>
             ) : (

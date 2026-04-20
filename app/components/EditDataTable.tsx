@@ -117,7 +117,7 @@ function DeleteConfirmModal({
         </div>
       </div>
     </div>,
-    document.body
+    document.body,
   );
 }
 
@@ -210,7 +210,7 @@ export default function EditDataTable({
   const apiPage = pagination.page || 1;
   const currentPage = apiPage - 1;
   const itemsPerPage = pagination.limit || 10;
-  
+
   const startIndex = currentPage * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const paginatedRecords = records;
@@ -369,7 +369,7 @@ export default function EditDataTable({
               {/* ID filter */}
               <div>
                 <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
-                  ID Record
+                  ID
                 </label>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -583,9 +583,6 @@ export default function EditDataTable({
                   No
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  ID
-                </th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   Tanggal
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
@@ -604,19 +601,22 @@ export default function EditDataTable({
                   Jam
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  WA Value
+                  Nilai Dari WA
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  PLN Value
+                  Nilai Dari Email
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Final Value
+                  Nilai Final
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   Delta
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   Status
+                </th>
+                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  ID
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   Aksi
@@ -657,9 +657,6 @@ export default function EditDataTable({
                     <td className="px-4 py-3 text-center text-gray-700">
                       {startIndex + index + 1}
                     </td>
-                    <td className="px-4 py-3 text-center text-gray-900 font-medium">
-                      {record.id}
-                    </td>
                     <td className="px-4 py-3 text-center text-gray-700">
                       {record.reportDate}
                     </td>
@@ -692,6 +689,9 @@ export default function EditDataTable({
                     </td>
                     <td className="px-4 py-3 text-center">
                       <StatusBadge status={record.status} />
+                    </td>
+                    <td className="px-4 py-3 text-center text-gray-900 font-medium">
+                      {record.id}
                     </td>
                     <td className="px-4 py-3 text-center">
                       <ActionButtons
