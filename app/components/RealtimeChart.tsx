@@ -43,7 +43,7 @@ export type FilterBy = "supplier" | "plant";
 export interface RealtimeChartProps {
   chartFlowData?: ChartFlowResponse | null;
   filtersData?: DashboardFilters | null;
-  contractData?: Contract | null;
+  contractData?: Contract[] | null;
   isLoading?: boolean;
   isContractLoading?: boolean;
   onPeriodChange?: (granularity: Granularity) => void;
@@ -723,7 +723,7 @@ export default function RealtimeChart({
           </div>
           <div className=" mt-4 border-t border-gray-200 pt-6">
             <SupplierResumeTable
-              contract={contractData}
+              contracts={contractData}
               isLoading={isContractLoading}
             />
           </div>

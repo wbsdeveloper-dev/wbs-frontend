@@ -101,7 +101,9 @@ export default function GasDashboard() {
     selectedPembangkitId,
   );
 
-  // Fetch contract from contracts table, filtered by selected pemasok/pembangkit
+  // Fetch contract from contracts table, filtered by selected pemasok/pembangkit.
+  // Enabled whenever at least pemasok OR pembangkit is chosen, so the contract
+  // section shows up even before the user picks a specific pembangkit.
   const { data: contractsData, isLoading: isContractLoading } = useContracts(
     {
       pemasok_site_id: selectedPemasokId,
@@ -109,10 +111,9 @@ export default function GasDashboard() {
       status: "ACTIVE",
     },
     {
-      enabled: !!(selectedPemasokId && selectedPembangkitId),
+      enabled: !!(selectedPemasokId || selectedPembangkitId),
     },
   );
-  const firstContract = contractsData?.[0] ?? null;
 
   // Fetch events — always fetch
   const { data: eventsData, isLoading: isEventsLoading } = useEvents(
@@ -297,7 +298,7 @@ export default function GasDashboard() {
 
             <div className="mb-6">
               <RealtimeChart
-                contractData={firstContract}
+                contractData={contractsData ?? null}
                 chartFlowData={chartFlowData ?? null}
                 filtersData={filtersData ?? null}
                 isLoading={isChartLoading}
