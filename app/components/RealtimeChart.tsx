@@ -59,6 +59,7 @@ export interface RealtimeChartProps {
 type ChartItem = {
   label: string;
   values: Record<string, number>;
+  rawTimestamp?: string;
 };
 
 interface TooltipPayload {
@@ -72,6 +73,7 @@ type SelectedPoint = {
   label: string;
   series: string;
   value: number;
+  rawTimestamp?: string;
 };
 
 const COLORS: Record<string, string> = {
@@ -478,7 +480,7 @@ export default function RealtimeChart({
           values[name] = val;
         }
       });
-      return { label, values };
+      return { label, values, rawTimestamp: rawTs };
     });
   }, [chartFlowData]);
 
@@ -617,6 +619,7 @@ export default function RealtimeChart({
                                   label: payload.label,
                                   series: key,
                                   value,
+                                  rawTimestamp: payload.rawTimestamp,
                                 });
 
                                 setOpenModal(true);
@@ -1125,6 +1128,7 @@ export default function RealtimeChart({
           submitNote={submitNote}
           pemasokId={selectedPemasokId}
           pembangkitId={selectedPembangkitId}
+          selectedTimestamp={selectedPoint?.rawTimestamp}
         />
       )}
     </div>
