@@ -11,11 +11,15 @@ import {
   AlertCircle,
   X,
   Loader2,
+  MessageSquare,
+  FileSpreadsheet,
+  Mail,
 } from "lucide-react";
 import Card from "@/app/components/ui/Card";
 import { Modal } from "@/app/components/ui";
 import TemplateList from "./components/TemplateList";
 import TemplateEditor from "./components/TemplateEditor";
+import EmailSourcePanel from "./components/EmailSourcePanel";
 import {
   useTemplates,
   useTemplate,
@@ -195,6 +199,7 @@ export default function TemplateGrupPage() {
           name: updatedTemplate.name,
           scope: updatedTemplate.scope,
           parserMode: updatedTemplate.parserMode,
+          isDefault: updatedTemplate.isDefault,
           groupConfigId: updatedTemplate.groupConfigId,
           spreadsheetSourceId: updatedTemplate.spreadsheetSourceId,
           waKeywordHint: updatedTemplate.waKeywordHint,
@@ -449,30 +454,41 @@ export default function TemplateGrupPage() {
             </div>
             <div className="relative">
               <select
-                value={scopeFilter}
-                onChange={(e) => setScopeFilter(e.target.value)}
-                className="appearance-none pl-4 pr-10 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white cursor-pointer transition-all duration-200"
-              >
-                <option value="all">Semua Scope</option>
-                <option value="WA_GROUP">WA Group</option>
-                <option value="SPREADSHEET_SOURCE">Spreadsheet</option>
-              </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-            </div>
-            <div className="relative">
-              <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="appearance-none pl-4 pr-10 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white cursor-pointer transition-all duration-200"
               >
                 <option value="all">Semua Status</option>
-                <option value="DRAFT">Draft</option>
-                <option value="ACTIVE">Active</option>
-                <option value="DEPRECATED">Deprecated</option>
+                <option value="DRAFT">Draft (Rancangan)</option>
+                <option value="ACTIVE">Aktif (Active)</option>
+                <option value="DEPRECATED">Diarsipkan (Deprecated)</option>
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             </div>
           </div>
+        </div>
+
+        {/* Tab Bar — Scope Filter */}
+        <div className="mt-4 pt-4 border-t border-gray-100 flex items-center gap-1 overflow-x-auto">
+          {[
+            { key: "all", label: "Semua", icon: null },
+            { key: "WA_GROUP", label: "WhatsApp Grup", icon: <MessageSquare size={14} /> },
+            { key: "SPREADSHEET_SOURCE", label: "Spreadsheet", icon: <FileSpreadsheet size={14} /> },
+            { key: "EMAIL_INGEST", label: "Email Ingest", icon: <Mail size={14} /> },
+          ].map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setScopeFilter(tab.key)}
+              className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap ${
+                scopeFilter === tab.key
+                  ? "bg-[#115d72] text-white shadow-sm"
+                  : "text-gray-600 hover:bg-gray-100"
+              }`}
+            >
+              {tab.icon}
+              {tab.label}
+            </button>
+          ))}
         </div>
       </Card>
 
@@ -511,31 +527,63 @@ export default function TemplateGrupPage() {
           )}
         </div>
 
-        {/* Right Panel - Template Editor (70%) */}
-        <div className="lg:col-span-7">
-          {selectedTemplate ? (
-            <TemplateEditorWrapper
-              templateId={selectedTemplate.id}
-              onUpdate={handleUpdateTemplate}
-              onActivate={handleActivateTemplate}
-              onDelete={handleDeleteTemplate}
-              onAddGroup={handleAddGroup}
-              groupConfigs={groupConfigsForEditor}
-              botGroups={botGroups}
-              spreadsheetSources={spreadsheetSources.map(s => ({ id: s.id, name: s.name }))}
-            />
-          ) : (
-            <Card className="h-full min-h-[400px] flex items-center justify-center">
-              <div className="text-center text-gray-500">
-                <FileText className="w-12 h-12 mx-auto mb-3 opacity-40" />
-                <p className="text-sm">
-                  Pilih template dari daftar untuk mengedit
-                </p>
-                <p className="text-xs mt-1">atau buat template baru</p>
-              </div>
-            </Card>
-          )}
-        </div>
+        {/* Right Panel - Template Editor (70%) or split with Email Panel */}
+        {scopeFilter === "EMAIL_INGEST" && selectedTemplate?.emailSourceId ? (
+          <>
+            {/* Editor (50%) */}
+            <div className="lg:col-span-4">
+              {selectedTemplate ? (
+                <TemplateEditorWrapper
+                  templateId={selectedTemplate.id}
+                  onUpdate={handleUpdateTemplate}
+                  onActivate={handleActivateTemplate}
+                  onDelete={handleDeleteTemplate}
+                  onAddGroup={handleAddGroup}
+                  groupConfigs={groupConfigsForEditor}
+                  botGroups={botGroups}
+                  spreadsheetSources={spreadsheetSources.map(s => ({ id: s.id, name: s.name }))}
+                />
+              ) : (
+                <Card className="h-full min-h-[400px] flex items-center justify-center">
+                  <div className="text-center text-gray-500">
+                    <Mail className="w-12 h-12 mx-auto mb-3 opacity-40" />
+                    <p className="text-sm">Pilih template Email Ingest</p>
+                    <p className="text-xs mt-1">atau buat template baru</p>
+                  </div>
+                </Card>
+              )}
+            </div>
+            {/* Email Source Panel (30%) */}
+            <div className="lg:col-span-3">
+              <EmailSourcePanel sourceId={selectedTemplate.emailSourceId} />
+            </div>
+          </>
+        ) : (
+          <div className="lg:col-span-7">
+            {selectedTemplate ? (
+              <TemplateEditorWrapper
+                templateId={selectedTemplate.id}
+                onUpdate={handleUpdateTemplate}
+                onActivate={handleActivateTemplate}
+                onDelete={handleDeleteTemplate}
+                onAddGroup={handleAddGroup}
+                groupConfigs={groupConfigsForEditor}
+                botGroups={botGroups}
+                spreadsheetSources={spreadsheetSources.map(s => ({ id: s.id, name: s.name }))}
+              />
+            ) : (
+              <Card className="h-full min-h-[400px] flex items-center justify-center">
+                <div className="text-center text-gray-500">
+                  <FileText className="w-12 h-12 mx-auto mb-3 opacity-40" />
+                  <p className="text-sm">
+                    Pilih template dari daftar untuk mengedit
+                  </p>
+                  <p className="text-xs mt-1">atau buat template baru</p>
+                </div>
+              </Card>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Create Template Modal */}
@@ -578,8 +626,8 @@ export default function TemplateGrupPage() {
                 }
                 className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white cursor-pointer pr-10"
               >
-                <option value="WA_GROUP">WA Group</option>
-                <option value="SPREADSHEET_SOURCE">Spreadsheet Source</option>
+                <option value="WA_GROUP">WhatsApp Grup</option>
+                <option value="SPREADSHEET_SOURCE">Sumber Spreadsheet</option>
                 <option value="EMAIL_INGEST">Email Ingest</option>
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
@@ -620,7 +668,7 @@ export default function TemplateGrupPage() {
           setIsTestModalOpen(false);
           setTestResult(null);
         }}
-        title="Test Message Routing"
+        title="Uji Jalur Pesan (Test Routing)"
         maxWidth="max-w-md"
       >
         <div className="space-y-4">
@@ -655,7 +703,7 @@ export default function TemplateGrupPage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Message Content
+              Isi Pesan (Message Content)
             </label>
             <textarea
               value={testMessage}
@@ -671,14 +719,14 @@ export default function TemplateGrupPage() {
               disabled={testRoutingMutation.isPending || !testGroupId}
               className="w-full px-4 py-2.5 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-all duration-200 hover:shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {testRoutingMutation.isPending ? "Testing..." : "Run Test"}
+              {testRoutingMutation.isPending ? "Sedang Menguji..." : "Jalankan Tes"}
             </button>
           </div>
 
           {testResult && (
             <div className="mt-4 p-4 rounded-lg border bg-gray-50">
               <h4 className="text-sm font-semibold text-gray-900 mb-2">
-                Test Result
+                Hasil Pengujian (Test Result)
               </h4>
 
               {!testResult.allowed ? (
@@ -708,7 +756,7 @@ export default function TemplateGrupPage() {
                   </div>
                   <div className="flex items-start gap-2">
                     <span className="text-xs font-medium text-gray-500 w-24 pt-0.5">
-                      Explanation:
+                      Penjelasan:
                     </span>
                     <span className="text-sm text-gray-700 flex-1">
                       {testResult.groupConfigId

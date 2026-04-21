@@ -257,25 +257,12 @@ export default function LoginPage() {
               <h2 className="text-white text-3xl lg:text-4xl font-bold leading-tight mb-4">
                 Monitoring Real-time
                 <br />
-                <span className="text-[#7dd3fc]">Pipa Gas & BBM</span>
+                <span className="text-[#7dd3fc]">Gas Pipa & BBM</span>
               </h2>
               <p className="text-white/80 text-lg leading-relaxed">
                 Pantau distribusi energi secara real-time dengan dashboard yang
                 modern dan intuitif
               </p>
-            </div>
-
-            {/* Feature Pills */}
-            <div className="flex flex-wrap gap-3 mt-8">
-              <span className="px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full text-white/90 text-sm border border-white/20">
-                📊 Dashboard Interaktif
-              </span>
-              <span className="px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full text-white/90 text-sm border border-white/20">
-                🗺️ Peta Real-time
-              </span>
-              <span className="px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full text-white/90 text-sm border border-white/20">
-                📈 Grafik Analitik
-              </span>
             </div>
           </div>
         </div>

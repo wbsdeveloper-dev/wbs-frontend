@@ -59,6 +59,7 @@ export interface RealtimeChartProps {
 type ChartItem = {
   label: string;
   values: Record<string, number>;
+  flowrates?: Record<string, number>;
   rawTimestamp?: string;
 };
 
@@ -67,6 +68,7 @@ interface TooltipPayload {
   value: number;
   color?: string;
   dataKey?: string;
+  payload?: ChartItem;
 }
 
 type SelectedPoint = {
@@ -318,41 +320,50 @@ const CustomTooltip = ({
 }) => {
   if (!active || !payload || payload.length === 0) return null;
 
-  const currentFlowrate = payload.reduce(
-    (sum, item) => sum + (Number(item.value) || 0),
-    0,
-  );
-
   return (
-    <div className="bg-white border border-gray-200 rounded-lg shadow-md p-3 text-sm text-gray-900 w-[300px] z-100">
-      <p className="font-semibold mb-2">{label}</p>
+    <div className="bg-white border border-gray-200 rounded-lg shadow-md p-3 text-sm text-gray-900 min-w-[300px] max-w-sm z-100">
+      <p className="font-semibold mb-3 border-b border-gray-100 pb-2">
+        {label}
+      </p>
 
-      <ul className="space-y-1">
-        {payload.map((item, index) => (
-          <div key={index} className="flex items-center justify-between">
-            <div className="flex items-center gap-2 w-[300px]">
-              <div
-                className="w-2 h-3 rounded-full"
-                style={{ backgroundColor: item.color }}
-              />
-              <div>{item.name}</div>
-            </div>
+      <ul className="space-y-3">
+        {payload.map((item, index) => {
+          const originalKey = item.dataKey?.replace("values.", "") || item.name;
+          const flowrate = item.payload?.flowrates?.[originalKey] || 0;
+          return (
+            <div key={index} className="flex flex-col">
+              <div className="flex items-center gap-2 mb-1.5">
+                <div
+                  className="w-2 h-3 rounded-full"
+                  style={{ backgroundColor: item.color }}
+                />
+                <div className="font-medium text-gray-800">{item.name}</div>
+              </div>
 
-            <div className="font-medium w-[150px] text-right">
-              {item.value} {unit || "MMBTU"}
+              <div className="grid grid-cols-2 text-xs gap-2 pl-4">
+                <div className="flex flex-col bg-gray-50 rounded p-1.5 border border-gray-100">
+                  <span className="text-gray-500 mb-0.5">Volume</span>
+                  <span className="font-semibold text-gray-900 border-t border-gray-100 pt-0.5">
+                    {Number(item.value).toLocaleString("id-ID", {
+                      maximumFractionDigits: 2,
+                    })}{" "}
+                    {unit || "BBTUD"}
+                  </span>
+                </div>
+                <div className="flex flex-col bg-[#14a2bb]/5 rounded p-1.5 border border-[#14a2bb]/10">
+                  <span className="text-[#115d72]/70 mb-0.5">Flowrate</span>
+                  <span className="font-semibold text-[#115d72] border-t border-[#14a2bb]/10 pt-0.5">
+                    {Number(flowrate).toLocaleString("id-ID", {
+                      maximumFractionDigits: 2,
+                    })}{" "}
+                    MMSCFD
+                  </span>
+                </div>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </ul>
-      <div className="flex justify-between mt-4 pt-4 border-t border-gray-200">
-        <p className="font-medium">Flowrate</p>
-        <p className="font-medium">
-          {currentFlowrate.toLocaleString("id-ID", {
-            maximumFractionDigits: 2,
-          })}{" "}
-          MMSCFD
-        </p>
-      </div>
     </div>
   );
 };
@@ -391,6 +402,10 @@ export default function RealtimeChart({
   const [startDate, setStartDate] = useState<string | null>(null);
   const [endDate, setEndDate] = useState<string | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [formattedStartDate, setFormattedStartDate] = useState<string | null>(
+    null,
+  );
+  const [formattedEndDate, setFormattedEndDate] = useState<string | null>(null);
 
   const today = new Date();
 
@@ -404,6 +419,21 @@ export default function RealtimeChart({
     if (startDate && endDate) {
       onDateRangeChange?.(startDate, endDate);
     }
+
+    const formattedStartDate = new Intl.DateTimeFormat("id-ID", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    }).format(new Date(startDate ?? new Date()));
+
+    const formattedEndDate = new Intl.DateTimeFormat("id-ID", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    }).format(new Date(endDate ?? new Date()));
+
+    setFormattedStartDate(formattedStartDate);
+    setFormattedEndDate(formattedEndDate);
   }, [startDate, endDate, onDateRangeChange]);
 
   // Derive filter options from API data or fallback to hardcoded
@@ -462,11 +492,14 @@ export default function RealtimeChart({
       (a, b) => new Date(a).getTime() - new Date(b).getTime(),
     );
 
-    // Build a lookup map for each series: timestamp -> value
+    // Build a lookup map for each series: timestamp -> { value, flowrate }
     const seriesLookups = chartFlowData.series.map((series) => {
-      const lookup = new Map<string, number>();
+      const lookup = new Map<string, { value: number; flowrate: number }>();
       series.dataPoints.forEach((dp) => {
-        lookup.set(dp.timestamp, dp.value);
+        lookup.set(dp.timestamp, {
+          value: dp.value,
+          flowrate: dp.flowrate || 0,
+        });
       });
       return { name: series.name, lookup };
     });
@@ -474,13 +507,15 @@ export default function RealtimeChart({
     return sortedTimestamps.map((rawTs) => {
       const label = formatTimestamp(rawTs);
       const values: Record<string, number> = {};
+      const flowrates: Record<string, number> = {};
       seriesLookups.forEach(({ name, lookup }) => {
-        const val = lookup.get(rawTs);
-        if (val !== undefined) {
-          values[name] = val;
+        const data = lookup.get(rawTs);
+        if (data !== undefined) {
+          values[name] = data.value;
+          flowrates[name] = data.flowrate;
         }
       });
-      return { label, values, rawTimestamp: rawTs };
+      return { label, values, flowrates, rawTimestamp: rawTs };
     });
   }, [chartFlowData]);
 
@@ -545,7 +580,7 @@ export default function RealtimeChart({
     return [Math.floor(min - padding), Math.ceil(max + padding)];
   }, [chartData]);
 
-  const submitNote = () => {};
+  const submitNote = () => { };
 
   if (topLineActive === null) return null;
 
@@ -578,7 +613,14 @@ export default function RealtimeChart({
                 {pembangkit ?? pembangkit}
               </h3>
               <div>
-                <p className="text-gray-700 font-bold">{formattedDate}</p>
+                <p className="text-gray-700 font-bold">
+                  {formattedStartDate}{" "}
+                  {formattedEndDate
+                    ? formattedEndDate == formattedStartDate
+                      ? ""
+                      : ` - ${formattedEndDate}`
+                    : ""}
+                </p>
               </div>
             </div>
             {chartData.length > 0 ? (
@@ -670,29 +712,6 @@ export default function RealtimeChart({
                       label={`TOP`}
                     />
                   )}
-
-                  <ReferenceDot
-                    x="04.00"
-                    y={10}
-                    shape={({ cx, cy }) => (
-                      <g style={{ cursor: "pointer" }}>
-                        <polygon
-                          points={`${cx},${cy - 10} ${cx - 10},${cy + 8} ${cx + 10},${cy + 8}`}
-                          fill="#f59e0b"
-                        />
-                        <text
-                          x={cx}
-                          y={cy + 6}
-                          textAnchor="middle"
-                          fontSize={12}
-                          fill="white"
-                        >
-                          !
-                        </text>
-                      </g>
-                    )}
-                    strokeWidth={2}
-                  />
                 </LineChart>
               </ResponsiveContainer>
             ) : (
@@ -934,11 +953,10 @@ export default function RealtimeChart({
                 <div className="flex gap-10">
                   <div className="flex gap-4 mb-3">
                     <button
-                      className={`text-[#115d72] ${
-                        period == "1D"
+                      className={`text-[#115d72] ${period == "1D"
                           ? "bg-[#14a2bb92] w-[45px] rounded-md"
                           : ""
-                      } cursor-pointer`}
+                        } cursor-pointer`}
                       onClick={() => {
                         setPeriod("1D");
                         if (startDate) setEndDate(startDate);
@@ -955,11 +973,10 @@ export default function RealtimeChart({
                       1D
                     </button>
                     <button
-                      className={`text-[#115d72] ${
-                        period == "1W"
+                      className={`text-[#115d72] ${period == "1W"
                           ? "bg-[#14a2bb92] w-[45px] rounded-md"
                           : ""
-                      } cursor-pointer`}
+                        } cursor-pointer`}
                       onClick={() => {
                         setPeriod("1W");
                         if (onPeriodChange) {
@@ -975,11 +992,10 @@ export default function RealtimeChart({
                       1W
                     </button>
                     <button
-                      className={`text-[#115d72] ${
-                        period == "3M"
+                      className={`text-[#115d72] ${period == "3M"
                           ? "bg-[#14a2bb92] w-[45px] rounded-md"
                           : ""
-                      } cursor-pointer`}
+                        } cursor-pointer`}
                       onClick={() => {
                         setPeriod("3M");
                         if (onPeriodChange) {
@@ -995,11 +1011,10 @@ export default function RealtimeChart({
                       3M
                     </button>
                     <button
-                      className={`text-[#115d72] ${
-                        period == "6M"
+                      className={`text-[#115d72] ${period == "6M"
                           ? "bg-[#14a2bb92] w-[45px] rounded-md"
                           : ""
-                      } cursor-pointer`}
+                        } cursor-pointer`}
                       onClick={() => {
                         setPeriod("6M");
                         if (onPeriodChange) {
@@ -1015,11 +1030,10 @@ export default function RealtimeChart({
                       6M
                     </button>
                     <button
-                      className={`text-[#115d72] ${
-                        period == "1Y"
+                      className={`text-[#115d72] ${period == "1Y"
                           ? "bg-[#14a2bb92] w-[45px] rounded-md"
                           : ""
-                      } cursor-pointer`}
+                        } cursor-pointer`}
                       onClick={() => {
                         setPeriod("1Y");
                         if (onPeriodChange) {
@@ -1061,9 +1075,9 @@ export default function RealtimeChart({
                           color: "#14a1bb",
                         },
                         "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
-                          {
-                            backgroundColor: "#14a1bb",
-                          },
+                        {
+                          backgroundColor: "#14a1bb",
+                        },
                       }}
                     />
                   </div>
@@ -1079,9 +1093,9 @@ export default function RealtimeChart({
                           color: "#14a1bb",
                         },
                         "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
-                          {
-                            backgroundColor: "#14a1bb",
-                          },
+                        {
+                          backgroundColor: "#14a1bb",
+                        },
                       }}
                     />
                   </div>
@@ -1097,9 +1111,9 @@ export default function RealtimeChart({
                           color: "#14a1bb",
                         },
                         "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
-                          {
-                            backgroundColor: "#14a1bb",
-                          },
+                        {
+                          backgroundColor: "#14a1bb",
+                        },
                       }}
                     />
                   </div>

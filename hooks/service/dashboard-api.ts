@@ -96,6 +96,7 @@ export interface TopResponse {
 export interface ChartFlowDataPoint {
   timestamp: string;
   value: number;
+  flowrate?: number;
 }
 
 export interface ChartFlowSeries {

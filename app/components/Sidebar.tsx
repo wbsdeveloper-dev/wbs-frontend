@@ -25,11 +25,13 @@ import { useRouter } from "next/navigation";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/components/providers/auth-provider";
+import { usePrivilege, type Resource } from "@/hooks/usePrivilege";
 
 export default function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  const { hasPrivilege } = usePrivilege();
 
   const [subMenuOpen, setSubMenuOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -59,9 +61,11 @@ export default function Sidebar() {
     title: string;
     path?: string;
     icon?: LucideIcon;
+    resource?: Resource;
     children?: {
       title: string;
       path: string;
+      resource?: Resource;
     }[];
   };
 
@@ -70,40 +74,59 @@ export default function Sidebar() {
       title: "Beranda",
       path: "/dashboard/gas",
       icon: LayoutDashboard,
+      resource: "dashboard",
     },
     {
       title: "Manajemen Data",
       path: "/edit",
       icon: FileText,
+      resource: "data_management",
     },
     {
       title: "Manajemen Site",
       path: "/site",
       icon: MapPin,
+      resource: "site_management",
     },
     {
       title: "Kontrak & Dokumen",
       path: "/kontrak",
       icon: Briefcase,
+      resource: "contracts",
     },
     {
       title: "Konfigurasi Sistem",
       path: "/konfigurasi",
       icon: Database,
       children: [
-        { title: "Pengguna", path: "/konfigurasi/pengguna" },
-        { title: "Email Ingest", path: "/konfigurasi/email-ingest" },
-        { title: "Template Grup", path: "/konfigurasi/template-grup" },
-        { title: "Spreadsheet Source", path: "/konfigurasi/spreadsheet-source" },
-        { title: "API Keys", path: "/konfigurasi/bot/api-keys" },
+        { title: "Pengguna", path: "/konfigurasi/pengguna", resource: "users" },
+        { title: "Email Ingest", path: "/konfigurasi/email-ingest", resource: "email_ingest" },
+        { title: "Template Grup", path: "/konfigurasi/template-grup", resource: "template_group" },
+        { title: "Spreadsheet Source", path: "/konfigurasi/spreadsheet-source", resource: "spreadsheet_source" },
+        { title: "API Keys", path: "/konfigurasi/bot/api-keys", resource: "api_keys" },
       ],
     },
     {
       title: "Manajemen Bot",
       path: "/whatsappbot",
       icon: Bot,
+      resource: "bot_management",
     },
   ];
+
+  const filteredMenus = menus.map(menu => {
+    if (menu.children) {
+      return {
+        ...menu,
+        children: menu.children.filter(child => !child.resource || hasPrivilege(child.resource, "READ"))
+      }
+    }
+    return menu;
+  }).filter(menu => {
+    if (menu.resource && !hasPrivilege(menu.resource, "READ")) return false;
+    if (menu.children && menu.children.length === 0) return false;
+    return true;
+  });
 
   // ─── Light-mode styles ─────────────────────────────────────────────
   const menuActive =
@@ -216,7 +239,7 @@ export default function Sidebar() {
           )}
         </div>
         <nav className="space-y-1 px-2">
-          {menus.map((menu, index) => {
+          {filteredMenus.map((menu, index) => {
             const Icon = menu.icon;
 
             const isParentActive = menu.path && pathname.startsWith(menu.path);
