@@ -199,7 +199,7 @@ export default function EditRecordPage() {
           <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             <ReadOnlyField label="Tanggal Laporan" value={record.reportDate} />
             <ReadOnlyField label="Nama Pemasok" value={record.supplierName} />
-            <ReadOnlyField label="Nama Site" value={record.siteName} />
+            <ReadOnlyField label="Nama Pembangkit" value={record.siteName} />
             <ReadOnlyField label="Tipe Metrik" value={record.metricType} />
             <ReadOnlyField label="Tipe Periode" value={record.periodType} />
             <ReadOnlyField label="Nilai Periode" value={record.periodValue} />
