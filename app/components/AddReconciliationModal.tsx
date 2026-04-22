@@ -98,7 +98,7 @@ export default function AddReconciliationModal({
               <option value="">Pilih Site</option>
               {filtersData?.pembangkit?.map((p) => (
                 <option key={p.id} value={p.id}>
-                  {p.id} - {p.name}
+                  {p.name}
                 </option>
               ))}
             </select>

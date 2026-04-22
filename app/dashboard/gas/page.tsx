@@ -152,6 +152,12 @@ export default function GasDashboard() {
       setStartDateFilter(oneYearAgo.toISOString().split("T")[0]);
       setEndDateFilter(endDate);
       setGranularity("month");
+    } else if (newGranularity === "three_year") {
+      const threeYearsAgo = new Date();
+      threeYearsAgo.setDate(new Date(todayDate).getDate() - 1095);
+      setStartDateFilter(threeYearsAgo.toISOString().split("T")[0]);
+      setEndDateFilter(endDate);
+      setGranularity("month");
     }
   }, []);
 

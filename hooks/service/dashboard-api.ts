@@ -131,7 +131,7 @@ export interface ChartFlowPeriodSummary {
 
 export interface ChartFlowResponse {
   period: { start: string; end: string };
-  granularity: "hour" | "day" | "month";
+  granularity: "hour" | "day" | "month" | "year";
   by: "supplier" | "plant";
   unit: string;
   series: ChartFlowSeries[];

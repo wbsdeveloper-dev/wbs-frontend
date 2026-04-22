@@ -37,7 +37,8 @@ export type Granularity =
   | "month"
   | "three_month"
   | "six_month"
-  | "one_year";
+  | "one_year"
+  | "three_year";
 export type FilterBy = "supplier" | "plant";
 
 export interface RealtimeChartProps {
@@ -295,6 +296,17 @@ const data1TahunB: ChartItem[] = [
   { label: "Des", values: { pembangkit: 82, pemasok: 95 } },
 ];
 
+const data3TahunA: ChartItem[] = [
+  { label: "2021", values: { pembangkit: 50, pemasok: 65 } },
+  { label: "2022", values: { pembangkit: 60, pemasok: 75 } },
+  { label: "2023", values: { pembangkit: 70, pemasok: 85 } },
+];
+const data3TahunB: ChartItem[] = [
+  { label: "2021", values: { pembangkit: 50, pemasok: 65 } },
+  { label: "2022", values: { pembangkit: 60, pemasok: 75 } },
+  { label: "2023", values: { pembangkit: 70, pemasok: 85 } },
+];
+
 const DYNAMIC_COLORS = [
   "#f87171",
   "#fb923c",
@@ -471,6 +483,9 @@ export default function RealtimeChart({
           day: "2-digit",
           month: "short",
         });
+      }
+      if (chartFlowData.granularity === "year") {
+        return raw;
       }
       // month
       const d = new Date(raw + "-01");
@@ -1049,6 +1064,26 @@ export default function RealtimeChart({
                       }}
                     >
                       1Y
+                    </button>
+                    <button
+                      className={`text-[#115d72] ${
+                        period == "3Y"
+                          ? "bg-[#14a2bb92] w-[45px] rounded-md"
+                          : ""
+                      } cursor-pointer`}
+                      onClick={() => {
+                        setPeriod("3Y");
+                        if (onPeriodChange) {
+                          onPeriodChange("three_year");
+                        } else {
+                          if (pemasok?.includes("Pemasok A"))
+                            setFallbackChartData(data3TahunA);
+                          if (pemasok?.includes("Pemasok B"))
+                            setFallbackChartData(data3TahunB);
+                        }
+                      }}
+                    >
+                      3Y
                     </button>
                   </div>
                 </div>
