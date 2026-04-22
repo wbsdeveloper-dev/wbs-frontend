@@ -379,7 +379,9 @@ export async function getChartFlow(
     | "month"
     | "three_month"
     | "six_month"
-    | "one_year",
+    | "one_year"
+    | "three_year"
+    | "year",
   by: "supplier" | "plant",
   pemasokId?: string,
   pembangkitId?: string,
@@ -494,7 +496,9 @@ export function useChartFlow(
     | "month"
     | "three_month"
     | "six_month"
-    | "one_year",
+    | "one_year"
+    | "three_year"
+    | "year",
   by: "supplier" | "plant",
   pemasokId?: string,
   pembangkitId?: string,
