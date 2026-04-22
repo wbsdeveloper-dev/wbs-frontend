@@ -49,7 +49,7 @@ interface TemplateEditorProps {
 const FIELD_KEY_LABELS: Record<string, string> = {
   report_date: "Tanggal Laporan",
   site_name: "Nama Site / Pembangkit",
-  metric_type: "Tipe Metrik",
+  metric_type: "Jenis Metrik",
   period_value: "Nilai Periode",
   value: "Nilai Utama",
   unit: "Satuan",
@@ -81,7 +81,9 @@ const SOURCE_KIND_OPTIONS: {
     value: "WA_REGEX_RECORDS",
     label: "Multi-record Regex (JSON)",
     getLabel: (scope) =>
-      scope === "EMAIL_INGEST" ? "Multi-record Regex" : "Multi-record Regex (JSON)",
+      scope === "EMAIL_INGEST"
+        ? "Multi-record Regex"
+        : "Multi-record Regex (JSON)",
   },
   {
     value: "WA_FIXED",
@@ -96,7 +98,10 @@ const SOURCE_KIND_OPTIONS: {
 ];
 
 function generateId() {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+  if (
+    typeof crypto !== "undefined" &&
+    typeof crypto.randomUUID === "function"
+  ) {
     return crypto.randomUUID();
   }
   return Date.now().toString(36) + Math.random().toString(36).substring(2);
@@ -520,7 +525,9 @@ export default function TemplateEditor({
                 }
                 className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white cursor-pointer pr-10"
               >
-                <option value="RULE_BASED">Berdasarkan Aturan (Rule Based)</option>
+                <option value="RULE_BASED">
+                  Berdasarkan Aturan (Rule Based)
+                </option>
                 <option value="AI_ASSISTED">Bantuan AI (AI Assisted)</option>
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
@@ -1547,7 +1554,8 @@ export default function TemplateEditor({
                 Apakah Anda yakin ingin menghapus template ini?
               </p>
               <p className="text-sm text-red-600 mt-1">
-                Tindakan ini tidak dapat dibatalkan. Template yang sudah dihapus tidak dapat dipulihkan kembali.
+                Tindakan ini tidak dapat dibatalkan. Template yang sudah dihapus
+                tidak dapat dipulihkan kembali.
               </p>
             </div>
           </div>

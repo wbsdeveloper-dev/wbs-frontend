@@ -368,7 +368,7 @@ function GroupsSection({
             disabled={syncGroups.isPending}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-[#14a2bb] text-white rounded-lg hover:bg-[#118d9f] transition-all disabled:opacity-50"
           >
-            {syncGroups.isPending ? "Syncing..." : "Sync ke Backend"}
+            {syncGroups.isPending ? "Syncing..." : "Sinkronisasi Data"}
           </button>
         }
       />
@@ -472,8 +472,8 @@ function KeywordsSection({
   return (
     <Card>
       <CardHeader
-        title="Keywords"
-        description="Filter pesan berdasarkan keyword"
+        title="Kata Kunci"
+        description="Filter pesan berdasarkan kata kunci"
       />
 
       <div className="flex gap-2 mb-4">
@@ -484,7 +484,7 @@ function KeywordsSection({
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleAdd()}
-            placeholder="Tambahkan keyword baru"
+            placeholder="Tambahkan kata kunci baru"
             className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200"
           />
         </div>
@@ -560,12 +560,12 @@ function BotActivity({
   return (
     <Card>
       <CardHeader
-        title="Bot Activity"
+        title="Aktifitas Bot"
         action={
           <span className="text-xs text-gray-500">
             {status?.lastMessageTime
               ? `Last: ${new Date(status.lastMessageTime).toLocaleTimeString("id-ID")}`
-              : "No message sent yet"}
+              : "Belum ada pesan terkirim"}
           </span>
         }
       />
@@ -573,7 +573,7 @@ function BotActivity({
       <div className="space-y-4">
         <div>
           <div className="flex justify-between items-center mb-2">
-            <span className="text-sm text-gray-700">Outbox Queue</span>
+            <span className="text-sm text-gray-700">Antrian Pesan Keluar</span>
             <span className="text-sm font-semibold text-gray-900">{queue}</span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
@@ -586,7 +586,7 @@ function BotActivity({
 
         <div>
           <div className="flex justify-between items-center mb-2">
-            <span className="text-sm text-gray-700">Failed Deliveries</span>
+            <span className="text-sm text-gray-700">Gagal Terkirim</span>
             <span className="text-sm font-semibold text-gray-900">
               {failed}
             </span>
@@ -622,8 +622,8 @@ function DataCollectionSection({
   if (!connected) {
     return (
       <OfflinePlaceholder
-        title="Data Collection"
-        message="Koneksikan ke WhatsApp untuk konfigurasi data collection"
+        title="Pengumpulan Data"
+        message="Koneksikan ke WhatsApp untuk konfigurasi pengumpulan data"
       />
     );
   }
@@ -642,7 +642,7 @@ function DataCollectionSection({
   return (
     <Card className="grow">
       <CardHeader
-        title="Data Collection"
+        title="Pengumpulan Data"
         action={
           <span
             className={`inline-block px-2.5 py-0.5 text-xs font-medium rounded-full ${
@@ -698,7 +698,7 @@ function HumanizeSection({
   if (!connected) {
     return (
       <OfflinePlaceholder
-        title="Humanize Settings"
+        title=""
         message="Koneksikan ke WhatsApp untuk konfigurasi humanize"
       />
     );
@@ -747,7 +747,7 @@ function HumanizeSection({
         {/* Processing Delay */}
         <div>
           <label className="text-sm text-gray-700 mb-1 block">
-            Processing Delay ({config.minProcessingDelay}–
+            Delay Pemrosesan ({config.minProcessingDelay}–
             {config.maxProcessingDelay} ms)
           </label>
           <div className="flex gap-4 items-center">
@@ -787,7 +787,7 @@ function HumanizeSection({
         {/* Read Delay */}
         <div>
           <label className="text-sm text-gray-700 mb-1 block">
-            Read Delay ({config.minReadDelay}–{config.maxReadDelay} ms)
+            Delay Pembacaan ({config.minReadDelay}–{config.maxReadDelay} ms)
           </label>
           <div className="flex gap-4 items-center">
             <div className="flex-1">
@@ -925,7 +925,7 @@ const ManajemenBot: React.FC = () => {
   const handlePrimaryLogout = () =>
     setConfirmAction({
       type: "logout",
-      botLabel: "Primary Bot",
+      botLabel: "Bot Utama",
       action: () => {
         disconnectPrimary.mutate();
         setConfirmAction(null);
@@ -935,7 +935,7 @@ const ManajemenBot: React.FC = () => {
   const handleSecondaryLogout = () =>
     setConfirmAction({
       type: "logout",
-      botLabel: "Secondary Bot",
+      botLabel: "Bot Cadangan",
       action: () => {
         disconnectSecondary.mutate();
         setConfirmAction(null);
@@ -945,7 +945,7 @@ const ManajemenBot: React.FC = () => {
   const handleSwitchToPrimary = () =>
     setConfirmAction({
       type: "switch",
-      botLabel: "Primary Bot",
+      botLabel: "Bot Utama",
       action: () => {
         disconnectSecondary.mutate(undefined, {
           onSuccess: () => setShowPrimaryQR(true),
@@ -957,7 +957,7 @@ const ManajemenBot: React.FC = () => {
   const handleSwitchToSecondary = () =>
     setConfirmAction({
       type: "switch",
-      botLabel: "Secondary Bot",
+      botLabel: "Bot Cadangan",
       action: () => {
         disconnectPrimary.mutate(undefined, {
           onSuccess: () => setShowSecondaryQR(true),
@@ -1001,7 +1001,7 @@ const ManajemenBot: React.FC = () => {
       >
         <div>
           <BotStatusCard
-            title="Primary Bot"
+            title="Bot Utama"
             mode={primaryMode}
             isLoading={primaryLoading}
             lastMessageTime={primaryStatus?.lastMessageTime ?? null}
@@ -1019,7 +1019,7 @@ const ManajemenBot: React.FC = () => {
 
         <div>
           <BotStatusCard
-            title="Secondary Bot"
+            title="Bot Cadangan"
             mode={secondaryMode}
             isLoading={!primaryConnected && secondaryLoading}
             lastMessageTime={secondaryStatus?.lastMessageTime ?? null}

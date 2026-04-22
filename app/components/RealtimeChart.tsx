@@ -330,6 +330,13 @@ const CustomTooltip = ({
 }) => {
   if (!active || !payload || payload.length === 0) return null;
 
+  const totalVolume = payload.reduce((sum, item) => sum + Number(item.value || 0), 0);
+  const totalFlowrate = payload.reduce((sum, item) => {
+    const originalKey = item.dataKey?.replace("values.", "") || item.name;
+    const flowrate = item.payload?.flowrates?.[originalKey] || 0;
+    return sum + Number(flowrate);
+  }, 0);
+
   return (
     <div className="bg-white border border-gray-200 rounded-lg shadow-md p-3 text-sm text-gray-900 min-w-[300px] max-w-sm z-100">
       <p className="font-semibold mb-3 border-b border-gray-100 pb-2">
@@ -374,6 +381,32 @@ const CustomTooltip = ({
           );
         })}
       </ul>
+
+      {payload.length > 1 && (
+        <div className="border-t border-gray-100 pt-3 mt-3">
+          <div className="font-medium text-gray-800 mb-2">Total Keseluruhan</div>
+          <div className="grid grid-cols-2 text-xs gap-2">
+            <div className="flex flex-col bg-gray-100 rounded p-1.5 border border-gray-200">
+              <span className="text-gray-600 mb-0.5">Total Volume</span>
+              <span className="font-semibold text-gray-900 border-t border-gray-200 pt-0.5">
+                {totalVolume.toLocaleString("id-ID", {
+                  maximumFractionDigits: 2,
+                })}{" "}
+                {unit || "BBTUD"}
+              </span>
+            </div>
+            <div className="flex flex-col bg-[#14a2bb]/10 rounded p-1.5 border border-[#14a2bb]/20">
+              <span className="text-[#115d72]/80 mb-0.5">Total Flowrate</span>
+              <span className="font-semibold text-[#115d72] border-t border-[#14a2bb]/20 pt-0.5">
+                {totalFlowrate.toLocaleString("id-ID", {
+                  maximumFractionDigits: 2,
+                })}{" "}
+                MMSCFD
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

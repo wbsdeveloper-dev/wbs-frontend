@@ -200,8 +200,8 @@ export default function EditRecordPage() {
             <ReadOnlyField label="Tanggal Laporan" value={record.reportDate} />
             <ReadOnlyField label="Nama Pemasok" value={record.supplierName} />
             <ReadOnlyField label="Nama Pembangkit" value={record.siteName} />
-            <ReadOnlyField label="Tipe Metrik" value={record.metricType} />
-            <ReadOnlyField label="Tipe Periode" value={record.periodType} />
+            <ReadOnlyField label="Jenis Metrik" value={record.metricType} />
+            <ReadOnlyField label="Jenis Periode" value={record.periodType} />
             <ReadOnlyField label="Nilai Periode" value={record.periodValue} />
             <ReadOnlyField
               label="Dibuat Pada"
@@ -219,22 +219,22 @@ export default function EditRecordPage() {
           </div>
           <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             <NumberField
-              label="Niali Dari WA (BBTUD)"
+              label="Niali Dari WA"
               value={form.waValue}
               onChange={(v) => handleNumberChange("waValue", v)}
             />
             <NumberField
-              label="Nilai Dari Email (BBTUD)"
+              label="Nilai Dari Email"
               value={form.plnValue}
               onChange={(v) => handleNumberChange("plnValue", v)}
             />
             <NumberField
-              label="Nilai Dari Spreadsheet (BBTUD)"
+              label="Nilai Dari Spreadsheet"
               value={form.sheetValue}
               onChange={(v) => handleNumberChange("sheetValue", v)}
             />
             <NumberField
-              label="Nilai Final (BBTUD)"
+              label="Nilai Final"
               value={form.finalValue}
               onChange={(v) => handleNumberChange("finalValue", v)}
             />

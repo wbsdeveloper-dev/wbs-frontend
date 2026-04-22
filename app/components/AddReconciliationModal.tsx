@@ -154,7 +154,7 @@ export default function AddReconciliationModal({
           </div>
           <div className="col-span-2 sm:col-span-1">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Jenis Periode <span className="text-red-500">*</span>
+              Nilai Periode <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
