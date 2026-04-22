@@ -37,7 +37,8 @@ export type Granularity =
   | "month"
   | "three_month"
   | "six_month"
-  | "one_year";
+  | "one_year"
+  | "three_year";
 export type FilterBy = "supplier" | "plant";
 
 export interface RealtimeChartProps {
@@ -295,6 +296,17 @@ const data1TahunB: ChartItem[] = [
   { label: "Des", values: { pembangkit: 82, pemasok: 95 } },
 ];
 
+const data3TahunA: ChartItem[] = [
+  { label: "2021", values: { pembangkit: 50, pemasok: 65 } },
+  { label: "2022", values: { pembangkit: 60, pemasok: 75 } },
+  { label: "2023", values: { pembangkit: 70, pemasok: 85 } },
+];
+const data3TahunB: ChartItem[] = [
+  { label: "2021", values: { pembangkit: 50, pemasok: 65 } },
+  { label: "2022", values: { pembangkit: 60, pemasok: 75 } },
+  { label: "2023", values: { pembangkit: 70, pemasok: 85 } },
+];
+
 const DYNAMIC_COLORS = [
   "#f87171",
   "#fb923c",
@@ -317,6 +329,13 @@ const CustomTooltip = ({
   unit?: string;
 }) => {
   if (!active || !payload || payload.length === 0) return null;
+
+  const totalVolume = payload.reduce((sum, item) => sum + Number(item.value || 0), 0);
+  const totalFlowrate = payload.reduce((sum, item) => {
+    const originalKey = item.dataKey?.replace("values.", "") || item.name;
+    const flowrate = item.payload?.flowrates?.[originalKey] || 0;
+    return sum + Number(flowrate);
+  }, 0);
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg shadow-md p-3 text-sm text-gray-900 min-w-[300px] max-w-sm z-100">
@@ -362,6 +381,32 @@ const CustomTooltip = ({
           );
         })}
       </ul>
+
+      {payload.length > 1 && (
+        <div className="border-t border-gray-100 pt-3 mt-3">
+          <div className="font-medium text-gray-800 mb-2">Total Keseluruhan</div>
+          <div className="grid grid-cols-2 text-xs gap-2">
+            <div className="flex flex-col bg-gray-100 rounded p-1.5 border border-gray-200">
+              <span className="text-gray-600 mb-0.5">Total Volume</span>
+              <span className="font-semibold text-gray-900 border-t border-gray-200 pt-0.5">
+                {totalVolume.toLocaleString("id-ID", {
+                  maximumFractionDigits: 2,
+                })}{" "}
+                {unit || "BBTUD"}
+              </span>
+            </div>
+            <div className="flex flex-col bg-[#14a2bb]/10 rounded p-1.5 border border-[#14a2bb]/20">
+              <span className="text-[#115d72]/80 mb-0.5">Total Flowrate</span>
+              <span className="font-semibold text-[#115d72] border-t border-[#14a2bb]/20 pt-0.5">
+                {totalFlowrate.toLocaleString("id-ID", {
+                  maximumFractionDigits: 2,
+                })}{" "}
+                MMSCFD
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -471,6 +516,9 @@ export default function RealtimeChart({
           day: "2-digit",
           month: "short",
         });
+      }
+      if (chartFlowData.granularity === "year") {
+        return raw;
       }
       // month
       const d = new Date(raw + "-01");
@@ -1049,6 +1097,26 @@ export default function RealtimeChart({
                       }}
                     >
                       1Y
+                    </button>
+                    <button
+                      className={`text-[#115d72] ${
+                        period == "3Y"
+                          ? "bg-[#14a2bb92] w-[45px] rounded-md"
+                          : ""
+                      } cursor-pointer`}
+                      onClick={() => {
+                        setPeriod("3Y");
+                        if (onPeriodChange) {
+                          onPeriodChange("three_year");
+                        } else {
+                          if (pemasok?.includes("Pemasok A"))
+                            setFallbackChartData(data3TahunA);
+                          if (pemasok?.includes("Pemasok B"))
+                            setFallbackChartData(data3TahunB);
+                        }
+                      }}
+                    >
+                      3Y
                     </button>
                   </div>
                 </div>

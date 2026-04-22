@@ -180,13 +180,13 @@ const ActionButtons = ({
     >
       <Trash2 size={16} />
     </button>
-    <button
+    {/* <button
       onClick={() => console.log("Download", id)}
       className="p-1.5 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
       title="Download"
     >
       <Download size={16} />
-    </button>
+    </button> */}
   </div>
 );
 

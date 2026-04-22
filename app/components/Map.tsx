@@ -79,11 +79,11 @@ const buildIcons = (legend: MapLegend): Record<string, L.DivIcon> => {
 export default function Map() {
   // ---- API data -----------------------------------------------------------
   const { data, isLoading, isError, error } = useMapLocations();
-  
+
   const { hasPrivilege } = usePrivilege();
   const canReadSites = hasPrivilege("site_management", "READ");
   const { data: relations } = useRelations(true, {
-    enabled: canReadSites
+    enabled: canReadSites,
   }); // fetch active relations only if permitted
 
   // ---- UI state -----------------------------------------------------------
@@ -415,7 +415,7 @@ export default function Map() {
                       </div>
                       {connected.length > 0 && (
                         <div className="mt-2 pt-2 border-t border-gray-200">
-                          <p className="text-xs text-gray-500 mb-1">Koneksi:</p>
+                          <p className="text-xs text-gray-500 mb-1">Relasi:</p>
                           <ul className="text-xs text-gray-700 space-y-0.5">
                             {connected.map((c) => (
                               <li
