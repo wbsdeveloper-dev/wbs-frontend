@@ -11,13 +11,11 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import { useQueryClient } from "@tanstack/react-query";
 import {
   useSites,
   useRelations,
   useDeleteSite,
   useDeleteRelation,
-  siteKeys,
   type Site,
   type SiteRelation,
   type DeleteSiteResponse,
@@ -235,15 +233,11 @@ export function DaftarSiteTable({ onEdit, onDelete }: SiteTableProps) {
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [pendingDeleteName, setPendingDeleteName] = useState<string>("");
   const [warnedSites, setWarnedSites] = useState<string[]>([]);
-  const queryClient = useQueryClient();
 
   const { data: sites, isLoading } = useSites({ search: debouncedSearch });
   const deleteSiteMutation = useDeleteSite({
     onSuccess: (data: DeleteSiteResponse) => {
-      // Invalidate queries to refresh data
-      queryClient.invalidateQueries({ queryKey: siteKeys.sites() });
-      queryClient.invalidateQueries({ queryKey: siteKeys.dropdowns() });
-
+      // Note: broad siteKeys.all invalidation is handled by useDeleteSite hook itself
       if (data.warned_sites && data.warned_sites.length > 0) {
         setWarnedSites(data.warned_sites);
         setDeleteWarningOpen(true);
@@ -486,14 +480,11 @@ export function RelasiOperasionalTable({ onEdit, onDelete }: SiteTableProps) {
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [pendingDeleteName, setPendingDeleteName] = useState<string>("");
   const [warnedSites, setWarnedSites] = useState<string[]>([]);
-  const queryClient = useQueryClient();
 
   const { data: relations, isLoading } = useRelations(true);
   const deleteRelationMutation = useDeleteRelation({
     onSuccess: (data: DeleteRelationResponse) => {
-      // Invalidate queries to refresh data
-      queryClient.invalidateQueries({ queryKey: siteKeys.relations() });
-
+      // Note: broad invalidation is handled by useDeleteRelation hook itself
       if (data.warned_sites && data.warned_sites.length > 0) {
         setWarnedSites(data.warned_sites);
         setDeleteWarningOpen(true);

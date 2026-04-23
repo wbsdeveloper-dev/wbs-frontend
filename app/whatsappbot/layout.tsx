@@ -27,10 +27,10 @@ export default function RootLayout({
 }) {
   return (
     <div
-      className={`${redditSans.variable} ${geistMono.variable} antialiased flex h-screen bg-gray-50`}
+      className={`${redditSans.variable} ${geistMono.variable} antialiased flex h-screen bg-gray-50 overflow-x-hidden min-w-0`}
     >
       <Sidebar />
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-auto min-w-0">
         <Providers>{children}</Providers>
       </main>
     </div>

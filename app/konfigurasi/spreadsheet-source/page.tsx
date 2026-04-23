@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Plus,
   Pencil,
@@ -9,14 +9,17 @@ import {
   X,
   Loader2,
   FileSpreadsheet,
-  Clock,
   AlertCircle,
   ExternalLink,
   ToggleLeft,
   ToggleRight,
+  ChevronDown,
+  ChevronUp,
+  Layers,
 } from "lucide-react";
 import Card from "@/app/components/ui/Card";
 import { Modal } from "@/app/components/ui";
+import CronScheduleSelector, { getCronLabel } from "@/app/components/ui/CronScheduleSelector";
 import {
   useSpreadsheetSources,
   useCreateSpreadsheetSource,
@@ -52,6 +55,205 @@ const EMPTY_FORM: SourceFormData = {
   dataStartRow: 1,
 };
 
+// ─── Grouped card per spreadsheet ─────────────────────────────────────────
+
+interface SpreadsheetGroup {
+  spreadsheetId: string;
+  sheets: SpreadsheetSource[];
+}
+
+interface GroupedCardProps {
+  group: SpreadsheetGroup;
+  onEdit: (source: SpreadsheetSource) => void;
+  onToggle: (source: SpreadsheetSource) => void;
+  onDelete: (id: string) => void;
+  onAddSheet: (spreadsheetId: string) => void;
+  deleteConfirmId: string | null;
+  setDeleteConfirmId: (id: string | null) => void;
+}
+
+function GroupedSpreadsheetCard({
+  group,
+  onEdit,
+  onToggle,
+  onDelete,
+  onAddSheet,
+  deleteConfirmId,
+  setDeleteConfirmId,
+}: GroupedCardProps) {
+  const [isExpanded, setIsExpanded] = useState(true);
+  const { spreadsheetId, sheets } = group;
+  const activeCount = sheets.filter((s) => s.isEnabled).length;
+
+  return (
+    <Card className="hover:shadow-md transition-shadow duration-200">
+      {/* Group header */}
+      <div className="flex items-center justify-between gap-4 mb-3">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <div className="flex-shrink-0 w-9 h-9 bg-[#14a2bb]/10 rounded-lg flex items-center justify-center">
+            <Layers size={18} className="text-[#14a2bb]" />
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs text-gray-400">Spreadsheet ID</span>
+              <code className="text-xs text-gray-600 bg-gray-50 px-1.5 py-0.5 rounded font-mono truncate max-w-[220px]">
+                {spreadsheetId}
+              </code>
+              <a
+                href={buildSheetUrl(spreadsheetId)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#14a2bb] hover:text-[#115d72]"
+                title="Buka di Google Sheets"
+              >
+                <ExternalLink size={12} />
+              </a>
+            </div>
+            <p className="text-xs text-gray-500 mt-0.5">
+              {sheets.length} sheet &middot;{" "}
+              <span className="text-green-600 font-medium">
+                {activeCount} aktif
+              </span>
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={() => onAddSheet(spreadsheetId)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[#115d72] bg-[#115d72]/10 rounded-lg hover:bg-[#115d72]/20 transition-colors"
+            title="Tambah sheet baru ke spreadsheet ini"
+          >
+            <Plus size={13} />
+            Tambah Sheet
+          </button>
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors text-gray-500"
+            title={isExpanded ? "Sembunyikan" : "Tampilkan"}
+          >
+            {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </button>
+        </div>
+      </div>
+
+      {/* Sheet rows */}
+      {isExpanded && (
+        <div className="border-t border-gray-100 pt-3 space-y-2">
+          {sheets.map((source) => (
+            <div
+              key={source.id}
+              className="flex items-center gap-3 px-3 py-2.5 bg-gray-50/70 rounded-lg border border-gray-100 hover:bg-gray-100/60 transition-colors"
+            >
+              {/* Sheet info */}
+              <FileSpreadsheet
+                size={16}
+                className="text-[#14a2bb] shrink-0"
+              />
+              <div className="flex-1 min-w-0 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-0.5 text-xs">
+                {/* Name */}
+                <div className="sm:col-span-2 lg:col-span-1">
+                  <p className="font-semibold text-gray-900 truncate">
+                    {source.name}
+                  </p>
+                  <span
+                    className={`inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded-full mt-0.5 ${
+                      source.isEnabled
+                        ? "bg-green-100 text-green-700"
+                        : "bg-gray-100 text-gray-500"
+                    }`}
+                  >
+                    <span
+                      className={`w-1 h-1 rounded-full ${
+                        source.isEnabled ? "bg-green-500" : "bg-gray-400"
+                      }`}
+                    />
+                    {source.isEnabled ? "Aktif" : "Nonaktif"}
+                  </span>
+                </div>
+
+                {/* Sheet tab */}
+                <div>
+                  <span className="text-gray-400">Sheet</span>
+                  <p className="text-gray-700 font-medium truncate">
+                    {source.sheetName}
+                  </p>
+                </div>
+
+                {/* Cron */}
+                <div>
+                  <span className="text-gray-400">Jadwal</span>
+                  <p className="text-gray-700 truncate" title={source.cronSchedule || undefined}>
+                    {getCronLabel(source.cronSchedule)}
+                  </p>
+                </div>
+
+                {/* Start row */}
+                <div>
+                  <span className="text-gray-400">Mulai baris</span>
+                  <p className="text-gray-700 font-medium">
+                    {source.dataStartRow ?? 1}
+                  </p>
+                </div>
+              </div>
+
+              {/* Per-sheet actions */}
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  onClick={() => onToggle(source)}
+                  className="p-1.5 rounded-lg hover:bg-white transition-colors"
+                  title={source.isEnabled ? "Nonaktifkan" : "Aktifkan"}
+                >
+                  {source.isEnabled ? (
+                    <ToggleRight size={18} className="text-green-500" />
+                  ) : (
+                    <ToggleLeft size={18} className="text-gray-400" />
+                  )}
+                </button>
+                <button
+                  onClick={() => onEdit(source)}
+                  className="p-1.5 rounded-lg hover:bg-white transition-colors"
+                  title="Edit"
+                >
+                  <Pencil size={14} className="text-gray-500" />
+                </button>
+                {deleteConfirmId === source.id ? (
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => onDelete(source.id)}
+                      className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 transition-colors"
+                      title="Konfirmasi hapus"
+                    >
+                      <Check size={14} className="text-red-600" />
+                    </button>
+                    <button
+                      onClick={() => setDeleteConfirmId(null)}
+                      className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+                      title="Batal"
+                    >
+                      <X size={14} className="text-gray-500" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setDeleteConfirmId(source.id)}
+                    className="p-1.5 rounded-lg hover:bg-red-50 transition-colors"
+                    title="Hapus"
+                  >
+                    <Trash2 size={14} className="text-gray-400 hover:text-red-500" />
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </Card>
+  );
+}
+
+// ─── Main Page ────────────────────────────────────────────────────────────
+
 export default function SpreadsheetSourcePage() {
   const { data: sources = [], isLoading, isError } = useSpreadsheetSources();
   const createMutation = useCreateSpreadsheetSource();
@@ -61,25 +263,46 @@ export default function SpreadsheetSourcePage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSource, setEditingSource] = useState<SpreadsheetSource | null>(null);
   const [formData, setFormData] = useState<SourceFormData>(EMPTY_FORM);
+  const [lockedSpreadsheetId, setLockedSpreadsheetId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [notification, setNotification] = useState<{
     type: "success" | "error";
     message: string;
   } | null>(null);
 
+  // Group sources by spreadsheetId
+  const groups = useMemo<SpreadsheetGroup[]>(() => {
+    const map = new Map<string, SpreadsheetSource[]>();
+    for (const source of sources) {
+      const existing = map.get(source.spreadsheetId) ?? [];
+      map.set(source.spreadsheetId, [...existing, source]);
+    }
+    return Array.from(map.entries()).map(([spreadsheetId, sheets]) => ({
+      spreadsheetId,
+      sheets,
+    }));
+  }, [sources]);
+
   const showNotification = (type: "success" | "error", message: string) => {
     setNotification({ type, message });
     setTimeout(() => setNotification(null), 3000);
   };
 
-  const openCreateModal = () => {
+  const openCreateModal = (prefillSpreadsheetId?: string) => {
     setEditingSource(null);
-    setFormData(EMPTY_FORM);
+    setLockedSpreadsheetId(prefillSpreadsheetId ?? null);
+    setFormData({
+      ...EMPTY_FORM,
+      spreadsheetUrl: prefillSpreadsheetId
+        ? buildSheetUrl(prefillSpreadsheetId)
+        : "",
+    });
     setIsModalOpen(true);
   };
 
   const openEditModal = (source: SpreadsheetSource) => {
     setEditingSource(source);
+    setLockedSpreadsheetId(null);
     setFormData({
       name: source.name,
       spreadsheetUrl: buildSheetUrl(source.spreadsheetId),
@@ -103,7 +326,6 @@ export default function SpreadsheetSourcePage() {
     }
 
     if (editingSource) {
-      // Update
       const payload: UpdateSpreadsheetSourcePayload = {
         name: formData.name,
         spreadsheetId,
@@ -122,7 +344,6 @@ export default function SpreadsheetSourcePage() {
         },
       );
     } else {
-      // Create
       const payload: CreateSpreadsheetSourcePayload = {
         name: formData.name,
         spreadsheetId,
@@ -206,10 +427,10 @@ export default function SpreadsheetSourcePage() {
       <Card className="mb-6 animate-fadeIn" style={{ animationDelay: "100ms" }}>
         <div className="flex items-center justify-between">
           <p className="text-sm text-gray-500">
-            {sources.length} sumber data terdaftar
+            {sources.length} sumber data &middot; {groups.length} spreadsheet unik
           </p>
           <button
-            onClick={openCreateModal}
+            onClick={() => openCreateModal()}
             className="flex items-center gap-2 px-4 py-2.5 bg-[#115d72] text-white text-sm font-medium rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
           >
             <Plus size={18} />
@@ -218,7 +439,7 @@ export default function SpreadsheetSourcePage() {
         </div>
       </Card>
 
-      {/* Sources List */}
+      {/* Grouped Sources List */}
       <div className="space-y-4 animate-fadeIn" style={{ animationDelay: "200ms" }}>
         {isLoading ? (
           <Card className="flex items-center justify-center py-16">
@@ -234,7 +455,7 @@ export default function SpreadsheetSourcePage() {
               <p className="text-sm">Gagal memuat data</p>
             </div>
           </Card>
-        ) : sources.length === 0 ? (
+        ) : groups.length === 0 ? (
           <Card className="flex items-center justify-center py-16">
             <div className="text-center text-gray-500">
               <FileSpreadsheet className="w-12 h-12 mx-auto mb-3 opacity-40" />
@@ -243,118 +464,17 @@ export default function SpreadsheetSourcePage() {
             </div>
           </Card>
         ) : (
-          sources.map((source) => (
-            <Card key={source.id} className="hover:shadow-md transition-shadow duration-200">
-              <div className="flex items-start justify-between gap-4">
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-3 mb-2">
-                    <FileSpreadsheet size={20} className="text-[#14a2bb] shrink-0" />
-                    <h3 className="text-base font-semibold text-gray-900 truncate">
-                      {source.name}
-                    </h3>
-                    <span
-                      className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full ${
-                        source.isEnabled
-                          ? "bg-green-100 text-green-700"
-                          : "bg-gray-100 text-gray-500"
-                      }`}
-                    >
-                      <span
-                        className={`w-1.5 h-1.5 rounded-full ${
-                          source.isEnabled ? "bg-green-500" : "bg-gray-400"
-                        }`}
-                      />
-                      {source.isEnabled ? "Aktif" : "Nonaktif"}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
-                    <div>
-                      <span className="text-gray-400 text-xs">Spreadsheet ID</span>
-                      <div className="flex items-center gap-1 mt-0.5">
-                        <code className="text-xs text-gray-600 bg-gray-50 px-1.5 py-0.5 rounded font-mono truncate max-w-[180px]">
-                          {source.spreadsheetId}
-                        </code>
-                        <a
-                          href={buildSheetUrl(source.spreadsheetId)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-[#14a2bb] hover:text-[#115d72]"
-                        >
-                          <ExternalLink size={12} />
-                        </a>
-                      </div>
-                    </div>
-                    <div>
-                      <span className="text-gray-400 text-xs">Sheet</span>
-                      <p className="text-gray-700 font-medium mt-0.5">{source.sheetName}</p>
-                    </div>
-                    <div>
-                      <span className="text-gray-400 text-xs">Cron Schedule</span>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <Clock size={12} className="text-gray-400" />
-                        <code className="text-xs text-gray-600 bg-gray-50 px-1.5 py-0.5 rounded font-mono">
-                          {source.cronSchedule || "—"}
-                        </code>
-                      </div>
-                    </div>
-                    <div>
-                      <span className="text-gray-400 text-xs">Data Start Row</span>
-                      <p className="text-gray-700 font-medium mt-0.5">Row {source.dataStartRow || 1}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <button
-                    onClick={() => handleToggleEnabled(source)}
-                    className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-                    title={source.isEnabled ? "Nonaktifkan" : "Aktifkan"}
-                  >
-                    {source.isEnabled ? (
-                      <ToggleRight size={20} className="text-green-500" />
-                    ) : (
-                      <ToggleLeft size={20} className="text-gray-400" />
-                    )}
-                  </button>
-                  <button
-                    onClick={() => openEditModal(source)}
-                    className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-                    title="Edit"
-                  >
-                    <Pencil size={16} className="text-gray-500" />
-                  </button>
-                  {deleteConfirmId === source.id ? (
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => handleDelete(source.id)}
-                        className="p-2 rounded-lg bg-red-50 hover:bg-red-100 transition-colors"
-                        title="Konfirmasi hapus"
-                      >
-                        <Check size={16} className="text-red-600" />
-                      </button>
-                      <button
-                        onClick={() => setDeleteConfirmId(null)}
-                        className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-                        title="Batal"
-                      >
-                        <X size={16} className="text-gray-500" />
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setDeleteConfirmId(source.id)}
-                      className="p-2 rounded-lg hover:bg-red-50 transition-colors"
-                      title="Hapus"
-                    >
-                      <Trash2 size={16} className="text-gray-400 hover:text-red-500" />
-                    </button>
-                  )}
-                </div>
-              </div>
-            </Card>
+          groups.map((group) => (
+            <GroupedSpreadsheetCard
+              key={group.spreadsheetId}
+              group={group}
+              onEdit={openEditModal}
+              onToggle={handleToggleEnabled}
+              onDelete={handleDelete}
+              onAddSheet={(id) => openCreateModal(id)}
+              deleteConfirmId={deleteConfirmId}
+              setDeleteConfirmId={setDeleteConfirmId}
+            />
           ))
         )}
       </div>
@@ -376,19 +496,30 @@ export default function SpreadsheetSourcePage() {
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent"
-              placeholder="Contoh: SERAPAN GAS 2026"
+              placeholder="Contoh: SERAPAN GAS 2026 JANUARI"
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
               Google Sheets URL <span className="text-red-500">*</span>
+              {lockedSpreadsheetId && (
+                <span className="ml-2 text-xs text-[#14a2bb] font-normal">
+                  (dikunci — sheet baru untuk spreadsheet yang sama)
+                </span>
+              )}
             </label>
             <input
               type="url"
               value={formData.spreadsheetUrl}
-              onChange={(e) => setFormData({ ...formData, spreadsheetUrl: e.target.value })}
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent"
+              onChange={(e) =>
+                !lockedSpreadsheetId &&
+                setFormData({ ...formData, spreadsheetUrl: e.target.value })
+              }
+              readOnly={!!lockedSpreadsheetId}
+              className={`w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent ${
+                lockedSpreadsheetId ? "bg-gray-50 cursor-not-allowed opacity-70" : ""
+              }`}
               placeholder="https://docs.google.com/spreadsheets/d/.../edit"
             />
             {formData.spreadsheetUrl && (
@@ -411,7 +542,7 @@ export default function SpreadsheetSourcePage() {
                 value={formData.sheetName}
                 onChange={(e) => setFormData({ ...formData, sheetName: e.target.value })}
                 className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent"
-                placeholder='Contoh: 4 (bulan April)'
+                placeholder="Contoh: Januari atau 1"
               />
             </div>
             <div>
@@ -431,21 +562,10 @@ export default function SpreadsheetSourcePage() {
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Cron Schedule
-            </label>
-            <input
-              type="text"
-              value={formData.cronSchedule}
-              onChange={(e) => setFormData({ ...formData, cronSchedule: e.target.value })}
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent font-mono"
-              placeholder="0 11,23 * * *"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Contoh: <code className="bg-gray-50 px-1 rounded">0 11,23 * * *</code> = setiap hari jam 11:00 dan 23:00
-            </p>
-          </div>
+          <CronScheduleSelector
+            value={formData.cronSchedule}
+            onChange={(v) => setFormData({ ...formData, cronSchedule: v })}
+          />
 
           <div className="flex gap-3 pt-4 border-t border-gray-200">
             <button
