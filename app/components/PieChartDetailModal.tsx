@@ -48,11 +48,14 @@ export default function PieChartDetailModal({
   /** Format YYYY-MM-DD → human-readable Indonesian date */
   const formattedDate = (() => {
     try {
-      const start = new Date(startDate + "T00:00:00").toLocaleDateString("id-ID", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      });
+      const start = new Date(startDate + "T00:00:00").toLocaleDateString(
+        "id-ID",
+        {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+        },
+      );
       const end = new Date(endDate + "T00:00:00").toLocaleDateString("id-ID", {
         day: "numeric",
         month: "short",
@@ -189,7 +192,7 @@ export default function PieChartDetailModal({
                   </div>
                   <div className="flex items-center gap-3 text-sm md:text-base">
                     <span className="text-gray-500">({pct}%)</span>
-                    <span className="font-semibold">{item.value} MMBTU</span>
+                    <span className="font-semibold">{item.value} BBTU</span>
                   </div>
                 </div>
               );

@@ -131,7 +131,7 @@ export interface ChartFlowPeriodSummary {
 
 export interface ChartFlowResponse {
   period: { start: string; end: string };
-  granularity: "hour" | "day" | "month";
+  granularity: "hour" | "day" | "month" | "year";
   by: "supplier" | "plant";
   unit: string;
   series: ChartFlowSeries[];
@@ -379,7 +379,9 @@ export async function getChartFlow(
     | "month"
     | "three_month"
     | "six_month"
-    | "one_year",
+    | "one_year"
+    | "three_year"
+    | "year",
   by: "supplier" | "plant",
   pemasokId?: string,
   pembangkitId?: string,
@@ -494,7 +496,9 @@ export function useChartFlow(
     | "month"
     | "three_month"
     | "six_month"
-    | "one_year",
+    | "one_year"
+    | "three_year"
+    | "year",
   by: "supplier" | "plant",
   pemasokId?: string,
   pembangkitId?: string,

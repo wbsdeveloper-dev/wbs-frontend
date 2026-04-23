@@ -98,7 +98,7 @@ export default function AddReconciliationModal({
               <option value="">Pilih Site</option>
               {filtersData?.pembangkit?.map((p) => (
                 <option key={p.id} value={p.id}>
-                  {p.id} - {p.name}
+                  {p.name}
                 </option>
               ))}
             </select>
@@ -154,7 +154,7 @@ export default function AddReconciliationModal({
           </div>
           <div className="col-span-2 sm:col-span-1">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Jenis Periode <span className="text-red-500">*</span>
+              Nilai Periode <span className="text-red-500">*</span>
             </label>
             <input
               type="text"

@@ -71,7 +71,7 @@ export function OutboxLogger({
     try {
       const payload = JSON.parse(payloadStr);
       const targetId = payload.group_id || payload.sender_id;
-      
+
       if (!targetId) return "Unknown";
 
       // Try to find group name mapping
@@ -104,7 +104,7 @@ export function OutboxLogger({
   return (
     <Card className="mt-8 overflow-hidden flex flex-col">
       <CardHeader
-        title="Outbox Logger"
+        title="Antrian Pesan Keluar"
         description="Pantau antrian pesan dan status pengiriman bot"
         action={
           <div className="flex items-center gap-4">
@@ -142,7 +142,7 @@ export function OutboxLogger({
               <th className="px-4 py-3">ID Group/Kontak</th>
               <th className="px-4 py-3 w-1/3 min-w-[200px]">Isi Pesan</th>
               <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3 text-center">Attempts</th>
+              <th className="px-4 py-3 text-center">Percobaan</th>
               <th className="px-4 py-3">Detail Error</th>
             </tr>
           </thead>
