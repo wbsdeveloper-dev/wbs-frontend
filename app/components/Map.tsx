@@ -130,66 +130,98 @@ export default function Map() {
     return buildIcons(data.legend);
   }, [data?.legend]);
 
+  // ---- Relational Filtering Helpers ---------------------------------------
+  const getConnectedSet = useCallback((siteName: string, siteType: string) => {
+    if (!data?.sites || !relations) return null;
+    const site = data.sites.find(s => s.siteType === siteType && s.name === siteName);
+    if (!site) return null;
+    
+    const connected = new Set<string>();
+    connected.add(site.id);
+    relations.forEach(rel => {
+        if (rel.source_site_id === site.id) connected.add(rel.target_site_id);
+        if (rel.target_site_id === site.id) connected.add(rel.source_site_id);
+    });
+    return connected;
+  }, [data?.sites, relations]);
+
+  const intersect = useCallback((sets: (Set<string> | null)[]) => {
+      const activeSets = sets.filter((s): s is Set<string> => s !== null);
+      if (activeSets.length === 0) return null;
+      let result = new Set(activeSets[0]);
+      for (let i = 1; i < activeSets.length; i++) {
+          result = new Set([...result].filter(x => activeSets[i].has(x)));
+      }
+      return result;
+  }, []);
+
+  const pemasokSet = useMemo(() => selectedPemasok ? getConnectedSet(selectedPemasok, "PEMASOK") : null, [selectedPemasok, getConnectedSet]);
+  const pembangkitSet = useMemo(() => selectedPembangkit ? getConnectedSet(selectedPembangkit, "PEMBANGKIT") : null, [selectedPembangkit, getConnectedSet]);
+  
+  const regionSet = useMemo(() => {
+      if (!selectedRegion || !data?.sites) return null;
+      const regionSites = data.sites.filter(s => s.region === selectedRegion);
+      const rSet = new Set<string>();
+      regionSites.forEach(s => {
+          rSet.add(s.id);
+          if (relations) {
+              relations.forEach(rel => {
+                  if (rel.source_site_id === s.id) rSet.add(rel.target_site_id);
+                  if (rel.target_site_id === s.id) rSet.add(rel.source_site_id);
+              });
+          }
+      });
+      return rSet;
+  }, [selectedRegion, data?.sites, relations]);
+
   // Unique region list for filter dropdown
   const regionOptions = useMemo(() => {
-    if (!data?.sites) return [];
-    return Array.from(new Set(data.sites.map((s) => s.region)))
-      .filter(Boolean)
-      .sort();
-  }, [data?.sites]);
+      if (!data?.sites) return [];
+      const validIds = intersect([pemasokSet, pembangkitSet]);
+      
+      let validSites = data.sites;
+      if (validIds) {
+          validSites = validSites.filter(s => validIds.has(s.id));
+      }
+      return Array.from(new Set(validSites.map(s => s.region))).filter(Boolean).sort();
+  }, [data?.sites, pemasokSet, pembangkitSet, intersect]);
 
   // Names for autocomplete filters
   const pemasokNames = useMemo(() => {
-    if (!data?.sites) return [];
-    return data.sites
-      .filter((s) => s.siteType === "PEMASOK")
-      .map((s) => s.name)
-      .sort();
-  }, [data?.sites]);
+      if (!data?.sites) return [];
+      const validIds = intersect([regionSet, pembangkitSet]);
+      
+      let validSites = data.sites.filter(s => s.siteType === "PEMASOK");
+      if (validIds) {
+          validSites = validSites.filter(s => validIds.has(s.id));
+      }
+      return validSites.map(s => s.name).sort();
+  }, [data?.sites, regionSet, pembangkitSet, intersect]);
 
   const pembangkitNames = useMemo(() => {
-    if (!data?.sites) return [];
-
-    // If a pemasok is selected and we have relations, filter pembangkits
-    if (selectedPemasok && relations) {
-      // Find the selected pemasok site to get its ID
-      const pemasokSite = data.sites.find(
-        (s) => s.siteType === "PEMASOK" && s.name === selectedPemasok,
-      );
-
-      if (pemasokSite) {
-        // Get all site IDs connected to this pemasok via relations
-        const connectedSiteIds = new Set(
-          relations
-            .filter(
-              (rel) =>
-                rel.source_site_id === pemasokSite.id ||
-                rel.target_site_id === pemasokSite.id,
-            )
-            .map((rel) =>
-              rel.source_site_id === pemasokSite.id
-                ? rel.target_site_id
-                : rel.source_site_id,
-            ),
-        );
-
-        return data.sites
-          .filter(
-            (s) => s.siteType === "PEMBANGKIT" && connectedSiteIds.has(s.id),
-          )
-          .map((s) => s.name)
-          .sort();
+      if (!data?.sites) return [];
+      const validIds = intersect([regionSet, pemasokSet]);
+      
+      let validSites = data.sites.filter(s => s.siteType === "PEMBANGKIT");
+      if (validIds) {
+          validSites = validSites.filter(s => validIds.has(s.id));
       }
+      return validSites.map(s => s.name).sort();
+  }, [data?.sites, regionSet, pemasokSet, intersect]);
+
+  // Reset pembangkit when current selection is no longer valid
+  useEffect(() => {
+    if (selectedRegion && !regionOptions.includes(selectedRegion)) {
+      setSelectedRegion(null);
     }
+  }, [regionOptions, selectedRegion]);
 
-    // No pemasok selected — show all pembangkits
-    return data.sites
-      .filter((s) => s.siteType === "PEMBANGKIT")
-      .map((s) => s.name)
-      .sort();
-  }, [data?.sites, selectedPemasok, relations]);
+  useEffect(() => {
+    if (selectedPemasok && !pemasokNames.includes(selectedPemasok)) {
+      setSelectedPemasok(null);
+    }
+  }, [pemasokNames, selectedPemasok]);
 
-  // Reset pembangkit when pemasok changes and current selection is no longer valid
   useEffect(() => {
     if (selectedPembangkit && !pembangkitNames.includes(selectedPembangkit)) {
       setSelectedPembangkit(null);
@@ -199,25 +231,13 @@ export default function Map() {
   // Filtered sites
   const filteredSites = useMemo(() => {
     if (!data?.sites) return [];
+    const validIds = intersect([regionSet, pemasokSet, pembangkitSet]);
+
     return data.sites.filter((site) => {
       if (!visibleSiteTypes[site.siteType]) return false;
-      if (selectedRegion && site.region !== selectedRegion) return false;
-      if (
-        selectedPemasok &&
-        site.siteType === "PEMASOK" &&
-        site.name !== selectedPemasok
-      )
-        return false;
-      if (
-        selectedPembangkit &&
-        site.siteType === "PEMBANGKIT" &&
-        site.name !== selectedPembangkit
-      )
-        return false;
-      // When a specific pemasok is selected, hide non-matching PEMASOK sites
-      if (selectedPemasok && site.siteType !== "PEMASOK") {
-        // Keep pembangkits that are connected through pipes
-      }
+      
+      if (validIds && !validIds.has(site.id)) return false;
+
       // Kepemilikan filter – hide PEMBANGKIT sites whose owner is unchecked
       if (site.siteType === "PEMBANGKIT" && site.owner) {
         if (!selectedOwners.has(site.owner)) return false;
@@ -227,10 +247,11 @@ export default function Map() {
   }, [
     data?.sites,
     visibleSiteTypes,
-    selectedRegion,
-    selectedPemasok,
-    selectedPembangkit,
     selectedOwners,
+    regionSet,
+    pemasokSet,
+    pembangkitSet,
+    intersect
   ]);
 
   // Filtered pipes – show only if both source and target are visible

@@ -685,6 +685,13 @@ export async function previewContractDocument(contractId: string, documentId: st
     }, 1000 * 60);
 }
 
+export function deleteContractDocument(contractId: string, documentId: string) {
+    return contractFetch<{ deleted: boolean }>(
+        `/contracts/${contractId}/documents/${documentId}`,
+        { method: "DELETE" },
+    );
+}
+
 // ---------------------------------------------------------------------------
 // React Query hooks — Contract Parties
 // ---------------------------------------------------------------------------
@@ -831,6 +838,31 @@ export function useDeleteContract(
     const qc = useQueryClient();
     return useMutation({
         mutationFn: (id: string) => deleteContract(id),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: contractKeys.all });
+        },
+        ...options,
+    });
+}
+
+export function useDeleteContractDocument(
+    options?: Partial<
+        UseMutationOptions<
+            { deleted: boolean },
+            Error,
+            { contractId: string; documentId: string }
+        >
+    >,
+) {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: ({
+            contractId,
+            documentId,
+        }: {
+            contractId: string;
+            documentId: string;
+        }) => deleteContractDocument(contractId, documentId),
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: contractKeys.all });
         },
