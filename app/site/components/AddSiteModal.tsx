@@ -141,7 +141,11 @@ export function AddSiteModal({
   const handleSiteTypeChange = (
     siteType: "PEMBANGKIT" | "PEMASOK" | "TRANSPORTIR",
   ) => {
-    setFormData({ ...formData, site_type: siteType });
+    setFormData({
+      ...formData,
+      site_type: siteType,
+      conversion_factor: siteType === "PEMASOK" ? formData.conversion_factor : undefined,
+    });
     setSelectedPlant(null);
     setSelectedSupplier(null);
     setPlantSearch("");
@@ -235,11 +239,10 @@ export function AddSiteModal({
                 setFormData({ ...formData, name: e.target.value })
               }
               placeholder="Masukkan nama site"
-              className={`w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200 ${
-                errors.name
-                  ? "border-red-300 focus:ring-red-500"
-                  : "border-gray-300"
-              }`}
+              className={`w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200 ${errors.name
+                ? "border-red-300 focus:ring-red-500"
+                : "border-gray-300"
+                }`}
             />
             {errors.name && (
               <p className="text-xs text-red-600 mt-1">{errors.name}</p>
@@ -260,11 +263,10 @@ export function AddSiteModal({
                   setFormData({ ...formData, region: e.target.value })
                 }
                 placeholder="Masukkan region"
-                className={`w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200 ${
-                  errors.region
-                    ? "border-red-300 focus:ring-red-500"
-                    : "border-gray-300"
-                }`}
+                className={`w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200 ${errors.region
+                  ? "border-red-300 focus:ring-red-500"
+                  : "border-gray-300"
+                  }`}
               />
               {errors.region && (
                 <p className="text-xs text-red-600 mt-1">{errors.region}</p>
@@ -272,7 +274,7 @@ export function AddSiteModal({
             </div>
           )}
 
-          {formData.site_type != "TRANSPORTIR" && (
+          {formData.site_type != "TRANSPORTIR" && formData.site_type != "PEMASOK" && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Kapasitas (MW)
@@ -289,11 +291,10 @@ export function AddSiteModal({
                   })
                 }
                 placeholder="Masukkan kapasitas"
-                className={`w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200 ${
-                  errors.capacity
-                    ? "border-red-300 focus:ring-red-500"
-                    : "border-gray-300"
-                }`}
+                className={`w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200 ${errors.capacity
+                  ? "border-red-300 focus:ring-red-500"
+                  : "border-gray-300"
+                  }`}
               />
               {errors.capacity && (
                 <p className="text-xs text-red-600 mt-1">{errors.capacity}</p>
@@ -357,9 +358,13 @@ export function AddSiteModal({
                     : undefined,
                 })
               }
+              disabled={formData.site_type !== "PEMASOK"}
               step="any"
               placeholder="1000"
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200"
+              className={`w-full px-4 py-2.5 border rounded-lg text-sm transition-all duration-200 ${formData.site_type !== "PEMASOK"
+                ? "bg-gray-50 border-gray-200 text-gray-400 cursor-not-allowed"
+                : "bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent"
+                }`}
             />
             <p className="text-xs text-gray-500 mt-1">
               Opsional: Faktor konversi untuk satuan

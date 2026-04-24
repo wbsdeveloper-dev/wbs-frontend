@@ -204,7 +204,7 @@ function mapContractToRow(
         awalPerjanjian: formatDate(contract.awal_perjanjian),
         tanggalEfektif: formatDate(contract.tanggal_efektif),
         akhirPerjanjian: formatDate(contract.akhir_perjanjian),
-        hargaPJBG: contract.price_value != null ? String(contract.price_value) : "",
+        hargaPJBG: contract.price_value || "",
         hgbt: contract.hgbt_value != null ? String(contract.hgbt_value) : "",
         TJK: contract.tjk_bbtud != null ? String(contract.tjk_bbtud) : "",
         volumeJPMH: contract.volume_jpmh_bbtud != null
@@ -1142,7 +1142,7 @@ export default function ContractTable() {
                     if (row._mmscfd_TJK)
                         createPayload.tjk_mmscfd = parseFloat(String(row._mmscfd_TJK));
                     if (row.hargaPJBG)
-                        createPayload.price_value = parseFloat(row.hargaPJBG);
+                        createPayload.price_value = row.hargaPJBG;
                     if (row.hgbt)
                         createPayload.hgbt_value = parseFloat(row.hgbt);
 
@@ -1170,7 +1170,7 @@ export default function ContractTable() {
                     if (row.akhirPerjanjian !== formatDate(original.akhir_perjanjian))
                         payload.akhir_perjanjian = toISODate(row.akhirPerjanjian) || null;
 
-                    const newPrice = row.hargaPJBG ? parseFloat(row.hargaPJBG) : null;
+                    const newPrice = row.hargaPJBG || null;
                     if (newPrice !== original.price_value)
                         payload.price_value = newPrice;
 
