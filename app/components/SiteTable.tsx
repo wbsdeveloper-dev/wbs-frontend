@@ -23,6 +23,7 @@ import {
   type DeleteSiteResponse,
   type DeleteRelationResponse,
 } from "@/hooks/service/site-api";
+import { usePrivilege } from "@/hooks/usePrivilege";
 
 // Status badge component
 const StatusBadge = ({
@@ -53,24 +54,34 @@ const ActionButtons = ({
   id: string;
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
-}) => (
-  <div className="flex items-center justify-center gap-1">
-    <button
-      onClick={() => onEdit(id)}
-      className="p-1.5 text-[#115d72] hover:bg-[#115d72]/10 rounded-lg transition-colors"
-      title="Edit"
-    >
-      <Pencil size={16} />
-    </button>
-    <button
-      onClick={() => onDelete(id)}
-      className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-      title="Hapus"
-    >
-      <Trash2 size={16} />
-    </button>
-  </div>
-);
+}) => {
+  const { hasPrivilege } = usePrivilege();
+  const canUpdate = hasPrivilege("site_management", "UPDATE");
+  const canDelete = hasPrivilege("site_management", "DELETE");
+
+  return (
+    <div className="flex items-center justify-center gap-1">
+      {canUpdate && (
+        <button
+          onClick={() => onEdit(id)}
+          className="p-1.5 text-[#115d72] hover:bg-[#115d72]/10 rounded-lg transition-colors"
+          title="Edit"
+        >
+          <Pencil size={16} />
+        </button>
+      )}
+      {canDelete && (
+        <button
+          onClick={() => onDelete(id)}
+          className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+          title="Hapus"
+        >
+          <Trash2 size={16} />
+        </button>
+      )}
+    </div>
+  );
+};
 
 // Delete Confirmation Modal
 interface DeleteConfirmModalProps {

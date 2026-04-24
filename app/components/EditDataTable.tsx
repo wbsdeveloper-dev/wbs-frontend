@@ -24,6 +24,7 @@ import type {
   MonitoringParams,
 } from "@/hooks/service/monitoring-api";
 import { useDeleteMonitoringRecord } from "@/hooks/service/monitoring-api";
+import { usePrivilege } from "@/hooks/usePrivilege";
 
 // ---------------------------------------------------------------------------
 // Props
@@ -160,33 +161,34 @@ const ActionButtons = ({
   id,
   onEdit,
   onDelete,
+  canUpdate,
+  canDelete,
 }: {
   id: string;
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
+  canUpdate: boolean;
+  canDelete: boolean;
 }) => (
   <div className="flex items-center justify-center gap-1">
-    <button
-      onClick={() => onEdit(id)}
-      className="p-1.5 text-[#115d72] hover:bg-[#115d72]/10 rounded-lg transition-colors"
-      title="Edit"
-    >
-      <Pencil size={16} />
-    </button>
-    <button
-      onClick={() => onDelete(id)}
-      className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-      title="Hapus"
-    >
-      <Trash2 size={16} />
-    </button>
-    {/* <button
-      onClick={() => console.log("Download", id)}
-      className="p-1.5 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
-      title="Download"
-    >
-      <Download size={16} />
-    </button> */}
+    {canUpdate && (
+      <button
+        onClick={() => onEdit(id)}
+        className="p-1.5 text-[#115d72] hover:bg-[#115d72]/10 rounded-lg transition-colors"
+        title="Edit"
+      >
+        <Pencil size={16} />
+      </button>
+    )}
+    {canDelete && (
+      <button
+        onClick={() => onDelete(id)}
+        className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+        title="Hapus"
+      >
+        <Trash2 size={16} />
+      </button>
+    )}
   </div>
 );
 
@@ -203,6 +205,10 @@ export default function EditDataTable({
   onFilterChange,
 }: EditDataTableProps) {
   const router = useRouter();
+  const { hasPrivilege } = usePrivilege();
+  const canUpdate = hasPrivilege("data_management", "UPDATE");
+  const canDelete = hasPrivilege("data_management", "DELETE");
+  const hasAction = canUpdate || canDelete;
 
   // Server-side pagination mapping
   const totalItems = pagination.total || 0;
@@ -618,16 +624,18 @@ export default function EditDataTable({
                 <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   ID
                 </th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Aksi
-                </th>
+                {hasAction && (
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Aksi
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {isLoading ? (
                 <tr>
                   <td
-                    colSpan={13}
+                    colSpan={hasAction ? 14 : 13}
                     className="px-4 py-8 text-center text-gray-500"
                   >
                     <div className="flex items-center justify-center gap-2">
@@ -642,7 +650,7 @@ export default function EditDataTable({
               ) : records.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={14}
+                    colSpan={hasAction ? 14 : 13}
                     className="px-4 py-8 text-center text-gray-500"
                   >
                     Tidak ada data monitoring
@@ -693,18 +701,22 @@ export default function EditDataTable({
                     <td className="px-4 py-3 text-center text-gray-900 font-medium">
                       {record.id}
                     </td>
-                    <td className="px-4 py-3 text-center">
-                      <ActionButtons
-                        id={record.id}
-                        onEdit={(id) => router.push(`/edit/${id}`)}
-                        onDelete={(id) =>
-                          handleDeleteClick(
-                            id,
-                            `${record.siteName} - ${record.reportDate}`,
-                          )
-                        }
-                      />
-                    </td>
+                    {hasAction && (
+                      <td className="px-4 py-3 text-center">
+                        <ActionButtons
+                          id={record.id}
+                          onEdit={(id) => router.push(`/edit/${id}`)}
+                          onDelete={(id) =>
+                            handleDeleteClick(
+                              id,
+                              `${record.siteName} - ${record.reportDate}`,
+                            )
+                          }
+                          canUpdate={canUpdate}
+                          canDelete={canDelete}
+                        />
+                      </td>
+                    )}
                   </tr>
                 ))
               )}

@@ -4,11 +4,16 @@ import { useState } from "react";
 import { useRoles, type Role } from "@/hooks/service/user-api";
 import { Loader2, Plus, Settings2, Trash2 } from "lucide-react";
 import { RolePrivilegeModal } from "./RolePrivilegeModal";
+import { usePrivilege } from "@/hooks/usePrivilege";
 
 export function RoleTable() {
   const { data: roles, isLoading } = useRoles();
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+
+  const { hasPrivilege } = usePrivilege();
+  const canUpdate = hasPrivilege("users", "UPDATE");
+  const canDelete = hasPrivilege("users", "DELETE");
 
   const handleEditPrivileges = (role: Role) => {
     setSelectedRole(role);
@@ -96,19 +101,23 @@ export function RoleTable() {
                     </td>
                     <td className="px-4 py-3 text-center">
                       <div className="flex items-center justify-center gap-1">
-                        <button
-                          onClick={() => handleEditPrivileges(role)}
-                          className="p-1.5 text-[#115d72] hover:bg-[#115d72]/10 rounded-lg transition-colors"
-                          title="Atur Hak Akses"
-                        >
-                          <Settings2 size={16} />
-                        </button>
-                        <button
-                          className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                          title="Hapus"
-                        >
-                          <Trash2 size={16} />
-                        </button>
+                        {canUpdate && (
+                          <button
+                            onClick={() => handleEditPrivileges(role)}
+                            className="p-1.5 text-[#115d72] hover:bg-[#115d72]/10 rounded-lg transition-colors"
+                            title="Atur Hak Akses"
+                          >
+                            <Settings2 size={16} />
+                          </button>
+                        )}
+                        {canDelete && (
+                          <button
+                            className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Hapus"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

@@ -26,6 +26,7 @@ import {
   type CreateSpreadsheetSourcePayload,
   type UpdateSpreadsheetSourcePayload,
 } from "@/hooks/service/config-api";
+import { usePrivilege } from "@/hooks/usePrivilege";
 
 function extractSpreadsheetId(url: string): string | null {
   const match = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
@@ -53,6 +54,11 @@ const EMPTY_FORM: SourceFormData = {
 };
 
 export default function SpreadsheetSourcePage() {
+  const { hasPrivilege } = usePrivilege();
+  const canCreate = hasPrivilege("spreadsheet_source", "CREATE");
+  const canUpdate = hasPrivilege("spreadsheet_source", "UPDATE");
+  const canDelete = hasPrivilege("spreadsheet_source", "DELETE");
+
   const { data: sources = [], isLoading, isError } = useSpreadsheetSources();
   const createMutation = useCreateSpreadsheetSource();
   const updateMutation = useUpdateSpreadsheetSource();
@@ -208,13 +214,15 @@ export default function SpreadsheetSourcePage() {
           <p className="text-sm text-gray-500">
             {sources.length} sumber data terdaftar
           </p>
-          <button
-            onClick={openCreateModal}
-            className="flex items-center gap-2 px-4 py-2.5 bg-[#115d72] text-white text-sm font-medium rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
-          >
-            <Plus size={18} />
-            Tambah Source
-          </button>
+          {canCreate && (
+            <button
+              onClick={openCreateModal}
+              className="flex items-center gap-2 px-4 py-2.5 bg-[#115d72] text-white text-sm font-medium rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
+            >
+              <Plus size={18} />
+              Tambah Source
+            </button>
+          )}
         </div>
       </Card>
 
@@ -308,49 +316,55 @@ export default function SpreadsheetSourcePage() {
 
                 {/* Actions */}
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <button
-                    onClick={() => handleToggleEnabled(source)}
-                    className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-                    title={source.isEnabled ? "Nonaktifkan" : "Aktifkan"}
-                  >
-                    {source.isEnabled ? (
-                      <ToggleRight size={20} className="text-green-500" />
-                    ) : (
-                      <ToggleLeft size={20} className="text-gray-400" />
-                    )}
-                  </button>
-                  <button
-                    onClick={() => openEditModal(source)}
-                    className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-                    title="Edit"
-                  >
-                    <Pencil size={16} className="text-gray-500" />
-                  </button>
-                  {deleteConfirmId === source.id ? (
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => handleDelete(source.id)}
-                        className="p-2 rounded-lg bg-red-50 hover:bg-red-100 transition-colors"
-                        title="Konfirmasi hapus"
-                      >
-                        <Check size={16} className="text-red-600" />
-                      </button>
-                      <button
-                        onClick={() => setDeleteConfirmId(null)}
-                        className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-                        title="Batal"
-                      >
-                        <X size={16} className="text-gray-500" />
-                      </button>
-                    </div>
-                  ) : (
+                  {canUpdate && (
                     <button
-                      onClick={() => setDeleteConfirmId(source.id)}
-                      className="p-2 rounded-lg hover:bg-red-50 transition-colors"
-                      title="Hapus"
+                      onClick={() => handleToggleEnabled(source)}
+                      className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                      title={source.isEnabled ? "Nonaktifkan" : "Aktifkan"}
                     >
-                      <Trash2 size={16} className="text-gray-400 hover:text-red-500" />
+                      {source.isEnabled ? (
+                        <ToggleRight size={20} className="text-green-500" />
+                      ) : (
+                        <ToggleLeft size={20} className="text-gray-400" />
+                      )}
                     </button>
+                  )}
+                  {canUpdate && (
+                    <button
+                      onClick={() => openEditModal(source)}
+                      className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                      title="Edit"
+                    >
+                      <Pencil size={16} className="text-gray-500" />
+                    </button>
+                  )}
+                  {canDelete && (
+                    deleteConfirmId === source.id ? (
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleDelete(source.id)}
+                          className="p-2 rounded-lg bg-red-50 hover:bg-red-100 transition-colors"
+                          title="Konfirmasi hapus"
+                        >
+                          <Check size={16} className="text-red-600" />
+                        </button>
+                        <button
+                          onClick={() => setDeleteConfirmId(null)}
+                          className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                          title="Batal"
+                        >
+                          <X size={16} className="text-gray-500" />
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setDeleteConfirmId(source.id)}
+                        className="p-2 rounded-lg hover:bg-red-50 transition-colors"
+                        title="Hapus"
+                      >
+                        <Trash2 size={16} className="text-gray-400 hover:text-red-500" />
+                      </button>
+                    )
                   )}
                 </div>
               </div>
