@@ -465,17 +465,20 @@ export default function RealtimeChart({
       onDateRangeChange?.(startDate, endDate);
     }
 
+    const dateStart = startDate ? new Date(startDate) : new Date();
+    const dateEnd = endDate ? new Date(endDate) : new Date();
+
     const formattedStartDate = new Intl.DateTimeFormat("id-ID", {
       day: "2-digit",
       month: "long",
       year: "numeric",
-    }).format(new Date(startDate ?? new Date()));
+    }).format(isNaN(dateStart.getTime()) ? new Date() : dateStart);
 
     const formattedEndDate = new Intl.DateTimeFormat("id-ID", {
       day: "2-digit",
       month: "long",
       year: "numeric",
-    }).format(new Date(endDate ?? new Date()));
+    }).format(isNaN(dateEnd.getTime()) ? new Date() : dateEnd);
 
     setFormattedStartDate(formattedStartDate);
     setFormattedEndDate(formattedEndDate);

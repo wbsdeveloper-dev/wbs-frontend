@@ -21,6 +21,7 @@ import EmailTable from "./components/EmailTable";
 import DetailDrawer from "./components/DetailDrawer";
 import Card, { CardHeader } from "@/app/components/ui/Card";
 import { Modal } from "@/app/components/ui";
+import CronScheduleSelector from "@/app/components/ui/CronScheduleSelector";
 import {
   useEmailSources,
   useCreateEmailSource,
@@ -36,11 +37,16 @@ import {
   type CreateEmailSourcePayload,
   type UpdateEmailSourcePayload,
 } from "@/hooks/service/config-api";
+import { usePrivilege } from "@/hooks/usePrivilege";
 
 // Re-export for child components
 export type { EmailSource };
 
 export default function EmailIngestPage() {
+  const { hasPrivilege } = usePrivilege();
+  const canCreate = hasPrivilege("email_ingest", "CREATE");
+  const canUpdate = hasPrivilege("email_ingest", "UPDATE");
+
   // API hooks
   const { data: emailSources = [], isLoading, isError } = useEmailSources();
   const createMutation = useCreateEmailSource();
@@ -357,7 +363,7 @@ export default function EmailIngestPage() {
             </div>
           </div>
           <div>
-            {!isOauthLoading && (
+            {!isOauthLoading && canUpdate && (
               oauthStatus?.connected ? (
                 <button
                   onClick={handleDisconnectAuthGlobal}
@@ -385,14 +391,16 @@ export default function EmailIngestPage() {
         <div className="flex flex-col lg:flex-row gap-4 justify-between">
           {/* Left side - Buttons */}
           <div className="flex flex-wrap gap-3">
-            <button
-              onClick={() => setIsAddModalOpen(true)}
-              className="flex items-center gap-2 px-4 py-2.5 bg-[#115d72] text-white text-sm font-medium rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
-            >
-              <Plus size={18} />
-              Tambah Rule Ingestion
-            </button>
-            {selectedRows.length > 0 && (
+            {canCreate && (
+              <button
+                onClick={() => setIsAddModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2.5 bg-[#115d72] text-white text-sm font-medium rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
+              >
+                <Plus size={18} />
+                Tambah Rule Ingestion
+              </button>
+            )}
+            {canUpdate && selectedRows.length > 0 && (
               <div className="flex items-center gap-2 animate-fadeIn">
                 <span className="text-sm text-gray-600 font-medium">
                   {selectedRows.length} dipilih
@@ -643,32 +651,10 @@ export default function EmailIngestPage() {
 
 
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Cron Schedule
-              </label>
-              <input
-                type="text"
-                value={addForm.cronSchedule}
-                onChange={(e) => setAddForm({ ...addForm, cronSchedule: e.target.value })}
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent font-mono"
-                placeholder="0 8 * * *"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Label Filter
-              </label>
-              <input
-                type="text"
-                value={addForm.labelFilter}
-                onChange={(e) => setAddForm({ ...addForm, labelFilter: e.target.value })}
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent"
-                placeholder="INBOX"
-              />
-            </div>
-          </div>
+          <CronScheduleSelector
+            value={addForm.cronSchedule}
+            onChange={(v) => setAddForm({ ...addForm, cronSchedule: v })}
+          />
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -696,6 +682,19 @@ export default function EmailIngestPage() {
               onChange={(e) => setAddForm({ ...addForm, senderFilter: e.target.value })}
               className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent"
               placeholder="Contoh: noreply@pln.co.id"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Label Filter
+            </label>
+            <input
+              type="text"
+              value={addForm.labelFilter}
+              onChange={(e) => setAddForm({ ...addForm, labelFilter: e.target.value })}
+              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent"
+              placeholder="INBOX"
             />
           </div>
 

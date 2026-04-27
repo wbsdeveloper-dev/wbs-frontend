@@ -11,8 +11,13 @@ import {
   useRevokeApiKey,
 } from "@/hooks/use-api-keys";
 import type { GeneratedApiKey } from "@/hooks/service/api-keys";
+import { usePrivilege } from "@/hooks/usePrivilege";
 
 export default function ApiKeyManagerPage() {
+  const { hasPrivilege } = usePrivilege();
+  const canCreate = hasPrivilege("api_keys", "CREATE");
+  const canDelete = hasPrivilege("api_keys", "DELETE");
+
   const { data: apiKeys, isLoading } = useApiKeys();
   const generateApiKey = useGenerateApiKey();
   const revokeApiKey = useRevokeApiKey();
@@ -128,13 +133,15 @@ export default function ApiKeyManagerPage() {
           title="Daftar Service API Key"
           description="Kunci API yang pernah dibuat. (Nilai hash disembunyikan untuk keamanan)."
           action={
-            <button
-              onClick={() => setIsGenerateModalOpen(true)}
-              className="flex items-center gap-2 px-4 py-2.5 bg-[#115d72] text-white text-sm font-medium rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
-            >
-              <Plus className="w-4 h-4" />
-              Buat API Key
-            </button>
+            canCreate ? (
+              <button
+                onClick={() => setIsGenerateModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2.5 bg-[#115d72] text-white text-sm font-medium rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
+              >
+                <Plus className="w-4 h-4" />
+                Buat API Key
+              </button>
+            ) : null
           }
         />
 
@@ -212,13 +219,15 @@ export default function ApiKeyManagerPage() {
                         : "-"}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <button
-                        onClick={() => setRevokeTargetId(keyItem.id)}
-                        className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-red-500/20"
-                        title="Revoke API Key"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {canDelete && (
+                        <button
+                          onClick={() => setRevokeTargetId(keyItem.id)}
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-red-500/20"
+                          title="Revoke API Key"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))

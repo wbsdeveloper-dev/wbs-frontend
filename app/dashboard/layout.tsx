@@ -27,7 +27,7 @@ export default function RootLayout({
 }) {
   return (
     <div
-      className={`${redditSans.variable} ${geistMono.variable} antialiased flex h-screen relative`}
+      className={`${redditSans.variable} ${geistMono.variable} antialiased flex h-screen relative overflow-x-hidden`}
     >
       {/* Background gradient matching login/landing theme */}
       <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-gray-50 to-slate-100" />
@@ -39,7 +39,7 @@ export default function RootLayout({
       </div>
       
       {/* Content */}
-      <div className="relative z-10 flex w-full h-full">
+      <div className="relative z-10 flex w-full h-full min-w-0">
         <Sidebar />
         <main className="flex-1 overflow-auto pt-16 lg:pt-0">
           <Providers>{children}</Providers>

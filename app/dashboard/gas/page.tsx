@@ -123,43 +123,46 @@ export default function GasDashboard() {
   );
 
   // Chart flow callbacks
-  const handlePeriodChange = useCallback((newGranularity: Granularity) => {
-    if (newGranularity === "hour") {
-      setStartDateFilter(todayDate);
-      setEndDateFilter(todayDate);
-      setGranularity("hour");
-    } else if (newGranularity === "day") {
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(new Date(todayDate).getDate() - 7);
-      setStartDateFilter(sevenDaysAgo.toISOString().split("T")[0]);
-      setEndDateFilter(todayDate);
-      setGranularity("day");
-    } else if (newGranularity === "three_month") {
-      const threeMonthsAgo = new Date();
-      threeMonthsAgo.setDate(new Date(todayDate).getDate() - 90);
-      setStartDateFilter(threeMonthsAgo.toISOString().split("T")[0]);
-      setEndDateFilter(todayDate);
-      setGranularity("month");
-    } else if (newGranularity === "six_month") {
-      const sixMonthsAgo = new Date();
-      sixMonthsAgo.setDate(new Date(todayDate).getDate() - 180);
-      setStartDateFilter(sixMonthsAgo.toISOString().split("T")[0]);
-      setEndDateFilter(endDate);
-      setGranularity("month");
-    } else if (newGranularity === "one_year") {
-      const oneYearAgo = new Date();
-      oneYearAgo.setDate(new Date(todayDate).getDate() - 365);
-      setStartDateFilter(oneYearAgo.toISOString().split("T")[0]);
-      setEndDateFilter(endDate);
-      setGranularity("month");
-    } else if (newGranularity === "three_year") {
-      const threeYearsAgo = new Date();
-      threeYearsAgo.setDate(new Date(todayDate).getDate() - 1095);
-      setStartDateFilter(threeYearsAgo.toISOString().split("T")[0]);
-      setEndDateFilter(endDate);
-      setGranularity("month");
-    }
-  }, []);
+  const handlePeriodChange = useCallback(
+    (newGranularity: Granularity) => {
+      if (newGranularity === "hour") {
+        setStartDateFilter(todayDate);
+        setEndDateFilter(todayDate);
+        setGranularity("hour");
+      } else if (newGranularity === "day") {
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(new Date(todayDate).getDate() - 7);
+        setStartDateFilter(sevenDaysAgo.toISOString().split("T")[0]);
+        setEndDateFilter(todayDate);
+        setGranularity("day");
+      } else {
+        const getFirstDateOfMonth = (dateStr: string, monthsAgo: number) => {
+          const d = new Date(dateStr);
+          d.setMonth(d.getMonth() - monthsAgo);
+          return d.toISOString().split("T")[0];
+        };
+
+        if (newGranularity === "three_month") {
+          setStartDateFilter(getFirstDateOfMonth(startDate, 2));
+          setEndDateFilter(endDate);
+          setGranularity("month");
+        } else if (newGranularity === "six_month") {
+          setStartDateFilter(getFirstDateOfMonth(startDate, 5));
+          setEndDateFilter(endDate);
+          setGranularity("month");
+        } else if (newGranularity === "one_year") {
+          setStartDateFilter(getFirstDateOfMonth(startDate, 11));
+          setEndDateFilter(endDate);
+          setGranularity("month");
+        } else if (newGranularity === "three_year") {
+          setStartDateFilter(getFirstDateOfMonth(startDate, 35));
+          setEndDateFilter(endDate);
+          setGranularity("month");
+        }
+      }
+    },
+    [todayDate, startDate, endDate],
+  );
 
   const handlePemasokChange = useCallback((pemasokId: string | null) => {
     setSelectedPemasokId(pemasokId ?? undefined);

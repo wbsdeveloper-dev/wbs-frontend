@@ -11,18 +11,17 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import { useQueryClient } from "@tanstack/react-query";
 import {
   useSites,
   useRelations,
   useDeleteSite,
   useDeleteRelation,
-  siteKeys,
   type Site,
   type SiteRelation,
   type DeleteSiteResponse,
   type DeleteRelationResponse,
 } from "@/hooks/service/site-api";
+import { usePrivilege } from "@/hooks/usePrivilege";
 
 // Status badge component
 const StatusBadge = ({
@@ -53,24 +52,34 @@ const ActionButtons = ({
   id: string;
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
-}) => (
-  <div className="flex items-center justify-center gap-1">
-    <button
-      onClick={() => onEdit(id)}
-      className="p-1.5 text-[#115d72] hover:bg-[#115d72]/10 rounded-lg transition-colors"
-      title="Edit"
-    >
-      <Pencil size={16} />
-    </button>
-    <button
-      onClick={() => onDelete(id)}
-      className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-      title="Hapus"
-    >
-      <Trash2 size={16} />
-    </button>
-  </div>
-);
+}) => {
+  const { hasPrivilege } = usePrivilege();
+  const canUpdate = hasPrivilege("site_management", "UPDATE");
+  const canDelete = hasPrivilege("site_management", "DELETE");
+
+  return (
+    <div className="flex items-center justify-center gap-1">
+      {canUpdate && (
+        <button
+          onClick={() => onEdit(id)}
+          className="p-1.5 text-[#115d72] hover:bg-[#115d72]/10 rounded-lg transition-colors"
+          title="Edit"
+        >
+          <Pencil size={16} />
+        </button>
+      )}
+      {canDelete && (
+        <button
+          onClick={() => onDelete(id)}
+          className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+          title="Hapus"
+        >
+          <Trash2 size={16} />
+        </button>
+      )}
+    </div>
+  );
+};
 
 // Delete Confirmation Modal
 interface DeleteConfirmModalProps {
@@ -235,15 +244,11 @@ export function DaftarSiteTable({ onEdit, onDelete }: SiteTableProps) {
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [pendingDeleteName, setPendingDeleteName] = useState<string>("");
   const [warnedSites, setWarnedSites] = useState<string[]>([]);
-  const queryClient = useQueryClient();
 
   const { data: sites, isLoading } = useSites({ search: debouncedSearch });
   const deleteSiteMutation = useDeleteSite({
     onSuccess: (data: DeleteSiteResponse) => {
-      // Invalidate queries to refresh data
-      queryClient.invalidateQueries({ queryKey: siteKeys.sites() });
-      queryClient.invalidateQueries({ queryKey: siteKeys.dropdowns() });
-
+      // Note: broad siteKeys.all invalidation is handled by useDeleteSite hook itself
       if (data.warned_sites && data.warned_sites.length > 0) {
         setWarnedSites(data.warned_sites);
         setDeleteWarningOpen(true);
@@ -486,14 +491,11 @@ export function RelasiOperasionalTable({ onEdit, onDelete }: SiteTableProps) {
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [pendingDeleteName, setPendingDeleteName] = useState<string>("");
   const [warnedSites, setWarnedSites] = useState<string[]>([]);
-  const queryClient = useQueryClient();
 
   const { data: relations, isLoading } = useRelations(true);
   const deleteRelationMutation = useDeleteRelation({
     onSuccess: (data: DeleteRelationResponse) => {
-      // Invalidate queries to refresh data
-      queryClient.invalidateQueries({ queryKey: siteKeys.relations() });
-
+      // Note: broad invalidation is handled by useDeleteRelation hook itself
       if (data.warned_sites && data.warned_sites.length > 0) {
         setWarnedSites(data.warned_sites);
         setDeleteWarningOpen(true);

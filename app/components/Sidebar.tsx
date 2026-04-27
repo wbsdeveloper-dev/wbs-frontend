@@ -139,7 +139,7 @@ export default function Sidebar() {
   const chevronBase = "ml-auto transition-transform duration-200 text-gray-400";
 
   const sidebarContent = (isMobile = false) => (
-    <>
+    <div className="flex flex-col h-full">
       {/* Header with gradient */}
       <div className="p-5 flex justify-between items-center">
         {isMobile && (
@@ -230,7 +230,7 @@ export default function Sidebar() {
         )}
       </div>
 
-      <div className="flex-1 py-2">
+      <div className="flex-1 py-2 overflow-y-auto">
         <div className="px-4 mb-3">
           {(!isCollapsed || isMobile) && (
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
@@ -340,18 +340,20 @@ export default function Sidebar() {
           </button>
         </nav>
       </div>
-    </>
+    </div>
   );
 
   return (
     <>
-      {/* Mobile hamburger button */}
-      <button
-        onClick={() => setIsMobileOpen(true)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2.5 rounded-xl bg-white shadow-lg border border-slate-200 hover:shadow-xl transition-all"
-      >
-        <Menu size={22} className="text-[#115d72]" />
-      </button>
+      {/* Mobile hamburger button — hide when sidebar is already open */}
+      {!isMobileOpen && (
+        <button
+          onClick={() => setIsMobileOpen(true)}
+          className="lg:hidden fixed top-4 left-4 z-50 p-2.5 rounded-xl bg-white shadow-lg border border-slate-200 hover:shadow-xl transition-all"
+        >
+          <Menu size={22} className="text-[#115d72]" />
+        </button>
+      )}
 
       {/* Mobile overlay */}
       {isMobileOpen && (
@@ -363,7 +365,7 @@ export default function Sidebar() {
 
       {/* Mobile sidebar */}
       <aside
-        className={`lg:hidden fixed top-0 left-0 h-full w-72 bg-white z-50 transform transition-transform duration-300 ease-in-out flex flex-col shadow-2xl border-r border-gray-100 ${
+        className={`lg:hidden fixed top-0 left-0 h-full w-72 bg-white z-50 transform transition-transform duration-300 ease-in-out flex flex-col overflow-y-auto shadow-2xl border-r border-gray-100 ${
           isMobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -374,7 +376,7 @@ export default function Sidebar() {
       <aside
         className={`${
           isCollapsed ? "w-20" : "w-64"
-        } bg-white h-screen hidden lg:flex flex-col transition-[width] duration-300 ease-in-out shadow-lg border-r border-gray-100`}
+        } bg-white h-full flex-shrink-0 hidden lg:flex flex-col transition-[width] duration-300 ease-in-out shadow-lg border-r border-gray-100 overflow-hidden`}
       >
         {sidebarContent(false)}
       </aside>

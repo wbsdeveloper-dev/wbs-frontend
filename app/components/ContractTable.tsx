@@ -64,6 +64,7 @@ import {
 } from "@/hooks/service/contract-api";
 import { useSites } from "@/hooks/service/site-api";
 import * as XLSX from "xlsx";
+import { usePrivilege } from "@/hooks/usePrivilege";
 
 // ---------------------------------------------------------------------------
 // Row shape for the DataGrid (flattened from API response)
@@ -661,6 +662,10 @@ function buildColumnGroupingModel(years: number[]): GridColumnGroupingModel {
 
 export default function ContractTable() {
     const apiRef = useGridApiRef();
+    const { hasPrivilege } = usePrivilege();
+    const canCreate = hasPrivilege("contracts", "CREATE");
+    const canUpdate = hasPrivilege("contracts", "UPDATE");
+    const canDelete = hasPrivilege("contracts", "DELETE");
 
     // File Upload State
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -1444,17 +1449,19 @@ export default function ContractTable() {
                             <FileText size={16} />
                         </IconButton>
 
-                        <IconButton
-                            size="small"
-                            sx={{
-                                color: "#ef4444",
-                                "&:hover": { color: "#dc2626" },
-                            }}
-                            onClick={() => handleDeleteRow(params.row.id as string)}
-                            title="Hapus Kontrak"
-                        >
-                            <Trash2 size={16} />
-                        </IconButton>
+                        {canDelete && (
+                            <IconButton
+                                size="small"
+                                sx={{
+                                    color: "#ef4444",
+                                    "&:hover": { color: "#dc2626" },
+                                }}
+                                onClick={() => handleDeleteRow(params.row.id as string)}
+                                title="Hapus Kontrak"
+                            >
+                                <Trash2 size={16} />
+                            </IconButton>
+                        )}
                     </Box>
                 );
             },
@@ -1542,7 +1549,7 @@ export default function ContractTable() {
                     </button>
 
                     {/* Add row button (only in edit mode) */}
-                    {isEditMode && (
+                    {isEditMode && canCreate && (
                         <button
                             onClick={handleAddRow}
                             className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
@@ -1580,13 +1587,15 @@ export default function ContractTable() {
                             </button>
                         </div>
                     ) : (
-                        <button
-                            onClick={() => setIsEditMode(true)}
-                            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
-                        >
-                            <Pencil size={16} />
-                            Edit Data
-                        </button>
+                        canUpdate && (
+                            <button
+                                onClick={() => setIsEditMode(true)}
+                                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
+                            >
+                                <Pencil size={16} />
+                                Edit Data
+                            </button>
+                        )
                     )}
                 </div>
             </div>

@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import Card from "@/app/components/ui/Card";
 import type { Template } from "@/hooks/service/config-api";
+import { usePrivilege } from "@/hooks/usePrivilege";
 
 interface TemplateListProps {
   templates: Template[];
@@ -28,6 +29,10 @@ export default function TemplateList({
   onDuplicate,
   onArchive,
 }: TemplateListProps) {
+  const { hasPrivilege } = usePrivilege();
+  const canCreate = hasPrivilege("template_group", "CREATE");
+  const canUpdate = hasPrivilege("template_group", "UPDATE");
+
   const getScopeBadge = (scope: Template["scope"]) => {
     if (scope === "WA_GROUP") {
       return (
@@ -139,17 +144,19 @@ export default function TemplateList({
                 {new Date(template.updatedAt).toLocaleDateString("id-ID")}
               </span>
               <div className="flex items-center gap-1">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDuplicate(template);
-                  }}
-                  className="p-1.5 text-gray-400 hover:text-[#115d72] hover:bg-gray-100 rounded transition-colors"
-                  title="Duplikasi"
-                >
-                  <Copy size={14} />
-                </button>
-                {template.status !== "DEPRECATED" && (
+                {canCreate && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDuplicate(template);
+                    }}
+                    className="p-1.5 text-gray-400 hover:text-[#115d72] hover:bg-gray-100 rounded transition-colors"
+                    title="Duplikasi"
+                  >
+                    <Copy size={14} />
+                  </button>
+                )}
+                {canUpdate && template.status !== "DEPRECATED" && (
                   <button
                     onClick={(e) => {
                       e.stopPropagation();

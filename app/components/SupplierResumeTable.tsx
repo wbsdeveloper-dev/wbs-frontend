@@ -108,7 +108,7 @@ export default function SupplierResumeTable({
   if (!contracts || contracts.length === 0) {
     return (
       <div className="w-full text-sm text-gray-800 flex items-center justify-center py-8">
-        <p>Data kontrak tidak ditemukan</p>
+        <p>Data kontrak tidak ditemukan, mohon pastikan pemasok sudah sesuai</p>
       </div>
     );
   }
@@ -125,8 +125,7 @@ export default function SupplierResumeTable({
         >
           {contracts.length > 1 && (
             <p className="text-xs font-semibold text-[#115d72] mb-2 uppercase tracking-wide">
-              Kontrak {idx + 1}
-              {contract.pembangkit_name ? ` — ${contract.pembangkit_name}` : ""}
+              {contract.pembangkit_name ? `${contract.pembangkit_name}` : ""}
             </p>
           )}
 
