@@ -41,20 +41,14 @@ export function AddRelationModal({
     },
   });
 
-  const [formData, setFormData] = useState<CreateRelationPayload>({
-    source_site_id: "",
-    target_site_id: "",
+  const [formData, setFormData] = useState<Omit<CreateRelationPayload, "target_site_ids" | "source_site_ids">>({
     relation_type: "",
     commodity: "",
     priority: 1,
   });
 
-  const [selectedSourceSite, setSelectedSourceSite] = useState<string | null>(
-    null,
-  );
-  const [selectedTargetSite, setSelectedTargetSite] = useState<string | null>(
-    null,
-  );
+  const [selectedSourceSites, setSelectedSourceSites] = useState<string[]>([]);
+  const [selectedTargetSites, setSelectedTargetSites] = useState<string[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Load relation data for editing
@@ -64,41 +58,37 @@ export function AddRelationModal({
   useEffect(() => {
     if (editingId && editingRelation) {
       setFormData({
-        source_site_id: editingRelation.source_site_id,
-        target_site_id: editingRelation.target_site_id,
         relation_type: editingRelation.relation_type,
         commodity: editingRelation.commodity,
         priority: editingRelation.priority,
       });
-      setSelectedSourceSite(editingRelation.source_site_id);
-      setSelectedTargetSite(editingRelation.target_site_id);
+      setSelectedSourceSites([editingRelation.source_site_id]);
+      setSelectedTargetSites([editingRelation.target_site_id]);
     }
   }, [editingId, editingRelation]);
 
   const resetForm = () => {
     setFormData({
-      source_site_id: "",
-      target_site_id: "",
       relation_type: "",
       commodity: "",
       priority: 1,
     });
-    setSelectedSourceSite(null);
-    setSelectedTargetSite(null);
+    setSelectedSourceSites([]);
+    setSelectedTargetSites([]);
     setErrors({});
   };
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!selectedSourceSite) {
-      newErrors.source_site_id = "Site sumber wajib dipilih";
+    if (selectedSourceSites.length === 0) {
+      newErrors.source_site_ids = "Site sumber wajib dipilih";
     }
-    if (!selectedTargetSite) {
-      newErrors.target_site_id = "Site tujuan wajib dipilih";
+    if (selectedTargetSites.length === 0) {
+      newErrors.target_site_ids = "Site tujuan wajib dipilih";
     }
-    if (selectedSourceSite === selectedTargetSite) {
-      newErrors.target_site_id =
+    if (selectedTargetSites.some((targetId) => selectedSourceSites.includes(targetId))) {
+      newErrors.target_site_ids =
         "Site tujuan tidak boleh sama dengan site sumber";
     }
     if (!formData.commodity.trim()) {
@@ -117,15 +107,24 @@ export function AddRelationModal({
     }
 
     const payload: CreateRelationPayload = {
-      source_site_id: selectedSourceSite!,
-      target_site_id: selectedTargetSite!,
+      source_site_ids: selectedSourceSites,
+      target_site_ids: selectedTargetSites,
       relation_type: "PEMASOK - PEMBANGKIT",
       commodity: formData.commodity,
       priority: formData.priority,
     };
 
     if (editingId) {
-      updateRelationMutation.mutate({ id: editingId, payload });
+      updateRelationMutation.mutate({ 
+        id: editingId, 
+        payload: {
+          source_site_id: selectedSourceSites[0],
+          target_site_id: selectedTargetSites[0],
+          relation_type: "PEMASOK - PEMBANGKIT",
+          commodity: formData.commodity,
+          priority: formData.priority,
+        }
+      });
     } else {
       createRelationMutation.mutate(payload);
     }
@@ -159,27 +158,52 @@ export function AddRelationModal({
           {/* Source Site */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Site Sumber
+              Site Sumber {editingId ? "" : "(Bisa pilih lebih dari satu)"}
             </label>
-            <select
-              value={selectedSourceSite || ""}
-              onChange={(e) => {
-                setSelectedSourceSite(e.target.value || null);
-                setErrors({ ...errors, source_site_id: "" });
-              }}
-              disabled={isLoadingDropdowns}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white transition-all duration-200"
-            >
-              <option value="">Cari site sumber...</option>
+            <div className="w-full max-h-48 overflow-y-auto border border-gray-300 rounded-lg bg-white p-2 space-y-1">
               {dropdowns?.suppliers.map((site) => (
-                <option key={site.id} value={site.id}>
-                  {site.name}
-                </option>
+                <label
+                  key={site.id}
+                  className={`flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors ${
+                    selectedSourceSites.includes(site.id)
+                      ? "bg-[#14a2bb]/10 text-[#115d72]"
+                      : "hover:bg-gray-50 text-gray-700"
+                  }`}
+                >
+                  <input
+                    type={editingId ? "radio" : "checkbox"}
+                    name="source_site"
+                    value={site.id}
+                    checked={selectedSourceSites.includes(site.id)}
+                    onChange={(e) => {
+                      if (editingId) {
+                        setSelectedSourceSites([site.id]);
+                      } else {
+                        if (e.target.checked) {
+                          setSelectedSourceSites((prev) => [...prev, site.id]);
+                        } else {
+                          setSelectedSourceSites((prev) =>
+                            prev.filter((id) => id !== site.id),
+                          );
+                        }
+                      }
+                      setErrors({ ...errors, source_site_ids: "" });
+                    }}
+                    disabled={isLoadingDropdowns}
+                    className="mr-3 w-4 h-4 text-[#14a2bb] focus:ring-[#14a2bb] border-gray-300 rounded cursor-pointer"
+                  />
+                  <span className="text-sm">{site.name}</span>
+                </label>
               ))}
-            </select>
-            {errors.source_site_id && (
+              {dropdowns?.suppliers.length === 0 && (
+                <p className="text-sm text-gray-500 text-center py-2">
+                  Tidak ada site sumber
+                </p>
+              )}
+            </div>
+            {errors.source_site_ids && (
               <p className="text-xs text-red-600 mt-1">
-                {errors.source_site_id}
+                {errors.source_site_ids}
               </p>
             )}
           </div>
@@ -187,27 +211,52 @@ export function AddRelationModal({
           {/* Target Site */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Site Tujuan
+              Site Tujuan {editingId ? "" : "(Bisa pilih lebih dari satu)"}
             </label>
-            <select
-              value={selectedTargetSite || ""}
-              onChange={(e) => {
-                setSelectedTargetSite(e.target.value || null);
-                setErrors({ ...errors, target_site_id: "" });
-              }}
-              disabled={isLoadingDropdowns}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white transition-all duration-200"
-            >
-              <option value="">Cari site tujuan...</option>
+            <div className="w-full max-h-48 overflow-y-auto border border-gray-300 rounded-lg bg-white p-2 space-y-1">
               {dropdowns?.plants.map((site) => (
-                <option key={site.id} value={site.id}>
-                  {site.name}
-                </option>
+                <label
+                  key={site.id}
+                  className={`flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors ${
+                    selectedTargetSites.includes(site.id)
+                      ? "bg-[#14a2bb]/10 text-[#115d72]"
+                      : "hover:bg-gray-50 text-gray-700"
+                  }`}
+                >
+                  <input
+                    type={editingId ? "radio" : "checkbox"}
+                    name="target_site"
+                    value={site.id}
+                    checked={selectedTargetSites.includes(site.id)}
+                    onChange={(e) => {
+                      if (editingId) {
+                        setSelectedTargetSites([site.id]);
+                      } else {
+                        if (e.target.checked) {
+                          setSelectedTargetSites((prev) => [...prev, site.id]);
+                        } else {
+                          setSelectedTargetSites((prev) =>
+                            prev.filter((id) => id !== site.id),
+                          );
+                        }
+                      }
+                      setErrors({ ...errors, target_site_ids: "" });
+                    }}
+                    disabled={isLoadingDropdowns}
+                    className="mr-3 w-4 h-4 text-[#14a2bb] focus:ring-[#14a2bb] border-gray-300 rounded cursor-pointer"
+                  />
+                  <span className="text-sm">{site.name}</span>
+                </label>
               ))}
-            </select>
-            {errors.target_site_id && (
+              {dropdowns?.plants.length === 0 && (
+                <p className="text-sm text-gray-500 text-center py-2">
+                  Tidak ada site tujuan
+                </p>
+              )}
+            </div>
+            {errors.target_site_ids && (
               <p className="text-xs text-red-600 mt-1">
-                {errors.target_site_id}
+                {errors.target_site_ids}
               </p>
             )}
           </div>
