@@ -16,11 +16,11 @@ export interface MapSite {
   id: string;
   name: string;
   siteType:
-    | "PEMBANGKIT"
-    | "PEMASOK"
-    | "TRANSPORTIR"
-    | "TERMINAL"
-    | "HANDOVER_POINT";
+  | "PEMBANGKIT"
+  | "PEMASOK"
+  | "TRANSPORTIR"
+  | "TERMINAL"
+  | "HANDOVER_POINT";
   lat: number;
   lng: number;
   region: string;
@@ -118,7 +118,7 @@ export interface ChartFlowSummary {
   jph: number;
   top: number;
   topPercentage: number;
-  hargaPjbg: number;
+  hargaPjbg: string;
   realisasi: number;
   flowrate: number;
 }
@@ -157,7 +157,7 @@ export interface ContractInfo {
   volumeJph: { value: number; unit: string; notes: string };
   volumeTop: { value: number; percentage: number; notes: string };
   volumeJpmh: number | null;
-  hargaPjbg: { value: number; unit: string };
+  hargaPjbg: { value: string; unit: string };
   unitYangDipasok: ContractUnitDipasok[];
 }
 

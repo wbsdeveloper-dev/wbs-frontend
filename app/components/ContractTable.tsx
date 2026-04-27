@@ -57,6 +57,7 @@ import {
     type ContractDocument,
     type CreateContractPayload,
     useUploadContractPdf,
+    useDeleteContractDocument,
     getContractDocuments,
     downloadContractDocument,
     previewContractDocument,
@@ -205,7 +206,7 @@ function mapContractToRow(
         awalPerjanjian: formatDate(contract.awal_perjanjian),
         tanggalEfektif: formatDate(contract.tanggal_efektif),
         akhirPerjanjian: formatDate(contract.akhir_perjanjian),
-        hargaPJBG: contract.price_value != null ? String(contract.price_value) : "",
+        hargaPJBG: contract.price_value || "",
         hgbt: contract.hgbt_value != null ? String(contract.hgbt_value) : "",
         TJK: contract.tjk_bbtud != null ? String(contract.tjk_bbtud) : "",
         volumeJPMH: contract.volume_jpmh_bbtud != null
@@ -672,12 +673,16 @@ export default function ContractTable() {
     const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const uploadMutation = useUploadContractPdf();
+    const deleteDocMutation = useDeleteContractDocument();
 
     const [rows, setRows] = useState<ContractTableRow[]>([]);
+    const [enrichedRows, setEnrichedRows] = useState<ContractTableRow[]>([]);
     const [isEditMode, setIsEditMode] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [pendingDeletes, setPendingDeletes] = useState<string[]>([]);
     const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+    const [docDeleteConfirmOpen, setDocDeleteConfirmOpen] = useState(false);
+    const [docToDelete, setDocToDelete] = useState<{ contractId: string; documentId: string } | null>(null);
     const [documentModalRowId, setDocumentModalRowId] = useState<string | null>(null);
     const [snackbar, setSnackbar] = useState<{
         open: boolean;
@@ -778,6 +783,7 @@ export default function ContractTable() {
     useEffect(() => {
         if (!contracts || contracts.length === 0) {
             setRows([]);
+            setEnrichedRows([]);
             return;
         }
 
@@ -809,11 +815,18 @@ export default function ContractTable() {
                         );
                     }),
                 );
-                if (!cancelled) setRows(enriched);
+                if (!cancelled) {
+                    setRows(enriched);
+                    setEnrichedRows(enriched);
+                }
             } catch (err) {
                 console.error("Failed to load sub-resource data:", err);
                 // Fallback: show rows without sub-resource data
-                if (!cancelled) setRows(contracts.map((c, i) => mapContractToRow(c, i, [], [], [], null, yearRange)));
+                if (!cancelled) {
+                    const fallbackRows = contracts.map((c, i) => mapContractToRow(c, i, [], [], [], null, yearRange));
+                    setRows(fallbackRows);
+                    setEnrichedRows(fallbackRows);
+                }
             }
         })();
 
@@ -1147,7 +1160,7 @@ export default function ContractTable() {
                     if (row._mmscfd_TJK)
                         createPayload.tjk_mmscfd = parseFloat(String(row._mmscfd_TJK));
                     if (row.hargaPJBG)
-                        createPayload.price_value = parseFloat(row.hargaPJBG);
+                        createPayload.price_value = row.hargaPJBG;
                     if (row.hgbt)
                         createPayload.hgbt_value = parseFloat(row.hgbt);
 
@@ -1175,7 +1188,7 @@ export default function ContractTable() {
                     if (row.akhirPerjanjian !== formatDate(original.akhir_perjanjian))
                         payload.akhir_perjanjian = toISODate(row.akhirPerjanjian) || null;
 
-                    const newPrice = row.hargaPJBG ? parseFloat(row.hargaPJBG) : null;
+                    const newPrice = row.hargaPJBG || null;
                     if (newPrice !== original.price_value)
                         payload.price_value = newPrice;
 
@@ -1251,12 +1264,10 @@ export default function ContractTable() {
     }, [contracts, createMutation, updateMutation, deleteMutation, apiRef, isSaving, pendingDeletes, saveSubResources, powerplantSites, supplierSites]);
 
     const handleCancel = useCallback(() => {
-        if (contracts) {
-            setRows(contracts.map((c, i) => mapContractToRow(c, i, [], [], [], null, yearRange)));
-        }
+        setRows(enrichedRows);
         setPendingDeletes([]);
         setIsEditMode(false);
-    }, [contracts, yearRange]);
+    }, [enrichedRows]);
 
     const handleUnitToggle = useCallback(
         (id: string, newValue: string | null) => {
@@ -1310,6 +1321,40 @@ export default function ContractTable() {
 
         if (fileInputRef.current) fileInputRef.current.value = "";
     }, [uploadingRowId]);
+
+    const handleConfirmDocDelete = useCallback(async () => {
+        if (!docToDelete || !documentModalRowId) return;
+
+        try {
+            await deleteDocMutation.mutateAsync({
+                contractId: docToDelete.contractId,
+                documentId: docToDelete.documentId,
+            });
+
+            setSnackbar({
+                open: true,
+                message: "Dokumen berhasil dihapus",
+                severity: "success",
+            });
+
+            // Update local state to reflect deletion
+            setRows((prev) =>
+                prev.map((r) =>
+                    r.id === documentModalRowId ? { ...r, document: null } : r,
+                ),
+            );
+        } catch (err) {
+            const message = err instanceof Error ? err.message : "Terjadi kesalahan";
+            setSnackbar({
+                open: true,
+                message: `Gagal menghapus dokumen: ${message}`,
+                severity: "error",
+            });
+        } finally {
+            setDocDeleteConfirmOpen(false);
+            setDocToDelete(null);
+        }
+    }, [docToDelete, documentModalRowId, deleteDocMutation]);
 
     // ---- Column definitions ----
 
@@ -1825,7 +1870,17 @@ export default function ContractTable() {
                                                 >
                                                     <Download size={16} />
                                                 </IconButton>
-                                                {/* We can add a delete document mutation here later if needed */}
+                                                <IconButton
+                                                    size="small"
+                                                    sx={{ color: "#ef4444", "&:hover": { color: "#dc2626", backgroundColor: "#fef2f2" } }}
+                                                    title="Hapus Dokumen"
+                                                    onClick={() => {
+                                                        setDocToDelete({ contractId: row._contractId, documentId: doc.id });
+                                                        setDocDeleteConfirmOpen(true);
+                                                    }}
+                                                >
+                                                    <Trash2 size={16} />
+                                                </IconButton>
                                             </div>
                                         </div>
                                     ) : (
@@ -1942,6 +1997,57 @@ export default function ContractTable() {
                         }}
                     >
                         {uploadMutation.isPending ? "Menyimpan..." : "Simpan"}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Document Delete Confirmation Dialog */}
+            <Dialog
+                open={docDeleteConfirmOpen}
+                onClose={() => setDocDeleteConfirmOpen(false)}
+                slotProps={{
+                    paper: {
+                        sx: {
+                            borderRadius: "12px",
+                            px: 1,
+                        },
+                    },
+                }}
+            >
+                <DialogTitle sx={{ fontWeight: 600, fontSize: "16px" }}>
+                    Hapus Dokumen
+                </DialogTitle>
+                <DialogContent>
+                    <DialogContentText sx={{ fontSize: "14px" }}>
+                        Apakah Anda yakin ingin menghapus dokumen ini?
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions sx={{ px: 3, pb: 2 }}>
+                    <Button
+                        onClick={() => setDocDeleteConfirmOpen(false)}
+                        sx={{
+                            textTransform: "none",
+                            color: "#6b7280",
+                            fontWeight: 500,
+                            borderRadius: "8px",
+                        }}
+                    >
+                        Batal
+                    </Button>
+                    <Button
+                        onClick={handleConfirmDocDelete}
+                        variant="contained"
+                        sx={{
+                            textTransform: "none",
+                            backgroundColor: "#ef4444",
+                            fontWeight: 500,
+                            borderRadius: "8px",
+                            "&:hover": {
+                                backgroundColor: "#dc2626",
+                            },
+                        }}
+                    >
+                        Hapus
                     </Button>
                 </DialogActions>
             </Dialog>

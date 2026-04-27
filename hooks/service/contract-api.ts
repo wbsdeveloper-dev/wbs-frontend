@@ -151,7 +151,7 @@ export interface Contract {
     akhir_perjanjian: string | null;
     volume_jpmh_bbtud: number | null;
     volume_jpmh_mmscfd: number | null;
-    price_value: number | null;
+    price_value: string | null;
     price_unit: string;
     hgbt_value: number | null;
     hgbt_unit: string | null;
@@ -180,7 +180,7 @@ export interface CreateContractPayload {
     akhir_perjanjian?: string;
     volume_jpmh_bbtud?: number;
     volume_jpmh_mmscfd?: number;
-    price_value?: number;
+    price_value?: string;
     price_unit?: string;
     hgbt_value?: number;
     hgbt_unit?: string;
@@ -200,7 +200,7 @@ export interface UpdateContractPayload {
     akhir_perjanjian?: string;
     volume_jpmh_bbtud?: number;
     volume_jpmh_mmscfd?: number;
-    price_value?: number;
+    price_value?: string;
     price_unit?: string;
     hgbt_value?: number;
     hgbt_unit?: string;
@@ -685,6 +685,13 @@ export async function previewContractDocument(contractId: string, documentId: st
     }, 1000 * 60);
 }
 
+export function deleteContractDocument(contractId: string, documentId: string) {
+    return contractFetch<{ deleted: boolean }>(
+        `/contracts/${contractId}/documents/${documentId}`,
+        { method: "DELETE" },
+    );
+}
+
 // ---------------------------------------------------------------------------
 // React Query hooks — Contract Parties
 // ---------------------------------------------------------------------------
@@ -831,6 +838,31 @@ export function useDeleteContract(
     const qc = useQueryClient();
     return useMutation({
         mutationFn: (id: string) => deleteContract(id),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: contractKeys.all });
+        },
+        ...options,
+    });
+}
+
+export function useDeleteContractDocument(
+    options?: Partial<
+        UseMutationOptions<
+            { deleted: boolean },
+            Error,
+            { contractId: string; documentId: string }
+        >
+    >,
+) {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: ({
+            contractId,
+            documentId,
+        }: {
+            contractId: string;
+            documentId: string;
+        }) => deleteContractDocument(contractId, documentId),
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: contractKeys.all });
         },

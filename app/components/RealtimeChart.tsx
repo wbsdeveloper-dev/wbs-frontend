@@ -61,6 +61,7 @@ type ChartItem = {
   label: string;
   values: Record<string, number>;
   flowrates?: Record<string, number>;
+  rawTimestamp?: string;
 };
 
 interface TooltipPayload {
@@ -75,6 +76,7 @@ type SelectedPoint = {
   label: string;
   series: string;
   value: number;
+  rawTimestamp?: string;
 };
 
 const COLORS: Record<string, string> = {
@@ -564,7 +566,7 @@ export default function RealtimeChart({
           flowrates[name] = data.flowrate;
         }
       });
-      return { label, values, flowrates };
+      return { label, values, flowrates, rawTimestamp: rawTs };
     });
   }, [chartFlowData]);
 
@@ -629,7 +631,7 @@ export default function RealtimeChart({
     return [Math.floor(min - padding), Math.ceil(max + padding)];
   }, [chartData]);
 
-  const submitNote = () => {};
+  const submitNote = () => { };
 
   if (topLineActive === null) return null;
 
@@ -710,6 +712,7 @@ export default function RealtimeChart({
                                   label: payload.label,
                                   series: key,
                                   value,
+                                  rawTimestamp: payload.rawTimestamp,
                                 });
 
                                 setOpenModal(true);
@@ -1001,11 +1004,10 @@ export default function RealtimeChart({
                 <div className="flex gap-10">
                   <div className="flex gap-4 mb-3">
                     <button
-                      className={`text-[#115d72] ${
-                        period == "1D"
+                      className={`text-[#115d72] ${period == "1D"
                           ? "bg-[#14a2bb92] w-[45px] rounded-md"
                           : ""
-                      } cursor-pointer`}
+                        } cursor-pointer`}
                       onClick={() => {
                         setPeriod("1D");
                         if (startDate) setEndDate(startDate);
@@ -1022,11 +1024,10 @@ export default function RealtimeChart({
                       1D
                     </button>
                     <button
-                      className={`text-[#115d72] ${
-                        period == "1W"
+                      className={`text-[#115d72] ${period == "1W"
                           ? "bg-[#14a2bb92] w-[45px] rounded-md"
                           : ""
-                      } cursor-pointer`}
+                        } cursor-pointer`}
                       onClick={() => {
                         setPeriod("1W");
                         if (onPeriodChange) {
@@ -1042,11 +1043,10 @@ export default function RealtimeChart({
                       1W
                     </button>
                     <button
-                      className={`text-[#115d72] ${
-                        period == "3M"
+                      className={`text-[#115d72] ${period == "3M"
                           ? "bg-[#14a2bb92] w-[45px] rounded-md"
                           : ""
-                      } cursor-pointer`}
+                        } cursor-pointer`}
                       onClick={() => {
                         setPeriod("3M");
                         if (onPeriodChange) {
@@ -1062,11 +1062,10 @@ export default function RealtimeChart({
                       3M
                     </button>
                     <button
-                      className={`text-[#115d72] ${
-                        period == "6M"
+                      className={`text-[#115d72] ${period == "6M"
                           ? "bg-[#14a2bb92] w-[45px] rounded-md"
                           : ""
-                      } cursor-pointer`}
+                        } cursor-pointer`}
                       onClick={() => {
                         setPeriod("6M");
                         if (onPeriodChange) {
@@ -1082,11 +1081,10 @@ export default function RealtimeChart({
                       6M
                     </button>
                     <button
-                      className={`text-[#115d72] ${
-                        period == "1Y"
+                      className={`text-[#115d72] ${period == "1Y"
                           ? "bg-[#14a2bb92] w-[45px] rounded-md"
                           : ""
-                      } cursor-pointer`}
+                        } cursor-pointer`}
                       onClick={() => {
                         setPeriod("1Y");
                         if (onPeriodChange) {
@@ -1148,9 +1146,9 @@ export default function RealtimeChart({
                           color: "#14a1bb",
                         },
                         "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
-                          {
-                            backgroundColor: "#14a1bb",
-                          },
+                        {
+                          backgroundColor: "#14a1bb",
+                        },
                       }}
                     />
                   </div>
@@ -1166,9 +1164,9 @@ export default function RealtimeChart({
                           color: "#14a1bb",
                         },
                         "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
-                          {
-                            backgroundColor: "#14a1bb",
-                          },
+                        {
+                          backgroundColor: "#14a1bb",
+                        },
                       }}
                     />
                   </div>
@@ -1184,9 +1182,9 @@ export default function RealtimeChart({
                           color: "#14a1bb",
                         },
                         "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
-                          {
-                            backgroundColor: "#14a1bb",
-                          },
+                        {
+                          backgroundColor: "#14a1bb",
+                        },
                       }}
                     />
                   </div>
@@ -1215,6 +1213,7 @@ export default function RealtimeChart({
           submitNote={submitNote}
           pemasokId={selectedPemasokId}
           pembangkitId={selectedPembangkitId}
+          selectedTimestamp={selectedPoint?.rawTimestamp}
         />
       )}
     </div>

@@ -80,7 +80,7 @@ function ContractCard({ contract }: { contract: Contract }) {
           <div className="bg-white font-semibold px-2">Harga PJBG</div>
           <div className="bg-white px-2">
             {contract.price_value != null
-              ? `${contract.price_value} ${contract.price_unit || ""}`
+              ? `${contract.price_value || ""}`
               : "-"}
           </div>
         </div>
