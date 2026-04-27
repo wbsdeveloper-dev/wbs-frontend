@@ -21,6 +21,7 @@ import EmailTable from "./components/EmailTable";
 import DetailDrawer from "./components/DetailDrawer";
 import Card, { CardHeader } from "@/app/components/ui/Card";
 import { Modal } from "@/app/components/ui";
+import CronScheduleSelector from "@/app/components/ui/CronScheduleSelector";
 import {
   useEmailSources,
   useCreateEmailSource,
@@ -650,32 +651,10 @@ export default function EmailIngestPage() {
 
 
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Cron Schedule
-              </label>
-              <input
-                type="text"
-                value={addForm.cronSchedule}
-                onChange={(e) => setAddForm({ ...addForm, cronSchedule: e.target.value })}
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent font-mono"
-                placeholder="0 8 * * *"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Label Filter
-              </label>
-              <input
-                type="text"
-                value={addForm.labelFilter}
-                onChange={(e) => setAddForm({ ...addForm, labelFilter: e.target.value })}
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent"
-                placeholder="INBOX"
-              />
-            </div>
-          </div>
+          <CronScheduleSelector
+            value={addForm.cronSchedule}
+            onChange={(v) => setAddForm({ ...addForm, cronSchedule: v })}
+          />
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -703,6 +682,19 @@ export default function EmailIngestPage() {
               onChange={(e) => setAddForm({ ...addForm, senderFilter: e.target.value })}
               className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent"
               placeholder="Contoh: noreply@pln.co.id"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Label Filter
+            </label>
+            <input
+              type="text"
+              value={addForm.labelFilter}
+              onChange={(e) => setAddForm({ ...addForm, labelFilter: e.target.value })}
+              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent"
+              placeholder="INBOX"
             />
           </div>
 

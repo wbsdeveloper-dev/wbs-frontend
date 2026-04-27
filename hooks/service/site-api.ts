@@ -439,13 +439,15 @@ export function useDeleteSite(
   options?: Partial<UseMutationOptions<DeleteSiteResponse, Error, string>>,
 ) {
   const qc = useQueryClient();
+  const { onSuccess: externalOnSuccess, ...restOptions } = options || {};
   return useMutation({
     mutationFn: (id: string) => deleteSite(id),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: siteKeys.sites() });
-      qc.invalidateQueries({ queryKey: siteKeys.dropdowns() });
+    onSuccess: (...args) => {
+      // Invalidate ALL site queries (regardless of search/filter arguments)
+      qc.invalidateQueries({ queryKey: siteKeys.all });
+      externalOnSuccess?.(...args);
     },
-    ...options,
+    ...restOptions,
   });
 }
 
