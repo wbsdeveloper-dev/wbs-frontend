@@ -171,6 +171,24 @@ export default function TemplateEditor({
   const [botGroupSearch, setBotGroupSearch] = useState("");
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
+  // Helper for source links
+  const toggleSourceLink = (sourceId: string, sourceType: "WA_GROUP" | "SPREADSHEET_SOURCE" | "EMAIL_INGEST") => {
+    const currentLinks = formData.sourceLinks || [];
+    const exists = currentLinks.some(link => link.sourceId === sourceId && link.sourceType === sourceType);
+    
+    if (exists) {
+      setFormData({
+        ...formData,
+        sourceLinks: currentLinks.filter(link => !(link.sourceId === sourceId && link.sourceType === sourceType))
+      });
+    } else {
+      setFormData({
+        ...formData,
+        sourceLinks: [...currentLinks, { sourceId, sourceType }]
+      });
+    }
+  };
+
   // Reset is handled by the parent via key={template.id}
 
   const handleSaveDraft = () => {
@@ -499,7 +517,6 @@ export default function TemplateEditor({
                   })
                 }
                 className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white cursor-pointer pr-10"
-                disabled={formData.status === "ACTIVE"}
               >
                 <option value="WA_GROUP">WhatsApp Grup</option>
                 <option value="SPREADSHEET_SOURCE">Sumber Spreadsheet</option>
@@ -543,12 +560,12 @@ export default function TemplateEditor({
             </div>
           </div>
 
-          {/* Group Config (for WA_GROUP) */}
+          {/* Group Configs (for WA_GROUP) */}
           {formData.scope === "WA_GROUP" && (
             <div className="lg:col-span-2">
               <div className="flex items-center gap-1.5 mb-1.5">
                 <label className="block text-sm font-medium text-gray-700">
-                  Konfigurasi Grup WhatsApp
+                  Grup WhatsApp (Bisa Pilih Lebih Dari Satu)
                 </label>
                 <Tooltip
                   title="Hubungkan template ini dengan grup WhatsApp tertentu yang akan dipantau oleh bot."
@@ -557,87 +574,57 @@ export default function TemplateEditor({
                 >
                   <Info className="w-4 h-4 text-gray-400 cursor-help" />
                 </Tooltip>
-              </div>
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <select
-                    value={formData.groupConfigId || ""}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        groupConfigId: e.target.value || null,
-                      })
-                    }
-                    className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white cursor-pointer pr-10"
-                  >
-                    <option value="">Pilih Grup</option>
-                    {groupConfigs
-                      .filter((gc) => gc.isEnabled)
-                      .map((gc) => (
-                        <option key={gc.id} value={gc.id}>
-                          {gc.name} ({gc.groupId})
-                        </option>
-                      ))}
-                    {groupConfigs.some((gc) => !gc.isEnabled) && (
-                      <option disabled>── Grup Nonaktif ──</option>
-                    )}
-                    {groupConfigs
-                      .filter((gc) => !gc.isEnabled)
-                      .map((gc) => (
-                        <option key={gc.id} value={gc.id}>
-                          ⛔ {gc.name} ({gc.groupId}) — Nonaktif
-                        </option>
-                      ))}
-                  </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                </div>
                 {canUpdate && onAddGroup && (
                   <button
                     type="button"
                     onClick={() => setIsAddingGroup(true)}
-                    className="shrink-0 px-2.5 py-2.5 text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 active:scale-95"
-                    title="Tambah Grup Baru"
+                    className="ml-auto flex items-center gap-1 px-2 py-1 text-xs font-medium text-white bg-[#115d72] rounded hover:bg-[#0d4a5c] transition-all duration-200"
                   >
-                    <Plus size={16} />
+                    <Plus size={14} /> Tambah Baru
                   </button>
                 )}
               </div>
-              {/* Selected group info badge */}
-              {formData.groupConfigId &&
-                (() => {
-                  const selected = groupConfigs.find(
-                    (gc) => gc.id === formData.groupConfigId,
-                  );
-                  if (!selected) return null;
-                  return (
-                    <div className="mt-2 flex items-center gap-2">
-                      <span
-                        className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full ${
-                          selected.isEnabled
-                            ? "bg-green-100 text-green-700"
-                            : "bg-red-100 text-red-700"
-                        }`}
+              <div className="max-h-48 overflow-y-auto border border-gray-300 rounded-lg bg-white p-2 space-y-1">
+                {groupConfigs.length === 0 ? (
+                  <div className="p-2 text-sm text-gray-500 italic text-center">Belum ada grup tersedia</div>
+                ) : (
+                  groupConfigs.map((gc) => {
+                    const isSelected = (formData.sourceLinks || []).some(
+                      (link) => link.sourceId === gc.id && link.sourceType === "WA_GROUP"
+                    );
+                    return (
+                      <label
+                        key={gc.id}
+                        className={`flex items-center gap-3 p-2 rounded-md cursor-pointer transition-colors ${
+                          isSelected ? "bg-[#14a2bb]/10" : "hover:bg-gray-50"
+                        } ${!gc.isEnabled && !isSelected ? "opacity-60" : ""}`}
                       >
-                        <span
-                          className={`w-1.5 h-1.5 rounded-full ${selected.isEnabled ? "bg-green-500" : "bg-red-500"}`}
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleSourceLink(gc.id, "WA_GROUP")}
+                          className="w-4 h-4 text-[#115d72] border-gray-300 rounded focus:ring-[#14a2bb]"
                         />
-                        {selected.isEnabled ? "Aktif" : "Nonaktif"}
-                      </span>
-                      <span className="text-xs text-gray-500 font-mono">
-                        {selected.groupId}
-                      </span>
-                    </div>
-                  );
-                })()}
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium text-gray-900">
+                            {gc.name} {!gc.isEnabled && "⛔ (Nonaktif)"}
+                          </span>
+                          <span className="text-xs text-gray-500 font-mono">{gc.groupId}</span>
+                        </div>
+                      </label>
+                    );
+                  })
+                )}
+              </div>
             </div>
           )}
 
-          {/* Spreadsheet Source (for SPREADSHEET_SOURCE) */}
+          {/* Spreadsheet Sources (for SPREADSHEET_SOURCE) */}
           {formData.scope === "SPREADSHEET_SOURCE" && (
-            <div>
+            <div className="lg:col-span-2">
               <div className="flex items-center gap-1.5 mb-1.5">
                 <label className="block text-sm font-medium text-gray-700">
-                  Sumber Spreadsheet
+                  Sumber Spreadsheet (Bisa Pilih Lebih Dari Satu)
                 </label>
                 <Tooltip
                   title="Pilih file spreadsheet yang akan digunakan sebagai sumber data."
@@ -647,35 +634,42 @@ export default function TemplateEditor({
                   <Info className="w-4 h-4 text-gray-400 cursor-help" />
                 </Tooltip>
               </div>
-              <div className="relative">
-                <select
-                  value={formData.spreadsheetSourceId || ""}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      spreadsheetSourceId: e.target.value || null,
-                    })
-                  }
-                  className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white cursor-pointer pr-10"
-                >
-                  <option value="">Pilih Sumber</option>
-                  {spreadsheetSources.map((ss) => (
-                    <option key={ss.id} value={ss.id}>
-                      {ss.name}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              <div className="max-h-48 overflow-y-auto border border-gray-300 rounded-lg bg-white p-2 space-y-1">
+                {spreadsheetSources.length === 0 ? (
+                  <div className="p-2 text-sm text-gray-500 italic text-center">Belum ada sumber tersedia</div>
+                ) : (
+                  spreadsheetSources.map((ss) => {
+                    const isSelected = (formData.sourceLinks || []).some(
+                      (link) => link.sourceId === ss.id && link.sourceType === "SPREADSHEET_SOURCE"
+                    );
+                    return (
+                      <label
+                        key={ss.id}
+                        className={`flex items-center gap-3 p-2 rounded-md cursor-pointer transition-colors ${
+                          isSelected ? "bg-[#14a2bb]/10" : "hover:bg-gray-50"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleSourceLink(ss.id, "SPREADSHEET_SOURCE")}
+                          className="w-4 h-4 text-[#115d72] border-gray-300 rounded focus:ring-[#14a2bb]"
+                        />
+                        <span className="text-sm font-medium text-gray-900">{ss.name}</span>
+                      </label>
+                    );
+                  })
+                )}
               </div>
             </div>
           )}
 
-          {/* Email Source (for EMAIL_INGEST) */}
+          {/* Email Sources (for EMAIL_INGEST) */}
           {formData.scope === "EMAIL_INGEST" && (
-            <div>
+            <div className="lg:col-span-2">
               <div className="flex items-center gap-1.5 mb-1.5">
                 <label className="block text-sm font-medium text-gray-700">
-                  Sumber Email
+                  Sumber Email (Bisa Pilih Lebih Dari Satu)
                 </label>
                 <Tooltip
                   title="Pilih email source yang akan memicu template ini ketika ada email masuk."
@@ -685,25 +679,35 @@ export default function TemplateEditor({
                   <Info className="w-4 h-4 text-gray-400 cursor-help" />
                 </Tooltip>
               </div>
-              <div className="relative">
-                <select
-                  value={formData.emailSourceId || ""}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      emailSourceId: e.target.value || null,
-                    })
-                  }
-                  className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white cursor-pointer pr-10"
-                >
-                  <option value="">Pilih Sumber</option>
-                  {emailSources.map((es) => (
-                    <option key={es.id} value={es.id}>
-                      {es.name} ({es.emailAddress})
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              <div className="max-h-48 overflow-y-auto border border-gray-300 rounded-lg bg-white p-2 space-y-1">
+                {emailSources.length === 0 ? (
+                  <div className="p-2 text-sm text-gray-500 italic text-center">Belum ada sumber tersedia</div>
+                ) : (
+                  emailSources.map((es) => {
+                    const isSelected = (formData.sourceLinks || []).some(
+                      (link) => link.sourceId === es.id && link.sourceType === "EMAIL_INGEST"
+                    );
+                    return (
+                      <label
+                        key={es.id}
+                        className={`flex items-center gap-3 p-2 rounded-md cursor-pointer transition-colors ${
+                          isSelected ? "bg-[#14a2bb]/10" : "hover:bg-gray-50"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleSourceLink(es.id, "EMAIL_INGEST")}
+                          className="w-4 h-4 text-[#115d72] border-gray-300 rounded focus:ring-[#14a2bb]"
+                        />
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium text-gray-900">{es.name}</span>
+                          <span className="text-xs text-gray-500">{es.emailAddress}</span>
+                        </div>
+                      </label>
+                    );
+                  })
+                )}
               </div>
             </div>
           )}

@@ -130,15 +130,18 @@ export interface TemplateField {
   updatedAt: string;
 }
 
+export interface SourceLink {
+  sourceId: string;
+  sourceType: "WA_GROUP" | "SPREADSHEET_SOURCE" | "EMAIL_INGEST";
+}
+
 export interface Template {
   id: string;
   name: string;
   scope: "WA_GROUP" | "SPREADSHEET_SOURCE" | "EMAIL_INGEST";
   status: "DRAFT" | "ACTIVE" | "DEPRECATED";
   parserMode: "RULE_BASED" | "AI_ASSISTED";
-  groupConfigId: string | null;
-  spreadsheetSourceId: string | null;
-  emailSourceId: string | null;
+  sourceLinks: SourceLink[];
   version: number;
   isDefault: boolean;
   waKeywordHint: string | null;
@@ -158,9 +161,7 @@ export interface CreateTemplatePayload {
   name: string;
   scope: "WA_GROUP" | "SPREADSHEET_SOURCE" | "EMAIL_INGEST";
   parserMode?: "RULE_BASED" | "AI_ASSISTED";
-  groupConfigId?: string;
-  spreadsheetSourceId?: string;
-  emailSourceId?: string;
+  sourceLinks?: SourceLink[];
   waKeywordHint?: string;
   waSenderHint?: string;
   sheetTabHint?: string;
@@ -183,9 +184,7 @@ export interface UpdateTemplatePayload {
   scope?: "WA_GROUP" | "SPREADSHEET_SOURCE" | "EMAIL_INGEST";
   parserMode?: "RULE_BASED" | "AI_ASSISTED";
   isDefault?: boolean;
-  groupConfigId?: string | null;
-  spreadsheetSourceId?: string | null;
-  emailSourceId?: string | null;
+  sourceLinks?: SourceLink[];
   waKeywordHint?: string | null;
   waSenderHint?: string | null;
   sheetTabHint?: string | null;
