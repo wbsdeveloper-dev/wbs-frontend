@@ -38,6 +38,7 @@ import {
   type TemplateListFilters,
   type RoutingTestTemplatePreview,
 } from "@/hooks/service/config-api";
+import { usePrivilege } from "@/hooks/usePrivilege";
 import { useBotGroups } from "@/hooks/use-bot-groups";
 import { BOT_PRIMARY_API } from "@/hooks/service/bot-api";
 import type { GroupItem } from "@/hooks/service/bot-api";
@@ -110,6 +111,9 @@ function TemplateEditorWrapper({
 export type { Template, TemplateField };
 
 export default function TemplateGrupPage() {
+  const { hasPrivilege } = usePrivilege();
+  const canCreate = hasPrivilege("template_group", "CREATE");
+
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(
     null,
   );
@@ -420,13 +424,15 @@ export default function TemplateGrupPage() {
         <div className="flex flex-col lg:flex-row gap-4 justify-between">
           {/* Left side - Buttons */}
           <div className="flex flex-wrap gap-3">
-            <button
-              onClick={() => setIsCreateModalOpen(true)}
-              className="flex items-center gap-2 px-4 py-2.5 bg-[#115d72] text-white text-sm font-medium rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
-            >
-              <Plus size={18} />
-              Buat Template
-            </button>
+            {canCreate && (
+              <button
+                onClick={() => setIsCreateModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2.5 bg-[#115d72] text-white text-sm font-medium rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
+              >
+                <Plus size={18} />
+                Buat Template
+              </button>
+            )}
             <button
               onClick={() => {
                 setIsTestModalOpen(true);

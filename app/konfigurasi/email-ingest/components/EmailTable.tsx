@@ -3,6 +3,7 @@
 import React from "react";
 import { Pencil, Trash2, CheckCircle, XCircle } from "lucide-react";
 import type { EmailSource } from "../page";
+import { usePrivilege } from "@/hooks/usePrivilege";
 
 interface EmailTableProps {
   emails: EmailSource[];
@@ -19,6 +20,10 @@ export default function EmailTable({
   onRowClick,
   onDelete,
 }: EmailTableProps) {
+  const { hasPrivilege } = usePrivilege();
+  const canUpdate = hasPrivilege("email_ingest", "UPDATE");
+  const canDelete = hasPrivilege("email_ingest", "DELETE");
+
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.checked) {
       onSelectRows(emails.map((email) => email.id));
@@ -57,12 +62,14 @@ export default function EmailTable({
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
               <th className="w-12 px-4 py-4">
-                <input
-                  type="checkbox"
-                  checked={selectedRows.length === emails.length && emails.length > 0}
-                  onChange={handleSelectAll}
-                  className="w-4 h-4 text-[#115d72] border-gray-300 rounded focus:ring-[#14a2bb] cursor-pointer"
-                />
+                {canUpdate && (
+                  <input
+                    type="checkbox"
+                    checked={selectedRows.length === emails.length && emails.length > 0}
+                    onChange={handleSelectAll}
+                    className="w-4 h-4 text-[#115d72] border-gray-300 rounded focus:ring-[#14a2bb] cursor-pointer"
+                  />
+                )}
               </th>
               <th className="px-4 py-4 text-left">
                 <div className="flex items-center gap-1 text-sm font-semibold text-gray-700">
@@ -105,16 +112,18 @@ export default function EmailTable({
                 style={{ animationDelay: `${index * 50}ms` }}
               >
                 <td className="px-4 py-4">
-                  <input
-                    type="checkbox"
-                    checked={selectedRows.includes(email.id)}
-                    onChange={(e) => {
-                      e.stopPropagation();
-                      handleSelectRow(email.id);
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                    className="w-4 h-4 text-[#115d72] border-gray-300 rounded focus:ring-[#14a2bb] cursor-pointer"
-                  />
+                  {canUpdate && (
+                    <input
+                      type="checkbox"
+                      checked={selectedRows.includes(email.id)}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        handleSelectRow(email.id);
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-4 h-4 text-[#115d72] border-gray-300 rounded focus:ring-[#14a2bb] cursor-pointer"
+                    />
+                  )}
                 </td>
                 <td className="px-4 py-4">
                   <div>
@@ -151,26 +160,30 @@ export default function EmailTable({
                 </td>
                 <td className="px-4 py-4">
                   <div className="flex items-center justify-center gap-2">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onRowClick(email);
-                      }}
-                      className="p-2 text-gray-500 hover:text-[#115d72] hover:bg-[#115d72]/10 rounded-lg transition-all duration-200"
-                      title="Edit"
-                    >
-                      <Pencil size={16} />
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDelete(email.id);
-                      }}
-                      className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
-                      title="Hapus"
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                    {canUpdate && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onRowClick(email);
+                        }}
+                        className="p-2 text-gray-500 hover:text-[#115d72] hover:bg-[#115d72]/10 rounded-lg transition-all duration-200"
+                        title="Edit"
+                      >
+                        <Pencil size={16} />
+                      </button>
+                    )}
+                    {canDelete && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDelete(email.id);
+                        }}
+                        className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
+                        title="Hapus"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )}
                   </div>
                 </td>
               </tr>

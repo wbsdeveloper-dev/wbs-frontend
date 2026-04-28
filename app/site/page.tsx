@@ -12,6 +12,7 @@ import dynamic from "next/dynamic";
 const SiteMap = dynamic(() => import("./components/SiteMap"), { ssr: false });
 import { useQueryClient } from "@tanstack/react-query";
 import { siteKeys } from "@/hooks/service/site-api";
+import { usePrivilege } from "@/hooks/usePrivilege";
 
 const tabs = [
   { label: "Daftar Site", icon: MapPin },
@@ -23,6 +24,9 @@ export default function SitePage() {
   const [activeTab, setActiveTab] = useState(0);
   const [addSiteModalOpen, setAddSiteModalOpen] = useState(false);
   const [addRelationModalOpen, setAddRelationModalOpen] = useState(false);
+
+  const { hasPrivilege } = usePrivilege();
+  const canCreate = hasPrivilege("site_management", "CREATE");
   const [editingSiteId, setEditingSiteId] = useState<string | null>(null);
   const [editingRelationId, setEditingRelationId] = useState<string | null>(
     null,
@@ -107,7 +111,7 @@ export default function SitePage() {
         </div>
 
         <div className="flex gap-2 mb-2">
-          {activeTab !== 2 && (
+          {activeTab !== 2 && canCreate && (
             <button
               onClick={handleAddButtonClick}
               className="flex items-center gap-2 px-4 py-2.5 bg-[#115d72] text-white text-sm font-medium rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"

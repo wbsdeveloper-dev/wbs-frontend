@@ -1,5 +1,5 @@
 import { X } from "lucide-react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   useEvents,
   useCreateEvent,
@@ -16,6 +16,7 @@ type Props = {
   submitNote: () => void;
   pemasokId?: string;
   pembangkitId?: string;
+  selectedTimestamp?: string;
 };
 
 export default function ModalNote({
@@ -28,6 +29,7 @@ export default function ModalNote({
   submitNote,
   pemasokId,
   pembangkitId,
+  selectedTimestamp,
 }: Props) {
   const [saving, setSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
@@ -52,8 +54,27 @@ export default function ModalNote({
 
   const createEvent = useCreateEvent();
 
-  // Show all events for this site (no extra client-side filter)
-  const existingNotes = eventsData?.events || [];
+  // Show only events matching the selected point's date and hour
+  const existingNotes = useMemo(() => {
+    const allEvents = eventsData?.events || [];
+    if (!selectedTimestamp) return allEvents;
+
+    const clickedDate = new Date(selectedTimestamp);
+    const clickedYear = clickedDate.getFullYear();
+    const clickedMonth = clickedDate.getMonth();
+    const clickedDay = clickedDate.getDate();
+    const clickedHour = clickedDate.getHours();
+
+    return allEvents.filter((event) => {
+      const eventDate = new Date(event.occurredAt);
+      return (
+        eventDate.getFullYear() === clickedYear &&
+        eventDate.getMonth() === clickedMonth &&
+        eventDate.getDate() === clickedDay &&
+        eventDate.getHours() === clickedHour
+      );
+    });
+  }, [eventsData, selectedTimestamp]);
 
   const handleSave = async () => {
     if (!note.trim()) return;
@@ -63,7 +84,7 @@ export default function ModalNote({
       await createEvent.mutateAsync({
         siteId: siteId,
         siteName: supplier || "Unknown",
-        occurredAt: new Date().toISOString(),
+        occurredAt: selectedTimestamp || new Date().toISOString(),
         title: `Catatan ${supplier} - ${time}`,
         description: note.trim(),
         severity: "INFO",
@@ -103,7 +124,18 @@ export default function ModalNote({
             <div>
               <div className="flex justify-between">
                 <h3 className="font-bold mb-2">Catatan {supplier}</h3>
-                <p className="font-bold mb-2">{time}</p>
+                <div className="text-right">
+                  <p className="font-bold mb-1">{time}</p>
+                  {selectedTimestamp && (
+                    <p className="text-xs text-gray-500">
+                      {new Date(selectedTimestamp).toLocaleDateString("id-ID", {
+                        day: "2-digit",
+                        month: "long",
+                        year: "numeric",
+                      })}
+                    </p>
+                  )}
+                </div>
               </div>
               {existingNotes.length > 0 ? (
                 <div className="border border-gray-200 p-3 rounded-lg max-h-[300px] overflow-y-auto space-y-3">

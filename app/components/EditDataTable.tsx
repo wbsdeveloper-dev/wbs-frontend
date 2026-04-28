@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import {
   Pencil,
@@ -11,6 +11,9 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
+  ChevronsUpDown,
+  ArrowUp,
+  ArrowDown,
   Loader2,
   CheckCircle2,
   AlertCircle,
@@ -24,6 +27,7 @@ import type {
   MonitoringParams,
 } from "@/hooks/service/monitoring-api";
 import { useDeleteMonitoringRecord } from "@/hooks/service/monitoring-api";
+import { usePrivilege } from "@/hooks/usePrivilege";
 
 // ---------------------------------------------------------------------------
 // Props
@@ -122,6 +126,22 @@ function DeleteConfirmModal({
 }
 
 // ---------------------------------------------------------------------------
+// Text normalizer
+// ---------------------------------------------------------------------------
+
+const formatNormalizeText = (text: string) => {
+  if (!text) return "-";
+  if (text.toUpperCase() === "FLOWRATE_MMSCFD") return "Flowrate (MMSCFD)";
+  if (text.toUpperCase() === "ENERGY_BBTUD") return "Energy (BBTUD)";
+
+  return text
+    .toLowerCase()
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+};
+
+// ---------------------------------------------------------------------------
 // Status badge
 // ---------------------------------------------------------------------------
 
@@ -137,17 +157,19 @@ const StatusBadge = ({ status }: { status: string }) => {
     RESOLVED: { bg: "bg-blue-50", text: "text-blue-700", dot: "bg-blue-500" },
   };
   const c = config[status] ?? {
-    bg: "bg-gray-50",
+    bg: "bg-gray-100",
     text: "text-gray-700",
-    dot: "bg-gray-500",
+    dot: "bg-gray-400",
   };
+
+  const label = config[status] ? status : formatNormalizeText(status);
 
   return (
     <span
       className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${c.bg} ${c.text}`}
     >
       <span className={`w-1.5 h-1.5 rounded-full ${c.dot}`} />
-      {status}
+      {label}
     </span>
   );
 };
@@ -160,33 +182,34 @@ const ActionButtons = ({
   id,
   onEdit,
   onDelete,
+  canUpdate,
+  canDelete,
 }: {
   id: string;
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
+  canUpdate: boolean;
+  canDelete: boolean;
 }) => (
   <div className="flex items-center justify-center gap-1">
-    <button
-      onClick={() => onEdit(id)}
-      className="p-1.5 text-[#115d72] hover:bg-[#115d72]/10 rounded-lg transition-colors"
-      title="Edit"
-    >
-      <Pencil size={16} />
-    </button>
-    <button
-      onClick={() => onDelete(id)}
-      className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-      title="Hapus"
-    >
-      <Trash2 size={16} />
-    </button>
-    {/* <button
-      onClick={() => console.log("Download", id)}
-      className="p-1.5 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
-      title="Download"
-    >
-      <Download size={16} />
-    </button> */}
+    {canUpdate && (
+      <button
+        onClick={() => onEdit(id)}
+        className="p-1.5 text-[#115d72] hover:bg-[#115d72]/10 rounded-lg transition-colors"
+        title="Edit"
+      >
+        <Pencil size={16} />
+      </button>
+    )}
+    {canDelete && (
+      <button
+        onClick={() => onDelete(id)}
+        className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+        title="Hapus"
+      >
+        <Trash2 size={16} />
+      </button>
+    )}
   </div>
 );
 
@@ -203,6 +226,10 @@ export default function EditDataTable({
   onFilterChange,
 }: EditDataTableProps) {
   const router = useRouter();
+  const { hasPrivilege } = usePrivilege();
+  const canUpdate = hasPrivilege("data_management", "UPDATE");
+  const canDelete = hasPrivilege("data_management", "DELETE");
+  const hasAction = canUpdate || canDelete;
 
   // Server-side pagination mapping
   const totalItems = pagination.total || 0;
@@ -214,6 +241,81 @@ export default function EditDataTable({
   const startIndex = currentPage * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const paginatedRecords = records;
+
+  // Sort state
+  type SortField = keyof MonitoringRecord;
+  const [sortField, setSortField] = useState<SortField | null>(null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+
+  const handleSort = (field: SortField) => {
+    if (sortField !== field) {
+      // New column → start ascending
+      setSortField(field);
+      setSortDir("asc");
+    } else if (sortDir === "asc") {
+      // Same column, was asc → go desc
+      setSortDir("desc");
+    } else {
+      // Same column, was desc → reset to default
+      setSortField(null);
+      setSortDir("asc");
+    }
+  };
+
+  const sortedRecords = useMemo(() => {
+    if (!sortField) return paginatedRecords;
+    return [...paginatedRecords].sort((a, b) => {
+      const av = a[sortField] ?? "";
+      const bv = b[sortField] ?? "";
+      const cmp =
+        typeof av === "number" && typeof bv === "number"
+          ? av - bv
+          : String(av).localeCompare(String(bv));
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+  }, [paginatedRecords, sortField, sortDir]);
+
+  // Sort icon helper
+  const SortIcon = ({ field }: { field: SortField }) => {
+    if (sortField !== field)
+      return <ChevronsUpDown size={12} className="ml-1 opacity-40" />;
+    return sortDir === "asc" ? (
+      <ArrowUp size={12} className="ml-1 text-[#115d72]" />
+    ) : (
+      <ArrowDown size={12} className="ml-1 text-[#115d72]" />
+    );
+  };
+
+  // Sortable header helper
+  const Th = ({
+    label,
+    field,
+    align = "center",
+  }: {
+    label: string;
+    field?: SortField;
+    align?: "left" | "center" | "right";
+  }) => (
+    <th
+      className={`px-4 py-3 text-${align} text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap ${
+        field
+          ? "cursor-pointer select-none hover:bg-gray-100 transition-colors"
+          : ""
+      }`}
+      onClick={field ? () => handleSort(field) : undefined}
+    >
+      <span className="inline-flex items-center justify-center">
+        {label}
+        {field && <SortIcon field={field} />}
+      </span>
+    </th>
+  );
+
+  // 4-decimal formatter
+  const fmt4 = (val: number | null | undefined): string => {
+    if (val == null) return "-";
+    return val.toFixed(4);
+  };
 
   // Only show filter UI if the parent provides onFilterChange
   const filtersEnabled = !!onFilterChange;
@@ -579,55 +681,27 @@ export default function EditDataTable({
           <table className="w-full text-sm">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  No
-                </th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Tanggal
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Pemasok
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Pembangkit
-                </th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Metrik
-                </th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Periode
-                </th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Jam
-                </th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Nilai Dari WA
-                </th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Nilai Dari Email
-                </th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Nilai Final
-                </th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Delta
-                </th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  ID
-                </th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Aksi
-                </th>
+                <Th label="No" />
+                <Th label="Tanggal" field="reportDate" />
+                <Th label="Pemasok" field="supplierName" align="left" />
+                <Th label="Pembangkit" field="siteName" align="left" />
+                <Th label="Metrik" field="metricType" />
+                <Th label="Periode" field="periodType" />
+                <Th label="Jam" field="periodValue" />
+                <Th label="Nilai Dari WA" field="waValue" />
+                <Th label="Nilai Dari Email" field="plnValue" />
+                <Th label="Nilai Final" field="finalValue" />
+                <Th label="Delta" field="delta" />
+                <Th label="Status" field="status" />
+                <Th label="ID" />
+                <Th label="Aksi" />
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {isLoading ? (
                 <tr>
                   <td
-                    colSpan={13}
+                    colSpan={hasAction ? 14 : 13}
                     className="px-4 py-8 text-center text-gray-500"
                   >
                     <div className="flex items-center justify-center gap-2">
@@ -642,14 +716,14 @@ export default function EditDataTable({
               ) : records.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={14}
+                    colSpan={hasAction ? 14 : 13}
                     className="px-4 py-8 text-center text-gray-500"
                   >
                     Tidak ada data monitoring
                   </td>
                 </tr>
               ) : (
-                paginatedRecords.map((record, index) => (
+                sortedRecords.map((record, index) => (
                   <tr
                     key={record.id}
                     className="hover:bg-gray-50 transition-colors"
@@ -657,7 +731,7 @@ export default function EditDataTable({
                     <td className="px-4 py-3 text-center text-gray-700">
                       {startIndex + index + 1}
                     </td>
-                    <td className="px-4 py-3 text-center text-gray-700">
+                    <td className="px-4 py-3 text-center text-gray-700 whitespace-nowrap">
                       {record.reportDate}
                     </td>
                     <td className="px-4 py-3 text-gray-900">
@@ -666,26 +740,26 @@ export default function EditDataTable({
                     <td className="px-4 py-3 text-gray-900">
                       {record.siteName}
                     </td>
-                    <td className="px-4 py-3 text-center text-gray-700">
-                      {record.metricType}
+                    <td className="px-4 py-3 text-center text-gray-700 whitespace-nowrap">
+                      {formatNormalizeText(record.metricType)}
                     </td>
                     <td className="px-4 py-3 text-center text-gray-700">
-                      {record.periodType}
+                      {formatNormalizeText(record.periodType)}
                     </td>
                     <td className="px-4 py-3 text-center text-gray-700 font-mono text-xs">
                       {record.periodValue || "-"}
                     </td>
-                    <td className="px-4 py-3 text-center text-gray-700">
-                      {record.waValue ?? "-"}
+                    <td className="px-4 py-3 text-center text-gray-700 font-mono">
+                      {fmt4(record.waValue)}
                     </td>
-                    <td className="px-4 py-3 text-center text-gray-700">
-                      {record.plnValue ?? "-"}
+                    <td className="px-4 py-3 text-center text-gray-700 font-mono">
+                      {fmt4(record.plnValue)}
                     </td>
-                    <td className="px-4 py-3 text-center text-gray-700">
-                      {record.finalValue ?? "-"}
+                    <td className="px-4 py-3 text-center text-gray-700 font-mono font-medium">
+                      {fmt4(record.finalValue)}
                     </td>
-                    <td className="px-4 py-3 text-center text-gray-700">
-                      {record.delta ?? "-"}
+                    <td className="px-4 py-3 text-center text-gray-700 font-mono">
+                      {fmt4(record.delta)}
                     </td>
                     <td className="px-4 py-3 text-center">
                       <StatusBadge status={record.status} />
@@ -693,18 +767,22 @@ export default function EditDataTable({
                     <td className="px-4 py-3 text-center text-gray-900 font-medium">
                       {record.id}
                     </td>
-                    <td className="px-4 py-3 text-center">
-                      <ActionButtons
-                        id={record.id}
-                        onEdit={(id) => router.push(`/edit/${id}`)}
-                        onDelete={(id) =>
-                          handleDeleteClick(
-                            id,
-                            `${record.siteName} - ${record.reportDate}`,
-                          )
-                        }
-                      />
-                    </td>
+                    {hasAction && (
+                      <td className="px-4 py-3 text-center">
+                        <ActionButtons
+                          id={record.id}
+                          onEdit={(id) => router.push(`/edit/${id}`)}
+                          onDelete={(id) =>
+                            handleDeleteClick(
+                              id,
+                              `${record.siteName} - ${record.reportDate}`,
+                            )
+                          }
+                          canUpdate={canUpdate}
+                          canDelete={canDelete}
+                        />
+                      </td>
+                    )}
                   </tr>
                 ))
               )}

@@ -24,6 +24,7 @@ import { Modal } from "@/app/components/ui";
 import { Tooltip } from "@mui/material";
 import type { Template, TemplateField } from "@/hooks/service/config-api";
 import { useAiModels, useEmailSources } from "@/hooks/service/config-api";
+import { usePrivilege } from "@/hooks/usePrivilege";
 
 interface TemplateEditorProps {
   template: Template;
@@ -117,6 +118,10 @@ export default function TemplateEditor({
   botGroups,
   spreadsheetSources,
 }: TemplateEditorProps) {
+  const { hasPrivilege } = usePrivilege();
+  const canUpdate = hasPrivilege("template_group", "UPDATE");
+  const canDelete = hasPrivilege("template_group", "DELETE");
+
   // Normalize WA_REGEX_RECORDS fields when loading from API
   const normalizedTemplate = {
     ...template,
@@ -423,21 +428,25 @@ export default function TemplateEditor({
           }`}
           action={
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => setIsDeleteDialogOpen(true)}
-                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-red-600 bg-red-50 border border-transparent rounded-lg hover:bg-red-100 transition-all duration-200"
-                title="Hapus Template"
-              >
-                <Trash2 size={16} />
-              </button>
-              <button
-                onClick={handleSaveDraft}
-                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200"
-              >
-                <Save size={16} />
-                Simpan Draft
-              </button>
-              {formData.status !== "ACTIVE" && (
+              {canDelete && (
+                <button
+                  onClick={() => setIsDeleteDialogOpen(true)}
+                  className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-red-600 bg-red-50 border border-transparent rounded-lg hover:bg-red-100 transition-all duration-200"
+                  title="Hapus Template"
+                >
+                  <Trash2 size={16} />
+                </button>
+              )}
+              {canUpdate && (
+                <button
+                  onClick={handleSaveDraft}
+                  className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200"
+                >
+                  <Save size={16} />
+                  Simpan Draft
+                </button>
+              )}
+              {canUpdate && formData.status !== "ACTIVE" && (
                 <button
                   onClick={handleActivate}
                   className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-all duration-200"
@@ -582,7 +591,7 @@ export default function TemplateEditor({
                   </select>
                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                 </div>
-                {onAddGroup && (
+                {canUpdate && onAddGroup && (
                   <button
                     type="button"
                     onClick={() => setIsAddingGroup(true)}
@@ -933,14 +942,16 @@ export default function TemplateEditor({
           description={`${formData.fields.length} bidang dikonfigurasi`}
           action={
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => setIsCSVImportModalOpen(true)}
-                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200"
-                title="Import Fields from CSV"
-              >
-                <Upload size={16} />
-                <span className="hidden sm:inline">Impor</span>
-              </button>
+              {canUpdate && (
+                <button
+                  onClick={() => setIsCSVImportModalOpen(true)}
+                  className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200"
+                  title="Import Fields from CSV"
+                >
+                  <Upload size={16} />
+                  <span className="hidden sm:inline">Impor</span>
+                </button>
+              )}
               <button
                 onClick={handleExportCSV}
                 className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200"
@@ -949,16 +960,18 @@ export default function TemplateEditor({
                 <Download size={16} />
                 <span className="hidden sm:inline">Ekspor</span>
               </button>
-              <button
-                onClick={() => {
-                  resetFieldForm();
-                  setIsFieldModalOpen(true);
-                }}
-                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-all duration-200"
-              >
-                <Plus size={16} />
-                Tambah Bidang
-              </button>
+              {canUpdate && (
+                <button
+                  onClick={() => {
+                    resetFieldForm();
+                    setIsFieldModalOpen(true);
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-all duration-200"
+                >
+                  <Plus size={16} />
+                  Tambah Bidang
+                </button>
+              )}
             </div>
           }
         />
@@ -1003,13 +1016,15 @@ export default function TemplateEditor({
                   >
                     <td className="px-2 py-3">
                       <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => handleMoveField(index, "up")}
-                          disabled={index === 0}
-                          className="p-0.5 text-gray-400 hover:text-gray-600 disabled:opacity-30"
-                        >
-                          <GripVertical size={14} />
-                        </button>
+                        {canUpdate && (
+                          <button
+                            onClick={() => handleMoveField(index, "up")}
+                            disabled={index === 0}
+                            className="p-0.5 text-gray-400 hover:text-gray-600 disabled:opacity-30"
+                          >
+                            <GripVertical size={14} />
+                          </button>
+                        )}
                         <span className="text-xs text-gray-400">
                           {field.orderNo}
                         </span>
@@ -1041,18 +1056,22 @@ export default function TemplateEditor({
                     </td>
                     <td className="px-3 py-3">
                       <div className="flex items-center justify-end gap-1">
-                        <button
-                          onClick={() => handleEditField(field)}
-                          className="p-1.5 text-gray-400 hover:text-[#115d72] hover:bg-[#115d72]/10 rounded transition-colors"
-                        >
-                          <Pencil size={14} />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteField(field.id)}
-                          className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                        >
-                          <Trash2 size={14} />
-                        </button>
+                        {canUpdate && (
+                          <button
+                            onClick={() => handleEditField(field)}
+                            className="p-1.5 text-gray-400 hover:text-[#115d72] hover:bg-[#115d72]/10 rounded transition-colors"
+                          >
+                            <Pencil size={14} />
+                          </button>
+                        )}
+                        {canDelete && (
+                          <button
+                            onClick={() => handleDeleteField(field.id)}
+                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
