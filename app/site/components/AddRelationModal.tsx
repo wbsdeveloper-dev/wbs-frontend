@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, ArrowRightLeft } from "lucide-react";
+import { X, ArrowRightLeft, Search } from "lucide-react";
 import {
   useDropdowns,
   useRelation,
@@ -49,6 +49,8 @@ export function AddRelationModal({
 
   const [selectedSourceSites, setSelectedSourceSites] = useState<string[]>([]);
   const [selectedTargetSites, setSelectedTargetSites] = useState<string[]>([]);
+  const [sourceSearch, setSourceSearch] = useState("");
+  const [targetSearch, setTargetSearch] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Load relation data for editing
@@ -75,6 +77,8 @@ export function AddRelationModal({
     });
     setSelectedSourceSites([]);
     setSelectedTargetSites([]);
+    setSourceSearch("");
+    setTargetSearch("");
     setErrors({});
   };
 
@@ -115,8 +119,8 @@ export function AddRelationModal({
     };
 
     if (editingId) {
-      updateRelationMutation.mutate({ 
-        id: editingId, 
+      updateRelationMutation.mutate({
+        id: editingId,
         payload: {
           source_site_id: selectedSourceSites[0],
           target_site_id: selectedTargetSites[0],
@@ -131,6 +135,14 @@ export function AddRelationModal({
   };
 
   const commodities = ["Gas"];
+
+  const filteredSuppliers = dropdowns?.suppliers.filter(site =>
+    site.name.toLowerCase().includes(sourceSearch.toLowerCase())
+  ) || [];
+
+  const filteredPlants = dropdowns?.plants.filter(site =>
+    site.name.toLowerCase().includes(targetSearch.toLowerCase())
+  ) || [];
 
   if (!open) return null;
 
@@ -154,21 +166,30 @@ export function AddRelationModal({
         </div>
 
         {/* Content */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-6 pt-2 space-y-4">
           {/* Source Site */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-4">
               Site Sumber {editingId ? "" : "(Bisa pilih lebih dari satu)"}
             </label>
+            <div className="relative mb-2">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Cari site sumber..."
+                value={sourceSearch}
+                onChange={(e) => setSourceSearch(e.target.value)}
+                className="w-full pl-9 pr-3 py-1.5 text-xs text-gray-400 border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-[#14a2bb] focus:border-transparent transition-all"
+              />
+            </div>
             <div className="w-full max-h-48 overflow-y-auto border border-gray-300 rounded-lg bg-white p-2 space-y-1">
-              {dropdowns?.suppliers.map((site) => (
+              {filteredSuppliers.map((site) => (
                 <label
                   key={site.id}
-                  className={`flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors ${
-                    selectedSourceSites.includes(site.id)
-                      ? "bg-[#14a2bb]/10 text-[#115d72]"
-                      : "hover:bg-gray-50 text-gray-700"
-                  }`}
+                  className={`flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors ${selectedSourceSites.includes(site.id)
+                    ? "bg-[#14a2bb]/10 text-[#115d72]"
+                    : "hover:bg-gray-50 text-gray-700"
+                    }`}
                 >
                   <input
                     type={editingId ? "radio" : "checkbox"}
@@ -195,9 +216,9 @@ export function AddRelationModal({
                   <span className="text-sm">{site.name}</span>
                 </label>
               ))}
-              {dropdowns?.suppliers.length === 0 && (
+              {filteredSuppliers.length === 0 && (
                 <p className="text-sm text-gray-500 text-center py-2">
-                  Tidak ada site sumber
+                  {sourceSearch ? "Tidak ada hasil pencarian" : "Tidak ada site sumber"}
                 </p>
               )}
             </div>
@@ -210,18 +231,27 @@ export function AddRelationModal({
 
           {/* Target Site */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-4">
               Site Tujuan {editingId ? "" : "(Bisa pilih lebih dari satu)"}
             </label>
+            <div className="relative mb-2">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Cari site tujuan..."
+                value={targetSearch}
+                onChange={(e) => setTargetSearch(e.target.value)}
+                className="w-full pl-9 pr-3 py-1.5 text-xs text-gray-400 border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-[#14a2bb] focus:border-transparent transition-all"
+              />
+            </div>
             <div className="w-full max-h-48 overflow-y-auto border border-gray-300 rounded-lg bg-white p-2 space-y-1">
-              {dropdowns?.plants.map((site) => (
+              {filteredPlants.map((site) => (
                 <label
                   key={site.id}
-                  className={`flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors ${
-                    selectedTargetSites.includes(site.id)
-                      ? "bg-[#14a2bb]/10 text-[#115d72]"
-                      : "hover:bg-gray-50 text-gray-700"
-                  }`}
+                  className={`flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors ${selectedTargetSites.includes(site.id)
+                    ? "bg-[#14a2bb]/10 text-[#115d72]"
+                    : "hover:bg-gray-50 text-gray-700"
+                    }`}
                 >
                   <input
                     type={editingId ? "radio" : "checkbox"}
@@ -248,9 +278,9 @@ export function AddRelationModal({
                   <span className="text-sm">{site.name}</span>
                 </label>
               ))}
-              {dropdowns?.plants.length === 0 && (
+              {filteredPlants.length === 0 && (
                 <p className="text-sm text-gray-500 text-center py-2">
-                  Tidak ada site tujuan
+                  {targetSearch ? "Tidak ada hasil pencarian" : "Tidak ada site tujuan"}
                 </p>
               )}
             </div>
@@ -305,7 +335,7 @@ export function AddRelationModal({
             className="px-4 py-2.5 text-sm font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95 disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
             {createRelationMutation.isPending ||
-            updateRelationMutation.isPending
+              updateRelationMutation.isPending
               ? "Menyimpan..."
               : "Simpan"}
           </button>
