@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { X, MapPin, Search } from "lucide-react";
 import {
   useDropdowns,
@@ -58,7 +58,7 @@ export function AddSiteModal({
   const [supplierSearch, setSupplierSearch] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const resetForm = () => {
+  const resetForm = useCallback(() => {
     setFormData({
       name: "",
       site_type: "PEMBANGKIT",
@@ -74,7 +74,7 @@ export function AddSiteModal({
     setPlantSearch("");
     setSupplierSearch("");
     setErrors({});
-  };
+  }, []);
 
   // Load site data for editing
   const { data: sites } = useSites();
@@ -82,21 +82,25 @@ export function AddSiteModal({
 
   // Populate form when editing
   useEffect(() => {
-    if (editingId && editingSite) {
-      setFormData({
-        name: editingSite.name,
-        site_type: editingSite.site_type,
-        region: editingSite.region,
-        capacity: editingSite.capacity ?? undefined,
-        lat: editingSite.lat,
-        long: editingSite.long,
-        conversion_factor: editingSite.conversion_factor,
-        owner: editingSite.owner ?? "",
-      });
-      setSelectedPlant(editingSite.pembangkit_id || null);
-      setSelectedSupplier(editingSite.pemasok_id || null);
+    if (open) {
+      if (editingId && editingSite) {
+        setFormData({
+          name: editingSite.name,
+          site_type: editingSite.site_type,
+          region: editingSite.region,
+          capacity: editingSite.capacity ?? undefined,
+          lat: editingSite.lat,
+          long: editingSite.long,
+          conversion_factor: editingSite.conversion_factor,
+          owner: editingSite.owner ?? "",
+        });
+        setSelectedPlant(editingSite.pembangkit_id || null);
+        setSelectedSupplier(editingSite.pemasok_id || null);
+      } else if (!editingId) {
+        resetForm();
+      }
     }
-  }, [editingId, editingSite]);
+  }, [open, editingId, editingSite, resetForm]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};

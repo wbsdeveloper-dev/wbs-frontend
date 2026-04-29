@@ -332,7 +332,10 @@ const CustomTooltip = ({
 }) => {
   if (!active || !payload || payload.length === 0) return null;
 
-  const totalVolume = payload.reduce((sum, item) => sum + Number(item.value || 0), 0);
+  const totalVolume = payload.reduce(
+    (sum, item) => sum + Number(item.value || 0),
+    0,
+  );
   const totalFlowrate = payload.reduce((sum, item) => {
     const originalKey = item.dataKey?.replace("values.", "") || item.name;
     const flowrate = item.payload?.flowrates?.[originalKey] || 0;
@@ -386,7 +389,9 @@ const CustomTooltip = ({
 
       {payload.length > 1 && (
         <div className="border-t border-gray-100 pt-3 mt-3">
-          <div className="font-medium text-gray-800 mb-2">Total Keseluruhan</div>
+          <div className="font-medium text-gray-800 mb-2">
+            Total Keseluruhan
+          </div>
           <div className="grid grid-cols-2 text-xs gap-2">
             <div className="flex flex-col bg-gray-100 rounded p-1.5 border border-gray-200">
               <span className="text-gray-600 mb-0.5">Total Volume</span>
@@ -631,7 +636,7 @@ export default function RealtimeChart({
     return [Math.floor(min - padding), Math.ceil(max + padding)];
   }, [chartData]);
 
-  const submitNote = () => { };
+  const submitNote = () => {};
 
   if (topLineActive === null) return null;
 
@@ -1001,13 +1006,14 @@ export default function RealtimeChart({
                 <p className="block text-sm font-medium text-gray-700 mb-2">
                   Filter Periode
                 </p>
-                <div className="flex gap-10">
-                  <div className="flex gap-4 mb-3">
+                <div className="overflow-x-auto">
+                  <div className="flex gap-4 mb-3 min-w-max px-1">
                     <button
-                      className={`text-[#115d72] ${period == "1D"
+                      className={`text-[#115d72] ${
+                        period == "1D"
                           ? "bg-[#14a2bb92] w-[45px] rounded-md"
                           : ""
-                        } cursor-pointer`}
+                      } cursor-pointer`}
                       onClick={() => {
                         setPeriod("1D");
                         if (startDate) setEndDate(startDate);
@@ -1024,10 +1030,11 @@ export default function RealtimeChart({
                       1D
                     </button>
                     <button
-                      className={`text-[#115d72] ${period == "1W"
+                      className={`text-[#115d72] ${
+                        period == "1W"
                           ? "bg-[#14a2bb92] w-[45px] rounded-md"
                           : ""
-                        } cursor-pointer`}
+                      } cursor-pointer`}
                       onClick={() => {
                         setPeriod("1W");
                         if (onPeriodChange) {
@@ -1043,10 +1050,11 @@ export default function RealtimeChart({
                       1W
                     </button>
                     <button
-                      className={`text-[#115d72] ${period == "3M"
+                      className={`text-[#115d72] ${
+                        period == "3M"
                           ? "bg-[#14a2bb92] w-[45px] rounded-md"
                           : ""
-                        } cursor-pointer`}
+                      } cursor-pointer`}
                       onClick={() => {
                         setPeriod("3M");
                         if (onPeriodChange) {
@@ -1062,10 +1070,11 @@ export default function RealtimeChart({
                       3M
                     </button>
                     <button
-                      className={`text-[#115d72] ${period == "6M"
+                      className={`text-[#115d72] ${
+                        period == "6M"
                           ? "bg-[#14a2bb92] w-[45px] rounded-md"
                           : ""
-                        } cursor-pointer`}
+                      } cursor-pointer`}
                       onClick={() => {
                         setPeriod("6M");
                         if (onPeriodChange) {
@@ -1081,10 +1090,11 @@ export default function RealtimeChart({
                       6M
                     </button>
                     <button
-                      className={`text-[#115d72] ${period == "1Y"
+                      className={`text-[#115d72] ${
+                        period == "1Y"
                           ? "bg-[#14a2bb92] w-[45px] rounded-md"
                           : ""
-                        } cursor-pointer`}
+                      } cursor-pointer`}
                       onClick={() => {
                         setPeriod("1Y");
                         if (onPeriodChange) {
@@ -1146,9 +1156,9 @@ export default function RealtimeChart({
                           color: "#14a1bb",
                         },
                         "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
-                        {
-                          backgroundColor: "#14a1bb",
-                        },
+                          {
+                            backgroundColor: "#14a1bb",
+                          },
                       }}
                     />
                   </div>
@@ -1164,9 +1174,9 @@ export default function RealtimeChart({
                           color: "#14a1bb",
                         },
                         "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
-                        {
-                          backgroundColor: "#14a1bb",
-                        },
+                          {
+                            backgroundColor: "#14a1bb",
+                          },
                       }}
                     />
                   </div>
@@ -1182,9 +1192,9 @@ export default function RealtimeChart({
                           color: "#14a1bb",
                         },
                         "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
-                        {
-                          backgroundColor: "#14a1bb",
-                        },
+                          {
+                            backgroundColor: "#14a1bb",
+                          },
                       }}
                     />
                   </div>
