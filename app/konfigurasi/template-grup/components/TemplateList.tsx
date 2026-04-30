@@ -126,9 +126,9 @@ export default function TemplateList({
                   Default
                 </span>
               )}
-              {template.groupConfigId && (
+              {(template.sourceLinks?.length ?? 0) > 0 && (
                 <span className="px-2 py-0.5 text-xs font-medium bg-indigo-100 text-indigo-700 rounded-full">
-                  Grup Terhubung
+                  Sumber Terhubung
                 </span>
               )}
             </div>

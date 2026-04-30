@@ -204,8 +204,7 @@ export default function TemplateGrupPage() {
           scope: updatedTemplate.scope,
           parserMode: updatedTemplate.parserMode,
           isDefault: updatedTemplate.isDefault,
-          groupConfigId: updatedTemplate.groupConfigId,
-          spreadsheetSourceId: updatedTemplate.spreadsheetSourceId,
+          sourceLinks: updatedTemplate.sourceLinks,
           waKeywordHint: updatedTemplate.waKeywordHint,
           waSenderHint: updatedTemplate.waSenderHint,
           sheetTabHint: updatedTemplate.sheetTabHint,
@@ -534,7 +533,7 @@ export default function TemplateGrupPage() {
         </div>
 
         {/* Right Panel - Template Editor (70%) or split with Email Panel */}
-        {scopeFilter === "EMAIL_INGEST" && selectedTemplate?.emailSourceId ? (
+        {scopeFilter === "EMAIL_INGEST" && selectedTemplate?.sourceLinks?.some(l => l.sourceType === "EMAIL_INGEST") ? (
           <>
             {/* Editor (50%) */}
             <div className="lg:col-span-4">
@@ -561,7 +560,7 @@ export default function TemplateGrupPage() {
             </div>
             {/* Email Source Panel (30%) */}
             <div className="lg:col-span-3">
-              <EmailSourcePanel sourceId={selectedTemplate.emailSourceId} />
+              <EmailSourcePanel sourceId={selectedTemplate.sourceLinks?.find(l => l.sourceType === "EMAIL_INGEST")?.sourceId || ""} />
             </div>
           </>
         ) : (
