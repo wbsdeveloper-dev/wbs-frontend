@@ -183,8 +183,8 @@ export interface SiteRelation {
 }
 
 export interface CreateRelationPayload {
-  source_site_id: string;
-  target_site_id: string;
+  source_site_ids: string[];
+  target_site_ids: string[];
   relation_type: string;
   commodity: string;
   priority?: number;
@@ -326,7 +326,7 @@ export function getRelation(id: string) {
 }
 
 export function createRelation(payload: CreateRelationPayload) {
-  return siteFetch<SiteRelation>("/site-relations", {
+  return siteFetch<SiteRelation[]>("/site-relations", {
     method: "POST",
     body: JSON.stringify(payload),
   });
@@ -480,7 +480,7 @@ export function useRelation(
 
 export function useCreateRelation(
   options?: Partial<
-    UseMutationOptions<SiteRelation, Error, CreateRelationPayload>
+    UseMutationOptions<SiteRelation[], Error, CreateRelationPayload>
   >,
 ) {
   const qc = useQueryClient();

@@ -16,7 +16,9 @@ type Props = {
   submitNote: () => void;
   pemasokId?: string;
   pembangkitId?: string;
+  seriesSiteId?: string;
   selectedTimestamp?: string;
+  period?: string;
 };
 
 export default function ModalNote({
@@ -29,13 +31,15 @@ export default function ModalNote({
   submitNote,
   pemasokId,
   pembangkitId,
+  seriesSiteId,
   selectedTimestamp,
+  period,
 }: Props) {
   const [saving, setSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
 
-  // Determine the siteId to filter events by
-  const siteId = pembangkitId || pemasokId;
+  // Determine the siteId to filter events by. Avoid comma-separated IDs.
+  const apiSiteId = seriesSiteId || (pembangkitId && !pembangkitId.includes(",") ? pembangkitId : pemasokId && !pemasokId.includes(",") ? pemasokId : undefined);
 
   // Fetch existing events — wide date range to show all recent events
   const today = new Date().toISOString().split("T")[0];
@@ -48,13 +52,13 @@ export default function ModalNote({
     today,
     50,
     undefined,
-    siteId,
+    apiSiteId,
     undefined,
   );
 
   const createEvent = useCreateEvent();
 
-  // Show only events matching the selected point's date and hour
+  // Show only events matching the selected point's date (and hour if in 1D view)
   const existingNotes = useMemo(() => {
     const allEvents = eventsData?.events || [];
     if (!selectedTimestamp) return allEvents;
@@ -66,15 +70,25 @@ export default function ModalNote({
     const clickedHour = clickedDate.getHours();
 
     return allEvents.filter((event) => {
+      // Filter by the specific series clicked
+      const isCorrectSite = seriesSiteId ? event.siteId === seriesSiteId : event.siteName === supplier;
+      if (!isCorrectSite) return false;
+
       const eventDate = new Date(event.occurredAt);
-      return (
+      const sameDay =
         eventDate.getFullYear() === clickedYear &&
         eventDate.getMonth() === clickedMonth &&
-        eventDate.getDate() === clickedDay &&
-        eventDate.getHours() === clickedHour
-      );
+        eventDate.getDate() === clickedDay;
+
+      if (period === "1D") {
+        // Hourly view: also match the hour
+        return sameDay && eventDate.getHours() === clickedHour;
+      }
+
+      // Daily view: match only the day
+      return sameDay;
     });
-  }, [eventsData, selectedTimestamp]);
+  }, [eventsData, selectedTimestamp, period]);
 
   const handleSave = async () => {
     if (!note.trim()) return;
@@ -82,7 +96,7 @@ export default function ModalNote({
 
     try {
       await createEvent.mutateAsync({
-        siteId: siteId,
+        siteId: seriesSiteId || undefined,
         siteName: supplier || "Unknown",
         occurredAt: selectedTimestamp || new Date().toISOString(),
         title: `Catatan ${supplier} - ${time}`,
