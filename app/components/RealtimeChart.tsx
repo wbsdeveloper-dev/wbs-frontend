@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Filter, X, Info } from "lucide-react";
+import { Filter, X, Info, AlertTriangle } from "lucide-react";
 import {
   CartesianGrid,
   Line,
@@ -21,10 +21,11 @@ import { Switch } from "@mui/material";
 import NoteSection from "./NoteSection";
 import ModalNote from "./ModalNote";
 import DateRangeFilter from "./DateRangeFilter";
-import type {
-  ChartFlowResponse,
-  DashboardFilters,
-  FilterOption,
+import {
+  useEvents,
+  type ChartFlowResponse,
+  type DashboardFilters,
+  type FilterOption,
 } from "@/hooks/service/dashboard-api";
 import type { Contract } from "@/hooks/service/contract-api";
 import { Loader2 } from "lucide-react";
@@ -77,6 +78,7 @@ type SelectedPoint = {
   series: string;
   value: number;
   rawTimestamp?: string;
+  siteId?: string;
 };
 
 const COLORS: Record<string, string> = {
@@ -457,6 +459,77 @@ export default function RealtimeChart({
   );
   const [formattedEndDate, setFormattedEndDate] = useState<string | null>(null);
 
+  // Collect all relevant site IDs from the chart series for client-side filtering
+  const chartSiteIds = useMemo(() => {
+    const ids = new Set<string>();
+    if (chartFlowData?.series?.length) {
+      chartFlowData.series.forEach((s) => {
+        if (s.siteId) ids.add(s.siteId);
+      });
+    }
+    if (selectedPembangkitId)
+      selectedPembangkitId.split(",").forEach((id) => ids.add(id));
+    if (selectedPemasokId)
+      selectedPemasokId.split(",").forEach((id) => ids.add(id));
+    return ids;
+  }, [chartFlowData, selectedPembangkitId, selectedPemasokId]);
+
+  const nameToSiteId = useMemo(() => {
+    const map = new Map<string, string>();
+    if (chartFlowData?.series) {
+      chartFlowData.series.forEach((s) => {
+        if (s.siteId) map.set(s.name, s.siteId);
+      });
+    }
+    return map;
+  }, [chartFlowData]);
+
+  // Fetch events for the chart range — do NOT pass siteId to avoid 400 error with multiple IDs
+  const { data: eventsData } = useEvents(
+    startDate ||
+      new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .split("T")[0],
+    endDate || new Date().toISOString().split("T")[0],
+    100,
+  );
+
+  // Map events to timestamps for quick lookup, filtering by relevant site IDs
+  const pointsWithNotes = useMemo(() => {
+    const set = new Set<string>();
+    if (!eventsData?.events) return set;
+
+    const siteIdToName = new Map<string, string>();
+    if (chartFlowData?.series) {
+      chartFlowData.series.forEach((s) => {
+        if (s.siteId) siteIdToName.set(s.siteId, s.name);
+      });
+    }
+
+    eventsData.events
+      .filter(
+        (event) => chartSiteIds.size === 0 || chartSiteIds.has(event.siteId),
+      )
+      .forEach((event) => {
+        const seriesName = siteIdToName.get(event.siteId);
+        const d = new Date(event.occurredAt);
+        let key = "";
+        if (period === "1D") {
+          key = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}-${d.getHours()}`;
+        } else {
+          key = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+        }
+        if (seriesName) {
+          set.add(`${seriesName}_${key}`);
+        } else {
+          set.add(key); // Fallback
+        }
+      });
+    // console.log("[DEBUG] pointsWithNotes keys:", Array.from(set));
+    // console.log("[DEBUG] eventsData count:", eventsData?.events?.length, "period:", period, "chartSiteIds:", Array.from(chartSiteIds));
+    return set;
+  }, [eventsData, period, chartSiteIds, chartFlowData]);
+
   const today = new Date();
 
   const formattedDate = new Intl.DateTimeFormat("id-ID", {
@@ -703,26 +776,56 @@ export default function RealtimeChart({
                         strokeWidth={2}
                         dot={(props: any) => {
                           const { cx, cy, payload, value, index } = props;
+                          const rawTs = payload.rawTimestamp;
+                          let hasNote = false;
+
+                          if (rawTs) {
+                            const d = new Date(rawTs);
+                            let pointKey = "";
+                            if (period === "1D") {
+                              pointKey = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}-${d.getHours()}`;
+                            } else {
+                              pointKey = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+                            }
+                            hasNote =
+                              pointsWithNotes.has(`${key}_${pointKey}`) ||
+                              pointsWithNotes.has(pointKey);
+                            if (index === 0) {
+                              // console.log("[DEBUG DOT] rawTs:", rawTs, "pointKey:", pointKey, "hasNote:", hasNote, "setSize:", pointsWithNotes.size);
+                            }
+                          }
 
                           return (
-                            <circle
-                              key={`dot-${key}-${index}`}
-                              cx={cx}
-                              cy={cy}
-                              r={20}
-                              fill="transparent"
-                              style={{ cursor: "pointer" }}
-                              onClick={() => {
-                                setSelectedPoint({
-                                  label: payload.label,
-                                  series: key,
-                                  value,
-                                  rawTimestamp: payload.rawTimestamp,
-                                });
+                            <g key={`dot-group-${key}-${index}`}>
+                              <circle
+                                cx={cx}
+                                cy={cy}
+                                r={20}
+                                fill="transparent"
+                                style={{ cursor: "pointer" }}
+                                onClick={() => {
+                                  setSelectedPoint({
+                                    label: payload.label,
+                                    series: key,
+                                    value,
+                                    rawTimestamp: payload.rawTimestamp,
+                                    siteId: nameToSiteId.get(key),
+                                  });
 
-                                setOpenModal(true);
-                              }}
-                            />
+                                  setOpenModal(true);
+                                }}
+                              />
+                              {hasNote && (
+                                <g
+                                  transform={`translate(${cx - 8}, ${cy - 8})`}
+                                >
+                                  <AlertTriangle
+                                    size={16}
+                                    className="text-orange-500 fill-orange-50"
+                                  />
+                                </g>
+                              )}
+                            </g>
                           );
                         }}
                       />
@@ -912,6 +1015,7 @@ export default function RealtimeChart({
                   if (onPemasokChange) {
                     if (selectedArr.includes("Semua Pemasok")) {
                       onPemasokChange(null);
+                      setSelectedPemasokId(undefined);
                     } else {
                       const ids = selectedArr
                         .map((name) => {
@@ -921,7 +1025,10 @@ export default function RealtimeChart({
                           return found?.id;
                         })
                         .filter(Boolean);
-                      onPemasokChange(ids.length > 0 ? ids.join(",") : null);
+                      const joinedIds =
+                        ids.length > 0 ? (ids.join(",") as string) : null;
+                      onPemasokChange(joinedIds);
+                      setSelectedPemasokId(joinedIds || undefined);
                     }
                   }
                 }}
@@ -978,6 +1085,7 @@ export default function RealtimeChart({
                     if (onPemasokChange) {
                       if (selectedArr.includes("Semua Pemasok")) {
                         onPemasokChange(null);
+                        setSelectedPemasokId(undefined);
                       } else {
                         const ids = selectedArr
                           .map((name) => {
@@ -987,7 +1095,10 @@ export default function RealtimeChart({
                             return found?.id;
                           })
                           .filter(Boolean);
-                        onPemasokChange(ids.length > 0 ? ids.join(",") : null);
+                        const joinedIds =
+                          ids.length > 0 ? (ids.join(",") as string) : null;
+                        onPemasokChange(joinedIds);
+                        setSelectedPemasokId(joinedIds || undefined);
                       }
                     }
                   }}
@@ -1223,7 +1334,9 @@ export default function RealtimeChart({
           submitNote={submitNote}
           pemasokId={selectedPemasokId}
           pembangkitId={selectedPembangkitId}
+          seriesSiteId={selectedPoint?.siteId}
           selectedTimestamp={selectedPoint?.rawTimestamp}
+          period={period}
         />
       )}
     </div>
