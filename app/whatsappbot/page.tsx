@@ -498,11 +498,11 @@ function KeywordsSection({
         </button>
       </div>
 
-      <div className="flex flex-wrap gap-2 mb-2">
+      <div className="flex flex-wrap gap-2 mb-2 max-h-60 overflow-y-auto pr-1 scrollbar-thin">
         {list.map((kw, i) => (
           <span
             key={i}
-            className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200 transition-colors"
+            className="inline-flex shrink-0 items-center gap-2 px-3 py-1.5 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200 transition-colors"
           >
             {kw}
             <button
