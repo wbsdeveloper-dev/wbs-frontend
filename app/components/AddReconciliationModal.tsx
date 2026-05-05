@@ -1,5 +1,5 @@
+import React, { useState } from "react";
 import { X } from "lucide-react";
-import { useState } from "react";
 import { useCreateReconciliationRecord } from "@/hooks/service/monitoring-api";
 import { useFilters } from "@/hooks/service/dashboard-api";
 
@@ -93,7 +93,7 @@ export default function AddReconciliationModal({
                   siteName: selected ? selected.name : "",
                 });
               }}
-              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all bg-white"
+              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
             >
               <option value="">Pilih Pembangkit</option>
               {filtersData?.pembangkit?.map((p) => (
@@ -112,7 +112,7 @@ export default function AddReconciliationModal({
               onChange={(e) =>
                 setFormData({ ...formData, supplierName: e.target.value })
               }
-              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all bg-white"
+              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
             >
               <option value="">Pilih Pemasok</option>
               {filtersData?.pemasok?.map((p) => (
@@ -131,7 +131,7 @@ export default function AddReconciliationModal({
               onChange={(e) =>
                 setFormData({ ...formData, metricType: e.target.value })
               }
-              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all bg-white"
+              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
             >
               <option value="ENERGY_BBTUD">ENERGY_BBTUD</option>
               <option value="FLOWRATE_MMSCFD">FLOWRATE_MMSCFD</option>
@@ -146,7 +146,7 @@ export default function AddReconciliationModal({
               onChange={(e) =>
                 setFormData({ ...formData, periodType: e.target.value })
               }
-              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all bg-white"
+              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
             >
               <option value="day">Daily</option>
               <option value="hour">Hourly</option>
