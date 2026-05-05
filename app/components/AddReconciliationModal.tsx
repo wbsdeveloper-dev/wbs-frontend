@@ -79,7 +79,7 @@ export default function AddReconciliationModal({
         <div className="grid grid-cols-2 gap-4">
           <div className="col-span-2 sm:col-span-1">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Site (Pembangkit) <span className="text-red-500">*</span>
+              Pembangkit <span className="text-red-500">*</span>
             </label>
             <select
               value={formData.siteId}
@@ -95,7 +95,7 @@ export default function AddReconciliationModal({
               }}
               className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all bg-white"
             >
-              <option value="">Pilih Site</option>
+              <option value="">Pilih Pembangkit</option>
               {filtersData?.pembangkit?.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
@@ -105,7 +105,7 @@ export default function AddReconciliationModal({
           </div>
           <div className="col-span-2 sm:col-span-1">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Supplier (Pemasok) <span className="text-red-500">*</span>
+              Pemasok <span className="text-red-500">*</span>
             </label>
             <select
               value={formData.supplierName}
@@ -114,7 +114,7 @@ export default function AddReconciliationModal({
               }
               className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all bg-white"
             >
-              <option value="">Pilih Supplier</option>
+              <option value="">Pilih Pemasok</option>
               {filtersData?.pemasok?.map((p) => (
                 <option key={p.id} value={p.name}>
                   {p.name}
@@ -163,7 +163,7 @@ export default function AddReconciliationModal({
                 setFormData({ ...formData, periodValue: e.target.value })
               }
               className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
-              placeholder="Contoh: April 2026 / 15-05-2026"
+              placeholder="Contoh: April 2026 / 15-05-2026 / 08:00"
             />
           </div>
 
