@@ -15,7 +15,7 @@ import { siteKeys } from "@/hooks/service/site-api";
 import { usePrivilege } from "@/hooks/usePrivilege";
 
 const tabs = [
-  { label: "Daftar Site", icon: MapPin },
+  { label: "Daftar Pemasok & Pembangkit", icon: MapPin },
   { label: "Relasi Pemasok - Pembangkit", icon: ArrowRightLeft },
   { label: "Peta Lokasi", icon: Map },
 ];
@@ -67,16 +67,16 @@ export default function SitePage() {
       <div className="flex items-center gap-2 text-sm text-gray-500 mb-2 animate-fadeIn">
         <span>Dashboard</span>
         <span className="text-gray-400">/</span>
-        <span className="text-[#115d72] font-medium">Manajemen Site</span>
+        <span className="text-[#115d72] font-medium">Pemasok & Pembangkit</span>
       </div>
 
       {/* Header */}
       <div className="mb-6 md:mb-8 animate-fadeIn">
         <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-          Manajemen Site
+          Pemasok & Pembangkit
         </h1>
         <p className="text-gray-600 mt-1 text-sm md:text-base">
-          Kelola lokasi operasional beserta keterhubungan pembangkit, pemasok,
+          Kelola lokasi operasional beserta keterhubungan pemasok, pembangkit,
           dan transportir
         </p>
       </div>
@@ -94,11 +94,10 @@ export default function SitePage() {
               <button
                 key={idx}
                 onClick={() => setActiveTab(idx)}
-                className={`relative flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all duration-200 cursor-pointer ${
-                  isActive
-                    ? "text-[#115d72]"
-                    : "text-gray-500 hover:text-gray-700"
-                }`}
+                className={`relative flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all duration-200 cursor-pointer ${isActive
+                  ? "text-[#115d72]"
+                  : "text-gray-500 hover:text-gray-700"
+                  }`}
               >
                 <Icon size={16} />
                 {tab.label}
@@ -118,7 +117,7 @@ export default function SitePage() {
             >
               <Plus size={18} />
               {activeTab === 0
-                ? "Tambah Site"
+                ? "Tambah"
                 : activeTab === 1
                   ? "Tambah Relasi"
                   : "Tambah Lokasi"}

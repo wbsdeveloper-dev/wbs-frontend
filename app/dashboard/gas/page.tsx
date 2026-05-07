@@ -236,7 +236,7 @@ export default function GasDashboard() {
                 Dashboard Gas Pipa
               </h1>
               <p className="text-gray-600 mt-1 text-sm md:text-base">
-                Dashboard untuk monitoring data realtime pipa gas
+                Dashboard untuk monitoring data realtime gas pipa
               </p>
             </div>
           </div>
