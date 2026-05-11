@@ -261,7 +261,7 @@ export function useUpdateMonitoringRecord(
       payload: UpdateMonitoringPayload;
     }) => updateMonitoringRecord(id, payload),
     onSuccess: (_data, variables) => {
-      qc.invalidateQueries({ queryKey: monitoringKeys.records() });
+      qc.invalidateQueries({ queryKey: monitoringKeys.all });
       qc.invalidateQueries({ queryKey: monitoringKeys.record(variables.id) });
     },
     ...options,
@@ -376,7 +376,7 @@ export function useCreateReconciliationRecord(
     mutationFn: (payload: CreateReconciliationRecordPayload) =>
       createReconciliationRecord(payload),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: monitoringKeys.records() });
+      qc.invalidateQueries({ queryKey: monitoringKeys.all });
     },
     ...options,
   });
@@ -429,7 +429,7 @@ export function useBulkUploadReconciliationRecords(
   return useMutation({
     mutationFn: (file: File) => bulkUploadReconciliationRecords(file),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: monitoringKeys.records() });
+      qc.invalidateQueries({ queryKey: monitoringKeys.all });
     },
     ...options,
   });

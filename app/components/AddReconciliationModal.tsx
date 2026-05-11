@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { X } from "lucide-react";
+import { X, CheckCircle2, AlertCircle } from "lucide-react";
 import { useCreateReconciliationRecord } from "@/hooks/service/monitoring-api";
 import { useFilters } from "@/hooks/service/dashboard-api";
 
@@ -28,11 +28,15 @@ export default function AddReconciliationModal({
     resolution: "",
   });
 
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const createRecord = useCreateReconciliationRecord();
   const { data: filtersData } = useFilters();
 
   const handleSave = async () => {
     try {
+      setError(null);
       await createRecord.mutateAsync({
         reportDate: formData.reportDate || undefined,
         siteId: formData.siteId || undefined,
@@ -49,11 +53,14 @@ export default function AddReconciliationModal({
         resolution: formData.resolution || null,
       });
 
-      if (onSuccess) onSuccess();
-      setOpenModal(false);
-    } catch (err) {
+      setShowSuccess(true);
+      setTimeout(() => {
+        if (onSuccess) onSuccess();
+        setOpenModal(false);
+      }, 1500);
+    } catch (err: any) {
       console.error("Failed to insert record:", err);
-      alert("Gagal menambahkan data.");
+      setError(err?.message || "Gagal menambahkan data.");
     }
   };
 
@@ -75,6 +82,20 @@ export default function AddReconciliationModal({
             <X size={24} />
           </button>
         </div>
+
+        {showSuccess && (
+          <div className="mb-6 flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm font-medium animate-fade-in">
+            <CheckCircle2 size={18} />
+            Data berhasil disimpan
+          </div>
+        )}
+
+        {error && (
+          <div className="mb-6 flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm font-medium animate-fade-in">
+            <AlertCircle size={18} />
+            {error}
+          </div>
+        )}
 
         <div className="grid grid-cols-2 gap-4">
           <div className="col-span-2 sm:col-span-1">
@@ -163,7 +184,7 @@ export default function AddReconciliationModal({
                 setFormData({ ...formData, periodValue: e.target.value })
               }
               className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
-              placeholder="Contoh: April 2026 / 15-05-2026 / 08:00"
+              placeholder="Contoh: April 2026 / 2026-05-15 / 08:00"
             />
           </div>
 

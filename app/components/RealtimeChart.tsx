@@ -733,13 +733,19 @@ export default function RealtimeChart({
             <div className="flex justify-between mb-6">
               <h3 className="text-lg font-semibold text-gray-900">
                 Grafik Penyaluran Gas -{" "}
-                {Array.isArray(pemasok) ? pemasok.join(", ") : pemasok}{" "}
-                {filterType == "Pemasok"
-                  ? pembangkit
-                    ? " Ke "
-                    : ""
-                  : " Dari "}{" "}
-                {pembangkit ?? pembangkit}
+                {filterType === "Pembangkit" ? (
+                  <>
+                    {pembangkit ?? ""}
+                    {pemasok && pemasok.length > 0 && (
+                      <> Dari {Array.isArray(pemasok) ? pemasok.join(", ") : pemasok}</>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    {Array.isArray(pemasok) ? pemasok.join(", ") : pemasok}
+                    {pembangkit && <> Ke {pembangkit}</>}
+                  </>
+                )}
               </h3>
               <div>
                 <p className="text-gray-700 font-bold">
