@@ -172,19 +172,27 @@ export default function TemplateEditor({
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   // Helper for source links
-  const toggleSourceLink = (sourceId: string, sourceType: "WA_GROUP" | "SPREADSHEET_SOURCE" | "EMAIL_INGEST") => {
+  const toggleSourceLink = (
+    sourceId: string,
+    sourceType: "WA_GROUP" | "SPREADSHEET_SOURCE" | "EMAIL_INGEST",
+  ) => {
     const currentLinks = formData.sourceLinks || [];
-    const exists = currentLinks.some(link => link.sourceId === sourceId && link.sourceType === sourceType);
-    
+    const exists = currentLinks.some(
+      (link) => link.sourceId === sourceId && link.sourceType === sourceType,
+    );
+
     if (exists) {
       setFormData({
         ...formData,
-        sourceLinks: currentLinks.filter(link => !(link.sourceId === sourceId && link.sourceType === sourceType))
+        sourceLinks: currentLinks.filter(
+          (link) =>
+            !(link.sourceId === sourceId && link.sourceType === sourceType),
+        ),
       });
     } else {
       setFormData({
         ...formData,
-        sourceLinks: [...currentLinks, { sourceId, sourceType }]
+        sourceLinks: [...currentLinks, { sourceId, sourceType }],
       });
     }
   };
@@ -477,22 +485,19 @@ export default function TemplateEditor({
           }
         />
 
+        {/* Name */}
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">
+            Nama
+          </label>
+          <input
+            type="text"
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent"
+          />
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {/* Name */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Nama
-            </label>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) =>
-                setFormData({ ...formData, name: e.target.value })
-              }
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent"
-            />
-          </div>
-
           {/* Scope */}
           <div>
             <div className="flex items-center gap-1.5 mb-1.5">
@@ -560,6 +565,38 @@ export default function TemplateEditor({
             </div>
           </div>
 
+          {/* Decimal Separator */}
+          <div>
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <label className="block text-sm font-medium text-gray-700">
+                Pemisah Desimal
+              </label>
+              <Tooltip
+                title="Format angka desimal yang digunakan pada pesan atau file (Koma atau Titik)."
+                arrow
+                placement="top"
+              >
+                <Info className="w-4 h-4 text-gray-400 cursor-help" />
+              </Tooltip>
+            </div>
+            <div className="relative">
+              <select
+                value={formData.decimalSeparator || ","}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    decimalSeparator: e.target.value,
+                  })
+                }
+                className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white cursor-pointer pr-10"
+              >
+                <option value=",">Koma (,)</option>
+                <option value=".">Titik (.)</option>
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            </div>
+          </div>
+
           {/* Group Configs (for WA_GROUP) */}
           {formData.scope === "WA_GROUP" && (
             <div className="lg:col-span-2">
@@ -586,11 +623,15 @@ export default function TemplateEditor({
               </div>
               <div className="max-h-48 overflow-y-auto border border-gray-300 rounded-lg bg-white p-2 space-y-1">
                 {groupConfigs.length === 0 ? (
-                  <div className="p-2 text-sm text-gray-500 italic text-center">Belum ada grup tersedia</div>
+                  <div className="p-2 text-sm text-gray-500 italic text-center">
+                    Belum ada grup tersedia
+                  </div>
                 ) : (
                   groupConfigs.map((gc) => {
                     const isSelected = (formData.sourceLinks || []).some(
-                      (link) => link.sourceId === gc.id && link.sourceType === "WA_GROUP"
+                      (link) =>
+                        link.sourceId === gc.id &&
+                        link.sourceType === "WA_GROUP",
                     );
                     return (
                       <label
@@ -609,7 +650,9 @@ export default function TemplateEditor({
                           <span className="text-sm font-medium text-gray-900">
                             {gc.name} {!gc.isEnabled && "⛔ (Nonaktif)"}
                           </span>
-                          <span className="text-xs text-gray-500 font-mono">{gc.groupId}</span>
+                          <span className="text-xs text-gray-500 font-mono">
+                            {gc.groupId}
+                          </span>
                         </div>
                       </label>
                     );
@@ -636,11 +679,15 @@ export default function TemplateEditor({
               </div>
               <div className="max-h-48 overflow-y-auto border border-gray-300 rounded-lg bg-white p-2 space-y-1">
                 {spreadsheetSources.length === 0 ? (
-                  <div className="p-2 text-sm text-gray-500 italic text-center">Belum ada sumber tersedia</div>
+                  <div className="p-2 text-sm text-gray-500 italic text-center">
+                    Belum ada sumber tersedia
+                  </div>
                 ) : (
                   spreadsheetSources.map((ss) => {
                     const isSelected = (formData.sourceLinks || []).some(
-                      (link) => link.sourceId === ss.id && link.sourceType === "SPREADSHEET_SOURCE"
+                      (link) =>
+                        link.sourceId === ss.id &&
+                        link.sourceType === "SPREADSHEET_SOURCE",
                     );
                     return (
                       <label
@@ -652,10 +699,14 @@ export default function TemplateEditor({
                         <input
                           type="checkbox"
                           checked={isSelected}
-                          onChange={() => toggleSourceLink(ss.id, "SPREADSHEET_SOURCE")}
+                          onChange={() =>
+                            toggleSourceLink(ss.id, "SPREADSHEET_SOURCE")
+                          }
                           className="w-4 h-4 text-[#115d72] border-gray-300 rounded focus:ring-[#14a2bb]"
                         />
-                        <span className="text-sm font-medium text-gray-900">{ss.name}</span>
+                        <span className="text-sm font-medium text-gray-900">
+                          {ss.name}
+                        </span>
                       </label>
                     );
                   })
@@ -681,11 +732,15 @@ export default function TemplateEditor({
               </div>
               <div className="max-h-48 overflow-y-auto border border-gray-300 rounded-lg bg-white p-2 space-y-1">
                 {emailSources.length === 0 ? (
-                  <div className="p-2 text-sm text-gray-500 italic text-center">Belum ada sumber tersedia</div>
+                  <div className="p-2 text-sm text-gray-500 italic text-center">
+                    Belum ada sumber tersedia
+                  </div>
                 ) : (
                   emailSources.map((es) => {
                     const isSelected = (formData.sourceLinks || []).some(
-                      (link) => link.sourceId === es.id && link.sourceType === "EMAIL_INGEST"
+                      (link) =>
+                        link.sourceId === es.id &&
+                        link.sourceType === "EMAIL_INGEST",
                     );
                     return (
                       <label
@@ -697,12 +752,18 @@ export default function TemplateEditor({
                         <input
                           type="checkbox"
                           checked={isSelected}
-                          onChange={() => toggleSourceLink(es.id, "EMAIL_INGEST")}
+                          onChange={() =>
+                            toggleSourceLink(es.id, "EMAIL_INGEST")
+                          }
                           className="w-4 h-4 text-[#115d72] border-gray-300 rounded focus:ring-[#14a2bb]"
                         />
                         <div className="flex flex-col">
-                          <span className="text-sm font-medium text-gray-900">{es.name}</span>
-                          <span className="text-xs text-gray-500">{es.emailAddress}</span>
+                          <span className="text-sm font-medium text-gray-900">
+                            {es.name}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            {es.emailAddress}
+                          </span>
                         </div>
                       </label>
                     );

@@ -129,6 +129,7 @@ export default function TemplateGrupPage() {
   const [newTemplateScope, setNewTemplateScope] = useState<
     "WA_GROUP" | "SPREADSHEET_SOURCE" | "EMAIL_INGEST"
   >("WA_GROUP");
+  const [newTemplateDecimal, setNewTemplateDecimal] = useState<string>(",");
 
   const [isTestModalOpen, setIsTestModalOpen] = useState(false);
   const [testGroupId, setTestGroupId] = useState("");
@@ -212,6 +213,7 @@ export default function TemplateGrupPage() {
           aiModel: updatedTemplate.aiModel,
           aiPromptTemplate: updatedTemplate.aiPromptTemplate,
           aiOutputSchema: updatedTemplate.aiOutputSchema,
+          decimalSeparator: updatedTemplate.decimalSeparator,
           fields: updatedTemplate.fields.map((f, i) => ({
             fieldKey: f.fieldKey,
             sourceKind: f.sourceKind,
@@ -315,12 +317,14 @@ export default function TemplateGrupPage() {
       {
         name: newTemplateName,
         scope: newTemplateScope,
+        decimalSeparator: newTemplateDecimal,
       },
       {
         onSuccess: (data) => {
           setSelectedTemplate(data);
           setIsCreateModalOpen(false);
           setNewTemplateName("");
+          setNewTemplateDecimal(",");
           showNotification(
             "success",
             `Template "${newTemplateName}" berhasil dibuat`,
@@ -338,7 +342,10 @@ export default function TemplateGrupPage() {
       { groupId: payload.groupId, name: payload.name },
       {
         onSuccess: () => {
-          showNotification("success", `Group "${payload.name}" berhasil ditambahkan`);
+          showNotification(
+            "success",
+            `Group "${payload.name}" berhasil ditambahkan`,
+          );
         },
         onError: (err) => {
           showNotification("error", `Gagal menambahkan group: ${err.message}`);
@@ -477,9 +484,21 @@ export default function TemplateGrupPage() {
         <div className="mt-4 pt-4 border-t border-gray-100 flex items-center gap-1 overflow-x-auto">
           {[
             { key: "all", label: "Semua", icon: null },
-            { key: "WA_GROUP", label: "WhatsApp Grup", icon: <MessageSquare size={14} /> },
-            { key: "SPREADSHEET_SOURCE", label: "Spreadsheet", icon: <FileSpreadsheet size={14} /> },
-            { key: "EMAIL_INGEST", label: "Email Ingest", icon: <Mail size={14} /> },
+            {
+              key: "WA_GROUP",
+              label: "WhatsApp Grup",
+              icon: <MessageSquare size={14} />,
+            },
+            {
+              key: "SPREADSHEET_SOURCE",
+              label: "Spreadsheet",
+              icon: <FileSpreadsheet size={14} />,
+            },
+            {
+              key: "EMAIL_INGEST",
+              label: "Email Ingest",
+              icon: <Mail size={14} />,
+            },
           ].map((tab) => (
             <button
               key={tab.key}
@@ -533,7 +552,10 @@ export default function TemplateGrupPage() {
         </div>
 
         {/* Right Panel - Template Editor (70%) or split with Email Panel */}
-        {scopeFilter === "EMAIL_INGEST" && selectedTemplate?.sourceLinks?.some(l => l.sourceType === "EMAIL_INGEST") ? (
+        {scopeFilter === "EMAIL_INGEST" &&
+        selectedTemplate?.sourceLinks?.some(
+          (l) => l.sourceType === "EMAIL_INGEST",
+        ) ? (
           <>
             {/* Editor (50%) */}
             <div className="lg:col-span-4">
@@ -546,7 +568,10 @@ export default function TemplateGrupPage() {
                   onAddGroup={handleAddGroup}
                   groupConfigs={groupConfigsForEditor}
                   botGroups={botGroups}
-                  spreadsheetSources={spreadsheetSources.map(s => ({ id: s.id, name: s.name }))}
+                  spreadsheetSources={spreadsheetSources.map((s) => ({
+                    id: s.id,
+                    name: s.name,
+                  }))}
                 />
               ) : (
                 <Card className="h-full min-h-[400px] flex items-center justify-center">
@@ -560,7 +585,13 @@ export default function TemplateGrupPage() {
             </div>
             {/* Email Source Panel (30%) */}
             <div className="lg:col-span-3">
-              <EmailSourcePanel sourceId={selectedTemplate.sourceLinks?.find(l => l.sourceType === "EMAIL_INGEST")?.sourceId || ""} />
+              <EmailSourcePanel
+                sourceId={
+                  selectedTemplate.sourceLinks?.find(
+                    (l) => l.sourceType === "EMAIL_INGEST",
+                  )?.sourceId || ""
+                }
+              />
             </div>
           </>
         ) : (
@@ -574,7 +605,10 @@ export default function TemplateGrupPage() {
                 onAddGroup={handleAddGroup}
                 groupConfigs={groupConfigsForEditor}
                 botGroups={botGroups}
-                spreadsheetSources={spreadsheetSources.map(s => ({ id: s.id, name: s.name }))}
+                spreadsheetSources={spreadsheetSources.map((s) => ({
+                  id: s.id,
+                  name: s.name,
+                }))}
               />
             ) : (
               <Card className="h-full min-h-[400px] flex items-center justify-center">
@@ -597,6 +631,7 @@ export default function TemplateGrupPage() {
         onClose={() => {
           setIsCreateModalOpen(false);
           setNewTemplateName("");
+          setNewTemplateDecimal(",");
         }}
         title="Buat Template Baru"
         maxWidth="max-w-md"
@@ -638,11 +673,28 @@ export default function TemplateGrupPage() {
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             </div>
           </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Pemisah Desimal
+            </label>
+            <div className="relative">
+              <select
+                value={newTemplateDecimal}
+                onChange={(e) => setNewTemplateDecimal(e.target.value)}
+                className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white cursor-pointer pr-10"
+              >
+                <option value=",">Koma (,)</option>
+                <option value=".">Titik (.)</option>
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            </div>
+          </div>
           <div className="flex gap-3 pt-4 border-t border-gray-200">
             <button
               onClick={() => {
                 setIsCreateModalOpen(false);
                 setNewTemplateName("");
+                setNewTemplateDecimal(",");
               }}
               className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200"
             >
@@ -724,7 +776,9 @@ export default function TemplateGrupPage() {
               disabled={testRoutingMutation.isPending || !testGroupId}
               className="w-full px-4 py-2.5 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-all duration-200 hover:shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {testRoutingMutation.isPending ? "Sedang Menguji..." : "Jalankan Tes"}
+              {testRoutingMutation.isPending
+                ? "Sedang Menguji..."
+                : "Jalankan Tes"}
             </button>
           </div>
 

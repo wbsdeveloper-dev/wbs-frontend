@@ -11,7 +11,8 @@ import {
   type UseMutationOptions,
 } from "@tanstack/react-query";
 
-export const CONFIG_API_HOST = process.env.NEXT_PUBLIC_API_HOST || "http://localhost:3005/api";
+export const CONFIG_API_HOST =
+  process.env.NEXT_PUBLIC_API_HOST || "http://localhost:3005/api";
 
 // ---------------------------------------------------------------------------
 // Standard API envelope
@@ -151,6 +152,7 @@ export interface Template {
   aiModel: string | null;
   aiPromptTemplate: string | null;
   aiOutputSchema: Record<string, unknown> | null;
+  decimalSeparator: string;
   createdBy: string | null;
   createdAt: string;
   updatedAt: string;
@@ -169,6 +171,7 @@ export interface CreateTemplatePayload {
   aiModel?: string;
   aiPromptTemplate?: string;
   aiOutputSchema?: Record<string, unknown>;
+  decimalSeparator?: string;
   fields?: {
     fieldKey: string;
     sourceKind: TemplateField["sourceKind"];
@@ -192,6 +195,7 @@ export interface UpdateTemplatePayload {
   aiModel?: string | null;
   aiPromptTemplate?: string | null;
   aiOutputSchema?: Record<string, unknown> | null;
+  decimalSeparator?: string;
   fields?: {
     fieldKey: string;
     sourceKind: TemplateField["sourceKind"];
@@ -316,9 +320,11 @@ export const configKeys = {
     [...configKeys.all, "templates", "detail", id] as const,
   aiModels: () => [...configKeys.all, "ai-models"] as const,
   spreadsheetSources: () => [...configKeys.all, "spreadsheet-sources"] as const,
-  spreadsheetSource: (id: string) => [...configKeys.all, "spreadsheet-sources", id] as const,
+  spreadsheetSource: (id: string) =>
+    [...configKeys.all, "spreadsheet-sources", id] as const,
   emailSources: () => [...configKeys.all, "email-sources"] as const,
-  emailSource: (id: string) => [...configKeys.all, "email-sources", id] as const,
+  emailSource: (id: string) =>
+    [...configKeys.all, "email-sources", id] as const,
 };
 
 // ---------------------------------------------------------------------------
@@ -603,7 +609,7 @@ export function useDeleteTemplate(
       const [_data, id] = args;
       // Remove detail cache immediately so it doesn't trigger a 404 refetch
       qc.removeQueries({ queryKey: configKeys.template(id) });
-      
+
       // Invalidate the list queries to update the sidebar
       qc.invalidateQueries({ queryKey: ["config", "templates", "list"] });
 
@@ -649,14 +655,19 @@ export function getSpreadsheetSource(id: string) {
   return configFetch<SpreadsheetSource>(`/config/spreadsheet-sources/${id}`);
 }
 
-export function createSpreadsheetSourceApi(payload: CreateSpreadsheetSourcePayload) {
+export function createSpreadsheetSourceApi(
+  payload: CreateSpreadsheetSourcePayload,
+) {
   return configFetch<SpreadsheetSource>("/config/spreadsheet-sources", {
     method: "POST",
     body: JSON.stringify(payload),
   });
 }
 
-export function updateSpreadsheetSourceApi(id: string, payload: UpdateSpreadsheetSourcePayload) {
+export function updateSpreadsheetSourceApi(
+  id: string,
+  payload: UpdateSpreadsheetSourcePayload,
+) {
   return configFetch<SpreadsheetSource>(`/config/spreadsheet-sources/${id}`, {
     method: "PUT",
     body: JSON.stringify(payload),
@@ -664,16 +675,21 @@ export function updateSpreadsheetSourceApi(id: string, payload: UpdateSpreadshee
 }
 
 export function deleteSpreadsheetSourceApi(id: string) {
-  return configFetch<{ deleted: boolean }>(`/config/spreadsheet-sources/${id}`, {
-    method: "DELETE",
-  });
+  return configFetch<{ deleted: boolean }>(
+    `/config/spreadsheet-sources/${id}`,
+    {
+      method: "DELETE",
+    },
+  );
 }
 
 // ---------------------------------------------------------------------------
 // React Query hooks — Spreadsheet Sources
 // ---------------------------------------------------------------------------
 
-export function useSpreadsheetSources(options?: Partial<UseQueryOptions<SpreadsheetSource[]>>) {
+export function useSpreadsheetSources(
+  options?: Partial<UseQueryOptions<SpreadsheetSource[]>>,
+) {
   return useQuery({
     queryKey: configKeys.spreadsheetSources(),
     queryFn: () => getSpreadsheetSources(),
@@ -682,11 +698,14 @@ export function useSpreadsheetSources(options?: Partial<UseQueryOptions<Spreadsh
 }
 
 export function useCreateSpreadsheetSource(
-  options?: Partial<UseMutationOptions<SpreadsheetSource, Error, CreateSpreadsheetSourcePayload>>,
+  options?: Partial<
+    UseMutationOptions<SpreadsheetSource, Error, CreateSpreadsheetSourcePayload>
+  >,
 ) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (payload: CreateSpreadsheetSourcePayload) => createSpreadsheetSourceApi(payload),
+    mutationFn: (payload: CreateSpreadsheetSourcePayload) =>
+      createSpreadsheetSourceApi(payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: configKeys.spreadsheetSources() });
     },
@@ -695,12 +714,23 @@ export function useCreateSpreadsheetSource(
 }
 
 export function useUpdateSpreadsheetSource(
-  options?: Partial<UseMutationOptions<SpreadsheetSource, Error, { id: string; payload: UpdateSpreadsheetSourcePayload }>>,
+  options?: Partial<
+    UseMutationOptions<
+      SpreadsheetSource,
+      Error,
+      { id: string; payload: UpdateSpreadsheetSourcePayload }
+    >
+  >,
 ) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: UpdateSpreadsheetSourcePayload }) =>
-      updateSpreadsheetSourceApi(id, payload),
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: UpdateSpreadsheetSourcePayload;
+    }) => updateSpreadsheetSourceApi(id, payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: configKeys.spreadsheetSources() });
     },
@@ -780,7 +810,10 @@ export function createEmailSourceApi(payload: CreateEmailSourcePayload) {
   });
 }
 
-export function updateEmailSourceApi(id: string, payload: UpdateEmailSourcePayload) {
+export function updateEmailSourceApi(
+  id: string,
+  payload: UpdateEmailSourcePayload,
+) {
   return configFetch<EmailSource>(`/config/email-sources/${id}`, {
     method: "PUT",
     body: JSON.stringify(payload),
@@ -794,22 +827,30 @@ export function deleteEmailSourceApi(id: string) {
 }
 
 export function triggerEmailPollApi(id: string) {
-  return configFetch<{ jobId: string; triggered: boolean }>(`/config/email-sources/${id}/poll`, {
-    method: "POST",
-  });
+  return configFetch<{ jobId: string; triggered: boolean }>(
+    `/config/email-sources/${id}/poll`,
+    {
+      method: "POST",
+    },
+  );
 }
 
 export function testEmailParseApi(id: string) {
-  return configFetch<{ jobId: string; testTriggered: boolean }>(`/config/email-sources/${id}/test-parse`, {
-    method: "POST",
-  });
+  return configFetch<{ jobId: string; testTriggered: boolean }>(
+    `/config/email-sources/${id}/test-parse`,
+    {
+      method: "POST",
+    },
+  );
 }
 
 // ---------------------------------------------------------------------------
 // React Query hooks — Email Sources
 // ---------------------------------------------------------------------------
 
-export function useEmailSources(options?: Partial<UseQueryOptions<EmailSource[]>>) {
+export function useEmailSources(
+  options?: Partial<UseQueryOptions<EmailSource[]>>,
+) {
   return useQuery({
     queryKey: configKeys.emailSources(),
     queryFn: () => getEmailSources(),
@@ -818,11 +859,14 @@ export function useEmailSources(options?: Partial<UseQueryOptions<EmailSource[]>
 }
 
 export function useCreateEmailSource(
-  options?: Partial<UseMutationOptions<EmailSource, Error, CreateEmailSourcePayload>>,
+  options?: Partial<
+    UseMutationOptions<EmailSource, Error, CreateEmailSourcePayload>
+  >,
 ) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (payload: CreateEmailSourcePayload) => createEmailSourceApi(payload),
+    mutationFn: (payload: CreateEmailSourcePayload) =>
+      createEmailSourceApi(payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: configKeys.emailSources() });
     },
@@ -831,12 +875,23 @@ export function useCreateEmailSource(
 }
 
 export function useUpdateEmailSource(
-  options?: Partial<UseMutationOptions<EmailSource, Error, { id: string; payload: UpdateEmailSourcePayload }>>,
+  options?: Partial<
+    UseMutationOptions<
+      EmailSource,
+      Error,
+      { id: string; payload: UpdateEmailSourcePayload }
+    >
+  >,
 ) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: UpdateEmailSourcePayload }) =>
-      updateEmailSourceApi(id, payload),
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: UpdateEmailSourcePayload;
+    }) => updateEmailSourceApi(id, payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: configKeys.emailSources() });
     },
@@ -866,10 +921,17 @@ export const emailOAuthKeys = {
   status: ["email-oauth-status"],
 };
 
-export function useGetEmailOAuthStatus(options?: Partial<UseQueryOptions<{ connected: boolean; emailAddress?: string }>>) {
+export function useGetEmailOAuthStatus(
+  options?: Partial<
+    UseQueryOptions<{ connected: boolean; emailAddress?: string }>
+  >,
+) {
   return useQuery({
     queryKey: emailOAuthKeys.status,
-    queryFn: () => configFetch<{ connected: boolean; emailAddress?: string }>("/config/email-oauth/status"),
+    queryFn: () =>
+      configFetch<{ connected: boolean; emailAddress?: string }>(
+        "/config/email-oauth/status",
+      ),
     ...options,
   });
 }
@@ -877,7 +939,9 @@ export function useGetEmailOAuthStatus(options?: Partial<UseQueryOptions<{ conne
 export function useGetEmailOAuthUrl() {
   return useMutation({
     mutationFn: async () => {
-      const result = await configFetch<{ url: string }>(`/config/email-oauth/url`);
+      const result = await configFetch<{ url: string }>(
+        `/config/email-oauth/url`,
+      );
       return result.url;
     },
   });
@@ -887,10 +951,13 @@ export function useExchangeEmailOAuthToken() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ code }: { code: string }) =>
-      configFetch<{ connected: boolean; emailAddress?: string }>(`/config/email-oauth/exchange`, {
-        method: "POST",
-        body: JSON.stringify({ code }),
-      }),
+      configFetch<{ connected: boolean; emailAddress?: string }>(
+        `/config/email-oauth/exchange`,
+        {
+          method: "POST",
+          body: JSON.stringify({ code }),
+        },
+      ),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: emailOAuthKeys.status });
     },
@@ -911,7 +978,9 @@ export function useDisconnectEmailOAuth() {
 }
 
 export function useTriggerEmailPoll(
-  options?: Partial<UseMutationOptions<{ jobId: string; triggered: boolean }, Error, string>>,
+  options?: Partial<
+    UseMutationOptions<{ jobId: string; triggered: boolean }, Error, string>
+  >,
 ) {
   return useMutation({
     mutationFn: (id: string) => triggerEmailPollApi(id),
@@ -920,7 +989,9 @@ export function useTriggerEmailPoll(
 }
 
 export function useTestEmailParse(
-  options?: Partial<UseMutationOptions<{ jobId: string; testTriggered: boolean }, Error, string>>,
+  options?: Partial<
+    UseMutationOptions<{ jobId: string; testTriggered: boolean }, Error, string>
+  >,
 ) {
   return useMutation({
     mutationFn: (id: string) => testEmailParseApi(id),
