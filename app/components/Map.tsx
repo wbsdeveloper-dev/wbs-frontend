@@ -135,78 +135,78 @@ export default function Map() {
     if (!data?.sites || !relations) return null;
     const site = data.sites.find(s => s.siteType === siteType && s.name === siteName);
     if (!site) return null;
-    
+
     const connected = new Set<string>();
     connected.add(site.id);
     relations.forEach(rel => {
-        if (rel.source_site_id === site.id) connected.add(rel.target_site_id);
-        if (rel.target_site_id === site.id) connected.add(rel.source_site_id);
+      if (rel.source_site_id === site.id) connected.add(rel.target_site_id);
+      if (rel.target_site_id === site.id) connected.add(rel.source_site_id);
     });
     return connected;
   }, [data?.sites, relations]);
 
   const intersect = useCallback((sets: (Set<string> | null)[]) => {
-      const activeSets = sets.filter((s): s is Set<string> => s !== null);
-      if (activeSets.length === 0) return null;
-      let result = new Set(activeSets[0]);
-      for (let i = 1; i < activeSets.length; i++) {
-          result = new Set([...result].filter(x => activeSets[i].has(x)));
-      }
-      return result;
+    const activeSets = sets.filter((s): s is Set<string> => s !== null);
+    if (activeSets.length === 0) return null;
+    let result = new Set(activeSets[0]);
+    for (let i = 1; i < activeSets.length; i++) {
+      result = new Set([...result].filter(x => activeSets[i].has(x)));
+    }
+    return result;
   }, []);
 
   const pemasokSet = useMemo(() => selectedPemasok ? getConnectedSet(selectedPemasok, "PEMASOK") : null, [selectedPemasok, getConnectedSet]);
   const pembangkitSet = useMemo(() => selectedPembangkit ? getConnectedSet(selectedPembangkit, "PEMBANGKIT") : null, [selectedPembangkit, getConnectedSet]);
-  
+
   const regionSet = useMemo(() => {
-      if (!selectedRegion || !data?.sites) return null;
-      const regionSites = data.sites.filter(s => s.region === selectedRegion);
-      const rSet = new Set<string>();
-      regionSites.forEach(s => {
-          rSet.add(s.id);
-          if (relations) {
-              relations.forEach(rel => {
-                  if (rel.source_site_id === s.id) rSet.add(rel.target_site_id);
-                  if (rel.target_site_id === s.id) rSet.add(rel.source_site_id);
-              });
-          }
-      });
-      return rSet;
+    if (!selectedRegion || !data?.sites) return null;
+    const regionSites = data.sites.filter(s => s.region === selectedRegion);
+    const rSet = new Set<string>();
+    regionSites.forEach(s => {
+      rSet.add(s.id);
+      if (relations) {
+        relations.forEach(rel => {
+          if (rel.source_site_id === s.id) rSet.add(rel.target_site_id);
+          if (rel.target_site_id === s.id) rSet.add(rel.source_site_id);
+        });
+      }
+    });
+    return rSet;
   }, [selectedRegion, data?.sites, relations]);
 
   // Unique region list for filter dropdown
   const regionOptions = useMemo(() => {
-      if (!data?.sites) return [];
-      const validIds = intersect([pemasokSet, pembangkitSet]);
-      
-      let validSites = data.sites;
-      if (validIds) {
-          validSites = validSites.filter(s => validIds.has(s.id));
-      }
-      return Array.from(new Set(validSites.map(s => s.region))).filter(Boolean).sort();
+    if (!data?.sites) return [];
+    const validIds = intersect([pemasokSet, pembangkitSet]);
+
+    let validSites = data.sites;
+    if (validIds) {
+      validSites = validSites.filter(s => validIds.has(s.id));
+    }
+    return Array.from(new Set(validSites.map(s => s.region))).filter(Boolean).sort();
   }, [data?.sites, pemasokSet, pembangkitSet, intersect]);
 
   // Names for autocomplete filters
   const pemasokNames = useMemo(() => {
-      if (!data?.sites) return [];
-      const validIds = intersect([regionSet, pembangkitSet]);
-      
-      let validSites = data.sites.filter(s => s.siteType === "PEMASOK");
-      if (validIds) {
-          validSites = validSites.filter(s => validIds.has(s.id));
-      }
-      return validSites.map(s => s.name).sort();
+    if (!data?.sites) return [];
+    const validIds = intersect([regionSet, pembangkitSet]);
+
+    let validSites = data.sites.filter(s => s.siteType === "PEMASOK");
+    if (validIds) {
+      validSites = validSites.filter(s => validIds.has(s.id));
+    }
+    return validSites.map(s => s.name).sort();
   }, [data?.sites, regionSet, pembangkitSet, intersect]);
 
   const pembangkitNames = useMemo(() => {
-      if (!data?.sites) return [];
-      const validIds = intersect([regionSet, pemasokSet]);
-      
-      let validSites = data.sites.filter(s => s.siteType === "PEMBANGKIT");
-      if (validIds) {
-          validSites = validSites.filter(s => validIds.has(s.id));
-      }
-      return validSites.map(s => s.name).sort();
+    if (!data?.sites) return [];
+    const validIds = intersect([regionSet, pemasokSet]);
+
+    let validSites = data.sites.filter(s => s.siteType === "PEMBANGKIT");
+    if (validIds) {
+      validSites = validSites.filter(s => validIds.has(s.id));
+    }
+    return validSites.map(s => s.name).sort();
   }, [data?.sites, regionSet, pemasokSet, intersect]);
 
   // Reset pembangkit when current selection is no longer valid
@@ -235,7 +235,7 @@ export default function Map() {
 
     return data.sites.filter((site) => {
       if (!visibleSiteTypes[site.siteType]) return false;
-      
+
       if (validIds && !validIds.has(site.id)) return false;
 
       // Kepemilikan filter – hide PEMBANGKIT sites whose owner is unchecked
@@ -497,9 +497,8 @@ export default function Map() {
                     <button
                       key={st.type}
                       onClick={() => toggleSiteType(st.type)}
-                      className={`flex items-center gap-2 w-full py-1 px-1.5 rounded-md transition-all ${
-                        isVisible ? `bg-opacity-10` : "bg-gray-100 opacity-60"
-                      }`}
+                      className={`flex items-center gap-2 w-full py-1 px-1.5 rounded-md transition-all ${isVisible ? `bg-opacity-10` : "bg-gray-100 opacity-60"
+                        }`}
                       style={
                         isVisible
                           ? { backgroundColor: `${st.color}1A` }
@@ -587,11 +586,11 @@ export default function Map() {
           </p>
           <div className="flex flex-col gap-3 pr-4">
             <FilterAutocomplete
-              label="Wilayah"
+              label="Region"
               options={regionOptions}
               value={selectedRegion}
               onChange={setSelectedRegion}
-              placeholder="Pilih Wilayah"
+              placeholder="Pilih Region"
             />
             <FilterAutocomplete
               label="Pemasok"

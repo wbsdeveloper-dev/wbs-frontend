@@ -64,10 +64,12 @@ export default function ModalNote({
     if (!selectedTimestamp) return allEvents;
 
     const clickedDate = new Date(selectedTimestamp);
-    const clickedYear = clickedDate.getFullYear();
-    const clickedMonth = clickedDate.getMonth();
-    const clickedDay = clickedDate.getDate();
-    const clickedHour = clickedDate.getHours();
+    if (period === "1D") {
+      clickedDate.setMinutes(0, 0, 0);
+    } else {
+      clickedDate.setHours(0, 0, 0, 0);
+    }
+    const clickedTime = clickedDate.getTime();
 
     return allEvents.filter((event) => {
       // Filter by the specific series clicked
@@ -75,20 +77,15 @@ export default function ModalNote({
       if (!isCorrectSite) return false;
 
       const eventDate = new Date(event.occurredAt);
-      const sameDay =
-        eventDate.getFullYear() === clickedYear &&
-        eventDate.getMonth() === clickedMonth &&
-        eventDate.getDate() === clickedDay;
-
       if (period === "1D") {
-        // Hourly view: also match the hour
-        return sameDay && eventDate.getHours() === clickedHour;
+        eventDate.setMinutes(0, 0, 0);
+      } else {
+        eventDate.setHours(0, 0, 0, 0);
       }
 
-      // Daily view: match only the day
-      return sameDay;
+      return eventDate.getTime() === clickedTime;
     });
-  }, [eventsData, selectedTimestamp, period]);
+  }, [eventsData, selectedTimestamp, period, seriesSiteId, supplier]);
 
   const handleSave = async () => {
     if (!note.trim()) return;
@@ -98,7 +95,7 @@ export default function ModalNote({
       await createEvent.mutateAsync({
         siteId: seriesSiteId || undefined,
         siteName: supplier || "Unknown",
-        occurredAt: selectedTimestamp || new Date().toISOString(),
+        occurredAt: selectedTimestamp ? new Date(selectedTimestamp).toISOString() : new Date().toISOString(),
         title: `Catatan ${supplier} - ${time}`,
         description: note.trim(),
         severity: "INFO",
