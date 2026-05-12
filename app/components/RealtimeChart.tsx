@@ -433,8 +433,8 @@ export default function RealtimeChart({
 }: RealtimeChartProps = {}) {
   const [intervalMode, setIntervalMode] = useState<
     "Jam" | "Hari" | "Bulan" | "Tahun"
-  >("Hari");
-  const [period, setPeriod] = useState("1W");
+  >("Jam");
+  const [period, setPeriod] = useState("1D");
   const [filterType, setFilterType] = useState<string | null>("Pemasok");
   const [pemasok, setPemasok] = useState<string[]>(["Semua Pemasok"]);
   const [pembangkit, setPembangkit] = useState<string | null>(null);
