@@ -329,7 +329,7 @@ export function DaftarSiteTable({ onEdit, onDelete }: SiteTableProps) {
           <div className="flex items-center gap-1.5">
             <Menu size={20} className="text-gray-500" />
             <span className="text-sm font-medium text-gray-700">
-              Tabel Daftar Site
+              Tabel Daftar Pemasok & Pembangkit
             </span>
           </div>
           <div className="relative">
@@ -338,8 +338,8 @@ export function DaftarSiteTable({ onEdit, onDelete }: SiteTableProps) {
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Cari site..."
-              className="w-48 md:w-56 pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200"
+              placeholder="Cari Pemasok / Pembangkit..."
+              className="w-48 md:w-56 pl-8 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200"
             />
           </div>
         </div>
@@ -350,10 +350,10 @@ export function DaftarSiteTable({ onEdit, onDelete }: SiteTableProps) {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Nama Site
+                  Nama Pemasok / Pembangkit
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Jenis Site
+                  Jenis
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   Lokasi

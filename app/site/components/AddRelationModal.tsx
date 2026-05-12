@@ -86,14 +86,14 @@ export function AddRelationModal({
     const newErrors: Record<string, string> = {};
 
     if (selectedSourceSites.length === 0) {
-      newErrors.source_site_ids = "Site sumber wajib dipilih";
+      newErrors.source_site_ids = "Sumber wajib dipilih";
     }
     if (selectedTargetSites.length === 0) {
-      newErrors.target_site_ids = "Site tujuan wajib dipilih";
+      newErrors.target_site_ids = "Tujuan wajib dipilih";
     }
     if (selectedTargetSites.some((targetId) => selectedSourceSites.includes(targetId))) {
       newErrors.target_site_ids =
-        "Site tujuan tidak boleh sama dengan site sumber";
+        "Tujuan tidak boleh sama dengan Sumber";
     }
     if (!formData.commodity.trim()) {
       newErrors.commodity = "Komoditas wajib diisi";
@@ -170,13 +170,13 @@ export function AddRelationModal({
           {/* Source Site */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-4">
-              Site Sumber {editingId ? "" : "(Bisa pilih lebih dari satu)"}
+              Sumber
             </label>
             <div className="relative mb-2">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 type="text"
-                placeholder="Cari site sumber..."
+                placeholder="Cari sumber..."
                 value={sourceSearch}
                 onChange={(e) => setSourceSearch(e.target.value)}
                 className="w-full pl-9 pr-3 py-1.5 text-xs text-gray-400 border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-[#14a2bb] focus:border-transparent transition-all"
@@ -218,7 +218,7 @@ export function AddRelationModal({
               ))}
               {filteredSuppliers.length === 0 && (
                 <p className="text-sm text-gray-500 text-center py-2">
-                  {sourceSearch ? "Tidak ada hasil pencarian" : "Tidak ada site sumber"}
+                  {sourceSearch ? "Tidak ada hasil pencarian" : "Tidak ada sumber"}
                 </p>
               )}
             </div>
@@ -232,13 +232,13 @@ export function AddRelationModal({
           {/* Target Site */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-4">
-              Site Tujuan {editingId ? "" : "(Bisa pilih lebih dari satu)"}
+              Tujuan
             </label>
             <div className="relative mb-2">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 type="text"
-                placeholder="Cari site tujuan..."
+                placeholder="Cari tujuan..."
                 value={targetSearch}
                 onChange={(e) => setTargetSearch(e.target.value)}
                 className="w-full pl-9 pr-3 py-1.5 text-xs text-gray-400 border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-[#14a2bb] focus:border-transparent transition-all"
@@ -280,7 +280,7 @@ export function AddRelationModal({
               ))}
               {filteredPlants.length === 0 && (
                 <p className="text-sm text-gray-500 text-center py-2">
-                  {targetSearch ? "Tidak ada hasil pencarian" : "Tidak ada site tujuan"}
+                  {targetSearch ? "Tidak ada hasil pencarian" : "Tidak ada tujuan"}
                 </p>
               )}
             </div>

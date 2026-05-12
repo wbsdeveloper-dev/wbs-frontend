@@ -59,7 +59,7 @@ export function SiteMappingModal({
       newErrors.source_name = "Nama sumber (WhatsApp) wajib diisi";
     }
     if (!selectedSite) {
-      newErrors.normalized_site_id = "Site tujuan wajib dipilih";
+      newErrors.normalized_site_id = "Tujuan wajib dipilih";
     }
 
     // Check for duplicate mappings
@@ -158,11 +158,10 @@ export function SiteMappingModal({
                 setErrors({ ...errors, source_name: "" });
               }}
               placeholder="Masukkan nama grup atau pengirim WhatsApp"
-              className={`w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200 ${
-                errors.source_name
-                  ? "border-red-300 focus:ring-red-500"
-                  : "border-gray-300"
-              }`}
+              className={`w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200 ${errors.source_name
+                ? "border-red-300 focus:ring-red-500"
+                : "border-gray-300"
+                }`}
             />
             {errors.source_name ? (
               <p className="text-xs text-red-600 mt-1">{errors.source_name}</p>
@@ -176,7 +175,7 @@ export function SiteMappingModal({
           {/* Site Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Site Tujuan
+              Tujuan
             </label>
             <select
               value={selectedSite || ""}
@@ -185,11 +184,10 @@ export function SiteMappingModal({
                 setErrors({ ...errors, normalized_site_id: "" });
               }}
               disabled={isLoadingDropdowns}
-              className={`w-full px-4 py-2.5 border rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white transition-all duration-200 ${
-                errors.normalized_site_id
-                  ? "border-red-300 focus:ring-red-500"
-                  : "border-gray-300"
-              }`}
+              className={`w-full px-4 py-2.5 border rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white transition-all duration-200 ${errors.normalized_site_id
+                ? "border-red-300 focus:ring-red-500"
+                : "border-gray-300"
+                }`}
             >
               <option value="">Cari site untuk dihubungkan...</option>
               {dropdowns?.plants.map((site) => (
