@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Filter, X, Info, AlertTriangle } from "lucide-react";
 import {
   CartesianGrid,
@@ -9,7 +9,6 @@ import {
   ResponsiveContainer,
   XAxis,
   YAxis,
-  Legend,
   Tooltip,
   ReferenceLine,
   ReferenceDot,
@@ -693,21 +692,99 @@ export default function RealtimeChart({
   // Unit from API
   const unit = chartFlowData?.unit;
 
-  // Compute Y-axis domain from actual series data
+  // Compute Y-axis domain using IQR-based outlier handling
+  // so one extreme value doesn't squish all other data points
   const yDomain = useMemo(() => {
     if (!chartData.length) return [0, 100];
-    let min = Infinity;
-    let max = -Infinity;
+    const allValues: number[] = [];
     chartData.forEach((item) => {
       Object.values(item.values).forEach((v) => {
-        if (v < min) min = v;
-        if (v > max) max = v;
+        if (typeof v === "number" && isFinite(v)) allValues.push(v);
       });
     });
-    if (!isFinite(min) || !isFinite(max)) return [0, 100];
-    const padding = (max - min) * 0.1 || 5;
-    return [Math.floor(min - padding), Math.ceil(max + padding)];
+    if (allValues.length === 0) return [0, 100];
+
+    allValues.sort((a, b) => a - b);
+    const q1 = allValues[Math.floor(allValues.length * 0.25)];
+    const q3 = allValues[Math.floor(allValues.length * 0.75)];
+    const iqr = q3 - q1;
+
+    // Use IQR fences as the visual domain — outliers beyond these
+    // will still render (allowDataOverflow=false on YAxis) but the
+    // axis range focuses on the "normal" spread of data.
+    const rawMin = allValues[0];
+    const rawMax = allValues[allValues.length - 1];
+
+    // Only apply outlier clipping when the spread is large enough
+    // to actually cause a readability problem (ratio > 3x).
+    const spread = rawMax - rawMin;
+    const useIqr = iqr > 0 && spread / iqr > 3;
+
+    let domainMin: number;
+    let domainMax: number;
+
+    if (useIqr) {
+      domainMin = Math.max(rawMin, q1 - 1.5 * iqr);
+      domainMax = Math.min(rawMax, q3 + 1.5 * iqr);
+      // Ensure we don't clip too aggressively — keep at least 80% of values visible
+      const withinFence = allValues.filter((v) => v >= domainMin && v <= domainMax);
+      if (withinFence.length < allValues.length * 0.8) {
+        domainMin = rawMin;
+        domainMax = rawMax;
+      }
+    } else {
+      domainMin = rawMin;
+      domainMax = rawMax;
+    }
+
+    const padding = (domainMax - domainMin) * 0.12 || 5;
+    return [Math.floor(domainMin - padding), Math.ceil(domainMax + padding)];
   }, [chartData]);
+
+  // Determine dynamic chart height — taller for more series
+  const seriesKeys = useMemo(() => {
+    if (!chartData.length) return [];
+    return Array.from(new Set(chartData.flatMap((d) => Object.keys(d.values))));
+  }, [chartData]);
+
+  const chartHeight = useMemo(() => {
+    const BASE = 300;
+    let extra = 0;
+
+    // Add height when there's a large value gap between series
+    if (chartData.length > 0) {
+      const allValues: number[] = [];
+      chartData.forEach((item) => {
+        Object.values(item.values).forEach((v) => {
+          if (typeof v === "number" && isFinite(v)) allValues.push(v);
+        });
+      });
+      if (allValues.length > 1) {
+        allValues.sort((a, b) => a - b);
+        const min = allValues[0];
+        const max = allValues[allValues.length - 1];
+        const median = allValues[Math.floor(allValues.length / 2)];
+        const ratio = median > 0 ? max / median : 1;
+        // If the biggest value is >5x the median, chart needs more room
+        if (ratio > 5) extra += Math.min(120, Math.round(ratio * 8));
+        else if (ratio > 2) extra += Math.min(60, Math.round(ratio * 10));
+      }
+    }
+
+    // Add height for many series (above 4)
+    if (seriesKeys.length > 4) {
+      extra += Math.min(80, (seriesKeys.length - 4) * 15);
+    }
+
+    return Math.min(BASE + extra, 500);
+  }, [chartData, seriesKeys]);
+
+  // Format large Y-axis tick values
+  const formatYTick = useCallback((value: number) => {
+    if (Math.abs(value) >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
+    if (Math.abs(value) >= 1_000) return `${(value / 1_000).toFixed(1)}K`;
+    return value.toLocaleString("id-ID", { maximumFractionDigits: 2 });
+  }, []);
 
   const submitNote = () => {};
 
@@ -753,15 +830,24 @@ export default function RealtimeChart({
               </div>
             </div>
             {chartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
+              <>
+              <ResponsiveContainer width="100%" height={chartHeight}>
                 <LineChart
                   data={chartData}
-                  margin={{ top: 5, right: 10, left: -10, bottom: 5 }}
+                  margin={{ top: 10, right: 10, left: 5, bottom: 10 }}
                 >
                   <CartesianGrid stroke="#eee" strokeDasharray="5 5" />
-                  <XAxis dataKey="label" />
-                  <YAxis domain={yDomain} />
-                  <Legend className="z-0" />
+                  <XAxis
+                    dataKey="label"
+                    tick={{ fontSize: 12 }}
+                    interval="preserveStartEnd"
+                  />
+                  <YAxis
+                    domain={yDomain}
+                    tickFormatter={formatYTick}
+                    tick={{ fontSize: 11 }}
+                    width={65}
+                  />
                   <Tooltip content={<CustomTooltip unit={unit} />} />
                   {chartData.length > 0 &&
                     Array.from(
@@ -873,6 +959,42 @@ export default function RealtimeChart({
                   )}
                 </LineChart>
               </ResponsiveContainer>
+              {/* Custom scrollable legend — placed below chart */}
+              {seriesKeys.length > 0 && (
+                <div className="mt-3">
+                  <div
+                    className={`flex flex-wrap justify-center gap-x-5 gap-y-2 px-3 py-2.5 rounded-lg bg-gray-50/80 border border-gray-100 ${
+                      seriesKeys.length > 10
+                        ? "max-h-[80px] overflow-y-auto"
+                        : ""
+                    }`}
+                  >
+                    {seriesKeys.map((key) => (
+                      <div
+                        key={key}
+                        className="flex items-center gap-1.5 text-xs text-gray-600 whitespace-nowrap"
+                      >
+                        <span
+                          className="inline-block w-2.5 h-2.5 rounded-full flex-shrink-0"
+                          style={{
+                            backgroundColor:
+                              seriesColors[key] || COLORS[key] || "#999",
+                          }}
+                        />
+                        <span className="truncate max-w-[160px]" title={key.toUpperCase()}>
+                          {key.toUpperCase()}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  {seriesKeys.length > 10 && (
+                    <p className="text-[10px] text-gray-400 mt-1 text-right pr-1">
+                      Scroll untuk melihat semua series
+                    </p>
+                  )}
+                </div>
+              )}
+              </>
             ) : (
               <div className="flex justify-center items-center w-full h-[300px] text-gray-500 text-xl font-semibold">
                 Data chart belum tersedia
