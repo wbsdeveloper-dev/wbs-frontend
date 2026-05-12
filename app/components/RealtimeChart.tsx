@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Filter, X, Info, AlertTriangle } from "lucide-react";
 import {
   CartesianGrid,
@@ -9,7 +9,6 @@ import {
   ResponsiveContainer,
   XAxis,
   YAxis,
-  Legend,
   Tooltip,
   ReferenceLine,
   ReferenceDot,
@@ -432,7 +431,10 @@ export default function RealtimeChart({
   onPembangkitChange,
   onDateRangeChange,
 }: RealtimeChartProps = {}) {
-  const [period, setPeriod] = useState("1D");
+  const [intervalMode, setIntervalMode] = useState<
+    "Jam" | "Hari" | "Bulan" | "Tahun"
+  >("Hari");
+  const [period, setPeriod] = useState("1W");
   const [filterType, setFilterType] = useState<string | null>("Pemasok");
   const [pemasok, setPemasok] = useState<string[]>(["Semua Pemasok"]);
   const [pembangkit, setPembangkit] = useState<string | null>(null);
@@ -693,21 +695,102 @@ export default function RealtimeChart({
   // Unit from API
   const unit = chartFlowData?.unit;
 
-  // Compute Y-axis domain from actual series data
+  // Compute Y-axis domain using IQR-based outlier handling
+  // so one extreme value doesn't squish all other data points
   const yDomain = useMemo(() => {
     if (!chartData.length) return [0, 100];
-    let min = Infinity;
-    let max = -Infinity;
+    const allValues: number[] = [];
     chartData.forEach((item) => {
       Object.values(item.values).forEach((v) => {
-        if (v < min) min = v;
-        if (v > max) max = v;
+        if (typeof v === "number" && isFinite(v)) allValues.push(v);
       });
     });
-    if (!isFinite(min) || !isFinite(max)) return [0, 100];
-    const padding = (max - min) * 0.1 || 5;
-    return [Math.floor(min - padding), Math.ceil(max + padding)];
+    if (allValues.length === 0) return [0, 100];
+
+    allValues.sort((a, b) => a - b);
+    const q1 = allValues[Math.floor(allValues.length * 0.25)];
+    const q3 = allValues[Math.floor(allValues.length * 0.75)];
+    const iqr = q3 - q1;
+
+    // Use IQR fences as the visual domain — outliers beyond these
+    // will still render (allowDataOverflow=false on YAxis) but the
+    // axis range focuses on the "normal" spread of data.
+    const rawMin = allValues[0];
+    const rawMax = allValues[allValues.length - 1];
+
+    // Only apply outlier clipping when the spread is large enough
+    // to actually cause a readability problem (ratio > 3x).
+    const spread = rawMax - rawMin;
+    const useIqr = iqr > 0 && spread / iqr > 3;
+
+    let domainMin: number;
+    let domainMax: number;
+
+    if (useIqr) {
+      domainMin = Math.max(rawMin, q1 - 1.5 * iqr);
+      domainMax = Math.min(rawMax, q3 + 1.5 * iqr);
+      // Ensure we don't clip too aggressively — keep at least 80% of values visible
+      const withinFence = allValues.filter(
+        (v) => v >= domainMin && v <= domainMax,
+      );
+      if (withinFence.length < allValues.length * 0.8) {
+        domainMin = rawMin;
+        domainMax = rawMax;
+      }
+    } else {
+      domainMin = rawMin;
+      domainMax = rawMax;
+    }
+
+    const padding = (domainMax - domainMin) * 0.12 || 5;
+    return [Math.floor(domainMin - padding), Math.ceil(domainMax + padding)];
   }, [chartData]);
+
+  // Determine dynamic chart height — taller for more series
+  const seriesKeys = useMemo(() => {
+    if (!chartData.length) return [];
+    return Array.from(new Set(chartData.flatMap((d) => Object.keys(d.values))));
+  }, [chartData]);
+
+  const chartHeight = useMemo(() => {
+    const BASE = 300;
+    let extra = 0;
+
+    // Add height when there's a large value gap between series
+    if (chartData.length > 0) {
+      const allValues: number[] = [];
+      chartData.forEach((item) => {
+        Object.values(item.values).forEach((v) => {
+          if (typeof v === "number" && isFinite(v)) allValues.push(v);
+        });
+      });
+      if (allValues.length > 1) {
+        allValues.sort((a, b) => a - b);
+        const min = allValues[0];
+        const max = allValues[allValues.length - 1];
+        const median = allValues[Math.floor(allValues.length / 2)];
+        const ratio = median > 0 ? max / median : 1;
+        // If the biggest value is >5x the median, chart needs more room
+        if (ratio > 5) extra += Math.min(120, Math.round(ratio * 8));
+        else if (ratio > 2) extra += Math.min(60, Math.round(ratio * 10));
+      }
+    }
+
+    // Add height for many series (above 4)
+    if (seriesKeys.length > 4) {
+      extra += Math.min(80, (seriesKeys.length - 4) * 15);
+    }
+
+    return Math.min(BASE + extra, 500);
+  }, [chartData, seriesKeys]);
+
+  // Format large Y-axis tick values
+  const formatYTick = useCallback((value: number) => {
+    if (Math.abs(value) >= 1_000_000)
+      return `${(value / 1_000_000).toFixed(1)}M`;
+    if (Math.abs(value) >= 1_000) return `${(value / 1_000).toFixed(1)}K`;
+    return value.toLocaleString("id-ID", { maximumFractionDigits: 2 });
+  }, []);
 
   const submitNote = () => {};
 
@@ -759,126 +842,176 @@ export default function RealtimeChart({
               </div>
             </div>
             {chartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart
-                  data={chartData}
-                  margin={{ top: 5, right: 10, left: -10, bottom: 5 }}
-                >
-                  <CartesianGrid stroke="#eee" strokeDasharray="5 5" />
-                  <XAxis dataKey="label" />
-                  <YAxis domain={yDomain} />
-                  <Legend className="z-0" />
-                  <Tooltip content={<CustomTooltip unit={unit} />} />
-                  {chartData.length > 0 &&
-                    Array.from(
-                      new Set(chartData.flatMap((d) => Object.keys(d.values))),
-                    ).map((key: string) => (
-                      <Line
-                        key={key}
-                        type="monotone"
-                        dataKey={`values.${key}`}
-                        name={key.toUpperCase()}
-                        stroke={seriesColors[key] || COLORS[key] || "#999"}
-                        strokeWidth={2}
-                        dot={(props: any) => {
-                          const { cx, cy, payload, value, index } = props;
-                          const rawTs = payload.rawTimestamp;
-                          let hasNote = false;
+              <>
+                <ResponsiveContainer width="100%" height={chartHeight}>
+                  <LineChart
+                    data={chartData}
+                    margin={{ top: 10, right: 10, left: 5, bottom: 10 }}
+                  >
+                    <CartesianGrid stroke="#eee" strokeDasharray="5 5" />
+                    <XAxis
+                      dataKey="label"
+                      tick={{ fontSize: 12 }}
+                      interval="preserveStartEnd"
+                    />
+                    <YAxis
+                      domain={yDomain}
+                      tickFormatter={formatYTick}
+                      tick={{ fontSize: 11 }}
+                      width={65}
+                    />
+                    <Tooltip content={<CustomTooltip unit={unit} />} />
+                    {chartData.length > 0 &&
+                      Array.from(
+                        new Set(
+                          chartData.flatMap((d) => Object.keys(d.values)),
+                        ),
+                      ).map((key: string) => (
+                        <Line
+                          key={key}
+                          type="monotone"
+                          dataKey={`values.${key}`}
+                          name={key.toUpperCase()}
+                          stroke={seriesColors[key] || COLORS[key] || "#999"}
+                          strokeWidth={2}
+                          dot={(props: any) => {
+                            const { cx, cy, payload, value, index } = props;
+                            const rawTs = payload.rawTimestamp;
+                            let hasNote = false;
 
-                          if (rawTs) {
-                            const d = new Date(rawTs);
-                            let pointKey = "";
-                            if (period === "1D") {
-                              pointKey = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}-${d.getHours()}`;
-                            } else {
-                              pointKey = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+                            if (rawTs) {
+                              const d = new Date(rawTs);
+                              let pointKey = "";
+                              if (period === "1D") {
+                                pointKey = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}-${d.getHours()}`;
+                              } else {
+                                pointKey = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+                              }
+                              hasNote =
+                                pointsWithNotes.has(`${key}_${pointKey}`) ||
+                                pointsWithNotes.has(pointKey);
+                              if (index === 0) {
+                                // console.log("[DEBUG DOT] rawTs:", rawTs, "pointKey:", pointKey, "hasNote:", hasNote, "setSize:", pointsWithNotes.size);
+                              }
                             }
-                            hasNote =
-                              pointsWithNotes.has(`${key}_${pointKey}`) ||
-                              pointsWithNotes.has(pointKey);
-                            if (index === 0) {
-                              // console.log("[DEBUG DOT] rawTs:", rawTs, "pointKey:", pointKey, "hasNote:", hasNote, "setSize:", pointsWithNotes.size);
-                            }
-                          }
 
-                          return (
-                            <g key={`dot-group-${key}-${index}`}>
-                              <circle
-                                cx={cx}
-                                cy={cy}
-                                r={20}
-                                fill="transparent"
-                                style={{ cursor: "pointer" }}
-                                onClick={() => {
-                                  setSelectedPoint({
-                                    label: payload.label,
-                                    series: key,
-                                    value,
-                                    rawTimestamp: payload.rawTimestamp,
-                                    siteId: nameToSiteId.get(key),
-                                  });
+                            return (
+                              <g key={`dot-group-${key}-${index}`}>
+                                <circle
+                                  cx={cx}
+                                  cy={cy}
+                                  r={20}
+                                  fill="transparent"
+                                  style={{ cursor: "pointer" }}
+                                  onClick={() => {
+                                    setSelectedPoint({
+                                      label: payload.label,
+                                      series: key,
+                                      value,
+                                      rawTimestamp: payload.rawTimestamp,
+                                      siteId: nameToSiteId.get(key),
+                                    });
 
-                                  setOpenModal(true);
-                                }}
-                              />
-                              {hasNote && (
-                                <g
-                                  transform={`translate(${cx - 8}, ${cy - 8})`}
-                                >
-                                  <AlertTriangle
-                                    size={16}
-                                    className="text-orange-500 fill-orange-50"
-                                  />
-                                </g>
-                              )}
-                            </g>
-                          );
-                        }}
-                      />
-                    ))}
-
-                  {meanLineActive &&
-                    Object.keys(meanValues)
-                      .filter((key) => {
-                        if (!pembangkit) return true;
-
-                        return key
-                          .toLowerCase()
-                          .includes(pembangkit.toLowerCase());
-                      })
-                      .filter((key) => meanValues[key] !== null)
-                      .map((key) => (
-                        <ReferenceLine
-                          key={`mean-${key}`}
-                          y={meanValues[key]!}
-                          stroke={
-                            seriesColors[`Mean ${key}`] ||
-                            COLORS[`Mean ${key}`] ||
-                            "#999"
-                          }
-                          strokeDasharray="6 6"
-                          label={`Mean ${key}`}
+                                    setOpenModal(true);
+                                  }}
+                                />
+                                {hasNote && (
+                                  <g
+                                    transform={`translate(${cx - 8}, ${cy - 8})`}
+                                  >
+                                    <AlertTriangle
+                                      size={16}
+                                      className="text-orange-500 fill-orange-50"
+                                    />
+                                  </g>
+                                )}
+                              </g>
+                            );
+                          }}
                         />
                       ))}
-                  {/* Garis JPH */}
-                  {jphLineActive && jphValue !== null && (
-                    <ReferenceLine
-                      y={jphValue}
-                      stroke={"#008BFF"}
-                      label={`JPH`}
-                    />
-                  )}
 
-                  {/* Garis TOP */}
-                  {topLineActive && topValue !== null && (
-                    <ReferenceLine
-                      y={topValue}
-                      stroke={"#08CB00"}
-                      label={`TOP`}
-                    />
-                  )}
-                </LineChart>
-              </ResponsiveContainer>
+                    {meanLineActive &&
+                      Object.keys(meanValues)
+                        .filter((key) => {
+                          if (!pembangkit) return true;
+
+                          return key
+                            .toLowerCase()
+                            .includes(pembangkit.toLowerCase());
+                        })
+                        .filter((key) => meanValues[key] !== null)
+                        .map((key) => (
+                          <ReferenceLine
+                            key={`mean-${key}`}
+                            y={meanValues[key]!}
+                            stroke={
+                              seriesColors[`Mean ${key}`] ||
+                              COLORS[`Mean ${key}`] ||
+                              "#999"
+                            }
+                            strokeDasharray="6 6"
+                            label={`Mean ${key}`}
+                          />
+                        ))}
+                    {/* Garis JPH */}
+                    {jphLineActive && jphValue !== null && (
+                      <ReferenceLine
+                        y={jphValue}
+                        stroke={"#008BFF"}
+                        label={`JPH`}
+                      />
+                    )}
+
+                    {/* Garis TOP */}
+                    {topLineActive && topValue !== null && (
+                      <ReferenceLine
+                        y={topValue}
+                        stroke={"#08CB00"}
+                        label={`TOP`}
+                      />
+                    )}
+                  </LineChart>
+                </ResponsiveContainer>
+                {/* Custom scrollable legend — placed below chart */}
+                {seriesKeys.length > 0 && (
+                  <div className="mt-3">
+                    <div
+                      className={`flex flex-wrap justify-center gap-x-5 gap-y-2 px-3 py-2.5 rounded-lg bg-gray-50/80 border border-gray-100 ${
+                        seriesKeys.length > 10
+                          ? "max-h-[80px] overflow-y-auto"
+                          : ""
+                      }`}
+                    >
+                      {seriesKeys.map((key) => (
+                        <div
+                          key={key}
+                          className="flex items-center gap-1.5 text-xs text-gray-600 whitespace-nowrap"
+                        >
+                          <span
+                            className="inline-block w-2.5 h-2.5 rounded-full flex-shrink-0"
+                            style={{
+                              backgroundColor:
+                                seriesColors[key] || COLORS[key] || "#999",
+                            }}
+                          />
+                          <span
+                            className="truncate max-w-[160px]"
+                            title={key.toUpperCase()}
+                          >
+                            {key.toUpperCase()}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    {seriesKeys.length > 10 && (
+                      <p className="text-[10px] text-gray-400 mt-1 text-right pr-1">
+                        Scroll untuk melihat semua series
+                      </p>
+                    )}
+                  </div>
+                )}
+              </>
             ) : (
               <div className="flex justify-center items-center w-full h-[300px] text-gray-500 text-xl font-semibold">
                 Data chart belum tersedia
@@ -1121,140 +1254,201 @@ export default function RealtimeChart({
             <div className="mt-2">
               <div className="border border-gray-200 p-3 rounded-lg">
                 <p className="block text-sm font-medium text-gray-700 mb-2">
+                  Interval
+                </p>
+                <div className="flex gap-2 mb-3">
+                  {(["Jam", "Hari", "Bulan", "Tahun"] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                        intervalMode === mode
+                          ? "bg-[#115d72] text-white shadow-sm"
+                          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      }`}
+                      onClick={() => {
+                        setIntervalMode(mode);
+                        if (mode === "Jam") {
+                          setPeriod("1D");
+                          if (onPeriodChange) onPeriodChange("hour");
+                        } else if (mode === "Hari") {
+                          setPeriod("1W");
+                          if (onPeriodChange) onPeriodChange("day");
+                        } else if (mode === "Bulan") {
+                          setPeriod("3M");
+                          if (onPeriodChange) onPeriodChange("three_month");
+                        } else if (mode === "Tahun") {
+                          setPeriod("3Y");
+                          if (onPeriodChange) onPeriodChange("three_year");
+                        }
+                      }}
+                    >
+                      {mode}
+                    </button>
+                  ))}
+                </div>
+
+                <p className="block text-sm font-medium text-gray-700 mb-2">
                   Filter Periode
                 </p>
                 <div className="overflow-x-auto">
                   <div className="flex gap-4 mb-3 min-w-max px-1">
-                    <button
-                      className={`text-[#115d72] ${
-                        period == "1D"
-                          ? "bg-[#14a2bb92] w-[45px] rounded-md"
-                          : ""
-                      } cursor-pointer`}
-                      onClick={() => {
-                        setPeriod("1D");
-                        if (startDate) setEndDate(startDate);
-                        if (onPeriodChange) {
-                          onPeriodChange("hour");
-                        } else {
-                          if (pemasok?.includes("Pemasok A"))
-                            setFallbackChartData(dataJamA);
-                          if (pemasok?.includes("Pemasok B"))
-                            setFallbackChartData(dataJamB);
-                        }
-                      }}
-                    >
-                      1D
-                    </button>
-                    <button
-                      className={`text-[#115d72] ${
-                        period == "1W"
-                          ? "bg-[#14a2bb92] w-[45px] rounded-md"
-                          : ""
-                      } cursor-pointer`}
-                      onClick={() => {
-                        setPeriod("1W");
-                        if (onPeriodChange) {
-                          onPeriodChange("day");
-                        } else {
-                          if (pemasok?.includes("Pemasok A"))
-                            setFallbackChartData(data1MingguA);
-                          if (pemasok?.includes("Pemasok B"))
-                            setFallbackChartData(data1MingguB);
-                        }
-                      }}
-                    >
-                      1W
-                    </button>
-                    <button
-                      className={`text-[#115d72] ${
-                        period == "3M"
-                          ? "bg-[#14a2bb92] w-[45px] rounded-md"
-                          : ""
-                      } cursor-pointer`}
-                      onClick={() => {
-                        setPeriod("3M");
-                        if (onPeriodChange) {
-                          onPeriodChange("three_month");
-                        } else {
-                          if (pemasok?.includes("Pemasok A"))
-                            setFallbackChartData(data3BulanA);
-                          if (pemasok?.includes("Pemasok B"))
-                            setFallbackChartData(data3BulanB);
-                        }
-                      }}
-                    >
-                      3M
-                    </button>
-                    <button
-                      className={`text-[#115d72] ${
-                        period == "6M"
-                          ? "bg-[#14a2bb92] w-[45px] rounded-md"
-                          : ""
-                      } cursor-pointer`}
-                      onClick={() => {
-                        setPeriod("6M");
-                        if (onPeriodChange) {
-                          onPeriodChange("six_month");
-                        } else {
-                          if (pemasok?.includes("Pemasok A"))
-                            setFallbackChartData(data6BulanA);
-                          if (pemasok?.includes("Pemasok B"))
-                            setFallbackChartData(data6BulanB);
-                        }
-                      }}
-                    >
-                      6M
-                    </button>
-                    <button
-                      className={`text-[#115d72] ${
-                        period == "1Y"
-                          ? "bg-[#14a2bb92] w-[45px] rounded-md"
-                          : ""
-                      } cursor-pointer`}
-                      onClick={() => {
-                        setPeriod("1Y");
-                        if (onPeriodChange) {
-                          onPeriodChange("one_year");
-                        } else {
-                          if (pemasok?.includes("Pemasok A"))
-                            setFallbackChartData(data1TahunA);
-                          if (pemasok?.includes("Pemasok B"))
-                            setFallbackChartData(data1TahunB);
-                        }
-                      }}
-                    >
-                      1Y
-                    </button>
-                    <button
-                      className={`text-[#115d72] ${
-                        period == "3Y"
-                          ? "bg-[#14a2bb92] w-[45px] rounded-md"
-                          : ""
-                      } cursor-pointer`}
-                      onClick={() => {
-                        setPeriod("3Y");
-                        if (onPeriodChange) {
-                          onPeriodChange("three_year");
-                        } else {
-                          if (pemasok?.includes("Pemasok A"))
-                            setFallbackChartData(data3TahunA);
-                          if (pemasok?.includes("Pemasok B"))
-                            setFallbackChartData(data3TahunB);
-                        }
-                      }}
-                    >
-                      3Y
-                    </button>
+                    {intervalMode === "Jam" && (
+                      <button
+                        className={`text-[#115d72] font-medium text-sm transition-all ${
+                          period === "1D"
+                            ? "bg-[#14a2bb92] px-2 py-1 rounded-md"
+                            : ""
+                        } cursor-pointer hover:text-[#14a2bb]`}
+                        onClick={() => {
+                          setPeriod("1D");
+                          if (startDate) setEndDate(startDate);
+                          if (onPeriodChange) onPeriodChange("hour");
+                          else {
+                            if (pemasok?.includes("Pemasok A"))
+                              setFallbackChartData(dataJamA);
+                            if (pemasok?.includes("Pemasok B"))
+                              setFallbackChartData(dataJamB);
+                          }
+                        }}
+                      >
+                        24 Jam
+                      </button>
+                    )}
+
+                    {intervalMode === "Hari" && (
+                      <>
+                        <button
+                          className={`text-[#115d72] font-medium text-sm transition-all ${
+                            period === "1W"
+                              ? "bg-[#14a2bb92] px-2 py-1 rounded-md"
+                              : ""
+                          } cursor-pointer hover:text-[#14a2bb]`}
+                          onClick={() => {
+                            setPeriod("1W");
+                            if (onPeriodChange) onPeriodChange("day");
+                            else {
+                              if (pemasok?.includes("Pemasok A"))
+                                setFallbackChartData(data1MingguA);
+                              if (pemasok?.includes("Pemasok B"))
+                                setFallbackChartData(data1MingguB);
+                            }
+                          }}
+                        >
+                          7 Hari
+                        </button>
+                        <button
+                          className={`text-[#115d72] font-medium text-sm transition-all ${
+                            period === "30D"
+                              ? "bg-[#14a2bb92] px-2 py-1 rounded-md"
+                              : ""
+                          } cursor-pointer hover:text-[#14a2bb]`}
+                          onClick={() => {
+                            setPeriod("30D");
+                            if (onPeriodChange) onPeriodChange("day");
+                          }}
+                        >
+                          30 Hari
+                        </button>
+                      </>
+                    )}
+
+                    {intervalMode === "Bulan" && (
+                      <>
+                        <button
+                          className={`text-[#115d72] font-medium text-sm transition-all ${
+                            period === "3M"
+                              ? "bg-[#14a2bb92] px-2 py-1 rounded-md"
+                              : ""
+                          } cursor-pointer hover:text-[#14a2bb]`}
+                          onClick={() => {
+                            setPeriod("3M");
+                            if (onPeriodChange) onPeriodChange("three_month");
+                            else {
+                              if (pemasok?.includes("Pemasok A"))
+                                setFallbackChartData(data3BulanA);
+                              if (pemasok?.includes("Pemasok B"))
+                                setFallbackChartData(data3BulanB);
+                            }
+                          }}
+                        >
+                          3 Bulan
+                        </button>
+                        <button
+                          className={`text-[#115d72] font-medium text-sm transition-all ${
+                            period === "6M"
+                              ? "bg-[#14a2bb92] px-2 py-1 rounded-md"
+                              : ""
+                          } cursor-pointer hover:text-[#14a2bb]`}
+                          onClick={() => {
+                            setPeriod("6M");
+                            if (onPeriodChange) onPeriodChange("six_month");
+                            else {
+                              if (pemasok?.includes("Pemasok A"))
+                                setFallbackChartData(data6BulanA);
+                              if (pemasok?.includes("Pemasok B"))
+                                setFallbackChartData(data6BulanB);
+                            }
+                          }}
+                        >
+                          6 Bulan
+                        </button>
+                        <button
+                          className={`text-[#115d72] font-medium text-sm transition-all ${
+                            period === "12M"
+                              ? "bg-[#14a2bb92] px-2 py-1 rounded-md"
+                              : ""
+                          } cursor-pointer hover:text-[#14a2bb]`}
+                          onClick={() => {
+                            setPeriod("12M");
+                            if (onPeriodChange) onPeriodChange("one_year");
+                            else {
+                              if (pemasok?.includes("Pemasok A"))
+                                setFallbackChartData(data1TahunA);
+                              if (pemasok?.includes("Pemasok B"))
+                                setFallbackChartData(data1TahunB);
+                            }
+                          }}
+                        >
+                          12 Bulan
+                        </button>
+                      </>
+                    )}
+
+                    {intervalMode === "Tahun" && (
+                      <>
+                        <button
+                          className={`text-[#115d72] font-medium text-sm transition-all ${
+                            period === "3Y"
+                              ? "bg-[#14a2bb92] px-2 py-1 rounded-md"
+                              : ""
+                          } cursor-pointer hover:text-[#14a2bb]`}
+                          onClick={() => {
+                            setPeriod("3Y");
+                            if (onPeriodChange) onPeriodChange("three_year");
+                            else {
+                              if (pemasok?.includes("Pemasok A"))
+                                setFallbackChartData(data3TahunA);
+                              if (pemasok?.includes("Pemasok B"))
+                                setFallbackChartData(data3TahunB);
+                            }
+                          }}
+                        >
+                          3 Tahun
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
-                <DateRangeFilter
-                  startDate={startDate}
-                  endDate={endDate}
-                  setStartDate={setStartDate}
-                  setEndDate={setEndDate}
-                  isSingleDate={period === "1D"}
-                />
+                {intervalMode !== "Bulan" && intervalMode !== "Tahun" && (
+                  <DateRangeFilter
+                    startDate={startDate}
+                    endDate={endDate}
+                    setStartDate={setStartDate}
+                    setEndDate={setEndDate}
+                    isSingleDate={period === "1D"}
+                    mode={intervalMode}
+                  />
+                )}
               </div>
             </div>
             <div>
