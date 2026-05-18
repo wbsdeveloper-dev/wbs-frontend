@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useEvents, type DashboardEvent } from "@/hooks/service/dashboard-api";
 
 type Props = {
@@ -6,24 +7,42 @@ type Props = {
 };
 
 export default function NoteSection({ pemasokId, pembangkitId }: Props) {
-  const siteId = pembangkitId || pemasokId;
+  // Build a set of relevant siteIds for client-side filtering
+  const relevantSiteIds = useMemo(() => {
+    const ids = new Set<string>();
+    if (pembangkitId) pembangkitId.split(",").forEach((id) => ids.add(id.trim()));
+    if (pemasokId) pemasokId.split(",").forEach((id) => ids.add(id.trim()));
+    return ids;
+  }, [pembangkitId, pemasokId]);
 
-  // Fetch events from API — last 30 days
+  // Only pass a single siteId to the API; skip if comma-separated
+  const apiSiteId = useMemo(() => {
+    if (pembangkitId && !pembangkitId.includes(",")) return pembangkitId;
+    if (pemasokId && !pemasokId.includes(",")) return pemasokId;
+    return undefined;
+  }, [pembangkitId, pemasokId]);
+
+  // Fetch events from API — last 90 days
   const today = new Date().toISOString().split("T")[0];
-  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+  const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000)
     .toISOString()
     .split("T")[0];
 
   const { data: eventsData } = useEvents(
-    thirtyDaysAgo,
+    ninetyDaysAgo,
     today,
-    50,
+    100,
     undefined,
-    siteId,
+    apiSiteId,
     undefined,
   );
 
-  const notes = eventsData?.events || [];
+  // Client-side filter: if we fetched without siteId, filter by relevant IDs
+  const notes = useMemo(() => {
+    const allEvents = eventsData?.events || [];
+    if (relevantSiteIds.size === 0) return allEvents;
+    return allEvents.filter((e) => relevantSiteIds.has(e.siteId));
+  }, [eventsData, relevantSiteIds]);
 
   return (
     <div>

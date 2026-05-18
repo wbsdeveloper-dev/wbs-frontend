@@ -41,16 +41,23 @@ export default function ModalNote({
   // Determine the siteId to filter events by. Avoid comma-separated IDs.
   const apiSiteId = seriesSiteId || (pembangkitId && !pembangkitId.includes(",") ? pembangkitId : pemasokId && !pemasokId.includes(",") ? pemasokId : undefined);
 
-  // Fetch existing events — wide date range to show all recent events
+  // Fetch existing events — date range that covers the selected timestamp
   const today = new Date().toISOString().split("T")[0];
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
     .toISOString()
     .split("T")[0];
 
+  // If selectedTimestamp is older than 30 days ago, extend the window to include it
+  const queryStartDate = useMemo(() => {
+    if (!selectedTimestamp) return thirtyDaysAgo;
+    const tsDate = new Date(selectedTimestamp).toISOString().split("T")[0];
+    return tsDate < thirtyDaysAgo ? tsDate : thirtyDaysAgo;
+  }, [selectedTimestamp, thirtyDaysAgo]);
+
   const { data: eventsData, refetch } = useEvents(
-    thirtyDaysAgo,
+    queryStartDate,
     today,
-    50,
+    100,
     undefined,
     apiSiteId,
     undefined,
@@ -63,27 +70,38 @@ export default function ModalNote({
     const allEvents = eventsData?.events || [];
     if (!selectedTimestamp) return allEvents;
 
-    const clickedDate = new Date(selectedTimestamp);
-    if (period === "1D") {
-      clickedDate.setMinutes(0, 0, 0);
-    } else {
-      clickedDate.setHours(0, 0, 0, 0);
-    }
-    const clickedTime = clickedDate.getTime();
+    const clicked = new Date(selectedTimestamp);
+
+    // Use UTC-based comparison to avoid local timezone inconsistencies
+    const clickedYear = clicked.getUTCFullYear();
+    const clickedMonth = clicked.getUTCMonth();
+    const clickedDay = clicked.getUTCDate();
+    const clickedHour = clicked.getUTCHours();
 
     return allEvents.filter((event) => {
       // Filter by the specific series clicked
-      const isCorrectSite = seriesSiteId ? event.siteId === seriesSiteId : event.siteName === supplier;
+      const isCorrectSite = seriesSiteId
+        ? event.siteId === seriesSiteId
+        : event.siteName === supplier;
       if (!isCorrectSite) return false;
 
-      const eventDate = new Date(event.occurredAt);
-      if (period === "1D") {
-        eventDate.setMinutes(0, 0, 0);
-      } else {
-        eventDate.setHours(0, 0, 0, 0);
+      const eventD = new Date(event.occurredAt);
+
+      // Always check year/month/day match
+      if (
+        eventD.getUTCFullYear() !== clickedYear ||
+        eventD.getUTCMonth() !== clickedMonth ||
+        eventD.getUTCDate() !== clickedDay
+      ) {
+        return false;
       }
 
-      return eventDate.getTime() === clickedTime;
+      // For hourly view, also check hour match
+      if (period === "1D") {
+        return eventD.getUTCHours() === clickedHour;
+      }
+
+      return true;
     });
   }, [eventsData, selectedTimestamp, period, seriesSiteId, supplier]);
 
