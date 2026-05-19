@@ -65,20 +65,36 @@ export default function NoteSection({ pemasokId, pembangkitId }: Props) {
                         </p>
                       </div>
                       <p className="text-justify">{note.description}</p>
-                      <div className="flex justify-between text-xs text-gray-500 mt-1">
-                        <span>
-                          {new Date(note.occurredAt).toLocaleDateString("id-ID", {
-                            day: "2-digit",
-                            month: "long",
-                            year: "numeric",
-                          })}
-                        </span>
-                        <span>
-                          {new Date(note.occurredAt).toLocaleTimeString("id-ID", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </span>
+                      <div className="flex justify-between items-start text-xs text-gray-500 mt-2">
+                        <div className="flex flex-col gap-1">
+                          <div className="flex gap-3">
+                            <span>
+                              {new Date(note.occurredAt).toLocaleDateString("id-ID", {
+                                day: "2-digit",
+                                month: "long",
+                                year: "numeric",
+                              })}
+                            </span>
+                            <span>
+                              {new Date(note.occurredAt).toLocaleTimeString("id-ID", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </span>
+                          </div>
+                          <span className="text-[11px] text-gray-400">
+                            Oleh: <span className="font-semibold text-gray-600">{note.user?.fullName || "Sistem"}</span>
+                            {note.user?.roles && note.user.roles.length > 0 ? (
+                              <span className="ml-1 px-1.5 py-0.5 rounded bg-gray-100 text-[10px] text-gray-500 font-medium">
+                                {note.user.roles.join(", ")}
+                              </span>
+                            ) : !note.user?.fullName ? (
+                              <span className="ml-1 px-1.5 py-0.5 rounded bg-gray-100 text-[10px] text-gray-500 font-medium">
+                                SYSTEM
+                              </span>
+                            ) : null}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>

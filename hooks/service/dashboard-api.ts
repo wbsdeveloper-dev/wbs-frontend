@@ -174,6 +174,10 @@ export interface DashboardEvent {
   title: string;
   description: string;
   severity: "INFO" | "WARNING" | "CRITICAL";
+  user?: {
+    fullName: string | null;
+    roles: string[];
+  } | null;
 }
 
 /** POST /dashboard/events */
@@ -421,6 +425,12 @@ export async function createEvent(payload: CreateEventPayload) {
   });
 }
 
+export async function deleteEvent(id: string) {
+  return dashboardFetch<null>(`/dashboard/events/${id}`, {
+    method: "DELETE",
+  });
+}
+
 export async function getFilters(pemasokId?: string, pembangkitId?: string) {
   return dashboardFetch<DashboardFilters>(
     `/dashboard/filters${buildQuery({ pemasokId, pembangkitId })}`,
@@ -563,6 +573,19 @@ export function useCreateEvent(
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (payload: CreateEventPayload) => createEvent(payload),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: dashboardKeys.all });
+    },
+    ...options,
+  });
+}
+
+export function useDeleteEvent(
+  options?: Partial<UseMutationOptions<null, Error, string>>,
+) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteEvent(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: dashboardKeys.all });
     },

@@ -1,8 +1,9 @@
-import { X } from "lucide-react";
+import { X, Trash2 } from "lucide-react";
 import { useState, useMemo } from "react";
 import {
   useEvents,
   useCreateEvent,
+  useDeleteEvent,
   type DashboardEvent,
 } from "@/hooks/service/dashboard-api";
 
@@ -37,6 +38,8 @@ export default function ModalNote({
 }: Props) {
   const [saving, setSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   // Determine the siteId to filter events by. Avoid comma-separated IDs.
   const apiSiteId = seriesSiteId || (pembangkitId && !pembangkitId.includes(",") ? pembangkitId : pemasokId && !pemasokId.includes(",") ? pemasokId : undefined);
@@ -64,6 +67,7 @@ export default function ModalNote({
   );
 
   const createEvent = useCreateEvent();
+  const deleteEvent = useDeleteEvent();
 
   // Show only events matching the selected point's date (and hour if in 1D view)
   const existingNotes = useMemo(() => {
@@ -133,6 +137,20 @@ export default function ModalNote({
     }
   };
 
+  const handleDelete = async (id: string) => {
+    setDeletingId(id);
+    try {
+      await deleteEvent.mutateAsync(id);
+      setConfirmDeleteId(null);
+      refetch();
+    } catch (err) {
+      console.error("Gagal menghapus catatan:", err);
+      alert("Gagal menghapus catatan. Silakan coba lagi.");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-100 flex items-center justify-center">
       <div
@@ -174,20 +192,68 @@ export default function ModalNote({
                       className="border-b border-gray-200 pb-2 last:border-b-0 last:pb-0"
                     >
                       <p className="text-sm">{n.description}</p>
-                      <div className="flex justify-between text-xs text-gray-500 mt-2">
-                        <span>
-                          {new Date(n.occurredAt).toLocaleDateString("id-ID", {
-                            day: "2-digit",
-                            month: "long",
-                            year: "numeric",
-                          })}
-                        </span>
-                        <span>
-                          {new Date(n.occurredAt).toLocaleTimeString("id-ID", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </span>
+                      <div className="flex justify-between items-start text-xs text-gray-500 mt-2">
+                        <div className="flex flex-col gap-1">
+                          <div className="flex gap-3">
+                            <span>
+                              {new Date(n.occurredAt).toLocaleDateString("id-ID", {
+                                day: "2-digit",
+                                month: "long",
+                                year: "numeric",
+                              })}
+                            </span>
+                            {period === "1D" && (
+                              <span>
+                                {new Date(n.occurredAt).toLocaleTimeString("id-ID", {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[11px] text-gray-400">
+                            Oleh: <span className="font-semibold text-gray-600">{n.user?.fullName || "Sistem"}</span>
+                            {n.user?.roles && n.user.roles.length > 0 ? (
+                              <span className="ml-1 px-1.5 py-0.5 rounded bg-gray-100 text-[10px] text-gray-500 font-medium">
+                                {n.user.roles.join(", ")}
+                              </span>
+                            ) : !n.user?.fullName ? (
+                              <span className="ml-1 px-1.5 py-0.5 rounded bg-gray-100 text-[10px] text-gray-500 font-medium">
+                                SYSTEM
+                              </span>
+                            ) : null}
+                          </span>
+                        </div>
+
+                        {/* Delete button / confirm */}
+                        {confirmDeleteId === n.id ? (
+                          <div className="flex items-center gap-2">
+                            <span className="text-red-500 text-xs">
+                              Hapus catatan ini?
+                            </span>
+                            <button
+                              onClick={() => handleDelete(n.id)}
+                              disabled={deletingId === n.id}
+                              className="text-xs font-medium text-white bg-red-500 hover:bg-red-600 px-2 py-0.5 rounded transition-colors disabled:opacity-50 cursor-pointer"
+                            >
+                              {deletingId === n.id ? "Menghapus..." : "Ya"}
+                            </button>
+                            <button
+                              onClick={() => setConfirmDeleteId(null)}
+                              className="text-xs font-medium text-gray-500 hover:text-gray-700 px-2 py-0.5 rounded border border-gray-300 hover:border-gray-400 transition-colors cursor-pointer"
+                            >
+                              Batal
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setConfirmDeleteId(n.id)}
+                            className="text-gray-400 hover:text-red-500 transition-colors cursor-pointer p-0.5 rounded hover:bg-red-50"
+                            title="Hapus catatan"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))}
