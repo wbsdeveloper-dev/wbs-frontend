@@ -10,8 +10,8 @@ import RealtimeChart from "../../components/RealtimeChart";
 
 import dynamic from "next/dynamic";
 import RealizationChart from "@/app/components/RealizationChart";
-import BBMMonitoringTable from "@/app/components/EditDataTable";
-import { useMonitoringRecords } from "@/hooks/service/monitoring-api";
+import BBMDataTable from "@/app/components/BBMDataTable";
+import { useReports } from "@/hooks/service/reports-api";
 
 const Map = dynamic(() => import("../../components/Map"), { ssr: false });
 
@@ -70,8 +70,8 @@ export default function Home() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   
-  const { data: monitoringData, isLoading: isMonitoringLoading } =
-    useMonitoringRecords({ page, limit: pageSize });
+  const { data: reportsData, isLoading: isReportsLoading } =
+    useReports({ page, limit: pageSize });
 
   const handlePageChange = useCallback(
     (newPage: number, newPageSize: number) => {
@@ -131,17 +131,12 @@ export default function Home() {
             </div>
           </div>
           <div>
-            <BBMMonitoringTable
-              records={monitoringData?.records ?? []}
-              pagination={
-                monitoringData?.pagination ?? {
-                  page,
-                  limit: pageSize,
-                  total: 0,
-                  totalPages: 0,
-                }
-              }
-              isLoading={isMonitoringLoading}
+            <BBMDataTable
+              records={reportsData?.data ?? []}
+              totalItems={reportsData?.total ?? 0}
+              page={page}
+              pageSize={pageSize}
+              isLoading={isReportsLoading}
               onPageChange={handlePageChange}
             />
           </div>

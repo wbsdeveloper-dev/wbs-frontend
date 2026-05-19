@@ -344,17 +344,23 @@ const CustomTooltip = ({
   }, 0);
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg shadow-md p-3 text-sm text-gray-900 min-w-[300px] max-w-sm z-100">
+    <div className="bg-white border border-gray-200 rounded-lg shadow-md p-3 text-sm text-gray-900 min-w-[320px] max-w-[700px] z-100">
       <p className="font-semibold mb-3 border-b border-gray-100 pb-2">
         {label}
       </p>
 
-      <ul className="space-y-3">
+      <ul
+        className={`
+      grid gap-3 items-start
+      ${payload.length > 4 ? "grid-cols-2" : "grid-cols-1"}
+    `}
+      >
         {payload.map((item, index) => {
           const originalKey = item.dataKey?.replace("values.", "") || item.name;
           const flowrate = item.payload?.flowrates?.[originalKey] || 0;
+
           return (
-            <div key={index} className="flex flex-col">
+            <div key={index} className="flex flex-col min-w-[260px]">
               <div className="flex items-center gap-2 mb-1.5">
                 <div
                   className="w-2 h-3 rounded-full"
@@ -373,8 +379,10 @@ const CustomTooltip = ({
                     {unit || "BBTUD"}
                   </span>
                 </div>
+
                 <div className="flex flex-col bg-[#14a2bb]/5 rounded p-1.5 border border-[#14a2bb]/10">
                   <span className="text-[#115d72]/70 mb-0.5">Flowrate</span>
+
                   <span className="font-semibold text-[#115d72] border-t border-[#14a2bb]/10 pt-0.5">
                     {Number(flowrate).toLocaleString("id-ID", {
                       maximumFractionDigits: 2,
@@ -820,7 +828,11 @@ export default function RealtimeChart({
                   <>
                     {pembangkit ?? ""}
                     {pemasok && pemasok.length > 0 && (
-                      <> Dari {Array.isArray(pemasok) ? pemasok.join(", ") : pemasok}</>
+                      <>
+                        {" "}
+                        Dari{" "}
+                        {Array.isArray(pemasok) ? pemasok.join(", ") : pemasok}
+                      </>
                     )}
                   </>
                 ) : (
