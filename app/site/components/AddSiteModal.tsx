@@ -50,6 +50,7 @@ export function AddSiteModal({
     long: undefined,
     conversion_factor: undefined,
     owner: "",
+    commodity: "",
   });
 
   const [selectedPlant, setSelectedPlant] = useState<string | null>(null);
@@ -68,6 +69,7 @@ export function AddSiteModal({
       long: undefined,
       conversion_factor: undefined,
       owner: "",
+      commodity: "",
     });
     setSelectedPlant(null);
     setSelectedSupplier(null);
@@ -93,6 +95,7 @@ export function AddSiteModal({
           long: editingSite.long,
           conversion_factor: editingSite.conversion_factor,
           owner: editingSite.owner ?? "",
+          commodity: editingSite.commodity ?? "",
         });
         setSelectedPlant(editingSite.pembangkit_id || null);
         setSelectedSupplier(editingSite.pemasok_id || null);
@@ -141,6 +144,7 @@ export function AddSiteModal({
       long: formData.long ?? null,
       conversion_factor: formData.conversion_factor,
       owner: formData.owner || undefined,
+      commodity: formData.commodity || undefined,
     };
 
     // Use appropriate mutation
@@ -239,6 +243,25 @@ export function AddSiteModal({
               </select>
             </div>
           )}
+
+          {/* Komoditas */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Komoditas
+            </label>
+            <select
+              value={formData.commodity ?? ""}
+              onChange={(e) =>
+                setFormData({ ...formData, commodity: e.target.value })
+              }
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white transition-all duration-200"
+            >
+              <option value="">Pilih Komoditas</option>
+              <option value="GAS PIPA">GAS PIPA</option>
+              <option value="LNG">LNG</option>
+              <option value="BBM">BBM</option>
+            </select>
+          </div>
 
           {/* Site Name */}
           <div>

@@ -362,6 +362,9 @@ export function DaftarSiteTable({ onEdit, onDelete }: SiteTableProps) {
                   Kapasitas
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  Komoditas
+                </th>
+                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   Status
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
@@ -373,7 +376,7 @@ export function DaftarSiteTable({ onEdit, onDelete }: SiteTableProps) {
               {isLoading ? (
                 <tr>
                   <td
-                    colSpan={5}
+                    colSpan={6}
                     className="px-4 py-8 text-center text-gray-500"
                   >
                     Memuat data...
@@ -382,7 +385,7 @@ export function DaftarSiteTable({ onEdit, onDelete }: SiteTableProps) {
               ) : paginatedSites.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={5}
+                    colSpan={6}
                     className="px-4 py-8 text-center text-gray-500"
                   >
                     {searchTerm
@@ -409,6 +412,9 @@ export function DaftarSiteTable({ onEdit, onDelete }: SiteTableProps) {
                     </td>
                     <td className="px-4 py-3 text-center text-gray-700">
                       {site.capacity ? site.capacity + " MW" : "-"}
+                    </td>
+                    <td className="px-4 py-3 text-center text-gray-700">
+                      {site.commodity || "-"}
                     </td>
                     <td className="px-4 py-3 text-center">
                       <StatusBadge
