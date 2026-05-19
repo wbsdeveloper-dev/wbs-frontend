@@ -76,8 +76,7 @@ export default function SitePage() {
           TBBM & Pembangkit
         </h1>
         <p className="text-gray-600 mt-1 text-sm md:text-base">
-          Kelola lokasi operasional beserta keterhubungan TBBM, pembangkit,
-          dan transportir
+          Kelola lokasi operasional beserta keterhubungan TBBM dan pembangkit
         </p>
       </div>
 
@@ -94,10 +93,11 @@ export default function SitePage() {
               <button
                 key={idx}
                 onClick={() => setActiveTab(idx)}
-                className={`relative flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all duration-200 cursor-pointer ${isActive
-                  ? "text-[#115d72]"
-                  : "text-gray-500 hover:text-gray-700"
-                  }`}
+                className={`relative flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all duration-200 cursor-pointer ${
+                  isActive
+                    ? "text-[#115d72]"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
               >
                 <Icon size={16} />
                 {tab.label}
@@ -130,6 +130,7 @@ export default function SitePage() {
       <div className="animate-fadeIn" style={{ animationDelay: "200ms" }}>
         {activeTab === 0 && (
           <DaftarSiteTable
+            commodity={["BBM"]}
             onEdit={handleEditSite}
             onDelete={(id) => console.log("Delete site", id)}
           />
@@ -137,6 +138,7 @@ export default function SitePage() {
 
         {activeTab === 1 && (
           <RelasiOperasionalTable
+            commodity={["BBM"]}
             onEdit={handleEditRelation}
             onDelete={(id) => console.log("Delete relasi", id)}
           />

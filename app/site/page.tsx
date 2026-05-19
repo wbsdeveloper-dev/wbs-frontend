@@ -130,6 +130,7 @@ export default function SitePage() {
       <div className="animate-fadeIn" style={{ animationDelay: "200ms" }}>
         {activeTab === 0 && (
           <DaftarSiteTable
+            commodity={["LNG", "GAS PIPA"]}
             onEdit={handleEditSite}
             onDelete={(id) => console.log("Delete site", id)}
           />
@@ -137,6 +138,7 @@ export default function SitePage() {
 
         {activeTab === 1 && (
           <RelasiOperasionalTable
+            commodity={["LNG", "GAS PIPA"]}
             onEdit={handleEditRelation}
             onDelete={(id) => console.log("Delete relasi", id)}
           />

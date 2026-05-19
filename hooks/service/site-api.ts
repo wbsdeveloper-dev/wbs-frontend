@@ -282,12 +282,23 @@ export function getSites(filters?: {
   type?: string;
   region?: string;
   search?: string;
+  commodity?: string | string[];
 }) {
-  const query = buildQuery({
+  const queryParams: Record<string, any> = {
     type: filters?.type,
     region: filters?.region,
     search: filters?.search,
-  });
+  };
+  
+  if (filters?.commodity) {
+    if (Array.isArray(filters.commodity)) {
+      queryParams.commodity = filters.commodity.join(',');
+    } else {
+      queryParams.commodity = filters.commodity;
+    }
+  }
+
+  const query = buildQuery(queryParams);
   return siteFetch<Site[]>(`/sites${query}`);
 }
 
@@ -386,6 +397,7 @@ export function useSites(
     region?: string;
     search?: string;
     capacity?: string;
+    commodity?: string | string[];
   },
   options?: Partial<UseQueryOptions<Site[]>>,
 ) {
