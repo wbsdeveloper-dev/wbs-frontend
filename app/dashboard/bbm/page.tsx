@@ -13,7 +13,7 @@ import RealizationChart from "@/app/components/RealizationChart";
 import BBMDataTable from "@/app/components/BBMDataTable";
 import { useReports } from "@/hooks/service/reports-api";
 
-const Map = dynamic(() => import("../../components/Map"), { ssr: false });
+const MapBBM = dynamic(() => import("../../components/MapBBM"), { ssr: false });
 
 interface TopVolumeList {
   name: string;
@@ -96,7 +96,7 @@ export default function Home() {
               Monitoring BBM PLN EPI
             </h2>
             <div className="mb-6 md:mb-8">
-              <Map />
+              <MapBBM />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
