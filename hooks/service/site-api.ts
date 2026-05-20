@@ -20,7 +20,7 @@ interface ApiResponse<T = unknown> {
   success: boolean;
   data: T;
   message?: string;
-  error?: string;
+  error?: any;
   meta?: { requestId: string; timestamp: string };
 }
 
@@ -54,12 +54,34 @@ async function siteFetch<T>(
     },
   });
 
+  const extractErrorMessage = (errorObj: any, fallback: string): string => {
+    if (!errorObj) return fallback;
+    if (typeof errorObj === "string") return errorObj;
+    if (typeof errorObj === "object") {
+      if (errorObj.message && typeof errorObj.message === "string") {
+        return errorObj.message;
+      }
+      if (errorObj.error && typeof errorObj.error === "string") {
+        return errorObj.error;
+      }
+      try {
+        return JSON.stringify(errorObj);
+      } catch {
+        return fallback;
+      }
+    }
+    return fallback;
+  };
+
   if (!res.ok) {
     let msg = res.statusText;
     try {
-      const body = (await res.json()) as ApiResponse;
-      if (body.error) msg = body.error;
-      else if (body.message) msg = body.message;
+      const body = (await res.json()) as any;
+      if (body.error) {
+        msg = extractErrorMessage(body.error, res.statusText);
+      } else if (body.message) {
+        msg = body.message;
+      }
     } catch {
       /* ignore parse errors */
     }
@@ -69,9 +91,10 @@ async function siteFetch<T>(
   const body = (await res.json()) as ApiResponse<T>;
 
   if (!body.success) {
+    const msg = extractErrorMessage(body.error, body.message || "Unknown API error");
     throw new SiteApiError(
       res.status,
-      body.error || body.message || "Unknown API error",
+      msg,
     );
   }
 

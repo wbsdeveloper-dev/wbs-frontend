@@ -531,10 +531,10 @@ export function RelasiOperasionalTable({ onEdit, onDelete }: SiteTableProps) {
       if (!debouncedSearch) return true;
       const searchLower = debouncedSearch.toLowerCase();
       return (
-        relation.source_site_name.toLowerCase().includes(searchLower) ||
-        relation.target_site_name.toLowerCase().includes(searchLower) ||
-        relation.relation_type.toLowerCase().includes(searchLower) ||
-        relation.commodity.toLowerCase().includes(searchLower)
+        relation.source_site_name?.toLowerCase().includes(searchLower) ||
+        relation.target_site_name?.toLowerCase().includes(searchLower) ||
+        relation.relation_type?.toLowerCase().includes(searchLower) ||
+        relation.commodity?.toLowerCase().includes(searchLower)
       );
     }) || [];
 
