@@ -41,7 +41,9 @@ export function AddRelationModal({
     },
   });
 
-  const [formData, setFormData] = useState<Omit<CreateRelationPayload, "target_site_ids" | "source_site_ids">>({
+  const [formData, setFormData] = useState<
+    Omit<CreateRelationPayload, "target_site_ids" | "source_site_ids">
+  >({
     relation_type: "",
     commodity: "",
     priority: 1,
@@ -91,9 +93,12 @@ export function AddRelationModal({
     if (selectedTargetSites.length === 0) {
       newErrors.target_site_ids = "Tujuan wajib dipilih";
     }
-    if (selectedTargetSites.some((targetId) => selectedSourceSites.includes(targetId))) {
-      newErrors.target_site_ids =
-        "Tujuan tidak boleh sama dengan Sumber";
+    if (
+      selectedTargetSites.some((targetId) =>
+        selectedSourceSites.includes(targetId),
+      )
+    ) {
+      newErrors.target_site_ids = "Tujuan tidak boleh sama dengan Sumber";
     }
     if (!formData.commodity.trim()) {
       newErrors.commodity = "Komoditas wajib diisi";
@@ -127,7 +132,7 @@ export function AddRelationModal({
           relation_type: "PEMASOK - PEMBANGKIT",
           commodity: formData.commodity,
           priority: formData.priority,
-        }
+        },
       });
     } else {
       createRelationMutation.mutate(payload);
@@ -136,13 +141,15 @@ export function AddRelationModal({
 
   const commodities = ["Gas"];
 
-  const filteredSuppliers = dropdowns?.suppliers.filter(site =>
-    site.name.toLowerCase().includes(sourceSearch.toLowerCase())
-  ) || [];
+  const filteredSuppliers =
+    dropdowns?.suppliers.filter((site) =>
+      site.name.toLowerCase().includes(sourceSearch.toLowerCase()),
+    ) || [];
 
-  const filteredPlants = dropdowns?.plants.filter(site =>
-    site.name.toLowerCase().includes(targetSearch.toLowerCase())
-  ) || [];
+  const filteredPlants =
+    dropdowns?.plants.filter((site) =>
+      site.name.toLowerCase().includes(targetSearch.toLowerCase()),
+    ) || [];
 
   if (!open) return null;
 
@@ -186,10 +193,11 @@ export function AddRelationModal({
               {filteredSuppliers.map((site) => (
                 <label
                   key={site.id}
-                  className={`flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors ${selectedSourceSites.includes(site.id)
-                    ? "bg-[#14a2bb]/10 text-[#115d72]"
-                    : "hover:bg-gray-50 text-gray-700"
-                    }`}
+                  className={`flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors ${
+                    selectedSourceSites.includes(site.id)
+                      ? "bg-[#14a2bb]/10 text-[#115d72]"
+                      : "hover:bg-gray-50 text-gray-700"
+                  }`}
                 >
                   <input
                     type={editingId ? "radio" : "checkbox"}
@@ -218,7 +226,9 @@ export function AddRelationModal({
               ))}
               {filteredSuppliers.length === 0 && (
                 <p className="text-sm text-gray-500 text-center py-2">
-                  {sourceSearch ? "Tidak ada hasil pencarian" : "Tidak ada sumber"}
+                  {sourceSearch
+                    ? "Tidak ada hasil pencarian"
+                    : "Tidak ada sumber"}
                 </p>
               )}
             </div>
@@ -248,10 +258,11 @@ export function AddRelationModal({
               {filteredPlants.map((site) => (
                 <label
                   key={site.id}
-                  className={`flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors ${selectedTargetSites.includes(site.id)
-                    ? "bg-[#14a2bb]/10 text-[#115d72]"
-                    : "hover:bg-gray-50 text-gray-700"
-                    }`}
+                  className={`flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors ${
+                    selectedTargetSites.includes(site.id)
+                      ? "bg-[#14a2bb]/10 text-[#115d72]"
+                      : "hover:bg-gray-50 text-gray-700"
+                  }`}
                 >
                   <input
                     type={editingId ? "radio" : "checkbox"}
@@ -280,7 +291,9 @@ export function AddRelationModal({
               ))}
               {filteredPlants.length === 0 && (
                 <p className="text-sm text-gray-500 text-center py-2">
-                  {targetSearch ? "Tidak ada hasil pencarian" : "Tidak ada tujuan"}
+                  {targetSearch
+                    ? "Tidak ada hasil pencarian"
+                    : "Tidak ada tujuan"}
                 </p>
               )}
             </div>
@@ -305,11 +318,8 @@ export function AddRelationModal({
               className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white transition-all duration-200"
             >
               <option value="">Pilih komoditas...</option>
-              {commodities.map((commodity) => (
-                <option key={commodity} value={commodity}>
-                  {commodity}
-                </option>
-              ))}
+              <option value="GAS PIPA">GAS PIPA</option>
+              <option value="LNG">LNG</option>
             </select>
             {errors.commodity && (
               <p className="text-xs text-red-600 mt-1">{errors.commodity}</p>
@@ -335,7 +345,7 @@ export function AddRelationModal({
             className="px-4 py-2.5 text-sm font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95 disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
             {createRelationMutation.isPending ||
-              updateRelationMutation.isPending
+            updateRelationMutation.isPending
               ? "Menyimpan..."
               : "Simpan"}
           </button>
