@@ -27,7 +27,7 @@ import {
   type MapSite,
   type MapLegend,
 } from "@/hooks/service/dashboard-api";
-import { useRelations } from "@/hooks/service/site-api";
+import { useRelations, useSites } from "@/hooks/service/site-api";
 import { usePrivilege } from "@/hooks/usePrivilege";
 
 interface LeafletIconPrototype {
@@ -79,6 +79,7 @@ const buildIcons = (legend: MapLegend): Record<string, L.DivIcon> => {
 export default function Map() {
   // ---- API data -----------------------------------------------------------
   const { data, isLoading, isError, error } = useMapLocations();
+  const { data: bbmSites } = useSites({ commodity: "BBM" });
 
   const { hasPrivilege } = usePrivilege();
   const canReadSites = hasPrivilege("site_management", "READ");
@@ -109,20 +110,11 @@ export default function Map() {
     null,
   );
 
-  // Kepemilikan (owner) filter – checked owners are included
-  const OWNER_OPTIONS = ["PLN", "PLN IP", "PLN NP"] as const;
-  const [selectedOwners, setSelectedOwners] = useState<Set<string>>(
-    new Set(OWNER_OPTIONS),
-  );
+  // BBM specific product and mode filters
+  const [selectedMode, setSelectedMode] = useState<string>("All");
+  const [selectedProduct, setSelectedProduct] = useState<string>("All");
 
-  const toggleOwner = useCallback((owner: string) => {
-    setSelectedOwners((prev) => {
-      const next = new Set(prev);
-      if (next.has(owner)) next.delete(owner);
-      else next.add(owner);
-      return next;
-    });
-  }, []);
+  const bbmSiteIds = useMemo(() => new Set(bbmSites?.map((s) => s.id) || []), [bbmSites]);
 
   // ---- Derived data -------------------------------------------------------
   const icons = useMemo(() => {
@@ -230,24 +222,24 @@ export default function Map() {
 
   // Filtered sites
   const filteredSites = useMemo(() => {
-    if (!data?.sites) return [];
+    if (!data?.sites || !bbmSites) return [];
     const validIds = intersect([regionSet, pemasokSet, pembangkitSet]);
 
     return data.sites.filter((site) => {
+      // Only show sites that belong to BBM commodity
+      if (!bbmSiteIds.has(site.id)) return false;
+
       if (!visibleSiteTypes[site.siteType]) return false;
 
       if (validIds && !validIds.has(site.id)) return false;
 
-      // Kepemilikan filter – hide PEMBANGKIT sites whose owner is unchecked
-      if (site.siteType === "PEMBANGKIT" && site.owner) {
-        if (!selectedOwners.has(site.owner)) return false;
-      }
       return true;
     });
   }, [
     data?.sites,
+    bbmSites,
+    bbmSiteIds,
     visibleSiteTypes,
-    selectedOwners,
     regionSet,
     pemasokSet,
     pembangkitSet,
@@ -259,10 +251,20 @@ export default function Map() {
     if (!data?.pipes || !showPipes) return [];
     const visibleIds = new Set(filteredSites.map((s) => s.id));
     return data.pipes.filter(
-      (pipe) =>
-        visibleIds.has(pipe.sourceSiteId) && visibleIds.has(pipe.targetSiteId),
+      (pipe) => {
+        if (!visibleIds.has(pipe.sourceSiteId) || !visibleIds.has(pipe.targetSiteId)) return false;
+        
+        // Client-side Mode Type filter: Pipeline, Truck, Vessel
+        if (selectedMode !== "All") {
+          const modeMatch = pipe.relationType?.toLowerCase() === selectedMode.toLowerCase() ||
+                            pipe.relationType?.toLowerCase()?.includes(selectedMode.toLowerCase());
+          if (!modeMatch) return false;
+        }
+        
+        return true;
+      }
     );
-  }, [data?.pipes, filteredSites, showPipes]);
+  }, [data?.pipes, filteredSites, showPipes, selectedMode]);
 
   // ---- helpers ------------------------------------------------------------
   const getSiteTypeLabel = (type: string) =>
@@ -333,7 +335,7 @@ export default function Map() {
       {/* Map Section */}
       <div className="lg:col-span-9 lg:pr-6">
         <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-4">
-          Lokasi BBM
+          Titik Lokasi TBBM dan Pembangkit
         </h3>
 
         <div className="relative h-[250px] sm:h-[300px] md:h-[350px] lg:h-[400px] w-full">
@@ -607,28 +609,50 @@ export default function Map() {
               placeholder="Pilih Pembangkit"
             />
 
-            {/* Kepemilikan checkbox filter */}
-            <div>
-              <p className="text-sm font-medium text-gray-700 mb-2">
-                Kepemilikan
+            {/* Produk (Mode Type & Product Type buttons) */}
+            <div className="border-t border-gray-100 pt-4">
+              <p className="text-sm font-semibold text-gray-800 mb-3">
+                Produk
               </p>
-              <div className="flex flex-col gap-2">
-                {OWNER_OPTIONS.map((owner) => (
-                  <label
-                    key={owner}
-                    className="flex items-center gap-2 cursor-pointer group"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedOwners.has(owner)}
-                      onChange={() => toggleOwner(owner)}
-                      className="w-4 h-4 rounded border-gray-300 text-[#115d72] focus:ring-[#14a2bb] cursor-pointer"
-                    />
-                    <span className="text-sm text-gray-700 group-hover:text-gray-900 transition-colors">
-                      {owner}
-                    </span>
-                  </label>
-                ))}
+              
+              {/* Mode Type Button Group */}
+              <div className="mb-4">
+                <span className="text-xs font-medium text-gray-500 block mb-2">MODE TYPE</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {["All", "Truck", "Vessel", "Pipeline"].map((mode) => (
+                    <button
+                      key={mode}
+                      onClick={() => setSelectedMode(mode)}
+                      className={`px-3 py-1 text-xs font-medium rounded-full border transition-all duration-200 cursor-pointer ${
+                        selectedMode === mode
+                          ? "bg-[#14a2bb]/10 border-[#14a2bb]/40 text-[#115d72] font-semibold"
+                          : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
+                      }`}
+                    >
+                      {mode}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Product Type Button Group */}
+              <div>
+                <span className="text-xs font-medium text-gray-500 block mb-2">PRODUCT TYPE</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {["All", "B-30", "B-35", "B-40", "MSD", "MFO", "HSFO", "HSD", "LSFO"].map((prod) => (
+                    <button
+                      key={prod}
+                      onClick={() => setSelectedProduct(prod)}
+                      className={`px-2.5 py-1 text-xs font-medium rounded-full border transition-all duration-200 cursor-pointer ${
+                        selectedProduct === prod
+                          ? "bg-[#14a2bb]/10 border-[#14a2bb]/40 text-[#115d72] font-semibold"
+                          : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
+                      }`}
+                    >
+                      {prod}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
