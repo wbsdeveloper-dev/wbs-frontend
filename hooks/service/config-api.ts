@@ -153,6 +153,7 @@ export interface Template {
   aiPromptTemplate: string | null;
   aiOutputSchema: Record<string, unknown> | null;
   decimalSeparator: string;
+  commodity: string | null;
   createdBy: string | null;
   createdAt: string;
   updatedAt: string;
@@ -172,6 +173,7 @@ export interface CreateTemplatePayload {
   aiPromptTemplate?: string;
   aiOutputSchema?: Record<string, unknown>;
   decimalSeparator?: string;
+  commodity?: string;
   fields?: {
     fieldKey: string;
     sourceKind: TemplateField["sourceKind"];
@@ -196,6 +198,7 @@ export interface UpdateTemplatePayload {
   aiPromptTemplate?: string | null;
   aiOutputSchema?: Record<string, unknown> | null;
   decimalSeparator?: string;
+  commodity?: string | null;
   fields?: {
     fieldKey: string;
     sourceKind: TemplateField["sourceKind"];
@@ -210,6 +213,7 @@ export interface TemplateListFilters {
   scope?: string;
   status?: string;
   search?: string;
+  commodity?: string;
 }
 
 export interface RoutingTestPayload {
@@ -368,6 +372,7 @@ export function getTemplates(filters?: TemplateListFilters) {
     scope: filters?.scope,
     status: filters?.status,
     search: filters?.search,
+    commodity: filters?.commodity,
   });
   return configFetch<Template[]>(`/config/templates${query}`);
 }
