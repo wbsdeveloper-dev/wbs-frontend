@@ -130,7 +130,8 @@ export default function TemplateGrupPage() {
     "WA_GROUP" | "SPREADSHEET_SOURCE" | "EMAIL_INGEST"
   >("WA_GROUP");
   const [newTemplateDecimal, setNewTemplateDecimal] = useState<string>(",");
-  const [newTemplateCommodity, setNewTemplateCommodity] = useState<string>("GAS PIPA");
+  const [newTemplateCommodity, setNewTemplateCommodity] =
+    useState<string>("BBM");
 
   const [isTestModalOpen, setIsTestModalOpen] = useState(false);
   const [testGroupId, setTestGroupId] = useState("");
@@ -149,7 +150,7 @@ export default function TemplateGrupPage() {
       scope: scopeFilter !== "all" ? scopeFilter : undefined,
       status: statusFilter !== "all" ? statusFilter : undefined,
       search: searchQuery || undefined,
-      commodity: "GAS PIPA,LNG",
+      commodity: "BBM",
     }),
     [scopeFilter, statusFilter, searchQuery],
   );
@@ -166,11 +167,9 @@ export default function TemplateGrupPage() {
   const { data: botGroups = [] } = useBotGroups(BOT_PRIMARY_API);
 
   // Fetch real spreadsheet sources from API
-  const { data: spreadsheetSourcesRaw = [] } = useSpreadsheetSources("GAS PIPA,LNG");
+  const { data: spreadsheetSourcesRaw = [] } = useSpreadsheetSources("BBM");
   const spreadsheetSources = useMemo(() => {
-    return spreadsheetSourcesRaw.filter(
-      (s) => s.commodity === "GAS PIPA" || s.commodity === "LNG",
-    );
+    return spreadsheetSourcesRaw.filter((s) => s.commodity === "BBM");
   }, [spreadsheetSourcesRaw]);
 
   // ---------------------------------------------------------------------------
@@ -194,11 +193,9 @@ export default function TemplateGrupPage() {
     setTimeout(() => setNotification(null), 3000);
   };
 
-  // Filter templates client-side to strictly show GAS PIPA and LNG templates
+  // Filter templates client-side to strictly show BBM templates
   const filteredTemplates = useMemo(() => {
-    return templates.filter(
-      (t) => t.commodity === "GAS PIPA" || t.commodity === "LNG"
-    );
+    return templates.filter((t) => t.commodity === "BBM");
   }, [templates]);
 
   const handleSelectTemplate = (template: Template) => {
@@ -336,7 +333,7 @@ export default function TemplateGrupPage() {
           setIsCreateModalOpen(false);
           setNewTemplateName("");
           setNewTemplateDecimal(",");
-          setNewTemplateCommodity("GAS PIPA");
+          setNewTemplateCommodity("BBM");
           showNotification(
             "success",
             `Template "${newTemplateName}" berhasil dibuat`,
@@ -644,7 +641,7 @@ export default function TemplateGrupPage() {
           setIsCreateModalOpen(false);
           setNewTemplateName("");
           setNewTemplateDecimal(",");
-          setNewTemplateCommodity("GAS PIPA");
+          setNewTemplateCommodity("BBM");
         }}
         title="Buat Template Baru"
         maxWidth="max-w-md"
@@ -725,7 +722,7 @@ export default function TemplateGrupPage() {
                 setIsCreateModalOpen(false);
                 setNewTemplateName("");
                 setNewTemplateDecimal(",");
-                setNewTemplateCommodity("GAS PIPA");
+                setNewTemplateCommodity("BBM");
               }}
               className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200"
             >

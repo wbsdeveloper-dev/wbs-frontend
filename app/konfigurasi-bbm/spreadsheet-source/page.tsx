@@ -266,7 +266,7 @@ export default function SpreadsheetSourcePage() {
   const canUpdate = hasPrivilege("spreadsheet_source", "UPDATE");
   const canDelete = hasPrivilege("spreadsheet_source", "DELETE");
 
-  const { data: sources = [], isLoading, isError } = useSpreadsheetSources("GAS PIPA,LNG");
+  const { data: sources = [], isLoading, isError } = useSpreadsheetSources("BBM");
   const createMutation = useCreateSpreadsheetSource();
   const updateMutation = useUpdateSpreadsheetSource();
   const deleteMutation = useDeleteSpreadsheetSource();
@@ -285,9 +285,9 @@ export default function SpreadsheetSourcePage() {
     message: string;
   } | null>(null);
 
-  // Filter sources client-side to strictly show GAS PIPA and LNG sources
+  // Filter sources client-side to strictly show BBM sources
   const filteredSources = useMemo(() => {
-    return sources.filter((s) => s.commodity === "GAS PIPA" || s.commodity === "LNG");
+    return sources.filter((s) => s.commodity === "BBM");
   }, [sources]);
 
   // Group sources by spreadsheetId
@@ -362,7 +362,7 @@ export default function SpreadsheetSourcePage() {
         sheetName: formData.sheetName,
         cronSchedule: formData.cronSchedule || undefined,
         dataStartRow: formData.dataStartRow,
-        commodity: editingSource.commodity || "GAS PIPA",
+        commodity: editingSource.commodity || "BBM",
       };
       updateMutation.mutate(
         { id: editingSource.id, payload },
@@ -384,7 +384,7 @@ export default function SpreadsheetSourcePage() {
         sheetName: formData.sheetName,
         cronSchedule: formData.cronSchedule || undefined,
         dataStartRow: formData.dataStartRow,
-        commodity: "GAS PIPA",
+        commodity: "BBM",
       };
       createMutation.mutate(payload, {
         onSuccess: () => {

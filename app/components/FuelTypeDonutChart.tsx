@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   PieChart,
   Pie,
@@ -29,6 +29,9 @@ type Props = {
   /** Called when the user picks a new date */
   onStartDateChange: (date: string) => void;
   onEndDateChange: (date: string) => void;
+  title?: string;
+  descriptionPrefix?: string;
+  descriptionFuelType?: string;
 };
 
 export default function FuelTypeDonutChart({
@@ -40,8 +43,24 @@ export default function FuelTypeDonutChart({
   endDate,
   onStartDateChange,
   onEndDateChange,
+  title = "Konsumsi Gas",
+  descriptionPrefix = "Visualisasi konsumsi gas",
+  descriptionFuelType = "gas",
 }: Props) {
   const [showDateFilter, setShowDateFilter] = useState(false);
+  const [tempStartDate, setTempStartDate] = useState(startDate);
+  const [tempEndDate, setTempEndDate] = useState(endDate);
+
+  useEffect(() => {
+    setTempStartDate(startDate);
+    setTempEndDate(endDate);
+  }, [startDate, endDate]);
+
+  const handleApply = () => {
+    if (onStartDateChange && tempStartDate) onStartDateChange(tempStartDate);
+    if (onEndDateChange && tempEndDate) onEndDateChange(tempEndDate);
+    setShowDateFilter(false);
+  };
 
   /** Format YYYY-MM-DD → human-readable Indonesian date */
   const formattedDate = (() => {
@@ -66,7 +85,7 @@ export default function FuelTypeDonutChart({
     <div className="bg-white rounded-xl p-6 border border-gray-200 flex flex-col">
       {/* Header row */}
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold text-gray-900">Konsumsi Gas</h3>
+        <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
         <div className="flex items-center gap-1">
           {/* Date filter toggle */}
           <button
@@ -107,8 +126,8 @@ export default function FuelTypeDonutChart({
               </label>
               <input
                 type="date"
-                value={startDate ?? ""}
-                onChange={(e) => onStartDateChange?.(e.target.value)}
+                value={tempStartDate ?? ""}
+                onChange={(e) => setTempStartDate(e.target.value)}
                 className="w-full px-3 py-2 rounded-lg text-sm border border-gray-300
                          bg-white text-gray-700
                          focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/40 focus:border-[#14a2bb]
@@ -121,15 +140,23 @@ export default function FuelTypeDonutChart({
               </label>
               <input
                 type="date"
-                value={endDate ?? ""}
-                min={startDate ?? undefined}
-                onChange={(e) => onEndDateChange?.(e.target.value)}
+                value={tempEndDate ?? ""}
+                min={tempStartDate ?? undefined}
+                onChange={(e) => setTempEndDate(e.target.value)}
                 className="w-full px-3 py-2 rounded-lg text-sm border border-gray-300
                          bg-white text-gray-700
                          focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/40 focus:border-[#14a2bb]
                          transition-all duration-200"
               />
             </div>
+          </div>
+          <div className="flex justify-end mt-3">
+            <button
+              onClick={handleApply}
+              className="px-4 py-1.5 bg-[#115d72] text-white text-sm font-medium rounded-md hover:bg-[#0d4a5c] transition-colors"
+            >
+              Terapkan
+            </button>
           </div>
         </div>
       )}
@@ -214,7 +241,7 @@ export default function FuelTypeDonutChart({
 
       {/* Dynamic footer */}
       <p className="text-xs text-gray-500 mt-4 pt-4 border-t border-gray-200">
-        Visualisasi konsumsi gas pada setiap{" "}
+        {descriptionPrefix} pada setiap{" "}
         {filterType?.toLowerCase() ?? "pembangkit"} PLN EPI per tanggal{" "}
         {formattedDate}
       </p>

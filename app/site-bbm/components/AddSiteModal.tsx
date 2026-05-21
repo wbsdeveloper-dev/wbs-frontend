@@ -209,6 +209,22 @@ export function AddSiteModal({
           onSubmit={handleSubmit}
           className="p-6 space-y-4 overflow-y-auto flex-1 min-h-0"
         >
+          {/* Komoditas */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Komoditas
+            </label>
+            <select
+              value={formData.commodity ?? ""}
+              onChange={(e) =>
+                setFormData({ ...formData, commodity: e.target.value })
+              }
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white transition-all duration-200"
+            >
+              <option value="">Pilih Komoditas</option>
+              <option value="BBM">BBM</option>
+            </select>
+          </div>
           {/* Site Type Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -222,15 +238,14 @@ export function AddSiteModal({
               className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white transition-all duration-200"
             >
               <option value="PEMBANGKIT">Pembangkit</option>
-              <option value="PEMASOK">Pemasok</option>
-              <option value="TRANSPORTIR">Transportir</option>
+              <option value="PEMASOK">TBBM</option>
             </select>
           </div>
 
           {/* Kepemilikan */}
           {formData.site_type == "PEMBANGKIT" && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="blocks text-sm font-medium text-gray-700 mb-2">
                 Kepemilikan
               </label>
               <select
@@ -247,25 +262,6 @@ export function AddSiteModal({
               </select>
             </div>
           )}
-
-          {/* Komoditas */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Komoditas
-            </label>
-            <select
-              value={formData.commodity ?? ""}
-              onChange={(e) =>
-                setFormData({ ...formData, commodity: e.target.value })
-              }
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white transition-all duration-200"
-            >
-              <option value="">Pilih Komoditas</option>
-              <option value="GAS PIPA">GAS PIPA</option>
-              <option value="LNG">LNG</option>
-              <option value="BBM">BBM</option>
-            </select>
-          </div>
 
           {/* Site Name */}
           <div>
@@ -384,36 +380,6 @@ export function AddSiteModal({
               placeholder="106.123456"
               className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200"
             />
-          </div>
-
-          {/* Conversion Factor */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Faktor Konversi
-            </label>
-            <input
-              type="number"
-              value={formData.conversion_factor ?? ""}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  conversion_factor: e.target.value
-                    ? parseFloat(e.target.value)
-                    : undefined,
-                })
-              }
-              disabled={formData.site_type !== "PEMASOK"}
-              step="any"
-              placeholder="1000"
-              className={`w-full px-4 py-2.5 border rounded-lg text-sm transition-all duration-200 ${
-                formData.site_type !== "PEMASOK"
-                  ? "bg-gray-50 border-gray-200 text-gray-400 cursor-not-allowed"
-                  : "bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent"
-              }`}
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Opsional: Faktor konversi untuk satuan
-            </p>
           </div>
         </form>
 

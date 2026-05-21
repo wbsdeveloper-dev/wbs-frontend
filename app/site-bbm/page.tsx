@@ -15,8 +15,8 @@ import { siteKeys } from "@/hooks/service/site-api";
 import { usePrivilege } from "@/hooks/usePrivilege";
 
 const tabs = [
-  { label: "Daftar Pemasok & Pembangkit", icon: MapPin },
-  { label: "Relasi Pemasok - Pembangkit", icon: ArrowRightLeft },
+  { label: "Daftar TBBM & Pembangkit", icon: MapPin },
+  { label: "Relasi TBBM - Pembangkit", icon: ArrowRightLeft },
   { label: "Peta Lokasi", icon: Map },
 ];
 
@@ -67,17 +67,16 @@ export default function SitePage() {
       <div className="flex items-center gap-2 text-sm text-gray-500 mb-2 animate-fadeIn">
         <span>Dashboard</span>
         <span className="text-gray-400">/</span>
-        <span className="text-[#115d72] font-medium">Pemasok & Pembangkit</span>
+        <span className="text-[#115d72] font-medium">TBBM & Pembangkit</span>
       </div>
 
       {/* Header */}
       <div className="mb-6 md:mb-8 animate-fadeIn">
         <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-          Pemasok & Pembangkit
+          TBBM & Pembangkit
         </h1>
         <p className="text-gray-600 mt-1 text-sm md:text-base">
-          Kelola lokasi operasional beserta keterhubungan pemasok, pembangkit,
-          dan transportir
+          Kelola lokasi operasional beserta keterhubungan TBBM dan pembangkit
         </p>
       </div>
 
@@ -94,10 +93,11 @@ export default function SitePage() {
               <button
                 key={idx}
                 onClick={() => setActiveTab(idx)}
-                className={`relative flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all duration-200 cursor-pointer ${isActive
-                  ? "text-[#115d72]"
-                  : "text-gray-500 hover:text-gray-700"
-                  }`}
+                className={`relative flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all duration-200 cursor-pointer ${
+                  isActive
+                    ? "text-[#115d72]"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
               >
                 <Icon size={16} />
                 {tab.label}
@@ -130,7 +130,7 @@ export default function SitePage() {
       <div className="animate-fadeIn" style={{ animationDelay: "200ms" }}>
         {activeTab === 0 && (
           <DaftarSiteTable
-            commodity={["LNG", "GAS PIPA"]}
+            commodity={["BBM"]}
             onEdit={handleEditSite}
             onDelete={(id) => console.log("Delete site", id)}
           />
@@ -138,7 +138,7 @@ export default function SitePage() {
 
         {activeTab === 1 && (
           <RelasiOperasionalTable
-            commodity={["LNG", "GAS PIPA"]}
+            commodity={["BBM"]}
             onEdit={handleEditRelation}
             onDelete={(id) => console.log("Delete relasi", id)}
           />
