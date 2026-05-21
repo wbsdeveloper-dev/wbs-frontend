@@ -167,7 +167,10 @@ export default function TemplateGrupPage() {
   const { data: botGroups = [] } = useBotGroups(BOT_PRIMARY_API);
 
   // Fetch real spreadsheet sources from API
-  const { data: spreadsheetSources = [] } = useSpreadsheetSources();
+  const { data: spreadsheetSourcesRaw = [] } = useSpreadsheetSources("BBM");
+  const spreadsheetSources = useMemo(() => {
+    return spreadsheetSourcesRaw.filter((s) => s.commodity === "BBM");
+  }, [spreadsheetSourcesRaw]);
 
   // ---------------------------------------------------------------------------
   // API mutations

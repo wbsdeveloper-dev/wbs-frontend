@@ -264,6 +264,7 @@ export interface SpreadsheetSource {
   isEnabled: boolean;
   cronSchedule: string | null;
   dataStartRow: number | null;
+  commodity: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -276,6 +277,7 @@ export interface CreateSpreadsheetSourcePayload {
   timezone?: string;
   cronSchedule?: string;
   dataStartRow?: number;
+  commodity?: string;
 }
 
 export interface UpdateSpreadsheetSourcePayload {
@@ -287,6 +289,7 @@ export interface UpdateSpreadsheetSourcePayload {
   isEnabled?: boolean;
   cronSchedule?: string;
   dataStartRow?: number;
+  commodity?: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -652,8 +655,9 @@ export function useAiModels(options?: Partial<UseQueryOptions<AiModel[]>>) {
 // API functions — Spreadsheet Sources
 // ---------------------------------------------------------------------------
 
-export function getSpreadsheetSources() {
-  return configFetch<SpreadsheetSource[]>("/config/spreadsheet-sources");
+export function getSpreadsheetSources(commodity?: string) {
+  const query = commodity ? `?commodity=${encodeURIComponent(commodity)}` : "";
+  return configFetch<SpreadsheetSource[]>(`/config/spreadsheet-sources${query}`);
 }
 
 export function getSpreadsheetSource(id: string) {
@@ -693,11 +697,12 @@ export function deleteSpreadsheetSourceApi(id: string) {
 // ---------------------------------------------------------------------------
 
 export function useSpreadsheetSources(
+  commodity?: string,
   options?: Partial<UseQueryOptions<SpreadsheetSource[]>>,
 ) {
   return useQuery({
-    queryKey: configKeys.spreadsheetSources(),
-    queryFn: () => getSpreadsheetSources(),
+    queryKey: [...configKeys.spreadsheetSources(), commodity],
+    queryFn: () => getSpreadsheetSources(commodity),
     ...options,
   });
 }

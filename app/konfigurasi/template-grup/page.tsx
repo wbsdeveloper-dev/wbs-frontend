@@ -166,7 +166,12 @@ export default function TemplateGrupPage() {
   const { data: botGroups = [] } = useBotGroups(BOT_PRIMARY_API);
 
   // Fetch real spreadsheet sources from API
-  const { data: spreadsheetSources = [] } = useSpreadsheetSources();
+  const { data: spreadsheetSourcesRaw = [] } = useSpreadsheetSources("GAS PIPA,LNG");
+  const spreadsheetSources = useMemo(() => {
+    return spreadsheetSourcesRaw.filter(
+      (s) => s.commodity === "GAS PIPA" || s.commodity === "LNG",
+    );
+  }, [spreadsheetSourcesRaw]);
 
   // ---------------------------------------------------------------------------
   // API mutations
