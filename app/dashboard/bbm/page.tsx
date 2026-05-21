@@ -255,18 +255,18 @@ export default function Home() {
                   Visualisasi perbandingan Rencana/Nominasi, Realisasi, dan Pemakaian per Unit Pembangkit
                 </p>
               </div>
-              <div className="w-full">
+              <div className="w-full flex-1 min-h-[320px] mt-4">
                 {isBbmMonthlyLoading ? (
-                  <div className="flex items-center justify-center h-[320px] text-gray-400 text-sm">
+                  <div className="flex items-center justify-center h-full text-gray-400 text-sm">
                     <Loader2 className="animate-spin mr-2" size={20} />
                     Memuat data grafik...
                   </div>
                 ) : barChartData.length === 0 ? (
-                  <div className="flex items-center justify-center h-[320px] text-gray-400 text-sm">
+                  <div className="flex items-center justify-center h-full text-gray-400 text-sm">
                     Tidak ada data laporan yang cocok dengan filter grafik
                   </div>
                 ) : (
-                  <ResponsiveContainer width="100%" height={320}>
+                  <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={barChartData}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
                       <XAxis
