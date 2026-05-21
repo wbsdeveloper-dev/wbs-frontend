@@ -1,45 +1,21 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { Plus, Upload } from "lucide-react";
-import EditDataTable from "../components/EditDataTable";
+import EditBbmDataTable from "../components/EditBbmDataTable";
 import AddReconciliationModal from "../components/AddReconciliationModal";
 import BulkUploadReconciliationModal from "../components/BulkUploadReconciliationModal";
-import {
-  useMonitoringRecords,
-  type MonitoringParams,
-} from "@/hooks/service/monitoring-api";
+import { useBbmMonthly } from "@/hooks/service/bbm-api";
 import { usePrivilege } from "@/hooks/usePrivilege";
 
 export default function Home() {
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [filters, setFilters] = useState<MonitoringParams>({});
-
   const { hasPrivilege } = usePrivilege();
   const canCreate = hasPrivilege("data_management", "CREATE");
 
   const [openAddModal, setOpenAddModal] = useState(false);
   const [openBulkModal, setOpenBulkModal] = useState(false);
 
-  const { data, isLoading } = useMonitoringRecords({
-    page,
-    limit: pageSize,
-    ...filters,
-  });
-
-  const handlePageChange = useCallback(
-    (newPage: number, newPageSize: number) => {
-      setPage(newPage);
-      setPageSize(newPageSize);
-    },
-    [],
-  );
-
-  const handleFilterChange = useCallback((newFilters: MonitoringParams) => {
-    setFilters(newFilters);
-    setPage(1); // Reset to first page on filter change
-  }, []);
+  const { data, isLoading } = useBbmMonthly();
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -76,20 +52,9 @@ export default function Home() {
 
           <div className="mb-6 md:mb-8">
             <div className="mb-6 md:mb-8">
-              <EditDataTable
-                records={data?.records ?? []}
-                pagination={
-                  data?.pagination ?? {
-                    page,
-                    limit: pageSize,
-                    total: 0,
-                    totalPages: 0,
-                  }
-                }
+              <EditBbmDataTable
+                records={data ?? []}
                 isLoading={isLoading}
-                onPageChange={handlePageChange}
-                filters={filters}
-                onFilterChange={handleFilterChange}
               />
             </div>
           </div>
