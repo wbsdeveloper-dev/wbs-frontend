@@ -17,6 +17,7 @@ export interface BbmRecord {
   nomination: number;
   usage: number;
   realization: number;
+  moda?: string;
 }
 
 export interface CreateBbmPayload {

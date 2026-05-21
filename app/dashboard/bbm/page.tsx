@@ -110,6 +110,8 @@ export default function Home() {
   const [graphicPlant, setGraphicPlant] = useState<string | null>(null);
   const [graphicStart, setGraphicStart] = useState<string>(initialStart);
   const [graphicEnd, setGraphicEnd] = useState<string>(initialEnd);
+  const [graphicProduct, setGraphicProduct] = useState<string | null>(null);
+  const [graphicModa, setGraphicModa] = useState<string | null>(null);
 
   // 1. Card Volume BBM Donut Chart (Dummy Data)
   const dataPieChart = useMemo(() => {
@@ -141,6 +143,16 @@ export default function Home() {
     return Array.from(new Set(pembangkitData.map(p => p.name))).sort();
   }, [pembangkitData]);
 
+  const filterProductOptions = useMemo(() => {
+    if (!bbmMonthlyData) return [];
+    return Array.from(new Set(bbmMonthlyData.map(r => r.product).filter(Boolean))).sort();
+  }, [bbmMonthlyData]);
+
+  const filterModaOptions = useMemo(() => {
+    if (!bbmMonthlyData) return [];
+    return Array.from(new Set(bbmMonthlyData.map(r => r.moda).filter(Boolean) as string[])).sort();
+  }, [bbmMonthlyData]);
+
   // 4. Grafik BBM Bar Chart (Real Data)
   const barChartData = useMemo(() => {
     if (!bbmMonthlyData) return [];
@@ -148,6 +160,8 @@ export default function Home() {
     return bbmMonthlyData.filter((record) => {
       if (graphicSupplier && record.tbbm !== graphicSupplier) return false;
       if (graphicPlant && record.pembangkit !== graphicPlant) return false;
+      if (graphicProduct && record.product !== graphicProduct) return false;
+      if (graphicModa && record.moda !== graphicModa) return false;
       
       const startMonth = graphicStart ? graphicStart.substring(0, 7) : null;
       const endMonth = graphicEnd ? graphicEnd.substring(0, 7) : null;
@@ -166,7 +180,7 @@ export default function Home() {
       realisasi: record.realization || 0,
       pemakaian: record.usage || 0
     }));
-  }, [bbmMonthlyData, graphicSupplier, graphicPlant, graphicStart, graphicEnd, graphicFilterBy]);
+  }, [bbmMonthlyData, graphicSupplier, graphicPlant, graphicStart, graphicEnd, graphicFilterBy, graphicProduct, graphicModa]);
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -336,6 +350,24 @@ export default function Home() {
                     />
                   )}
 
+                  {/* Produk Select */}
+                  <FilterAutocomplete
+                    label="Produk"
+                    options={filterProductOptions}
+                    value={graphicProduct}
+                    onChange={setGraphicProduct}
+                    placeholder="Semua Produk"
+                  />
+
+                  {/* Moda Transportasi Select */}
+                  <FilterAutocomplete
+                    label="Moda Transportasi"
+                    options={filterModaOptions}
+                    value={graphicModa}
+                    onChange={setGraphicModa}
+                    placeholder="Semua Moda Transportasi"
+                  />
+
                   {/* Tanggal Awal */}
                   <div>
                     <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
@@ -370,6 +402,8 @@ export default function Home() {
                   onClick={() => {
                     setGraphicSupplier(null);
                     setGraphicPlant(null);
+                    setGraphicProduct(null);
+                    setGraphicModa(null);
                     setGraphicStart(initialStart);
                     setGraphicEnd(initialEnd);
                   }}
