@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Plus, Upload } from "lucide-react";
 import EditBbmDataTable from "../components/EditBbmDataTable";
-import AddReconciliationModal from "../components/AddReconciliationModal";
+import AddBbmModal from "../components/AddBbmModal";
 import BulkUploadReconciliationModal from "../components/BulkUploadReconciliationModal";
 import { useBbmMonthly } from "@/hooks/service/bbm-api";
 import { usePrivilege } from "@/hooks/usePrivilege";
@@ -62,7 +62,7 @@ export default function Home() {
       </main>
 
       {openAddModal && (
-        <AddReconciliationModal setOpenModal={setOpenAddModal} />
+        <AddBbmModal setOpenModal={setOpenAddModal} />
       )}
       {openBulkModal && (
         <BulkUploadReconciliationModal setOpenModal={setOpenBulkModal} />
