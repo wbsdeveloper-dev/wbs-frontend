@@ -21,10 +21,9 @@ import { useModal } from "@/app/_hooks";
 import FuelTypeDonutChart from "@/app/components/FuelTypeDonutChart";
 import TopVolumeList from "@/app/components/TopVolumeList";
 import FilterAutocomplete from "@/app/components/FilterAutocomplete";
-import BBMDataTable from "@/app/components/BBMDataTable";
+import EditBbmDataTable from "@/app/components/EditBbmDataTable";
 
 // API services
-import { useReports } from "@/hooks/service/reports-api";
 import { useBbmMonthly } from "@/hooks/service/bbm-api";
 import { useSites } from "@/hooks/service/site-api";
 
@@ -128,31 +127,18 @@ export default function Home() {
   }, []);
 
   // Fetch reports data for bottom table
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  
-  const { data: reportsData, isLoading: isReportsLoading } = useReports({
-    page,
-    limit: pageSize,
-  });
-
-  const handlePageChange = useCallback((newPage: number, newPageSize: number) => {
-    setPage(newPage);
-    setPageSize(newPageSize);
-  }, []);
-
   const { data: bbmMonthlyData, isLoading: isBbmMonthlyLoading } = useBbmMonthly();
   const { data: tbbmData } = useSites({ type: "PEMASOK", commodity: "BBM" });
   const { data: pembangkitData } = useSites({ type: "PEMBANGKIT", commodity: "BBM" });
 
   const filterSupplierOptions = useMemo(() => {
     if (!tbbmData) return [];
-    return tbbmData.map(t => t.name).sort();
+    return Array.from(new Set(tbbmData.map(t => t.name))).sort();
   }, [tbbmData]);
 
   const filterPlantOptions = useMemo(() => {
     if (!pembangkitData) return [];
-    return pembangkitData.map(p => p.name).sort();
+    return Array.from(new Set(pembangkitData.map(p => p.name))).sort();
   }, [pembangkitData]);
 
   // 4. Grafik BBM Bar Chart (Real Data)
@@ -171,14 +157,16 @@ export default function Home() {
       
       return true;
     }).map((record) => ({
-      name: `${record.pembangkit || 'Unknown'} (${record.product || 'Unknown'})`,
+      name: graphicFilterBy === "supplier" 
+        ? `${record.pembangkit || 'Unknown'} (${record.product || 'Unknown'})`
+        : `${record.tbbm || 'Unknown'} (${record.product || 'Unknown'})`,
       supplier: record.tbbm,
       plant: record.pembangkit,
       nominasi: record.nomination || 0,
       realisasi: record.realization || 0,
       pemakaian: record.usage || 0
     }));
-  }, [bbmMonthlyData, graphicSupplier, graphicPlant, graphicStart, graphicEnd]);
+  }, [bbmMonthlyData, graphicSupplier, graphicPlant, graphicStart, graphicEnd, graphicFilterBy]);
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -277,7 +265,10 @@ export default function Home() {
                         tick={{ fill: "#6b7280", fontSize: 11 }}
                         axisLine={false}
                         tickLine={false}
-                        tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
+                        tickFormatter={(value) => {
+                          if (value >= 1000) return `${(value / 1000).toFixed(1).replace(/\\.0$/, '')}k`;
+                          return value.toString();
+                        }}
                       />
                       <Tooltip
                         contentStyle={{
@@ -395,13 +386,10 @@ export default function Home() {
             <h2 className="text-lg md:text-xl font-semibold text-gray-900 mb-4">
               Daftar Realisasi Pengiriman BBM
             </h2>
-            <BBMDataTable
-              records={reportsData?.data ?? []}
-              totalItems={reportsData?.total ?? 0}
-              page={page}
-              pageSize={pageSize}
-              isLoading={isReportsLoading}
-              onPageChange={handlePageChange}
+            <EditBbmDataTable
+              records={bbmMonthlyData || []}
+              isLoading={isBbmMonthlyLoading}
+              hideActions={true}
             />
           </div>
         </div>

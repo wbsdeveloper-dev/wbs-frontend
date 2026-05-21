@@ -23,6 +23,7 @@ import { usePrivilege } from "@/hooks/usePrivilege";
 interface EditBbmDataTableProps {
   records: BbmRecord[];
   isLoading: boolean;
+  hideActions?: boolean;
 }
 
 const ActionButtons = ({
@@ -63,12 +64,13 @@ const ActionButtons = ({
 export default function EditBbmDataTable({
   records,
   isLoading,
+  hideActions = false,
 }: EditBbmDataTableProps) {
   const router = useRouter();
   const { hasPrivilege } = usePrivilege();
   const canUpdate = hasPrivilege("data_management", "UPDATE");
   const canDelete = hasPrivilege("data_management", "DELETE");
-  const hasAction = canUpdate || canDelete;
+  const hasAction = !hideActions && (canUpdate || canDelete);
 
   type SortField = keyof BbmRecord;
   const [sortField, setSortField] = useState<SortField | null>(null);
