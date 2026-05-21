@@ -25,6 +25,8 @@ import BBMDataTable from "@/app/components/BBMDataTable";
 
 // API services
 import { useReports } from "@/hooks/service/reports-api";
+import { useBbmMonthly } from "@/hooks/service/bbm-api";
+import { useSites } from "@/hooks/service/site-api";
 
 // Dynamic map import
 const MapBBM = dynamic(() => import("../../components/MapBBM"), { ssr: false });
@@ -139,26 +141,44 @@ export default function Home() {
     setPageSize(newPageSize);
   }, []);
 
-  // Dynamic filter options based on dummy data pool
+  const { data: bbmMonthlyData, isLoading: isBbmMonthlyLoading } = useBbmMonthly();
+  const { data: tbbmData } = useSites({ type: "PEMASOK", commodity: "BBM" });
+  const { data: pembangkitData } = useSites({ type: "PEMBANGKIT", commodity: "BBM" });
+
   const filterSupplierOptions = useMemo(() => {
-    const set = new Set(DUMMY_GRAPHIC_POOL.map((r) => r.supplier));
-    return Array.from(set).sort();
-  }, []);
+    if (!tbbmData) return [];
+    return tbbmData.map(t => t.name).sort();
+  }, [tbbmData]);
 
   const filterPlantOptions = useMemo(() => {
-    const set = new Set(DUMMY_GRAPHIC_POOL.map((r) => r.plant));
-    return Array.from(set).sort();
-  }, []);
+    if (!pembangkitData) return [];
+    return pembangkitData.map(p => p.name).sort();
+  }, [pembangkitData]);
 
-  // 4. Grafik BBM Bar Chart (Dummy Data)
+  // 4. Grafik BBM Bar Chart (Real Data)
   const barChartData = useMemo(() => {
-    // Filter the pool client-side based on user filter selections
-    return DUMMY_GRAPHIC_POOL.filter((record) => {
-      if (graphicSupplier && record.supplier !== graphicSupplier) return false;
-      if (graphicPlant && record.plant !== graphicPlant) return false;
+    if (!bbmMonthlyData) return [];
+    
+    return bbmMonthlyData.filter((record) => {
+      if (graphicSupplier && record.tbbm !== graphicSupplier) return false;
+      if (graphicPlant && record.pembangkit !== graphicPlant) return false;
+      
+      const startMonth = graphicStart ? graphicStart.substring(0, 7) : null;
+      const endMonth = graphicEnd ? graphicEnd.substring(0, 7) : null;
+
+      if (startMonth && record.reportDate < startMonth) return false;
+      if (endMonth && record.reportDate > endMonth) return false;
+      
       return true;
-    });
-  }, [graphicSupplier, graphicPlant]);
+    }).map((record) => ({
+      name: `${record.pembangkit || 'Unknown'} (${record.product || 'Unknown'})`,
+      supplier: record.tbbm,
+      plant: record.pembangkit,
+      nominasi: record.nomination || 0,
+      realisasi: record.realization || 0,
+      pemakaian: record.usage || 0
+    }));
+  }, [bbmMonthlyData, graphicSupplier, graphicPlant, graphicStart, graphicEnd]);
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -234,7 +254,12 @@ export default function Home() {
                 </p>
               </div>
               <div className="w-full">
-                {barChartData.length === 0 ? (
+                {isBbmMonthlyLoading ? (
+                  <div className="flex items-center justify-center h-[320px] text-gray-400 text-sm">
+                    <Loader2 className="animate-spin mr-2" size={20} />
+                    Memuat data grafik...
+                  </div>
+                ) : barChartData.length === 0 ? (
                   <div className="flex items-center justify-center h-[320px] text-gray-400 text-sm">
                     Tidak ada data laporan yang cocok dengan filter grafik
                   </div>
