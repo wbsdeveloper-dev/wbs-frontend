@@ -14,7 +14,7 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
-  ChevronDown
+  ChevronDown,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { BbmRecord } from "@/hooks/service/bbm-api";
@@ -99,7 +99,7 @@ export default function EditBbmDataTable({
         (r.tbbm?.toLowerCase() || "").includes(lower) ||
         (r.pembangkit?.toLowerCase() || "").includes(lower) ||
         (r.reportDate?.toLowerCase() || "").includes(lower) ||
-        (r.product?.toLowerCase() || "").includes(lower)
+        (r.product?.toLowerCase() || "").includes(lower),
     );
   }, [records, searchTerm]);
 
@@ -119,7 +119,10 @@ export default function EditBbmDataTable({
   const totalItems = sortedRecords.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
   const startIndex = (page - 1) * pageSize;
-  const paginatedRecords = sortedRecords.slice(startIndex, startIndex + pageSize);
+  const paginatedRecords = sortedRecords.slice(
+    startIndex,
+    startIndex + pageSize,
+  );
 
   // Reset page to 1 when search term changes
   useMemo(() => {
@@ -168,7 +171,7 @@ export default function EditBbmDataTable({
   const handleDeleteClick = (id: string, name: string) => {
     // TBD: connect to a delete API if needed
     if (window.confirm(`Apakah Anda yakin ingin menghapus record ${name}?`)) {
-        alert("Delete action triggered for " + id);
+      alert("Delete action triggered for " + id);
     }
   };
 
@@ -181,7 +184,7 @@ export default function EditBbmDataTable({
             Tabel BBM Monthly
           </span>
         </div>
-        
+
         <div className="relative">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <Search size={16} className="text-gray-400" />
@@ -205,9 +208,10 @@ export default function EditBbmDataTable({
               <Th label="TBBM" field="tbbm" align="left" />
               <Th label="Pembangkit" field="pembangkit" align="left" />
               <Th label="Produk" field="product" />
+              <Th label="Moda" field="moda" />
               <Th label="Nominasi" field="nomination" />
-              <Th label="Usage" field="usage" />
-              <Th label="Realization" field="realization" />
+              <Th label="Realisasi" field="realization" />
+              <Th label="Pemakaian" field="usage" />
               {hasAction && <Th label="Aksi" />}
             </tr>
           </thead>
@@ -219,7 +223,10 @@ export default function EditBbmDataTable({
                   className="px-4 py-8 text-center text-gray-500"
                 >
                   <div className="flex items-center justify-center gap-2">
-                    <Loader2 className="animate-spin text-[#14a2bb]" size={20} />
+                    <Loader2
+                      className="animate-spin text-[#14a2bb]"
+                      size={20}
+                    />
                     <span>Memuat data...</span>
                   </div>
                 </td>
@@ -230,12 +237,16 @@ export default function EditBbmDataTable({
                   colSpan={hasAction ? 9 : 8}
                   className="px-4 py-8 text-center text-gray-500"
                 >
-                  {searchTerm ? "Tidak ada data yang cocok dengan pencarian" : "Tidak ada data BBM"}
+                  {searchTerm
+                    ? "Tidak ada data yang cocok dengan pencarian"
+                    : "Tidak ada data BBM"}
                 </td>
               </tr>
             ) : (
               paginatedRecords.map((record, index) => {
-                const rowId = record.id || `${record.pembangkit}-${record.reportDate}-${index}`;
+                const rowId =
+                  record.id ||
+                  `${record.pembangkit}-${record.reportDate}-${index}`;
                 return (
                   <tr
                     key={rowId}
@@ -247,23 +258,24 @@ export default function EditBbmDataTable({
                     <td className="px-4 py-3 text-center text-gray-700 whitespace-nowrap">
                       {record.reportDate}
                     </td>
-                    <td className="px-4 py-3 text-gray-900">
-                      {record.tbbm}
-                    </td>
+                    <td className="px-4 py-3 text-gray-900">{record.tbbm}</td>
                     <td className="px-4 py-3 text-gray-900">
                       {record.pembangkit}
                     </td>
                     <td className="px-4 py-3 text-center text-gray-700">
                       {record.product}
                     </td>
+                    <td className="px-4 py-3 text-center text-gray-700">
+                      {record.moda}
+                    </td>
                     <td className="px-4 py-3 text-center text-gray-700 font-mono">
                       {fmt(record.nomination)}
                     </td>
-                    <td className="px-4 py-3 text-center text-gray-700 font-mono">
-                      {fmt(record.usage)}
-                    </td>
                     <td className="px-4 py-3 text-center text-gray-700 font-mono font-medium">
                       {fmt(record.realization)}
+                    </td>
+                    <td className="px-4 py-3 text-center text-gray-700 font-mono">
+                      {fmt(record.usage)}
                     </td>
                     {hasAction && (
                       <td className="px-4 py-3 text-center">
@@ -273,7 +285,7 @@ export default function EditBbmDataTable({
                           onDelete={(id) =>
                             handleDeleteClick(
                               id,
-                              `${record.pembangkit} - ${record.reportDate}`
+                              `${record.pembangkit} - ${record.reportDate}`,
                             )
                           }
                           canUpdate={canUpdate}
@@ -329,7 +341,7 @@ export default function EditBbmDataTable({
               </div>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-1 bg-gray-50 rounded-lg border border-gray-200 p-1">
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}

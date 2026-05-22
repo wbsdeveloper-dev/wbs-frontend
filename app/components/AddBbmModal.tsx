@@ -14,6 +14,7 @@ export default function AddBbmModal({ setOpenModal, onSuccess }: Props) {
     siteId: "",
     supplierId: "",
     product: "HSD",
+    moda: "Truck",
     unit: "LITER",
     nomination: "",
     realization: "",
@@ -26,7 +27,10 @@ export default function AddBbmModal({ setOpenModal, onSuccess }: Props) {
   const createRecord = useCreateBbmMonthly();
 
   const { data: tbbmData } = useSites({ type: "PEMASOK", commodity: "BBM" });
-  const { data: pembangkitData } = useSites({ type: "PEMBANGKIT", commodity: "BBM" });
+  const { data: pembangkitData } = useSites({
+    type: "PEMBANGKIT",
+    commodity: "BBM",
+  });
 
   const handleSave = async () => {
     try {
@@ -39,8 +43,10 @@ export default function AddBbmModal({ setOpenModal, onSuccess }: Props) {
         unit: formData.unit,
       };
 
-      if (formData.nomination !== "") payload.nomination = Number(formData.nomination);
-      if (formData.realization !== "") payload.realization = Number(formData.realization);
+      if (formData.nomination !== "")
+        payload.nomination = Number(formData.nomination);
+      if (formData.realization !== "")
+        payload.realization = Number(formData.realization);
       if (formData.usage !== "") payload.usage = Number(formData.usage);
 
       await createRecord.mutateAsync(payload);
@@ -96,7 +102,9 @@ export default function AddBbmModal({ setOpenModal, onSuccess }: Props) {
             </label>
             <select
               value={formData.supplierId}
-              onChange={(e) => setFormData({ ...formData, supplierId: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, supplierId: e.target.value })
+              }
               className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
             >
               <option value="">Pilih TBBM</option>
@@ -107,14 +115,16 @@ export default function AddBbmModal({ setOpenModal, onSuccess }: Props) {
               ))}
             </select>
           </div>
-          
+
           <div className="col-span-2 sm:col-span-1">
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Pembangkit <span className="text-red-500">*</span>
             </label>
             <select
               value={formData.siteId}
-              onChange={(e) => setFormData({ ...formData, siteId: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, siteId: e.target.value })
+              }
               className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
             >
               <option value="">Pilih Pembangkit</option>
@@ -133,7 +143,9 @@ export default function AddBbmModal({ setOpenModal, onSuccess }: Props) {
             <input
               type="month"
               value={formData.monthDate}
-              onChange={(e) => setFormData({ ...formData, monthDate: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, monthDate: e.target.value })
+              }
               className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
             />
           </div>
@@ -144,7 +156,9 @@ export default function AddBbmModal({ setOpenModal, onSuccess }: Props) {
             </label>
             <select
               value={formData.product}
-              onChange={(e) => setFormData({ ...formData, product: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, product: e.target.value })
+              }
               className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
             >
               <option value="BIOSOLAR B-40">BIOSOLAR B-40</option>
@@ -155,11 +169,30 @@ export default function AddBbmModal({ setOpenModal, onSuccess }: Props) {
 
           <div className="col-span-2 sm:col-span-1">
             <label className="block text-sm font-medium text-gray-700 mb-1">
+              Moda <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={formData.moda}
+              onChange={(e) =>
+                setFormData({ ...formData, moda: e.target.value })
+              }
+              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
+            >
+              <option value="Truck">Truck</option>
+              <option value="Pipa">Pipa</option>
+              <option value="Kapal">Kapal</option>
+            </select>
+          </div>
+
+          <div className="col-span-2 sm:col-span-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               Unit <span className="text-red-500">*</span>
             </label>
             <select
               value={formData.unit}
-              onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, unit: e.target.value })
+              }
               className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
             >
               <option value="LITER">LITER</option>
@@ -174,7 +207,9 @@ export default function AddBbmModal({ setOpenModal, onSuccess }: Props) {
             <input
               type="number"
               value={formData.nomination}
-              onChange={(e) => setFormData({ ...formData, nomination: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, nomination: e.target.value })
+              }
               className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
             />
           </div>
@@ -186,7 +221,9 @@ export default function AddBbmModal({ setOpenModal, onSuccess }: Props) {
             <input
               type="number"
               value={formData.realization}
-              onChange={(e) => setFormData({ ...formData, realization: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, realization: e.target.value })
+              }
               className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
             />
           </div>
@@ -198,7 +235,9 @@ export default function AddBbmModal({ setOpenModal, onSuccess }: Props) {
             <input
               type="number"
               value={formData.usage}
-              onChange={(e) => setFormData({ ...formData, usage: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, usage: e.target.value })
+              }
               className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
             />
           </div>
