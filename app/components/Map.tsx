@@ -78,8 +78,13 @@ const buildIcons = (legend: MapLegend): Record<string, L.DivIcon> => {
 
 export default function Map({ commodity }: { commodity?: string }) {
   // ---- API data -----------------------------------------------------------
-  const { data, isLoading, isError, error } = useMapLocations();
-  const { data: gasSites } = useSites({ commodity });
+  const { data, isLoading, isError, error } = useMapLocations(
+    undefined,
+    commodity,
+  );
+  const { data: gasSites } = useSites(
+    commodity ? { commodity } : undefined,
+  );
 
   const { hasPrivilege } = usePrivilege();
   const canReadSites = hasPrivilege("site_management", "READ");
