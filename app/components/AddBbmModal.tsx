@@ -40,6 +40,7 @@ export default function AddBbmModal({ setOpenModal, onSuccess }: Props) {
         siteId: formData.siteId,
         supplierId: formData.supplierId,
         product: formData.product,
+        moda: formData.moda,
         unit: formData.unit,
       };
 

@@ -25,6 +25,7 @@ export interface CreateBbmPayload {
   siteId: string;
   supplierId: string;
   product: string;
+  moda?: string;
   unit: string;
   nomination?: number;
   realization?: number;
