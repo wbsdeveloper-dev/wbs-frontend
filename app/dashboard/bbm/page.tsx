@@ -281,17 +281,19 @@ export default function Home() {
   ]);
 
   // 5. Composite chart data (realization by moda)
-  const {
-    data: realizationByModaData,
-    isLoading: isRealizationByModaLoading,
-  } = useRealizationByModa({
-    startDate: graphicStart,
-    endDate: graphicEnd,
-    product: graphicProduct || undefined,
-    moda: graphicModa || undefined,
-    tbbm: graphicFilterBy === "supplier" ? (graphicSupplier || undefined) : undefined,
-    pembangkit: graphicFilterBy === "plant" ? (graphicPlant || undefined) : undefined,
-  });
+  const { data: realizationByModaData, isLoading: isRealizationByModaLoading } =
+    useRealizationByModa({
+      startDate: graphicStart,
+      endDate: graphicEnd,
+      product: graphicProduct || undefined,
+      moda: graphicModa || undefined,
+      tbbm:
+        graphicFilterBy === "supplier"
+          ? graphicSupplier || undefined
+          : undefined,
+      pembangkit:
+        graphicFilterBy === "plant" ? graphicPlant || undefined : undefined,
+    });
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -397,7 +399,7 @@ export default function Home() {
                           : "text-gray-500 hover:text-gray-700"
                       }`}
                     >
-                      Realisasi per Moda
+                      Realisasi Harian
                     </button>
                   </div>
                 </div>
