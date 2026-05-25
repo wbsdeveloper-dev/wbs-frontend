@@ -289,6 +289,8 @@ export default function Home() {
     endDate: graphicEnd,
     product: graphicProduct || undefined,
     moda: graphicModa || undefined,
+    tbbm: graphicFilterBy === "supplier" ? (graphicSupplier || undefined) : undefined,
+    pembangkit: graphicFilterBy === "plant" ? (graphicPlant || undefined) : undefined,
   });
 
   return (

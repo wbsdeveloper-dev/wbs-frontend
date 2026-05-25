@@ -132,6 +132,8 @@ export interface BbmTopFilters {
   endDate?: string;
   product?: string;
   moda?: string;
+  tbbm?: string;
+  pembangkit?: string;
 }
 
 async function fetchTopVolume(
@@ -143,6 +145,8 @@ async function fetchTopVolume(
   if (filters?.endDate) params.append("endDate", filters.endDate);
   if (filters?.product) params.append("product", filters.product);
   if (filters?.moda) params.append("moda", filters.moda);
+  if (filters?.tbbm) params.append("tbbm", filters.tbbm);
+  if (filters?.pembangkit) params.append("pembangkit", filters.pembangkit);
 
   const qs = params.toString() ? `?${params.toString()}` : "";
   const url = `${DASHBOARD_API_HOST}/bbm-monthly/${endpoint}${qs}`;
@@ -212,6 +216,8 @@ export async function getRealizationByModa(
   if (filters?.endDate) params.append("endDate", filters.endDate);
   if (filters?.product) params.append("product", filters.product);
   if (filters?.moda) params.append("moda", filters.moda);
+  if (filters?.tbbm) params.append("tbbm", filters.tbbm);
+  if (filters?.pembangkit) params.append("pembangkit", filters.pembangkit);
 
   const qs = params.toString() ? `?${params.toString()}` : "";
   const url = `${DASHBOARD_API_HOST}/bbm-monthly/realization-by-moda${qs}`;
