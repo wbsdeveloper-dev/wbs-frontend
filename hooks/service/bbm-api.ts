@@ -188,3 +188,61 @@ export function useTopPembangkit(
     ...options,
   });
 }
+
+// ────────────────────────────────────────────
+// REALIZATION BY MODA (Composite Chart)
+// ────────────────────────────────────────────
+
+export interface BbmRealizationByModaResponse {
+  chartData: Array<Record<string, unknown> & {
+    reportDate: string;
+    total: number;
+    cumulative: number;
+    nomination: number;
+  }>;
+  modaKeys: string[];
+  nomination: number;
+}
+
+export async function getRealizationByModa(
+  filters?: BbmTopFilters,
+): Promise<BbmRealizationByModaResponse> {
+  const params = new URLSearchParams();
+  if (filters?.startDate) params.append("startDate", filters.startDate);
+  if (filters?.endDate) params.append("endDate", filters.endDate);
+  if (filters?.product) params.append("product", filters.product);
+  if (filters?.moda) params.append("moda", filters.moda);
+
+  const qs = params.toString() ? `?${params.toString()}` : "";
+  const url = `${DASHBOARD_API_HOST}/bbm-monthly/realization-by-moda${qs}`;
+  const accessToken = getAccessToken();
+
+  const res = await fetch(url, {
+    headers: {
+      "Content-Type": "application/json",
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error(`BBM realization-by-moda API error: ${res.statusText}`);
+  }
+
+  const body = await res.json();
+  if (!body.success) {
+    throw new Error(body.message || "Unknown error fetching realization-by-moda");
+  }
+
+  return body.data as BbmRealizationByModaResponse;
+}
+
+export function useRealizationByModa(
+  filters?: BbmTopFilters,
+  options?: Partial<UseQueryOptions<BbmRealizationByModaResponse>>,
+) {
+  return useQuery({
+    queryKey: [...bbmKeys.all, "realization-by-moda", filters],
+    queryFn: () => getRealizationByModa(filters),
+    ...options,
+  });
+}

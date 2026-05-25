@@ -22,17 +22,22 @@ import FuelTypeDonutChart from "@/app/components/FuelTypeDonutChart";
 import TopVolumeList from "@/app/components/TopVolumeList";
 import FilterAutocomplete from "@/app/components/FilterAutocomplete";
 import EditBbmDataTable from "@/app/components/EditBbmDataTable";
+import BbmCompositeChart from "@/app/components/BbmCompositeChart";
 
 // API services
 import {
   useBbmMonthly,
   useTopTbbm,
   useTopPembangkit,
+  useRealizationByModa,
 } from "@/hooks/service/bbm-api";
 import { useSites } from "@/hooks/service/site-api";
 
 // Dynamic map import
 const MapBBM = dynamic(() => import("../../components/MapBBM"), { ssr: false });
+
+// Chart view mode type
+type ChartMode = "akumulasi" | "realisasi-moda";
 
 // Helper to get current month date range
 function getCurrentMonthRange() {
@@ -128,6 +133,9 @@ const DUMMY_GRAPHIC_POOL = [
 export default function Home() {
   const { isOpen, open, close } = useModal();
   const [filterType, setFilterType] = useState<string | null>("Pemasok");
+
+  // Chart mode toggle
+  const [chartMode, setChartMode] = useState<ChartMode>("akumulasi");
 
   // Date range states
   const { startDate: initialStart, endDate: initialEnd } = useMemo(
@@ -272,6 +280,17 @@ export default function Home() {
     graphicModa,
   ]);
 
+  // 5. Composite chart data (realization by moda)
+  const {
+    data: realizationByModaData,
+    isLoading: isRealizationByModaLoading,
+  } = useRealizationByModa({
+    startDate: graphicStart,
+    endDate: graphicEnd,
+    product: graphicProduct || undefined,
+    moda: graphicModa || undefined,
+  });
+
   return (
     <div className="flex h-screen bg-gray-50">
       <main className="flex-1 overflow-auto">
@@ -351,82 +370,118 @@ export default function Home() {
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
             <div className="lg:col-span-3 bg-white rounded-xl border border-gray-200 p-6 flex flex-col justify-between shadow-sm">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                  Grafik BBM
-                </h3>
+                <div className="flex items-center justify-between mb-1">
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Grafik BBM
+                  </h3>
+
+                  {/* Toggle Switch */}
+                  <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
+                    <button
+                      onClick={() => setChartMode("akumulasi")}
+                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
+                        chartMode === "akumulasi"
+                          ? "bg-white text-gray-900 shadow-sm"
+                          : "text-gray-500 hover:text-gray-700"
+                      }`}
+                    >
+                      Grafik Akumulasi
+                    </button>
+                    <button
+                      onClick={() => setChartMode("realisasi-moda")}
+                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
+                        chartMode === "realisasi-moda"
+                          ? "bg-white text-gray-900 shadow-sm"
+                          : "text-gray-500 hover:text-gray-700"
+                      }`}
+                    >
+                      Realisasi per Moda
+                    </button>
+                  </div>
+                </div>
                 <p className="text-xs text-gray-500 mb-6">
-                  Visualisasi perbandingan Rencana/Nominasi, Realisasi, dan
-                  Pemakaian per Unit Pembangkit
+                  {chartMode === "akumulasi"
+                    ? "Visualisasi perbandingan Rencana/Nominasi, Realisasi, dan Pemakaian per Unit Pembangkit"
+                    : "Visualisasi realisasi volume BBM per moda transportasi dengan akumulasi bulanan"}
                 </p>
               </div>
               <div className="w-full flex-1 min-h-[320px] mt-4">
-                {isBbmMonthlyLoading ? (
-                  <div className="flex items-center justify-center h-full text-gray-400 text-sm">
-                    <Loader2 className="animate-spin mr-2" size={20} />
-                    Memuat data grafik...
-                  </div>
-                ) : barChartData.length === 0 ? (
-                  <div className="flex items-center justify-center h-full text-gray-400 text-sm">
-                    Tidak ada data laporan yang cocok dengan filter grafik
-                  </div>
+                {chartMode === "akumulasi" ? (
+                  /* ── Existing: Grafik Akumulasi ─────────────── */
+                  isBbmMonthlyLoading ? (
+                    <div className="flex items-center justify-center h-full text-gray-400 text-sm">
+                      <Loader2 className="animate-spin mr-2" size={20} />
+                      Memuat data grafik...
+                    </div>
+                  ) : barChartData.length === 0 ? (
+                    <div className="flex items-center justify-center h-full text-gray-400 text-sm">
+                      Tidak ada data laporan yang cocok dengan filter grafik
+                    </div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={barChartData}>
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          vertical={false}
+                          stroke="#f3f4f6"
+                        />
+                        <XAxis
+                          dataKey="name"
+                          tick={{ fill: "#6b7280", fontSize: 11 }}
+                          axisLine={{ stroke: "#e5e7eb" }}
+                          tickLine={false}
+                        />
+                        <YAxis
+                          tick={{ fill: "#6b7280", fontSize: 11 }}
+                          axisLine={false}
+                          tickLine={false}
+                          tickFormatter={(value) => {
+                            if (value >= 1000)
+                              return `${(value / 1000).toFixed(1).replace(/\\.0$/, "")}k`;
+                            return value.toString();
+                          }}
+                        />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: "#fff",
+                            borderRadius: "8px",
+                            border: "1px solid #e5e7eb",
+                            boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                          }}
+                          labelStyle={{ fontWeight: "bold", color: "#111827" }}
+                        />
+                        <Legend
+                          verticalAlign="top"
+                          height={36}
+                          iconType="circle"
+                        />
+                        <Bar
+                          dataKey="nominasi"
+                          name="Nominasi"
+                          fill="#fb923c"
+                          radius={[4, 4, 0, 0]}
+                        />
+                        <Bar
+                          dataKey="realisasi"
+                          name="Realisasi"
+                          fill="#60a5fa"
+                          radius={[4, 4, 0, 0]}
+                        />
+                        <Bar
+                          dataKey="pemakaian"
+                          name="Pemakaian"
+                          fill="#34d399"
+                          radius={[4, 4, 0, 0]}
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  )
                 ) : (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={barChartData}>
-                      <CartesianGrid
-                        strokeDasharray="3 3"
-                        vertical={false}
-                        stroke="#f3f4f6"
-                      />
-                      <XAxis
-                        dataKey="name"
-                        tick={{ fill: "#6b7280", fontSize: 11 }}
-                        axisLine={{ stroke: "#e5e7eb" }}
-                        tickLine={false}
-                      />
-                      <YAxis
-                        tick={{ fill: "#6b7280", fontSize: 11 }}
-                        axisLine={false}
-                        tickLine={false}
-                        tickFormatter={(value) => {
-                          if (value >= 1000)
-                            return `${(value / 1000).toFixed(1).replace(/\\.0$/, "")}k`;
-                          return value.toString();
-                        }}
-                      />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: "#fff",
-                          borderRadius: "8px",
-                          border: "1px solid #e5e7eb",
-                          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-                        }}
-                        labelStyle={{ fontWeight: "bold", color: "#111827" }}
-                      />
-                      <Legend
-                        verticalAlign="top"
-                        height={36}
-                        iconType="circle"
-                      />
-                      <Bar
-                        dataKey="nominasi"
-                        name="Nominasi"
-                        fill="#fb923c"
-                        radius={[4, 4, 0, 0]}
-                      />
-                      <Bar
-                        dataKey="realisasi"
-                        name="Realisasi"
-                        fill="#60a5fa"
-                        radius={[4, 4, 0, 0]}
-                      />
-                      <Bar
-                        dataKey="pemakaian"
-                        name="Pemakaian"
-                        fill="#34d399"
-                        radius={[4, 4, 0, 0]}
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
+                  /* ── New: Realisasi per Moda ────────────────── */
+                  <BbmCompositeChart
+                    data={realizationByModaData}
+                    isLoading={isRealizationByModaLoading}
+                  />
                 )}
               </div>
             </div>
