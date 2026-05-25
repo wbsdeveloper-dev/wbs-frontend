@@ -288,11 +288,13 @@ export default function Home() {
       product: graphicProduct || undefined,
       moda: graphicModa || undefined,
       tbbm:
-        graphicFilterBy === "supplier"
+        chartMode === "realisasi-moda" || graphicFilterBy === "supplier"
           ? graphicSupplier || undefined
           : undefined,
       pembangkit:
-        graphicFilterBy === "plant" ? graphicPlant || undefined : undefined,
+        chartMode === "realisasi-moda" || graphicFilterBy === "plant"
+          ? graphicPlant || undefined
+          : undefined,
     });
 
   return (
@@ -499,28 +501,30 @@ export default function Home() {
 
                 <div className="space-y-4">
                   {/* Filter Berdasar */}
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                      Filter Berdasar
-                    </label>
-                    <select
-                      value={graphicFilterBy}
-                      onChange={(e) => {
-                        setGraphicFilterBy(
-                          e.target.value as "supplier" | "plant",
-                        );
-                        setGraphicSupplier(null);
-                        setGraphicPlant(null);
-                      }}
-                      className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/40 focus:border-[#14a2bb] transition-all"
-                    >
-                      <option value="supplier">Pemasok (TBBM)</option>
-                      <option value="plant">Pembangkit</option>
-                    </select>
-                  </div>
+                  {chartMode === "akumulasi" && (
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                        Filter Berdasar
+                      </label>
+                      <select
+                        value={graphicFilterBy}
+                        onChange={(e) => {
+                          setGraphicFilterBy(
+                            e.target.value as "supplier" | "plant",
+                          );
+                          setGraphicSupplier(null);
+                          setGraphicPlant(null);
+                        }}
+                        className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/40 focus:border-[#14a2bb] transition-all"
+                      >
+                        <option value="supplier">Pemasok (TBBM)</option>
+                        <option value="plant">Pembangkit</option>
+                      </select>
+                    </div>
+                  )}
 
                   {/* TBBM/Pemasok Select */}
-                  {graphicFilterBy === "supplier" ? (
+                  {(chartMode === "realisasi-moda" || graphicFilterBy === "supplier") && (
                     <FilterAutocomplete
                       label="TBBM / Pemasok"
                       options={filterSupplierOptions}
@@ -528,8 +532,10 @@ export default function Home() {
                       onChange={setGraphicSupplier}
                       placeholder="Semua Pemasok"
                     />
-                  ) : (
-                    /* Pembangkit Select */
+                  )}
+
+                  {/* Pembangkit Select */}
+                  {(chartMode === "realisasi-moda" || graphicFilterBy === "plant") && (
                     <FilterAutocomplete
                       label="Pembangkit"
                       options={filterPlantOptions}
