@@ -156,6 +156,8 @@ export default function AddReconciliationModal({
             >
               <option value="ENERGY_BBTUD">ENERGY_BBTUD</option>
               <option value="FLOWRATE_MMSCFD">FLOWRATE_MMSCFD</option>
+              <option value="OWN_USE_BBTUD">OWN_USE_BBTUD</option>
+              <option value="DISCREPANCY_BBTUD">DISCREPANCY_BBTUD</option>
             </select>
           </div>
           <div className="col-span-2 sm:col-span-1">

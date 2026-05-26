@@ -133,6 +133,8 @@ const formatNormalizeText = (text: string) => {
   if (!text) return "-";
   if (text.toUpperCase() === "FLOWRATE_MMSCFD") return "Flowrate (MMSCFD)";
   if (text.toUpperCase() === "ENERGY_BBTUD") return "Energy (BBTUD)";
+  if (text.toUpperCase() === "OWN_USE_BBTUD") return "Own Use (BBTUD)";
+  if (text.toUpperCase() === "DISCREPANCY_BBTUD") return "Discrepancy (BBTUD)";
 
   return text
     .toLowerCase()
