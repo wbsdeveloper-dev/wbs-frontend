@@ -31,15 +31,42 @@ import { Loader2 } from "lucide-react";
 
 const filterTypeOptions = ["Pemasok", "Pembangkit"];
 
-export type Granularity =
-  | "hour"
-  | "day"
-  | "month"
-  | "three_month"
-  | "six_month"
-  | "one_year"
-  | "three_year";
+export type Granularity = "hour" | "day" | "month" | "year";
+export type Periode = "1D" | "1W" | "1M" | "1Y" | "3Y";
 export type FilterBy = "supplier" | "plant";
+
+// Map each periode to the valid interval (granularity) options
+function getValidIntervals(
+  periode: Periode,
+): { key: Granularity; label: string }[] {
+  switch (periode) {
+    case "1D":
+      return [{ key: "hour", label: "Jam" }];
+    case "1W":
+      return [
+        { key: "day", label: "Hari" },
+        { key: "hour", label: "Jam" },
+      ];
+    case "1M":
+      return [
+        { key: "day", label: "Hari" },
+        { key: "hour", label: "Jam" },
+      ];
+    case "1Y":
+      return [
+        { key: "month", label: "Bulan" },
+        { key: "day", label: "Hari" },
+      ];
+    case "3Y":
+      return [
+        { key: "year", label: "Tahun" },
+        { key: "month", label: "Bulan" },
+        { key: "day", label: "Hari" },
+      ];
+    default:
+      return [{ key: "hour", label: "Jam" }];
+  }
+}
 
 export interface RealtimeChartProps {
   chartFlowData?: ChartFlowResponse | null;
@@ -47,7 +74,7 @@ export interface RealtimeChartProps {
   contractData?: Contract[] | null;
   isLoading?: boolean;
   isContractLoading?: boolean;
-  onPeriodChange?: (granularity: Granularity) => void;
+  onPeriodChange?: (periode: Periode, granularity: Granularity) => void;
   onFilterByChange?: (by: FilterBy | null) => void;
   onPemasokChange?: (pemasokId: string | null) => void;
   onPembangkitChange?: (pembangkitId: string | null) => void;
@@ -439,10 +466,8 @@ export default function RealtimeChart({
   onPembangkitChange,
   onDateRangeChange,
 }: RealtimeChartProps = {}) {
-  const [intervalMode, setIntervalMode] = useState<
-    "Jam" | "Hari" | "Bulan" | "Tahun"
-  >("Jam");
-  const [period, setPeriod] = useState("1D");
+  const [periode, setPeriode] = useState<Periode>("1D");
+  const [interval, setInterval] = useState<Granularity>("hour");
   const [filterType, setFilterType] = useState<string | null>("Pemasok");
   const [pemasok, setPemasok] = useState<string[]>(["Semua Pemasok"]);
   const [pembangkit, setPembangkit] = useState<string | null>(null);
@@ -497,9 +522,9 @@ export default function RealtimeChart({
   // Fetch events for the chart range — do NOT pass siteId to avoid 400 error with multiple IDs
   const { data: eventsData } = useEvents(
     startDate ||
-      new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-        .toISOString()
-        .split("T")[0],
+    new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+      .toISOString()
+      .split("T")[0],
     endDate || new Date().toISOString().split("T")[0],
     100,
   );
@@ -524,7 +549,7 @@ export default function RealtimeChart({
         const seriesName = siteIdToName.get(event.siteId);
         const d = new Date(event.occurredAt);
         let key = "";
-        if (period === "1D") {
+        if (periode === "1D" || interval === "hour") {
           key = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}-${d.getHours()}`;
         } else {
           key = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
@@ -538,7 +563,7 @@ export default function RealtimeChart({
     // console.log("[DEBUG] pointsWithNotes keys:", Array.from(set));
     // console.log("[DEBUG] eventsData count:", eventsData?.events?.length, "period:", period, "chartSiteIds:", Array.from(chartSiteIds));
     return set;
-  }, [eventsData, period, chartSiteIds, chartFlowData]);
+  }, [eventsData, periode, interval, chartSiteIds, chartFlowData]);
 
   const today = new Date();
 
@@ -611,7 +636,8 @@ export default function RealtimeChart({
         });
       }
       if (chartFlowData.granularity === "year") {
-        return raw;
+        // Handle both "2023" and "2023-01-01" formats
+        return raw.length >= 4 ? raw.slice(0, 4) : raw;
       }
       // month
       const d = new Date(raw + "-01");
@@ -800,7 +826,7 @@ export default function RealtimeChart({
     return value.toLocaleString("id-ID", { maximumFractionDigits: 2 });
   }, []);
 
-  const submitNote = () => {};
+  const submitNote = () => { };
 
   if (topLineActive === null) return null;
 
@@ -894,7 +920,7 @@ export default function RealtimeChart({
                             if (rawTs) {
                               const d = new Date(rawTs);
                               let pointKey = "";
-                              if (period === "1D") {
+                              if (periode === "1D" || interval === "hour") {
                                 pointKey = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}-${d.getHours()}`;
                               } else {
                                 pointKey = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
@@ -989,11 +1015,10 @@ export default function RealtimeChart({
                 {seriesKeys.length > 0 && (
                   <div className="mt-3">
                     <div
-                      className={`flex flex-wrap justify-center gap-x-5 gap-y-2 px-3 py-2.5 rounded-lg bg-gray-50/80 border border-gray-100 ${
-                        seriesKeys.length > 10
-                          ? "max-h-[80px] overflow-y-auto"
-                          : ""
-                      }`}
+                      className={`flex flex-wrap justify-center gap-x-5 gap-y-2 px-3 py-2.5 rounded-lg bg-gray-50/80 border border-gray-100 ${seriesKeys.length > 10
+                        ? "max-h-[80px] overflow-y-auto"
+                        : ""
+                        }`}
                     >
                       {seriesKeys.map((key) => (
                         <div
@@ -1266,201 +1291,63 @@ export default function RealtimeChart({
             <div className="mt-2">
               <div className="border border-gray-200 p-3 rounded-lg">
                 <p className="block text-sm font-medium text-gray-700 mb-2">
-                  Interval
+                  Filter Periode
                 </p>
-                <div className="flex gap-2 mb-3">
-                  {(["Jam", "Hari", "Bulan", "Tahun"] as const).map((mode) => (
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {([
+                    { key: "1D" as Periode, label: "1 Hari" },
+                    { key: "1W" as Periode, label: "1 Minggu" },
+                    { key: "1M" as Periode, label: "1 Bulan" },
+                    { key: "1Y" as Periode, label: "1 Tahun" },
+                    { key: "3Y" as Periode, label: "3 Tahun" },
+                  ] as const).map((opt) => (
                     <button
-                      key={mode}
-                      className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                        intervalMode === mode
-                          ? "bg-[#115d72] text-white shadow-sm"
-                          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                      }`}
+                      key={opt.key}
+                      className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${periode === opt.key
+                        ? "bg-[#115d72] text-white shadow-sm"
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                        }`}
                       onClick={() => {
-                        setIntervalMode(mode);
-                        if (mode === "Jam") {
-                          setPeriod("1D");
-                          if (onPeriodChange) onPeriodChange("hour");
-                        } else if (mode === "Hari") {
-                          setPeriod("1W");
-                          if (onPeriodChange) onPeriodChange("day");
-                        } else if (mode === "Bulan") {
-                          setPeriod("3M");
-                          if (onPeriodChange) onPeriodChange("three_month");
-                        } else if (mode === "Tahun") {
-                          setPeriod("3Y");
-                          if (onPeriodChange) onPeriodChange("three_year");
-                        }
+                        setPeriode(opt.key);
+                        // Auto-select the default interval for this periode
+                        const validIntervals = getValidIntervals(opt.key);
+                        const defaultInterval = validIntervals[0].key;
+                        setInterval(defaultInterval);
+                        onPeriodChange?.(opt.key, defaultInterval);
                       }}
                     >
-                      {mode}
+                      {opt.label}
                     </button>
                   ))}
                 </div>
 
                 <p className="block text-sm font-medium text-gray-700 mb-2">
-                  Filter Periode
+                  Interval
                 </p>
-                <div className="overflow-x-auto">
-                  <div className="flex gap-4 mb-3 min-w-max px-1">
-                    {intervalMode === "Jam" && (
-                      <button
-                        className={`text-[#115d72] font-medium text-sm transition-all ${
-                          period === "1D"
-                            ? "bg-[#14a2bb92] px-2 py-1 rounded-md"
-                            : ""
-                        } cursor-pointer hover:text-[#14a2bb]`}
-                        onClick={() => {
-                          setPeriod("1D");
-                          if (startDate) setEndDate(startDate);
-                          if (onPeriodChange) onPeriodChange("hour");
-                          else {
-                            if (pemasok?.includes("Pemasok A"))
-                              setFallbackChartData(dataJamA);
-                            if (pemasok?.includes("Pemasok B"))
-                              setFallbackChartData(dataJamB);
-                          }
-                        }}
-                      >
-                        24 Jam
-                      </button>
-                    )}
-
-                    {intervalMode === "Hari" && (
-                      <>
-                        <button
-                          className={`text-[#115d72] font-medium text-sm transition-all ${
-                            period === "1W"
-                              ? "bg-[#14a2bb92] px-2 py-1 rounded-md"
-                              : ""
-                          } cursor-pointer hover:text-[#14a2bb]`}
-                          onClick={() => {
-                            setPeriod("1W");
-                            if (onPeriodChange) onPeriodChange("day");
-                            else {
-                              if (pemasok?.includes("Pemasok A"))
-                                setFallbackChartData(data1MingguA);
-                              if (pemasok?.includes("Pemasok B"))
-                                setFallbackChartData(data1MingguB);
-                            }
-                          }}
-                        >
-                          7 Hari
-                        </button>
-                        <button
-                          className={`text-[#115d72] font-medium text-sm transition-all ${
-                            period === "30D"
-                              ? "bg-[#14a2bb92] px-2 py-1 rounded-md"
-                              : ""
-                          } cursor-pointer hover:text-[#14a2bb]`}
-                          onClick={() => {
-                            setPeriod("30D");
-                            if (onPeriodChange) onPeriodChange("day");
-                          }}
-                        >
-                          30 Hari
-                        </button>
-                      </>
-                    )}
-
-                    {intervalMode === "Bulan" && (
-                      <>
-                        <button
-                          className={`text-[#115d72] font-medium text-sm transition-all ${
-                            period === "3M"
-                              ? "bg-[#14a2bb92] px-2 py-1 rounded-md"
-                              : ""
-                          } cursor-pointer hover:text-[#14a2bb]`}
-                          onClick={() => {
-                            setPeriod("3M");
-                            if (onPeriodChange) onPeriodChange("three_month");
-                            else {
-                              if (pemasok?.includes("Pemasok A"))
-                                setFallbackChartData(data3BulanA);
-                              if (pemasok?.includes("Pemasok B"))
-                                setFallbackChartData(data3BulanB);
-                            }
-                          }}
-                        >
-                          3 Bulan
-                        </button>
-                        <button
-                          className={`text-[#115d72] font-medium text-sm transition-all ${
-                            period === "6M"
-                              ? "bg-[#14a2bb92] px-2 py-1 rounded-md"
-                              : ""
-                          } cursor-pointer hover:text-[#14a2bb]`}
-                          onClick={() => {
-                            setPeriod("6M");
-                            if (onPeriodChange) onPeriodChange("six_month");
-                            else {
-                              if (pemasok?.includes("Pemasok A"))
-                                setFallbackChartData(data6BulanA);
-                              if (pemasok?.includes("Pemasok B"))
-                                setFallbackChartData(data6BulanB);
-                            }
-                          }}
-                        >
-                          6 Bulan
-                        </button>
-                        <button
-                          className={`text-[#115d72] font-medium text-sm transition-all ${
-                            period === "12M"
-                              ? "bg-[#14a2bb92] px-2 py-1 rounded-md"
-                              : ""
-                          } cursor-pointer hover:text-[#14a2bb]`}
-                          onClick={() => {
-                            setPeriod("12M");
-                            if (onPeriodChange) onPeriodChange("one_year");
-                            else {
-                              if (pemasok?.includes("Pemasok A"))
-                                setFallbackChartData(data1TahunA);
-                              if (pemasok?.includes("Pemasok B"))
-                                setFallbackChartData(data1TahunB);
-                            }
-                          }}
-                        >
-                          12 Bulan
-                        </button>
-                      </>
-                    )}
-
-                    {intervalMode === "Tahun" && (
-                      <>
-                        <button
-                          className={`text-[#115d72] font-medium text-sm transition-all ${
-                            period === "3Y"
-                              ? "bg-[#14a2bb92] px-2 py-1 rounded-md"
-                              : ""
-                          } cursor-pointer hover:text-[#14a2bb]`}
-                          onClick={() => {
-                            setPeriod("3Y");
-                            if (onPeriodChange) onPeriodChange("three_year");
-                            else {
-                              if (pemasok?.includes("Pemasok A"))
-                                setFallbackChartData(data3TahunA);
-                              if (pemasok?.includes("Pemasok B"))
-                                setFallbackChartData(data3TahunB);
-                            }
-                          }}
-                        >
-                          3 Tahun
-                        </button>
-                      </>
-                    )}
-                  </div>
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {getValidIntervals(periode).map((opt) => (
+                    <button
+                      key={opt.key}
+                      className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${interval === opt.key
+                        ? "bg-[#14a2bb92] text-[#115d72] shadow-sm"
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                        }`}
+                      onClick={() => {
+                        setInterval(opt.key);
+                        onPeriodChange?.(periode, opt.key);
+                      }}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
                 </div>
-                {intervalMode !== "Bulan" && intervalMode !== "Tahun" && (
-                  <DateRangeFilter
-                    startDate={startDate}
-                    endDate={endDate}
-                    setStartDate={setStartDate}
-                    setEndDate={setEndDate}
-                    isSingleDate={period === "1D"}
-                    mode={intervalMode}
-                  />
-                )}
+                <DateRangeFilter
+                  startDate={startDate}
+                  endDate={endDate}
+                  setStartDate={setStartDate}
+                  setEndDate={setEndDate}
+                  periode={periode}
+                />
               </div>
             </div>
             <div>
@@ -1479,9 +1366,9 @@ export default function RealtimeChart({
                           color: "#14a1bb",
                         },
                         "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
-                          {
-                            backgroundColor: "#14a1bb",
-                          },
+                        {
+                          backgroundColor: "#14a1bb",
+                        },
                       }}
                     />
                   </div>
@@ -1497,9 +1384,9 @@ export default function RealtimeChart({
                           color: "#14a1bb",
                         },
                         "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
-                          {
-                            backgroundColor: "#14a1bb",
-                          },
+                        {
+                          backgroundColor: "#14a1bb",
+                        },
                       }}
                     />
                   </div>
@@ -1515,9 +1402,9 @@ export default function RealtimeChart({
                           color: "#14a1bb",
                         },
                         "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
-                          {
-                            backgroundColor: "#14a1bb",
-                          },
+                        {
+                          backgroundColor: "#14a1bb",
+                        },
                       }}
                     />
                   </div>
@@ -1548,7 +1435,8 @@ export default function RealtimeChart({
           pembangkitId={selectedPembangkitId}
           seriesSiteId={selectedPoint?.siteId}
           selectedTimestamp={selectedPoint?.rawTimestamp}
-          period={period}
+          period={periode}
+          interval={interval}
         />
       )}
     </div>

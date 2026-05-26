@@ -129,14 +129,14 @@ export default function NoteSection({ pemasokId, pembangkitId }: Props) {
                           <div className="flex flex-col gap-1">
                             <div className="flex gap-3">
                               <span>
-                                {new Date(note.occurredAt).toLocaleDateString("id-ID", {
+                                {new Date(note.createdAt || note.created_at || note.occurredAt).toLocaleDateString("id-ID", {
                                   day: "2-digit",
                                   month: "long",
                                   year: "numeric",
                                 })}
                               </span>
                               <span>
-                                {new Date(note.occurredAt).toLocaleTimeString("id-ID", {
+                                {new Date(note.createdAt || note.created_at || note.occurredAt).toLocaleTimeString("id-ID", {
                                   hour: "2-digit",
                                   minute: "2-digit",
                                 })}

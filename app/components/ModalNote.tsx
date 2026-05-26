@@ -23,6 +23,7 @@ type Props = {
   seriesSiteId?: string;
   selectedTimestamp?: string;
   period?: string;
+  interval?: string;
 };
 
 export default function ModalNote({
@@ -38,6 +39,7 @@ export default function ModalNote({
   seriesSiteId,
   selectedTimestamp,
   period,
+  interval,
 }: Props) {
   const [saving, setSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
@@ -172,7 +174,7 @@ export default function ModalNote({
       }
 
       // For hourly view, also check hour match
-      if (period === "1D") {
+      if (period === "1D" || interval === "hour") {
         return eventD.getUTCHours() === clickedHour;
       }
 
@@ -280,15 +282,15 @@ export default function ModalNote({
                           <div className="flex flex-col gap-1">
                             <div className="flex gap-3">
                               <span>
-                                {new Date(n.occurredAt).toLocaleDateString("id-ID", {
+                                {new Date(n.createdAt || n.created_at || n.occurredAt).toLocaleDateString("id-ID", {
                                   day: "2-digit",
                                   month: "long",
                                   year: "numeric",
                                 })}
                               </span>
-                              {period === "1D" && (
+                              {(period === "1D" || interval === "hour" || !!n.createdAt || !!n.created_at) && (
                                 <span>
-                                  {new Date(n.occurredAt).toLocaleTimeString("id-ID", {
+                                  {new Date(n.createdAt || n.created_at || n.occurredAt).toLocaleTimeString("id-ID", {
                                     hour: "2-digit",
                                     minute: "2-digit",
                                   })}

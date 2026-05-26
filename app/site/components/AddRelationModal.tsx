@@ -209,8 +209,8 @@ export function AddRelationModal({
                 <label
                   key={site.id}
                   className={`flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors ${selectedSourceSites.includes(site.id)
-                      ? "bg-[#14a2bb]/10 text-[#115d72]"
-                      : "hover:bg-gray-50 text-gray-700"
+                    ? "bg-[#14a2bb]/10 text-[#115d72]"
+                    : "hover:bg-gray-50 text-gray-700"
                     }`}
                 >
                   <input
@@ -273,8 +273,8 @@ export function AddRelationModal({
                 <label
                   key={site.id}
                   className={`flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors ${selectedTargetSites.includes(site.id)
-                      ? "bg-[#14a2bb]/10 text-[#115d72]"
-                      : "hover:bg-gray-50 text-gray-700"
+                    ? "bg-[#14a2bb]/10 text-[#115d72]"
+                    : "hover:bg-gray-50 text-gray-700"
                     }`}
                 >
                   <input

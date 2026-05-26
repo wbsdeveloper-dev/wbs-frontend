@@ -171,6 +171,8 @@ export interface DashboardEvent {
   siteId: string;
   siteName: string;
   occurredAt: string;
+  created_at?: string;
+  createdAt?: string;
   title: string;
   description: string;
   severity: "INFO" | "WARNING" | "CRITICAL";
@@ -379,15 +381,7 @@ export async function getTopPlants(
 export async function getChartFlow(
   startDate: string,
   endDate: string,
-  granularity:
-    | "hour"
-    | "day"
-    | "month"
-    | "three_month"
-    | "six_month"
-    | "one_year"
-    | "three_year"
-    | "year",
+  granularity: "hour" | "day" | "month" | "year",
   by: "supplier" | "plant",
   pemasokId?: string,
   pembangkitId?: string,
@@ -537,15 +531,7 @@ export function useTopPlants(
 export function useChartFlow(
   startDate: string,
   endDate: string,
-  granularity:
-    | "hour"
-    | "day"
-    | "month"
-    | "three_month"
-    | "six_month"
-    | "one_year"
-    | "three_year"
-    | "year",
+  granularity: "hour" | "day" | "month" | "year",
   by: "supplier" | "plant",
   pemasokId?: string,
   pembangkitId?: string,
