@@ -1,6 +1,7 @@
 import React, { useState, useRef } from "react";
 import { X, Upload, CheckCircle2, AlertCircle } from "lucide-react";
 import { useFilters } from "@/hooks/service/dashboard-api";
+import { useExtractOcrPage } from "@/hooks/service/monitoring-api";
 
 type Props = {
   setOpenModal: (value: boolean) => void;
@@ -32,6 +33,7 @@ export default function InputBAValidasiModal({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: filtersData } = useFilters();
+  const extractOcr = useExtractOcrPage();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -54,22 +56,31 @@ export default function InputBAValidasiModal({
       return;
     }
     
-    // Create the payload
-    const payload = {
+    // Create the formData payload
+    const formDataToSubmit = new FormData();
+    formDataToSubmit.append("file", file);
+    formDataToSubmit.append("siteId", formData.siteId);
+    formDataToSubmit.append("supplierName", formData.supplierName);
+    formDataToSubmit.append("reportDate", formData.reportDate);
+    formDataToSubmit.append("jenisBa", formData.jenisBa);
+    formDataToSubmit.append("halamanData", formData.halamanData);
+    formDataToSubmit.append("kolomYangDiambil", formData.kolomYangDiambil);
+    formDataToSubmit.append("prompt", formData.prompt);
+
+    // Log the payload to console and show an alert
+    const payloadLog = {
       file: file.name,
       ...formData
     };
-
-    // Log the payload to console and show an alert
-    console.log("Payload to be sent:", payload);
-    alert("Payload yang akan dikirim:\n\n" + JSON.stringify(payload, null, 2));
+    console.log("Payload to be sent:", payloadLog);
+    alert("Payload yang akan dikirim:\n\n" + JSON.stringify(payloadLog, null, 2));
 
     setIsProcessing(true);
     setError(null);
     
-    // Simulasi proses karena API belum tersedia
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const response = await extractOcr.mutateAsync(formDataToSubmit);
+      console.log("OCR Response:", response);
       setShowSuccess(true);
       setTimeout(() => {
         if (onSuccess) onSuccess();
@@ -77,7 +88,8 @@ export default function InputBAValidasiModal({
         if (previewUrl) URL.revokeObjectURL(previewUrl);
       }, 1500);
     } catch (err: any) {
-      setError("Gagal memproses PDF.");
+      console.error("Gagal memproses PDF:", err);
+      setError(err?.message || "Gagal memproses PDF.");
     } finally {
       setIsProcessing(false);
     }

@@ -463,3 +463,49 @@ export async function downloadReconciliationTemplate(): Promise<void> {
   a.remove();
   window.URL.revokeObjectURL(downloadUrl);
 }
+
+// ---------------------------------------------------------------------------
+// API function — OCR Extract Page (POST)
+// ---------------------------------------------------------------------------
+
+export async function extractOcrPage(
+  formData: FormData,
+): Promise<any> {
+  const url = `${DASHBOARD_API_HOST}/ocr/extract-page`;
+  const accessToken = getAccessToken();
+  
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
+    body: formData,
+  });
+
+  if (!res.ok) {
+    throw new Error(`OCR API error: ${res.statusText}`);
+  }
+
+  const body = await res.json();
+
+  if (!body.success) {
+    throw new Error(body.message || "Unknown OCR API error");
+  }
+
+  return body;
+}
+
+export function useExtractOcrPage(
+  options?: Partial<
+    UseMutationOptions<
+      any,
+      Error,
+      FormData
+    >
+  >,
+) {
+  return useMutation({
+    mutationFn: (formData: FormData) => extractOcrPage(formData),
+    ...options,
+  });
+}
