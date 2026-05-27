@@ -73,6 +73,10 @@ const SOURCE_KIND_OPTIONS: {
     label: "Kolom Spreadsheet",
   },
   {
+    value: "SHEET_CELL",
+    label: "Sel Spreadsheet (Baris & Kolom)",
+  },
+  {
     value: "WA_REGEX",
     label: "Regular Expression",
     getLabel: (scope) =>
@@ -594,6 +598,70 @@ export default function TemplateEditor({
                 <option value=".">Titik (.)</option>
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            </div>
+          </div>
+
+          {/* Commodity Dropdown */}
+          <div>
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <label className="block text-sm font-medium text-gray-700">
+                Komoditas
+              </label>
+              <Tooltip
+                title="Komoditas yang terkait dengan template grup ini (GAS PIPA, LNG, atau BBM)."
+                arrow
+                placement="top"
+              >
+                <Info className="w-4 h-4 text-gray-400 cursor-help" />
+              </Tooltip>
+            </div>
+            <div className="relative">
+              <select
+                value={formData.commodity || "GAS PIPA"}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    commodity: e.target.value,
+                  })
+                }
+                className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white cursor-pointer pr-10"
+              >
+                <option value="GAS PIPA">GAS PIPA</option>
+                <option value="LNG">LNG</option>
+                <option value="BBM">BBM</option>
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            </div>
+          </div>
+          
+          {/* Is Transportir Checkbox */}
+          <div className="flex items-end mb-1">
+            <div className="flex items-center pb-2">
+              <input
+                id={`is-transportir-${formData.id}`}
+                type="checkbox"
+                checked={formData.isTransportir || false}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    isTransportir: e.target.checked,
+                  })
+                }
+                className="w-4 h-4 text-[#115d72] border-gray-300 rounded focus:ring-[#14a2bb]"
+              />
+              <label
+                htmlFor={`is-transportir-${formData.id}`}
+                className="ml-2 block text-sm font-medium text-gray-700 cursor-pointer"
+              >
+                Template Transportir
+              </label>
+              <Tooltip
+                title="Jika dicentang, template ini akan diperlakukan sebagai template Transportir."
+                arrow
+                placement="top"
+              >
+                <Info className="w-4 h-4 ml-1.5 text-gray-400 cursor-help" />
+              </Tooltip>
             </div>
           </div>
 

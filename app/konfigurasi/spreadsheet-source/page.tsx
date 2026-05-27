@@ -266,7 +266,7 @@ export default function SpreadsheetSourcePage() {
   const canUpdate = hasPrivilege("spreadsheet_source", "UPDATE");
   const canDelete = hasPrivilege("spreadsheet_source", "DELETE");
 
-  const { data: sources = [], isLoading, isError } = useSpreadsheetSources();
+  const { data: sources = [], isLoading, isError } = useSpreadsheetSources("GAS PIPA,LNG");
   const createMutation = useCreateSpreadsheetSource();
   const updateMutation = useUpdateSpreadsheetSource();
   const deleteMutation = useDeleteSpreadsheetSource();
@@ -285,10 +285,15 @@ export default function SpreadsheetSourcePage() {
     message: string;
   } | null>(null);
 
+  // Filter sources client-side to strictly show GAS PIPA and LNG sources
+  const filteredSources = useMemo(() => {
+    return sources.filter((s) => s.commodity === "GAS PIPA" || s.commodity === "LNG");
+  }, [sources]);
+
   // Group sources by spreadsheetId
   const groups = useMemo<SpreadsheetGroup[]>(() => {
     const map = new Map<string, SpreadsheetSource[]>();
-    for (const source of sources) {
+    for (const source of filteredSources) {
       const existing = map.get(source.spreadsheetId) ?? [];
       map.set(source.spreadsheetId, [...existing, source]);
     }
@@ -296,7 +301,7 @@ export default function SpreadsheetSourcePage() {
       spreadsheetId,
       sheets,
     }));
-  }, [sources]);
+  }, [filteredSources]);
 
   const showNotification = (type: "success" | "error", message: string) => {
     setNotification({ type, message });
@@ -357,6 +362,7 @@ export default function SpreadsheetSourcePage() {
         sheetName: formData.sheetName,
         cronSchedule: formData.cronSchedule || undefined,
         dataStartRow: formData.dataStartRow,
+        commodity: editingSource.commodity || "GAS PIPA",
       };
       updateMutation.mutate(
         { id: editingSource.id, payload },
@@ -378,6 +384,7 @@ export default function SpreadsheetSourcePage() {
         sheetName: formData.sheetName,
         cronSchedule: formData.cronSchedule || undefined,
         dataStartRow: formData.dataStartRow,
+        commodity: "GAS PIPA",
       };
       createMutation.mutate(payload, {
         onSuccess: () => {

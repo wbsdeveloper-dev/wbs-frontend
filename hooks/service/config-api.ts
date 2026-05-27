@@ -119,6 +119,7 @@ export interface TemplateField {
   fieldKey: string;
   sourceKind:
     | "SHEET_COLUMN"
+    | "SHEET_CELL"
     | "WA_REGEX"
     | "WA_REGEX_RECORDS"
     | "WA_FIXED"
@@ -153,6 +154,8 @@ export interface Template {
   aiPromptTemplate: string | null;
   aiOutputSchema: Record<string, unknown> | null;
   decimalSeparator: string;
+  commodity: string | null;
+  isTransportir: boolean;
   createdBy: string | null;
   createdAt: string;
   updatedAt: string;
@@ -172,6 +175,8 @@ export interface CreateTemplatePayload {
   aiPromptTemplate?: string;
   aiOutputSchema?: Record<string, unknown>;
   decimalSeparator?: string;
+  commodity?: string;
+  isTransportir?: boolean;
   fields?: {
     fieldKey: string;
     sourceKind: TemplateField["sourceKind"];
@@ -196,6 +201,8 @@ export interface UpdateTemplatePayload {
   aiPromptTemplate?: string | null;
   aiOutputSchema?: Record<string, unknown> | null;
   decimalSeparator?: string;
+  commodity?: string | null;
+  isTransportir?: boolean;
   fields?: {
     fieldKey: string;
     sourceKind: TemplateField["sourceKind"];
@@ -210,6 +217,7 @@ export interface TemplateListFilters {
   scope?: string;
   status?: string;
   search?: string;
+  commodity?: string;
 }
 
 export interface RoutingTestPayload {
@@ -260,6 +268,7 @@ export interface SpreadsheetSource {
   isEnabled: boolean;
   cronSchedule: string | null;
   dataStartRow: number | null;
+  commodity: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -272,6 +281,7 @@ export interface CreateSpreadsheetSourcePayload {
   timezone?: string;
   cronSchedule?: string;
   dataStartRow?: number;
+  commodity?: string;
 }
 
 export interface UpdateSpreadsheetSourcePayload {
@@ -283,6 +293,7 @@ export interface UpdateSpreadsheetSourcePayload {
   isEnabled?: boolean;
   cronSchedule?: string;
   dataStartRow?: number;
+  commodity?: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -368,6 +379,7 @@ export function getTemplates(filters?: TemplateListFilters) {
     scope: filters?.scope,
     status: filters?.status,
     search: filters?.search,
+    commodity: filters?.commodity,
   });
   return configFetch<Template[]>(`/config/templates${query}`);
 }
@@ -647,8 +659,9 @@ export function useAiModels(options?: Partial<UseQueryOptions<AiModel[]>>) {
 // API functions — Spreadsheet Sources
 // ---------------------------------------------------------------------------
 
-export function getSpreadsheetSources() {
-  return configFetch<SpreadsheetSource[]>("/config/spreadsheet-sources");
+export function getSpreadsheetSources(commodity?: string) {
+  const query = commodity ? `?commodity=${encodeURIComponent(commodity)}` : "";
+  return configFetch<SpreadsheetSource[]>(`/config/spreadsheet-sources${query}`);
 }
 
 export function getSpreadsheetSource(id: string) {
@@ -688,11 +701,12 @@ export function deleteSpreadsheetSourceApi(id: string) {
 // ---------------------------------------------------------------------------
 
 export function useSpreadsheetSources(
+  commodity?: string,
   options?: Partial<UseQueryOptions<SpreadsheetSource[]>>,
 ) {
   return useQuery({
-    queryKey: configKeys.spreadsheetSources(),
-    queryFn: () => getSpreadsheetSources(),
+    queryKey: [...configKeys.spreadsheetSources(), commodity],
+    queryFn: () => getSpreadsheetSources(commodity),
     ...options,
   });
 }

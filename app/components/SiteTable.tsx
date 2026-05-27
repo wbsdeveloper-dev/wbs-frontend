@@ -232,9 +232,10 @@ function DeleteWarningModal({
 interface SiteTableProps {
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
+  commodity?: string[];
 }
 
-export function DaftarSiteTable({ onEdit, onDelete }: SiteTableProps) {
+export function DaftarSiteTable({ onEdit, onDelete, commodity }: SiteTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(0);
@@ -245,7 +246,7 @@ export function DaftarSiteTable({ onEdit, onDelete }: SiteTableProps) {
   const [pendingDeleteName, setPendingDeleteName] = useState<string>("");
   const [warnedSites, setWarnedSites] = useState<string[]>([]);
 
-  const { data: sites, isLoading } = useSites({ search: debouncedSearch });
+  const { data: sites, isLoading } = useSites({ search: debouncedSearch, commodity });
   const deleteSiteMutation = useDeleteSite({
     onSuccess: (data: DeleteSiteResponse) => {
       // Note: broad siteKeys.all invalidation is handled by useDeleteSite hook itself
@@ -362,6 +363,9 @@ export function DaftarSiteTable({ onEdit, onDelete }: SiteTableProps) {
                   Kapasitas
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  Komoditas
+                </th>
+                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   Status
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
@@ -373,7 +377,7 @@ export function DaftarSiteTable({ onEdit, onDelete }: SiteTableProps) {
               {isLoading ? (
                 <tr>
                   <td
-                    colSpan={5}
+                    colSpan={6}
                     className="px-4 py-8 text-center text-gray-500"
                   >
                     Memuat data...
@@ -382,7 +386,7 @@ export function DaftarSiteTable({ onEdit, onDelete }: SiteTableProps) {
               ) : paginatedSites.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={5}
+                    colSpan={6}
                     className="px-4 py-8 text-center text-gray-500"
                   >
                     {searchTerm
@@ -409,6 +413,9 @@ export function DaftarSiteTable({ onEdit, onDelete }: SiteTableProps) {
                     </td>
                     <td className="px-4 py-3 text-center text-gray-700">
                       {site.capacity ? site.capacity + " MW" : "-"}
+                    </td>
+                    <td className="px-4 py-3 text-center text-gray-700">
+                      {site.commodity || "-"}
                     </td>
                     <td className="px-4 py-3 text-center">
                       <StatusBadge
@@ -481,7 +488,7 @@ export function DaftarSiteTable({ onEdit, onDelete }: SiteTableProps) {
 }
 
 // Relations Table Component
-export function RelasiOperasionalTable({ onEdit, onDelete }: SiteTableProps) {
+export function RelasiOperasionalTable({ onEdit, onDelete, commodity }: SiteTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(0);
@@ -528,6 +535,11 @@ export function RelasiOperasionalTable({ onEdit, onDelete }: SiteTableProps) {
   // Filter relations based on search term
   const filteredRelations =
     relations?.filter((relation) => {
+      if (commodity && commodity.length > 0) {
+        if (!commodity.includes(relation.commodity)) {
+          return false;
+        }
+      }
       if (!debouncedSearch) return true;
       const searchLower = debouncedSearch.toLowerCase();
       return (

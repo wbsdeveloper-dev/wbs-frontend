@@ -50,6 +50,7 @@ export function AddSiteModal({
     long: undefined,
     conversion_factor: undefined,
     owner: "",
+    commodity: "",
   });
 
   const [selectedPlant, setSelectedPlant] = useState<string | null>(null);
@@ -68,6 +69,7 @@ export function AddSiteModal({
       long: undefined,
       conversion_factor: undefined,
       owner: "",
+      commodity: "",
     });
     setSelectedPlant(null);
     setSelectedSupplier(null);
@@ -93,6 +95,7 @@ export function AddSiteModal({
           long: editingSite.long,
           conversion_factor: editingSite.conversion_factor,
           owner: editingSite.owner ?? "",
+          commodity: editingSite.commodity ?? "",
         });
         setSelectedPlant(editingSite.pembangkit_id || null);
         setSelectedSupplier(editingSite.pemasok_id || null);
@@ -109,9 +112,9 @@ export function AddSiteModal({
       newErrors.name = "Nama site wajib diisi";
     } else {
       const isDuplicate = sites?.some(
-        (site) => 
+        (site) =>
           site.name.toLowerCase() === formData.name.trim().toLowerCase() &&
-          site.id !== editingId
+          site.id !== editingId,
       );
       if (isDuplicate) {
         newErrors.name = "Nama site sudah terdaftar, silakan gunakan nama lain";
@@ -141,6 +144,7 @@ export function AddSiteModal({
       long: formData.long ?? null,
       conversion_factor: formData.conversion_factor,
       owner: formData.owner || undefined,
+      commodity: formData.commodity || undefined,
     };
 
     // Use appropriate mutation
@@ -157,7 +161,8 @@ export function AddSiteModal({
     setFormData({
       ...formData,
       site_type: siteType,
-      conversion_factor: siteType === "PEMASOK" ? formData.conversion_factor : undefined,
+      conversion_factor:
+        siteType === "PEMASOK" ? formData.conversion_factor : undefined,
     });
     setSelectedPlant(null);
     setSelectedSupplier(null);
@@ -200,7 +205,10 @@ export function AddSiteModal({
         </div>
 
         {/* Content */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto flex-1 min-h-0">
+        <form
+          onSubmit={handleSubmit}
+          className="p-6 space-y-4 overflow-y-auto flex-1 min-h-0"
+        >
           {/* Site Type Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -240,6 +248,25 @@ export function AddSiteModal({
             </div>
           )}
 
+          {/* Komoditas */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Komoditas
+            </label>
+            <select
+              value={formData.commodity ?? ""}
+              onChange={(e) =>
+                setFormData({ ...formData, commodity: e.target.value })
+              }
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white transition-all duration-200"
+            >
+              <option value="">Pilih Komoditas</option>
+              <option value="GAS PIPA">GAS PIPA</option>
+              <option value="LNG">LNG</option>
+              <option value="BBM">BBM</option>
+            </select>
+          </div>
+
           {/* Site Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -252,10 +279,11 @@ export function AddSiteModal({
                 setFormData({ ...formData, name: e.target.value })
               }
               placeholder="Masukkan nama site"
-              className={`w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200 ${errors.name
-                ? "border-red-300 focus:ring-red-500"
-                : "border-gray-300"
-                }`}
+              className={`w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200 ${
+                errors.name
+                  ? "border-red-300 focus:ring-red-500"
+                  : "border-gray-300"
+              }`}
             />
             {errors.name && (
               <p className="text-xs text-red-600 mt-1">{errors.name}</p>
@@ -276,10 +304,11 @@ export function AddSiteModal({
                   setFormData({ ...formData, region: e.target.value })
                 }
                 placeholder="Masukkan region"
-                className={`w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200 ${errors.region
-                  ? "border-red-300 focus:ring-red-500"
-                  : "border-gray-300"
-                  }`}
+                className={`w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200 ${
+                  errors.region
+                    ? "border-red-300 focus:ring-red-500"
+                    : "border-gray-300"
+                }`}
               />
               {errors.region && (
                 <p className="text-xs text-red-600 mt-1">{errors.region}</p>
@@ -287,33 +316,35 @@ export function AddSiteModal({
             </div>
           )}
 
-          {formData.site_type != "TRANSPORTIR" && formData.site_type != "PEMASOK" && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Kapasitas (MW)
-              </label>
-              <input
-                type="number"
-                value={formData.capacity ?? ""}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    capacity: e.target.value
-                      ? Number(e.target.value)
-                      : undefined,
-                  })
-                }
-                placeholder="Masukkan kapasitas"
-                className={`w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200 ${errors.capacity
-                  ? "border-red-300 focus:ring-red-500"
-                  : "border-gray-300"
+          {formData.site_type != "TRANSPORTIR" &&
+            formData.site_type != "PEMASOK" && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Kapasitas (MW)
+                </label>
+                <input
+                  type="number"
+                  value={formData.capacity ?? ""}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      capacity: e.target.value
+                        ? Number(e.target.value)
+                        : undefined,
+                    })
+                  }
+                  placeholder="Masukkan kapasitas"
+                  className={`w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200 ${
+                    errors.capacity
+                      ? "border-red-300 focus:ring-red-500"
+                      : "border-gray-300"
                   }`}
-              />
-              {errors.capacity && (
-                <p className="text-xs text-red-600 mt-1">{errors.capacity}</p>
-              )}
-            </div>
-          )}
+                />
+                {errors.capacity && (
+                  <p className="text-xs text-red-600 mt-1">{errors.capacity}</p>
+                )}
+              </div>
+            )}
 
           {/* Latitude */}
           <div>
@@ -374,10 +405,11 @@ export function AddSiteModal({
               disabled={formData.site_type !== "PEMASOK"}
               step="any"
               placeholder="1000"
-              className={`w-full px-4 py-2.5 border rounded-lg text-sm transition-all duration-200 ${formData.site_type !== "PEMASOK"
-                ? "bg-gray-50 border-gray-200 text-gray-400 cursor-not-allowed"
-                : "bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent"
-                }`}
+              className={`w-full px-4 py-2.5 border rounded-lg text-sm transition-all duration-200 ${
+                formData.site_type !== "PEMASOK"
+                  ? "bg-gray-50 border-gray-200 text-gray-400 cursor-not-allowed"
+                  : "bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent"
+              }`}
             />
             <p className="text-xs text-gray-500 mt-1">
               Opsional: Faktor konversi untuk satuan

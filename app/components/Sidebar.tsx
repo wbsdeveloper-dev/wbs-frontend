@@ -69,7 +69,7 @@ export default function Sidebar() {
     }[];
   };
 
-  const menus: MenuType[] = [
+  const gasMenus: MenuType[] = [
     {
       title: "Beranda",
       path: "/dashboard/gas",
@@ -113,6 +113,40 @@ export default function Sidebar() {
       resource: "bot_management",
     },
   ];
+
+  const bbmMenus: MenuType[] = [
+    {
+      title: "Beranda",
+      path: "/dashboard/bbm",
+      icon: LayoutDashboard,
+      resource: "dashboard",
+    },
+    {
+      title: "Manajemen Data",
+      path: "/edit-bbm",
+      icon: FileText,
+      resource: "data_management",
+    },
+    {
+      title: "TBBM & Pembangkit",
+      path: "/site-bbm",
+      icon: MapPin,
+      resource: "site_management",
+    },
+    {
+      title: "Konfigurasi Sistem",
+      path: "/konfigurasi-bbm",
+      icon: Database,
+      children: [
+        { title: "Pengguna", path: "/konfigurasi-bbm/pengguna", resource: "users" },
+        { title: "Template Grup", path: "/konfigurasi-bbm/template-grup", resource: "template_group" },
+        { title: "Spreadsheet", path: "/konfigurasi-bbm/spreadsheet-source", resource: "spreadsheet_source" },
+      ],
+    },
+  ];
+
+  const isBbmRoute = pathname.includes('/bbm') || pathname.includes('-bbm');
+  const menus = isBbmRoute ? bbmMenus : gasMenus;
 
   const filteredMenus = menus.map(menu => {
     if (menu.children) {

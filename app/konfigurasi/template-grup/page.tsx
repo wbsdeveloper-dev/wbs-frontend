@@ -130,6 +130,7 @@ export default function TemplateGrupPage() {
     "WA_GROUP" | "SPREADSHEET_SOURCE" | "EMAIL_INGEST"
   >("WA_GROUP");
   const [newTemplateDecimal, setNewTemplateDecimal] = useState<string>(",");
+  const [newTemplateCommodity, setNewTemplateCommodity] = useState<string>("GAS PIPA");
 
   const [isTestModalOpen, setIsTestModalOpen] = useState(false);
   const [testGroupId, setTestGroupId] = useState("");
@@ -148,6 +149,7 @@ export default function TemplateGrupPage() {
       scope: scopeFilter !== "all" ? scopeFilter : undefined,
       status: statusFilter !== "all" ? statusFilter : undefined,
       search: searchQuery || undefined,
+      commodity: "GAS PIPA,LNG",
     }),
     [scopeFilter, statusFilter, searchQuery],
   );
@@ -164,7 +166,12 @@ export default function TemplateGrupPage() {
   const { data: botGroups = [] } = useBotGroups(BOT_PRIMARY_API);
 
   // Fetch real spreadsheet sources from API
-  const { data: spreadsheetSources = [] } = useSpreadsheetSources();
+  const { data: spreadsheetSourcesRaw = [] } = useSpreadsheetSources("GAS PIPA,LNG");
+  const spreadsheetSources = useMemo(() => {
+    return spreadsheetSourcesRaw.filter(
+      (s) => s.commodity === "GAS PIPA" || s.commodity === "LNG",
+    );
+  }, [spreadsheetSourcesRaw]);
 
   // ---------------------------------------------------------------------------
   // API mutations
@@ -187,10 +194,12 @@ export default function TemplateGrupPage() {
     setTimeout(() => setNotification(null), 3000);
   };
 
-  // Filter templates client-side when the API doesn't support search
-  // (the API query params handle filtering server-side,
-  //  but we keep the useMemo for safety if the API doesn't filter)
-  const filteredTemplates = templates;
+  // Filter templates client-side to strictly show GAS PIPA and LNG templates
+  const filteredTemplates = useMemo(() => {
+    return templates.filter(
+      (t) => t.commodity === "GAS PIPA" || t.commodity === "LNG"
+    );
+  }, [templates]);
 
   const handleSelectTemplate = (template: Template) => {
     setSelectedTemplate(template);
@@ -214,6 +223,7 @@ export default function TemplateGrupPage() {
           aiPromptTemplate: updatedTemplate.aiPromptTemplate,
           aiOutputSchema: updatedTemplate.aiOutputSchema,
           decimalSeparator: updatedTemplate.decimalSeparator,
+          commodity: updatedTemplate.commodity,
           fields: updatedTemplate.fields.map((f, i) => ({
             fieldKey: f.fieldKey,
             sourceKind: f.sourceKind,
@@ -318,6 +328,7 @@ export default function TemplateGrupPage() {
         name: newTemplateName,
         scope: newTemplateScope,
         decimalSeparator: newTemplateDecimal,
+        commodity: newTemplateCommodity,
       },
       {
         onSuccess: (data) => {
@@ -325,6 +336,7 @@ export default function TemplateGrupPage() {
           setIsCreateModalOpen(false);
           setNewTemplateName("");
           setNewTemplateDecimal(",");
+          setNewTemplateCommodity("GAS PIPA");
           showNotification(
             "success",
             `Template "${newTemplateName}" berhasil dibuat`,
@@ -632,6 +644,7 @@ export default function TemplateGrupPage() {
           setIsCreateModalOpen(false);
           setNewTemplateName("");
           setNewTemplateDecimal(",");
+          setNewTemplateCommodity("GAS PIPA");
         }}
         title="Buat Template Baru"
         maxWidth="max-w-md"
@@ -689,12 +702,30 @@ export default function TemplateGrupPage() {
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             </div>
           </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Komoditas
+            </label>
+            <div className="relative">
+              <select
+                value={newTemplateCommodity}
+                onChange={(e) => setNewTemplateCommodity(e.target.value)}
+                className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white cursor-pointer pr-10"
+              >
+                <option value="GAS PIPA">GAS PIPA</option>
+                <option value="LNG">LNG</option>
+                <option value="BBM">BBM</option>
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            </div>
+          </div>
           <div className="flex gap-3 pt-4 border-t border-gray-200">
             <button
               onClick={() => {
                 setIsCreateModalOpen(false);
                 setNewTemplateName("");
                 setNewTemplateDecimal(",");
+                setNewTemplateCommodity("GAS PIPA");
               }}
               className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200"
             >

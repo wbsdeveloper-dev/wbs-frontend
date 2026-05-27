@@ -250,7 +250,7 @@ export default function GasDashboard() {
             </div>
 
             <div className="mb-6 md:mb-8">
-              <Map />
+              <Map commodity="LNG,GAS PIPA" />
             </div>
 
             {/* Cards Grid */}

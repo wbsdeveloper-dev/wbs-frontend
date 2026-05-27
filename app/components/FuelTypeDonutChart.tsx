@@ -29,6 +29,9 @@ type Props = {
   /** Called when the user picks a new date */
   onStartDateChange: (date: string) => void;
   onEndDateChange: (date: string) => void;
+  title?: string;
+  descriptionPrefix?: string;
+  descriptionFuelType?: string;
 };
 
 export default function FuelTypeDonutChart({
@@ -40,6 +43,9 @@ export default function FuelTypeDonutChart({
   endDate,
   onStartDateChange,
   onEndDateChange,
+  title = "Konsumsi Gas",
+  descriptionPrefix = "Visualisasi konsumsi gas",
+  descriptionFuelType = "gas",
 }: Props) {
   const [showDateFilter, setShowDateFilter] = useState(false);
   const [tempStartDate, setTempStartDate] = useState(startDate);
@@ -79,7 +85,7 @@ export default function FuelTypeDonutChart({
     <div className="bg-white rounded-xl p-6 border border-gray-200 flex flex-col">
       {/* Header row */}
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold text-gray-900">Konsumsi Gas</h3>
+        <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
         <div className="flex items-center gap-1">
           {/* Date filter toggle */}
           <button
@@ -235,7 +241,7 @@ export default function FuelTypeDonutChart({
 
       {/* Dynamic footer */}
       <p className="text-xs text-gray-500 mt-4 pt-4 border-t border-gray-200">
-        Visualisasi konsumsi gas pada setiap{" "}
+        {descriptionPrefix} pada setiap{" "}
         {filterType?.toLowerCase() ?? "pembangkit"} PLN EPI per tanggal{" "}
         {formattedDate}
       </p>

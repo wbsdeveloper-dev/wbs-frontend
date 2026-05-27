@@ -285,8 +285,8 @@ export async function dashboardFetch<T>(
 
 export const dashboardKeys = {
   all: ["dashboard"] as const,
-  mapLocations: (region?: string) =>
-    [...dashboardKeys.all, "map-locations", region] as const,
+  mapLocations: (region?: string, commodity?: string) =>
+    [...dashboardKeys.all, "map-locations", region, commodity] as const,
   distribution: (startDate: string, endDate: string, by: string) =>
     [...dashboardKeys.all, "distribution", startDate, endDate, by] as const,
   topSuppliers: (startDate: string, endDate: string, limit?: number) =>
@@ -338,9 +338,9 @@ function buildQuery(
   );
 }
 
-export async function getMapLocations(region?: string) {
+export async function getMapLocations(region?: string, commodity?: string) {
   return dashboardFetch<MapLocationsResponse>(
-    `/dashboard/map-locations${buildQuery({ region })}`,
+    `/dashboard/map-locations${buildQuery({ region, commodity })}`,
   );
 }
 
@@ -439,11 +439,12 @@ export async function getSummary(startDate: string, endDate: string) {
 
 export function useMapLocations(
   region?: string,
+  commodity?: string,
   options?: Partial<UseQueryOptions<MapLocationsResponse>>,
 ) {
   return useQuery({
-    queryKey: dashboardKeys.mapLocations(region),
-    queryFn: () => getMapLocations(region),
+    queryKey: dashboardKeys.mapLocations(region, commodity),
+    queryFn: () => getMapLocations(region, commodity),
     ...options,
   });
 }
