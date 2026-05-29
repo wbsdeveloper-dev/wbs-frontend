@@ -509,3 +509,50 @@ export function useExtractOcrPage(
     ...options,
   });
 }
+
+// ---------------------------------------------------------------------------
+// API function — OCR Batch Create (POST)
+// ---------------------------------------------------------------------------
+
+export async function batchCreateOcrReconciliationRecords(
+  payload: any[],
+): Promise<any> {
+  const url = `${DASHBOARD_API_HOST}/reconciliation-input/ocr-batch`;
+  const accessToken = getAccessToken();
+  
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
+    body: JSON.stringify({ records: payload }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`Batch create API error: ${res.statusText}`);
+  }
+
+  const body = await res.json();
+
+  if (!body.success) {
+    throw new Error(body.message || "Unknown Batch create API error");
+  }
+
+  return body;
+}
+
+export function useBatchCreateOcrReconciliationRecords(
+  options?: Partial<
+    UseMutationOptions<
+      any,
+      Error,
+      any[]
+    >
+  >,
+) {
+  return useMutation({
+    mutationFn: (payload: any[]) => batchCreateOcrReconciliationRecords(payload),
+    ...options,
+  });
+}
