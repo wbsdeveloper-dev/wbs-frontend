@@ -1,7 +1,7 @@
 import React, { useState, useRef } from "react";
 import { X, Upload, CheckCircle2, AlertCircle } from "lucide-react";
 import { useFilters } from "@/hooks/service/dashboard-api";
-import { useExtractOcrPage, useBatchCreateOcrReconciliationRecords } from "@/hooks/service/monitoring-api";
+import { useExtractOcrPage, useExtractOcrMultiPage, useBatchCreateOcrReconciliationRecords } from "@/hooks/service/monitoring-api";
 import { Autocomplete, TextField } from "@mui/material";
 
 type Props = {
@@ -13,23 +13,53 @@ interface ExtractedRecord {
   tanggalKegiatan: string;
   volume: string;
   flowrate: string;
+  stream1Volume?: string;
+  stream1Flowrate?: string;
+  stream2Volume?: string;
+  stream2Flowrate?: string;
 }
+
+const DEFAULT_PROMPT_SINGLE = `Ekstrak data dari teks dokumen berikut.
+Kembalikan data dalam format JSON array of objects.
+Setiap object mewakili baris data dan harus memiliki key:
+- "report_date" (format YYYY-MM-DD)
+- "FLOWRATE_MMSCFD" (berupa angka)
+- "ENERGY_BBTUD" (berupa angka)
+
+Pastikan angka desimal menggunakan titik (bukan koma) dan hilangkan pemisah ribuan.
+Jika ada kolom tertentu yang diminta, fokus pada nilai tersebut.
+Teks:
+{text}`;
+
+const DEFAULT_PROMPT_MULTI = `Ekstrak data aliran (stream) dari teks dokumen berikut.
+Kembalikan data dalam format JSON array of objects.
+Setiap object mewakili baris data dan harus memiliki key:
+- "report_date" (format YYYY-MM-DD)
+- "FLOWRATE_MMSCFD" (berupa angka)
+- "ENERGY_BBTUD" (berupa angka)
+
+Data ini adalah salah satu dari beberapa stream yang akan digabungkan nanti berdasarkan report_date.
+Pastikan angka desimal menggunakan titik (bukan koma) dan hilangkan pemisah ribuan.
+Teks:
+{text}`;
+
 
 export default function InputBAValidasiModal({
   setOpenModal,
   onSuccess,
 }: Props) {
-  const [file, setFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [files, setFiles] = useState<(File | null)[]>([null, null]);
+  const [previewUrls, setPreviewUrls] = useState<(string | null)[]>([null, null]);
+  const [activeFileIndex, setActiveFileIndex] = useState<number>(0);
   
   const [formData, setFormData] = useState({
     siteId: "",
     supplierId: "",
     reportDate: "",
     jenisBa: "Tunggal",
-    halamanData: "",
-    kolomYangDiambil: "",
-    prompt: "",
+    halamanData: ["", ""],
+    kolomYangDiambil: ["", ""],
+    prompt: DEFAULT_PROMPT_SINGLE,
     convertToMmscf: false,
     convertToBbtu: false,
   });
@@ -44,64 +74,111 @@ export default function InputBAValidasiModal({
 
   const { data: filtersData } = useFilters();
   const extractOcr = useExtractOcrPage();
+  const extractOcrMultiPage = useExtractOcrMultiPage();
   const batchCreate = useBatchCreateOcrReconciliationRecords();
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, index: number = 0) => {
     if (e.target.files && e.target.files.length > 0) {
       const selectedFile = e.target.files[0];
       if (selectedFile.type !== "application/pdf") {
         setError("File harus berupa PDF");
         return;
       }
-      setFile(selectedFile);
+      
+      const newFiles = [...files];
+      newFiles[index] = selectedFile;
+      setFiles(newFiles);
+      
       setError(null);
       // Create object URL for preview
       const url = URL.createObjectURL(selectedFile);
-      setPreviewUrl(url);
+      const newUrls = [...previewUrls];
+      newUrls[index] = url;
+      setPreviewUrls(newUrls);
+      setActiveFileIndex(index);
     }
   };
 
   const handleProcess = async () => {
-    if (!file) {
-      setError("Silakan unggah file PDF terlebih dahulu");
+    const isMultiStream = formData.jenisBa === "Multi Stream";
+    const filesToUpload = isMultiStream ? files.filter(Boolean) : [files[0]].filter(Boolean);
+    
+    if (filesToUpload.length === 0 || (!isMultiStream && !files[0]) || (isMultiStream && filesToUpload.length < 2)) {
+      setError(`Silakan unggah ${isMultiStream ? "kedua" : "file"} PDF terlebih dahulu`);
       return;
     }
     
     // Create the formData payload
     const formDataToSubmit = new FormData();
-    formDataToSubmit.append("file", file);
+    filesToUpload.forEach(f => {
+      if (f) formDataToSubmit.append("files", f);
+    });
+    
     formDataToSubmit.append("siteId", formData.siteId);
     formDataToSubmit.append("supplierId", formData.supplierId);
     formDataToSubmit.append("reportDate", formData.reportDate);
     formDataToSubmit.append("jenisBa", formData.jenisBa);
-    formDataToSubmit.append("halamanData", formData.halamanData);
-    formDataToSubmit.append("kolomYangDiambil", formData.kolomYangDiambil);
+    
+    if (isMultiStream) {
+      formDataToSubmit.append("halamanData", formData.halamanData[0] || "");
+      formDataToSubmit.append("halamanData", formData.halamanData[1] || "");
+      formDataToSubmit.append("kolomYangDiambil", formData.kolomYangDiambil[0] || "");
+      formDataToSubmit.append("kolomYangDiambil", formData.kolomYangDiambil[1] || "");
+    } else {
+      formDataToSubmit.append("halamanData", formData.halamanData[0] || "");
+      formDataToSubmit.append("kolomYangDiambil", formData.kolomYangDiambil[0] || "");
+    }
+    
     formDataToSubmit.append("convertToMmscf", String(formData.convertToMmscf));
     formDataToSubmit.append("convertToBbtu", String(formData.convertToBbtu));
     formDataToSubmit.append("prompt", formData.prompt);
-
-    // Log the payload to console and show an alert
-    const payloadLog = {
-      file: file.name,
-      ...formData
-    };
-    console.log("Payload to be sent:", payloadLog);
-    alert("Payload yang akan dikirim:\n\n" + JSON.stringify(payloadLog, null, 2));
 
     setIsProcessing(true);
     setError(null);
     
     try {
-      const response = await extractOcr.mutateAsync(formDataToSubmit);
+      let response;
+      if (isMultiStream) {
+        response = await extractOcrMultiPage.mutateAsync(formDataToSubmit);
+      } else {
+        // use single page api but append "file" instead of "files" since the single api expects "file"
+        const singleFormData = new FormData();
+        singleFormData.append("file", files[0]!);
+        singleFormData.append("siteId", formData.siteId);
+        singleFormData.append("supplierId", formData.supplierId);
+        singleFormData.append("reportDate", formData.reportDate);
+        singleFormData.append("jenisBa", formData.jenisBa);
+        singleFormData.append("halamanData", formData.halamanData[0] || "");
+        singleFormData.append("kolomYangDiambil", formData.kolomYangDiambil[0] || "");
+        singleFormData.append("convertToMmscf", String(formData.convertToMmscf));
+        singleFormData.append("convertToBbtu", String(formData.convertToBbtu));
+        singleFormData.append("prompt", formData.prompt);
+        response = await extractOcr.mutateAsync(singleFormData);
+      }
+      
       console.log("OCR Response:", response);
       
       // Map response to extracted records
       const records = response?.data?.records || [];
-      const mapped: ExtractedRecord[] = records.map((r: any) => ({
-        tanggalKegiatan: r?.report_date || "",
-        volume: r?.ENERGY_BBTUD !== undefined ? String(r.ENERGY_BBTUD) : "",
-        flowrate: r?.FLOWRATE_MMSCFD !== undefined ? String(r.FLOWRATE_MMSCFD) : ""
-      }));
+      const mapped: ExtractedRecord[] = records.map((r: any) => {
+        if (isMultiStream) {
+          return {
+            tanggalKegiatan: r?.report_date || "",
+            volume: r?.TOTAL_ENERGY_BBTUD !== undefined ? String(r.TOTAL_ENERGY_BBTUD) : "",
+            flowrate: r?.TOTAL_FLOWRATE_MMSCFD !== undefined ? String(r.TOTAL_FLOWRATE_MMSCFD) : "",
+            stream1Volume: r?.ENERGY_BBTUD_stream_1 !== undefined ? String(r.ENERGY_BBTUD_stream_1) : "",
+            stream1Flowrate: r?.FLOWRATE_MMSCFD_stream_1 !== undefined ? String(r.FLOWRATE_MMSCFD_stream_1) : "",
+            stream2Volume: r?.ENERGY_BBTUD_stream_2 !== undefined ? String(r.ENERGY_BBTUD_stream_2) : "",
+            stream2Flowrate: r?.FLOWRATE_MMSCFD_stream_2 !== undefined ? String(r.FLOWRATE_MMSCFD_stream_2) : "",
+          };
+        } else {
+          return {
+            tanggalKegiatan: r?.report_date || "",
+            volume: r?.ENERGY_BBTUD !== undefined ? String(r.ENERGY_BBTUD) : "",
+            flowrate: r?.FLOWRATE_MMSCFD !== undefined ? String(r.FLOWRATE_MMSCFD) : ""
+          };
+        }
+      });
       
       setExtractedRecords(mapped.length > 0 ? mapped : [{ tanggalKegiatan: "", volume: "", flowrate: "" }]);
       
@@ -150,7 +227,9 @@ export default function InputBAValidasiModal({
   };
 
   const handleClose = () => {
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    previewUrls.forEach(url => {
+      if (url) URL.revokeObjectURL(url);
+    });
     setOpenModal(false);
   };
 
@@ -160,7 +239,7 @@ export default function InputBAValidasiModal({
         className="absolute inset-0 bg-black/40"
         onClick={handleClose}
       />
-      <div className="relative bg-white w-full max-w-5xl h-[85vh] rounded-xl shadow-lg flex flex-col z-10 overflow-hidden">
+      <div className="relative bg-white w-[98vw] max-w-[1600px] h-[90vh] rounded-xl shadow-lg flex flex-col z-10 overflow-hidden">
         {/* Header */}
         <div className="flex justify-between items-center p-4 md:p-6 border-b border-gray-100 flex-shrink-0">
           <h3 className="text-xl font-bold text-gray-900">
@@ -192,49 +271,65 @@ export default function InputBAValidasiModal({
 
           <div className="flex flex-col lg:flex-row gap-8 h-full min-h-[500px]">
             {/* Left side: PDF Preview */}
-            <div className="w-full lg:w-3/5 h-[400px] lg:h-full flex flex-col border border-gray-300 rounded-lg overflow-hidden relative bg-gray-50">
-              {!previewUrl ? (
-                <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-                  <div 
-                    className="w-full h-full border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center hover:bg-gray-100 transition-colors cursor-pointer"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    <button className="px-6 py-2.5 bg-[#115d72] text-white font-medium rounded-lg hover:bg-[#0d4a5c] transition-colors flex items-center gap-2">
-                      <Upload size={18} />
-                      Unggah PDF
-                    </button>
-                    <p className="mt-3 text-sm text-gray-500">
-                      Klik untuk memilih file PDF
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex-1 relative w-full h-full">
-                  <object
-                    data={previewUrl}
-                    type="application/pdf"
-                    className="w-full h-full"
-                  >
-                    <div className="flex flex-col items-center justify-center h-full p-6 text-center">
-                      <p className="text-gray-600 mb-4">Browser Anda tidak mendukung preview PDF secara langsung.</p>
-                      <a href={previewUrl} target="_blank" rel="noreferrer" className="px-4 py-2 bg-blue-50 text-blue-600 font-medium rounded-lg">
-                        Buka PDF di Tab Baru
-                      </a>
+            <div className="w-full lg:w-3/5 h-[400px] lg:h-full flex flex-col gap-4 relative">
+              {(formData.jenisBa === "Multi Stream" ? [0, 1] : [0]).map((index) => (
+                <div key={index} className="flex-1 flex flex-col border border-gray-300 rounded-lg overflow-hidden relative bg-gray-50 min-h-[300px]">
+                  {/* Label for stream */}
+                  {formData.jenisBa === "Multi Stream" && (
+                    <div className="bg-gray-100 border-b border-gray-300 px-4 py-2 font-semibold text-gray-700 text-sm">
+                      Stream {index + 1}
                     </div>
-                  </object>
-                  {/* Button to change file */}
-                  <button 
-                    onClick={() => fileInputRef.current?.click()}
-                    className="absolute top-4 right-4 px-3 py-1.5 bg-white/90 backdrop-blur shadow-sm border border-gray-200 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors z-10"
-                  >
-                    Ganti PDF
-                  </button>
+                  )}
+                  {!previewUrls[index] ? (
+                    <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+                      <div 
+                        className="w-full h-full border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center hover:bg-gray-100 transition-colors cursor-pointer"
+                        onClick={() => {
+                          setActiveFileIndex(index);
+                          fileInputRef.current?.click();
+                        }}
+                      >
+                        <button className="px-6 py-2.5 bg-[#115d72] text-white font-medium rounded-lg hover:bg-[#0d4a5c] transition-colors flex items-center gap-2">
+                          <Upload size={18} />
+                          Unggah PDF {formData.jenisBa === "Multi Stream" && `Stream ${index + 1}`}
+                        </button>
+                        <p className="mt-3 text-sm text-gray-500">
+                          Klik untuk memilih file PDF
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex-1 relative w-full h-full">
+                      <object
+                        data={previewUrls[index]!}
+                        type="application/pdf"
+                        className="w-full h-full"
+                      >
+                        <div className="flex flex-col items-center justify-center h-full p-6 text-center">
+                          <p className="text-gray-600 mb-4">Browser Anda tidak mendukung preview PDF secara langsung.</p>
+                          <a href={previewUrls[index]!} target="_blank" rel="noreferrer" className="px-4 py-2 bg-blue-50 text-blue-600 font-medium rounded-lg">
+                            Buka PDF di Tab Baru
+                          </a>
+                        </div>
+                      </object>
+                      {/* Button to change file */}
+                      <button 
+                        onClick={() => {
+                          setActiveFileIndex(index);
+                          fileInputRef.current?.click();
+                        }}
+                        className="absolute top-4 right-4 px-3 py-1.5 bg-white/90 backdrop-blur shadow-sm border border-gray-200 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors z-10"
+                      >
+                        Ganti PDF
+                      </button>
+                    </div>
+                  )}
                 </div>
-              )}
+              ))}
               <input
                 type="file"
                 ref={fileInputRef}
-                onChange={handleFileChange}
+                onChange={(e) => handleFileChange(e, activeFileIndex)}
                 accept="application/pdf"
                 className="hidden"
               />
@@ -326,7 +421,12 @@ export default function InputBAValidasiModal({
                             name="jenisBa"
                             value="Tunggal"
                             checked={formData.jenisBa === "Tunggal"}
-                            onChange={(e) => setFormData({ ...formData, jenisBa: e.target.value })}
+                            onChange={(e) => {
+                              const newPrompt = (formData.prompt === DEFAULT_PROMPT_MULTI || formData.prompt === "") 
+                                ? DEFAULT_PROMPT_SINGLE 
+                                : formData.prompt;
+                              setFormData({ ...formData, jenisBa: e.target.value, prompt: newPrompt });
+                            }}
                             className="w-4 h-4 text-[#115d72] focus:ring-[#14a2bb]"
                           />
                           <span className="text-sm text-gray-700">Tunggal</span>
@@ -337,7 +437,12 @@ export default function InputBAValidasiModal({
                             name="jenisBa"
                             value="Multi Stream"
                             checked={formData.jenisBa === "Multi Stream"}
-                            onChange={(e) => setFormData({ ...formData, jenisBa: e.target.value })}
+                            onChange={(e) => {
+                              const newPrompt = (formData.prompt === DEFAULT_PROMPT_SINGLE || formData.prompt === "") 
+                                ? DEFAULT_PROMPT_MULTI 
+                                : formData.prompt;
+                              setFormData({ ...formData, jenisBa: e.target.value, prompt: newPrompt });
+                            }}
                             className="w-4 h-4 text-[#115d72] focus:ring-[#14a2bb]"
                           />
                           <span className="text-sm text-gray-700">Multi Stream</span>
@@ -345,34 +450,51 @@ export default function InputBAValidasiModal({
                       </div>
                     </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Halaman Data
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.halamanData}
-                        onChange={(e) => setFormData({ ...formData, halamanData: e.target.value })}
-                        placeholder="Contoh: 1, 3, 5-7 (Kosongkan untuk seluruh halaman)"
-                        className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
-                      />
-                      <p className="text-xs text-gray-500 mt-1.5">
-                        Masukkan nomor halaman spesifik yang ingin diproses dari PDF ini.
-                      </p>
-                    </div>
+                    {(formData.jenisBa === "Multi Stream" ? [0, 1] : [0]).map((index) => (
+                      <div key={index} className="space-y-5 p-4 bg-gray-50 border border-gray-200 rounded-xl mb-4">
+                        {formData.jenisBa === "Multi Stream" && (
+                          <div className="font-semibold text-gray-700 text-sm">
+                            Konfigurasi Stream {index + 1}
+                          </div>
+                        )}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Halaman Data {formData.jenisBa === "Multi Stream" ? `Stream ${index + 1}` : ""}
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.halamanData[index]}
+                            onChange={(e) => {
+                              const newData = [...formData.halamanData];
+                              newData[index] = e.target.value;
+                              setFormData({ ...formData, halamanData: newData });
+                            }}
+                            placeholder="Contoh: 1, 3, 5-7 (Kosongkan untuk seluruh halaman)"
+                            className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
+                          />
+                          <p className="text-xs text-gray-500 mt-1.5">
+                            Masukkan nomor halaman spesifik yang ingin diproses dari PDF ini.
+                          </p>
+                        </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Kolom yang Diambil
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.kolomYangDiambil}
-                        onChange={(e) => setFormData({ ...formData, kolomYangDiambil: e.target.value })}
-                        placeholder="Contoh: Tanggal, Volume, Harga (Pisahkan dengan koma)"
-                        className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
-                      />
-                    </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Kolom yang Diambil {formData.jenisBa === "Multi Stream" ? `Stream ${index + 1}` : ""}
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.kolomYangDiambil[index]}
+                            onChange={(e) => {
+                              const newData = [...formData.kolomYangDiambil];
+                              newData[index] = e.target.value;
+                              setFormData({ ...formData, kolomYangDiambil: newData });
+                            }}
+                            placeholder="Contoh: Tanggal, Volume, Harga (Pisahkan dengan koma)"
+                            className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
+                          />
+                        </div>
+                      </div>
+                    ))}
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -428,7 +550,7 @@ export default function InputBAValidasiModal({
                   <div className="mt-6 flex justify-end flex-shrink-0 pt-4 border-t border-gray-100">
                     <button
                       onClick={handleProcess}
-                      disabled={isProcessing || !file || !formData.siteId || !formData.supplierId || !formData.reportDate}
+                      disabled={isProcessing || (formData.jenisBa === "Multi Stream" ? (!files[0] || !files[1]) : !files[0]) || !formData.siteId || !formData.supplierId || !formData.reportDate}
                       className="px-6 py-2.5 font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed w-full md:w-auto"
                     >
                       {isProcessing ? "Memproses..." : "Proses PDF"}
@@ -449,15 +571,28 @@ export default function InputBAValidasiModal({
                     </div>
                     
                     <div className="flex-1 overflow-y-auto pr-2">
-                      <div className="grid grid-cols-3 gap-3 mb-2 px-1 sticky top-0 bg-white z-10 pb-2 border-b border-gray-100">
-                        <div className="text-sm font-semibold text-gray-700 text-center">Tanggal Kegiatan</div>
-                        <div className="text-sm font-semibold text-gray-700 text-center">FLOWRATE</div>
-                        <div className="text-sm font-semibold text-gray-700 text-center">VOLUME</div>
+                      <div className={`grid ${formData.jenisBa === 'Multi Stream' ? 'grid-cols-7 text-[11px]' : 'grid-cols-3 text-sm'} gap-2 mb-2 px-1 sticky top-0 bg-white z-10 pb-2 border-b border-gray-100`}>
+                        <div className="font-semibold text-gray-700 text-center">Tanggal Kegiatan</div>
+                        {formData.jenisBa === 'Multi Stream' ? (
+                          <>
+                            <div className="font-semibold text-gray-700 text-center">S1 FLOWRATE</div>
+                            <div className="font-semibold text-gray-700 text-center">S1 VOLUME</div>
+                            <div className="font-semibold text-gray-700 text-center">S2 FLOWRATE</div>
+                            <div className="font-semibold text-gray-700 text-center">S2 VOLUME</div>
+                            <div className="font-semibold text-gray-700 text-center text-[#115d72]">TOTAL FLOW</div>
+                            <div className="font-semibold text-gray-700 text-center text-[#115d72]">TOTAL VOL</div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="font-semibold text-gray-700 text-center">FLOWRATE</div>
+                            <div className="font-semibold text-gray-700 text-center">VOLUME</div>
+                          </>
+                        )}
                       </div>
                       
                       <div className="space-y-2">
                         {extractedRecords.map((rec, index) => (
-                          <div key={index} className="grid grid-cols-3 gap-3">
+                          <div key={index} className={`grid ${formData.jenisBa === 'Multi Stream' ? 'grid-cols-7' : 'grid-cols-3'} gap-2`}>
                             <input 
                               type="text" 
                               value={rec.tanggalKegiatan}
@@ -466,8 +601,64 @@ export default function InputBAValidasiModal({
                                 newRecs[index].tanggalKegiatan = e.target.value;
                                 setExtractedRecords(newRecs);
                               }}
-                              className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb]"
+                              className={`w-full px-2 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] ${formData.jenisBa === 'Multi Stream' ? 'text-xs' : 'text-sm'}`}
                             />
+                            {formData.jenisBa === 'Multi Stream' && (
+                              <>
+                                <input 
+                                  type="text" 
+                                  value={rec.stream1Flowrate || ""}
+                                  onChange={(e) => {
+                                    const newRecs = [...extractedRecords];
+                                    newRecs[index].stream1Flowrate = e.target.value;
+                                    const val1 = parseFloat(e.target.value) || 0;
+                                    const val2 = parseFloat(rec.stream2Flowrate || "0") || 0;
+                                    newRecs[index].flowrate = String(val1 + val2);
+                                    setExtractedRecords(newRecs);
+                                  }}
+                                  className="w-full px-2 py-2 bg-white border border-gray-300 rounded-lg text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] text-right"
+                                />
+                                <input 
+                                  type="text" 
+                                  value={rec.stream1Volume || ""}
+                                  onChange={(e) => {
+                                    const newRecs = [...extractedRecords];
+                                    newRecs[index].stream1Volume = e.target.value;
+                                    const val1 = parseFloat(e.target.value) || 0;
+                                    const val2 = parseFloat(rec.stream2Volume || "0") || 0;
+                                    newRecs[index].volume = String(val1 + val2);
+                                    setExtractedRecords(newRecs);
+                                  }}
+                                  className="w-full px-2 py-2 bg-white border border-gray-300 rounded-lg text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] text-right"
+                                />
+                                <input 
+                                  type="text" 
+                                  value={rec.stream2Flowrate || ""}
+                                  onChange={(e) => {
+                                    const newRecs = [...extractedRecords];
+                                    newRecs[index].stream2Flowrate = e.target.value;
+                                    const val1 = parseFloat(rec.stream1Flowrate || "0") || 0;
+                                    const val2 = parseFloat(e.target.value) || 0;
+                                    newRecs[index].flowrate = String(val1 + val2);
+                                    setExtractedRecords(newRecs);
+                                  }}
+                                  className="w-full px-2 py-2 bg-white border border-gray-300 rounded-lg text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] text-right"
+                                />
+                                <input 
+                                  type="text" 
+                                  value={rec.stream2Volume || ""}
+                                  onChange={(e) => {
+                                    const newRecs = [...extractedRecords];
+                                    newRecs[index].stream2Volume = e.target.value;
+                                    const val1 = parseFloat(rec.stream1Volume || "0") || 0;
+                                    const val2 = parseFloat(e.target.value) || 0;
+                                    newRecs[index].volume = String(val1 + val2);
+                                    setExtractedRecords(newRecs);
+                                  }}
+                                  className="w-full px-2 py-2 bg-white border border-gray-300 rounded-lg text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] text-right"
+                                />
+                              </>
+                            )}
                             <input 
                               type="text" 
                               value={rec.flowrate}
@@ -476,7 +667,7 @@ export default function InputBAValidasiModal({
                                 newRecs[index].flowrate = e.target.value;
                                 setExtractedRecords(newRecs);
                               }}
-                              className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] text-right"
+                              className={`w-full px-2 py-2 bg-white border ${formData.jenisBa === 'Multi Stream' ? 'border-[#115d72] bg-blue-50/30' : 'border-gray-300'} rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] text-right font-medium ${formData.jenisBa === 'Multi Stream' ? 'text-xs' : 'text-sm'}`}
                             />
                             <input 
                               type="text" 
@@ -486,25 +677,28 @@ export default function InputBAValidasiModal({
                                 newRecs[index].volume = e.target.value;
                                 setExtractedRecords(newRecs);
                               }}
-                              className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] text-right"
+                              className={`w-full px-2 py-2 bg-white border ${formData.jenisBa === 'Multi Stream' ? 'border-[#115d72] bg-blue-50/30' : 'border-gray-300'} rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] text-right font-medium ${formData.jenisBa === 'Multi Stream' ? 'text-xs' : 'text-sm'}`}
                             />
                           </div>
                         ))}
                       </div>
 
-                      <div className="grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-gray-200">
-                        <div className="text-sm font-bold text-gray-700 flex items-center justify-center">Total</div>
+                      <div className={`grid ${formData.jenisBa === 'Multi Stream' ? 'grid-cols-7' : 'grid-cols-3'} gap-2 mt-4 pt-4 border-t border-gray-200`}>
+                        <div className="text-sm font-bold text-gray-700 flex items-center justify-center">Total Keseluruhan</div>
+                        {formData.jenisBa === 'Multi Stream' && (
+                          <div className="col-span-4"></div>
+                        )}
                         <input 
                           type="text"
                           readOnly
                           value={extractedRecords.reduce((sum, r) => sum + (parseFloat(r.flowrate) || 0), 0).toFixed(4)}
-                          className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm font-bold text-gray-900 text-right"
+                          className={`w-full px-2 py-2 bg-gray-50 border border-gray-300 rounded-lg font-bold text-gray-900 text-right ${formData.jenisBa === 'Multi Stream' ? 'text-xs' : 'text-sm'}`}
                         />
                         <input 
                           type="text"
                           readOnly
                           value={extractedRecords.reduce((sum, r) => sum + (parseFloat(r.volume) || 0), 0).toFixed(4)}
-                          className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm font-bold text-gray-900 text-right"
+                          className={`w-full px-2 py-2 bg-gray-50 border border-gray-300 rounded-lg font-bold text-gray-900 text-right ${formData.jenisBa === 'Multi Stream' ? 'text-xs' : 'text-sm'}`}
                         />
                       </div>
                     </div>

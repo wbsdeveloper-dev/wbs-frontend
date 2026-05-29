@@ -48,6 +48,7 @@ interface EditDataTableProps {
 
 const STATUS_OPTIONS = [
   { value: "", label: "Semua Status" },
+  { value: "BA_VALIDATION", label: "BA Validation" },
   { value: "MATCHED", label: "Matched" },
   { value: "MISMATCH", label: "Mismatch" },
   { value: "NEED_REVIEW", label: "Need Review" },
@@ -149,6 +150,7 @@ const formatNormalizeText = (text: string) => {
 
 const StatusBadge = ({ status }: { status: string }) => {
   const config: Record<string, { bg: string; text: string; dot: string }> = {
+    BA_VALIDATION: { bg: "bg-purple-50", text: "text-purple-700", dot: "bg-purple-500" },
     MATCHED: { bg: "bg-green-50", text: "text-green-700", dot: "bg-green-500" },
     MISMATCH: { bg: "bg-red-50", text: "text-red-700", dot: "bg-red-500" },
     NEED_REVIEW: {
@@ -677,6 +679,31 @@ export default function EditDataTable({
             </button>
           </div>
         )}
+
+        {/* Status Legend */}
+        <div className="px-4 py-3 bg-white border-b border-gray-200 flex flex-wrap items-center gap-x-6 gap-y-3">
+          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Hirarki Data:</span>
+          
+          <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
+            <span className="text-xs font-medium text-gray-600">Tier 1 (Validasi Tertinggi)</span>
+            <div className="w-px h-4 bg-gray-300 mx-1"></div>
+            <StatusBadge status="BA_VALIDATION" />
+          </div>
+
+          <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
+            <span className="text-xs font-medium text-gray-600">Tier 2 (Sesuai)</span>
+            <div className="w-px h-4 bg-gray-300 mx-1"></div>
+            <StatusBadge status="MATCHED" />
+            <StatusBadge status="RESOLVED" />
+          </div>
+
+          <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
+            <span className="text-xs font-medium text-gray-600">Tier 3 (Perlu Tindakan)</span>
+            <div className="w-px h-4 bg-gray-300 mx-1"></div>
+            <StatusBadge status="MISMATCH" />
+            <StatusBadge status="NEED_REVIEW" />
+          </div>
+        </div>
 
         {/* Table Body */}
         <div className="overflow-x-auto">

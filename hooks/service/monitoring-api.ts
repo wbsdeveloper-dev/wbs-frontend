@@ -511,6 +511,52 @@ export function useExtractOcrPage(
 }
 
 // ---------------------------------------------------------------------------
+// API function — OCR Extract Multi Page (POST)
+// ---------------------------------------------------------------------------
+
+export async function extractOcrMultiPage(
+  formData: FormData,
+): Promise<any> {
+  const url = `${DASHBOARD_API_HOST}/ocr/extract-multi-page`;
+  const accessToken = getAccessToken();
+  
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
+    body: formData,
+  });
+
+  if (!res.ok) {
+    throw new Error(`OCR API error: ${res.statusText}`);
+  }
+
+  const body = await res.json();
+
+  if (!body.success) {
+    throw new Error(body.message || "Unknown OCR API error");
+  }
+
+  return body;
+}
+
+export function useExtractOcrMultiPage(
+  options?: Partial<
+    UseMutationOptions<
+      any,
+      Error,
+      FormData
+    >
+  >,
+) {
+  return useMutation({
+    mutationFn: (formData: FormData) => extractOcrMultiPage(formData),
+    ...options,
+  });
+}
+
+// ---------------------------------------------------------------------------
 // API function — OCR Batch Create (POST)
 // ---------------------------------------------------------------------------
 
