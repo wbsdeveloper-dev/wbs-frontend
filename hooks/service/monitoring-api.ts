@@ -561,7 +561,7 @@ export function useExtractOcrMultiPage(
 // ---------------------------------------------------------------------------
 
 export async function batchCreateOcrReconciliationRecords(
-  payload: any[],
+  formData: FormData,
 ): Promise<any> {
   const url = `${DASHBOARD_API_HOST}/reconciliation-input/ocr-batch`;
   const accessToken = getAccessToken();
@@ -569,10 +569,9 @@ export async function batchCreateOcrReconciliationRecords(
   const res = await fetch(url, {
     method: "POST",
     headers: {
-      "Content-Type": "application/json",
       ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
     },
-    body: JSON.stringify({ records: payload }),
+    body: formData,
   });
 
   if (!res.ok) {
@@ -593,12 +592,12 @@ export function useBatchCreateOcrReconciliationRecords(
     UseMutationOptions<
       any,
       Error,
-      any[]
+      FormData
     >
   >,
 ) {
   return useMutation({
-    mutationFn: (payload: any[]) => batchCreateOcrReconciliationRecords(payload),
+    mutationFn: (formData: FormData) => batchCreateOcrReconciliationRecords(formData),
     ...options,
   });
 }

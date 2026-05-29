@@ -195,7 +195,7 @@ export default function InputBAValidasiModal({
     setError(null);
     
     try {
-      const payload = extractedRecords?.map((rec) => ({
+      const recordsPayload = extractedRecords?.map((rec) => ({
         report_date: rec.tanggalKegiatan,
         FLOWRATE_MMSCFD: Number(rec.flowrate) || 0,
         ENERGY_BBTUD: Number(rec.volume) || 0,
@@ -205,18 +205,30 @@ export default function InputBAValidasiModal({
         NEED_CONVERT_TO_BBTU: formData.convertToBbtu,
       })) || [];
 
-      // Log the payload to console and show an alert as requested
-      console.log("Simpan data payload:", payload);
+      const submitData = new FormData();
+      submitData.append("records", JSON.stringify(recordsPayload));
       
-      const response = await batchCreate.mutateAsync(payload);
+      files.forEach(f => {
+        if (f) submitData.append("files", f);
+      });
+
+      // Log the payload to console and show an alert as requested
+      console.log("Simpan data payload:", recordsPayload);
+      
+      const response = await batchCreate.mutateAsync(submitData);
       console.log("Batch create response:", response);
-      alert("Simpan Data berhasil! Data yang dikirim:\n\n" + JSON.stringify(payload, null, 2));
+      
+      const insertedCount = response?.data?.insertedCount || 0;
+      const filesCount = response?.data?.files?.length || 0;
+      alert(`Simpan Data berhasil!\n\n${insertedCount} record tersimpan. ${filesCount} file BA berhasil diunggah.\n\nData yang dikirim:\n${JSON.stringify(recordsPayload, null, 2)}`);
       
       setShowSuccess(true);
       setTimeout(() => {
         if (onSuccess) onSuccess();
         setOpenModal(false);
-        if (previewUrl) URL.revokeObjectURL(previewUrl);
+        previewUrls.forEach(url => {
+          if (url) URL.revokeObjectURL(url);
+        });
       }, 1500);
     } catch (err: any) {
       console.error("Gagal menyimpan data:", err);
