@@ -461,7 +461,11 @@ export default function InputBAValidasiModal({
                         TBBM <span className="text-red-500">*</span>
                       </label>
                       <Autocomplete
-                        options={filtersData?.pemasok || []}
+                        options={(filtersData?.pemasok || []).filter(
+                          (p) =>
+                            p.commodity?.toUpperCase() === "LNG" ||
+                            p.commodity?.toUpperCase() === "GAS PIPA"
+                        )}
                         getOptionLabel={(option) => option.name}
                         value={
                           filtersData?.pemasok?.find(
@@ -497,7 +501,11 @@ export default function InputBAValidasiModal({
                         Pembangkit <span className="text-red-500">*</span>
                       </label>
                       <Autocomplete
-                        options={filtersData?.pembangkit || []}
+                        options={(filtersData?.pembangkit || []).filter(
+                          (p) =>
+                            p.commodity?.toUpperCase() === "LNG" ||
+                            p.commodity?.toUpperCase() === "GAS PIPA"
+                        )}
                         getOptionLabel={(option) => option.name}
                         value={
                           filtersData?.pembangkit?.find(

@@ -202,6 +202,7 @@ export interface EventsResponse {
 export interface FilterOption {
   id: string;
   name: string;
+  commodity?: string | null;
 }
 
 export interface DashboardFilters {
