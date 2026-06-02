@@ -117,6 +117,50 @@ export function useCreateBbmMonthly(
   });
 }
 
+export async function createBbmMonthlyBulk(
+  payload: CreateBbmPayload[],
+): Promise<{ count: number; inserted: boolean }> {
+  const url = `${DASHBOARD_API_HOST}/bbm-monthly/bulk`;
+  const accessToken = getAccessToken();
+
+  console.log("createBbmMonthlyBulk", payload);
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    throw new Error(`BBM Bulk API error: ${res.statusText}`);
+  }
+
+  const body = await res.json();
+
+  if (!body.success) {
+    throw new Error(body.message || "Unknown BBM API error");
+  }
+
+  return body.data as { count: number; inserted: boolean };
+}
+
+export function useCreateBbmMonthlyBulk(
+  options?: Partial<UseMutationOptions<{ count: number; inserted: boolean }, Error, CreateBbmPayload[]>>,
+) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: CreateBbmPayload[]) => createBbmMonthlyBulk(payload),
+    onSuccess: (...args) => {
+      qc.invalidateQueries({ queryKey: bbmKeys.all });
+      options?.onSuccess?.(...args);
+    },
+    ...options,
+  });
+}
+
 // ────────────────────────────────────────────
 // TOP 5 ANALYTICS
 // ────────────────────────────────────────────

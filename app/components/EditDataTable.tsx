@@ -48,10 +48,11 @@ interface EditDataTableProps {
 
 const STATUS_OPTIONS = [
   { value: "", label: "Semua Status" },
-  { value: "MATCHED", label: "Matched" },
-  { value: "MISMATCH", label: "Mismatch" },
-  { value: "NEED_REVIEW", label: "Need Review" },
-  { value: "RESOLVED", label: "Resolved" },
+  { value: "BA_VALIDATION", label: "Tervalidasi BA" },
+  { value: "MANUAL", label: "Manual" },
+  { value: "EMAIL", label: "Email" },
+  { value: "SPREADSHEET", label: "Spreadsheet" },
+  { value: "WHATSAPP", label: "Whatsapp" },
 ];
 
 const PERIOD_OPTIONS = [
@@ -148,15 +149,16 @@ const formatNormalizeText = (text: string) => {
 // ---------------------------------------------------------------------------
 
 const StatusBadge = ({ status }: { status: string }) => {
-  const config: Record<string, { bg: string; text: string; dot: string }> = {
-    MATCHED: { bg: "bg-green-50", text: "text-green-700", dot: "bg-green-500" },
-    MISMATCH: { bg: "bg-red-50", text: "text-red-700", dot: "bg-red-500" },
-    NEED_REVIEW: {
-      bg: "bg-amber-50",
-      text: "text-amber-700",
-      dot: "bg-amber-500",
-    },
-    RESOLVED: { bg: "bg-blue-50", text: "text-blue-700", dot: "bg-blue-500" },
+  const config: Record<string, { bg: string; text: string; dot: string; label?: string }> = {
+    BA_VALIDATION: { bg: "bg-purple-50", text: "text-purple-700", dot: "bg-purple-500", label: "Tervalidasi BA" },
+    MANUAL: { bg: "bg-green-50", text: "text-green-700", dot: "bg-green-500", label: "Manual" },
+    EMAIL: { bg: "bg-blue-50", text: "text-blue-700", dot: "bg-blue-500", label: "Email" },
+    SPREADSHEET: { bg: "bg-indigo-50", text: "text-indigo-700", dot: "bg-indigo-500", label: "Spreadsheet" },
+    WHATSAPP: { bg: "bg-teal-50", text: "text-teal-700", dot: "bg-teal-500", label: "Whatsapp" },
+    MATCHED: { bg: "bg-emerald-50", text: "text-emerald-700", dot: "bg-emerald-500", label: "Matched" },
+    MISMATCH: { bg: "bg-red-50", text: "text-red-700", dot: "bg-red-500", label: "Mismatch" },
+    NEED_REVIEW: { bg: "bg-amber-50", text: "text-amber-700", dot: "bg-amber-500", label: "Need Review" },
+    RESOLVED: { bg: "bg-blue-50", text: "text-blue-700", dot: "bg-blue-500", label: "Resolved" },
   };
   const c = config[status] ?? {
     bg: "bg-gray-100",
@@ -164,7 +166,7 @@ const StatusBadge = ({ status }: { status: string }) => {
     dot: "bg-gray-400",
   };
 
-  const label = config[status] ? status : formatNormalizeText(status);
+  const label = config[status]?.label ?? formatNormalizeText(status);
 
   return (
     <span
@@ -677,6 +679,36 @@ export default function EditDataTable({
             </button>
           </div>
         )}
+
+        {/* Status Legend */}
+        <div className="px-4 py-3 bg-white border-b border-gray-200 flex flex-wrap items-center gap-x-6 gap-y-3">
+          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Hirarki Data:</span>
+          
+          <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
+            <span className="text-xs font-medium text-gray-600">Tier 1</span>
+            <div className="w-px h-4 bg-gray-300 mx-1"></div>
+            <StatusBadge status="BA_VALIDATION" />
+            <StatusBadge status="MANUAL" />
+          </div>
+
+          <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
+            <span className="text-xs font-medium text-gray-600">Tier 2</span>
+            <div className="w-px h-4 bg-gray-300 mx-1"></div>
+            <StatusBadge status="EMAIL" />
+          </div>
+
+          <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
+            <span className="text-xs font-medium text-gray-600">Tier 3</span>
+            <div className="w-px h-4 bg-gray-300 mx-1"></div>
+            <StatusBadge status="SPREADSHEET" />
+          </div>
+
+          <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
+            <span className="text-xs font-medium text-gray-600">Tier 4</span>
+            <div className="w-px h-4 bg-gray-300 mx-1"></div>
+            <StatusBadge status="WHATSAPP" />
+          </div>
+        </div>
 
         {/* Table Body */}
         <div className="overflow-x-auto">

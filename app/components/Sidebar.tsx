@@ -81,6 +81,14 @@ export default function Sidebar() {
       path: "/edit",
       icon: FileText,
       resource: "data_management",
+      children: [
+        { title: "Data Input", path: "/edit", resource: "data_management" },
+        {
+          title: "File Berita Acara",
+          path: "/edit/ba-files",
+          resource: "data_management",
+        },
+      ],
     },
     {
       title: "Pemasok & Pembangkit",
@@ -100,10 +108,26 @@ export default function Sidebar() {
       icon: Database,
       children: [
         { title: "Pengguna", path: "/konfigurasi/pengguna", resource: "users" },
-        { title: "Email Ingest", path: "/konfigurasi/email-ingest", resource: "email_ingest" },
-        { title: "Template Grup", path: "/konfigurasi/template-grup", resource: "template_group" },
-        { title: "Spreadsheet", path: "/konfigurasi/spreadsheet-source", resource: "spreadsheet_source" },
-        { title: "API Keys", path: "/konfigurasi/bot/api-keys", resource: "api_keys" },
+        {
+          title: "Email Ingest",
+          path: "/konfigurasi/email-ingest",
+          resource: "email_ingest",
+        },
+        {
+          title: "Template Grup",
+          path: "/konfigurasi/template-grup",
+          resource: "template_group",
+        },
+        {
+          title: "Spreadsheet",
+          path: "/konfigurasi/spreadsheet-source",
+          resource: "spreadsheet_source",
+        },
+        {
+          title: "API Keys",
+          path: "/konfigurasi/bot/api-keys",
+          resource: "api_keys",
+        },
       ],
     },
     {
@@ -138,29 +162,45 @@ export default function Sidebar() {
       path: "/konfigurasi-bbm",
       icon: Database,
       children: [
-        { title: "Pengguna", path: "/konfigurasi-bbm/pengguna", resource: "users" },
-        { title: "Template Grup", path: "/konfigurasi-bbm/template-grup", resource: "template_group" },
-        { title: "Spreadsheet", path: "/konfigurasi-bbm/spreadsheet-source", resource: "spreadsheet_source" },
+        {
+          title: "Pengguna",
+          path: "/konfigurasi-bbm/pengguna",
+          resource: "users",
+        },
+        {
+          title: "Template Grup",
+          path: "/konfigurasi-bbm/template-grup",
+          resource: "template_group",
+        },
+        {
+          title: "Spreadsheet",
+          path: "/konfigurasi-bbm/spreadsheet-source",
+          resource: "spreadsheet_source",
+        },
       ],
     },
   ];
 
-  const isBbmRoute = pathname.includes('/bbm') || pathname.includes('-bbm');
+  const isBbmRoute = pathname.includes("/bbm") || pathname.includes("-bbm");
   const menus = isBbmRoute ? bbmMenus : gasMenus;
 
-  const filteredMenus = menus.map(menu => {
-    if (menu.children) {
-      return {
-        ...menu,
-        children: menu.children.filter(child => !child.resource || hasPrivilege(child.resource, "READ"))
+  const filteredMenus = menus
+    .map((menu) => {
+      if (menu.children) {
+        return {
+          ...menu,
+          children: menu.children.filter(
+            (child) => !child.resource || hasPrivilege(child.resource, "READ"),
+          ),
+        };
       }
-    }
-    return menu;
-  }).filter(menu => {
-    if (menu.resource && !hasPrivilege(menu.resource, "READ")) return false;
-    if (menu.children && menu.children.length === 0) return false;
-    return true;
-  });
+      return menu;
+    })
+    .filter((menu) => {
+      if (menu.resource && !hasPrivilege(menu.resource, "READ")) return false;
+      if (menu.children && menu.children.length === 0) return false;
+      return true;
+    });
 
   // ─── Light-mode styles ─────────────────────────────────────────────
   const menuActive =
@@ -289,7 +329,9 @@ export default function Sidebar() {
                   <button
                     onClick={() => setSubMenuOpen(!subMenuOpen)}
                     className={
-                      isParentActive || isSubmenuOpen ? menuActive : menuNonActive
+                      isParentActive || isSubmenuOpen
+                        ? menuActive
+                        : menuNonActive
                     }
                   >
                     {Icon && <Icon className="w-5 h-5" />}
@@ -309,7 +351,9 @@ export default function Sidebar() {
                   <Link
                     href={menu.path || "#"}
                     className={
-                      isParentActive || isSubmenuOpen ? menuActive : menuNonActive
+                      isParentActive || isSubmenuOpen
+                        ? menuActive
+                        : menuNonActive
                     }
                   >
                     {Icon && <Icon className="w-5 h-5" />}
@@ -328,9 +372,10 @@ export default function Sidebar() {
                           key={idx}
                           href={child.path}
                           className={`flex items-center gap-3 px-3 py-2 text-sm rounded-lg w-full cursor-pointer transition-all duration-200 hover:scale-[1.02]
-                            ${isChildActive
-                              ? "text-[#115d72] font-semibold bg-[#115d72]/10"
-                              : "text-gray-500 hover:text-[#115d72] hover:bg-gray-100 font-medium"
+                            ${
+                              isChildActive
+                                ? "text-[#115d72] font-semibold bg-[#115d72]/10"
+                                : "text-gray-500 hover:text-[#115d72] hover:bg-gray-100 font-medium"
                             }
                           ${isCollapsed && !isMobile ? "justify-center" : ""}
                         `}
@@ -398,16 +443,18 @@ export default function Sidebar() {
 
       {/* Mobile sidebar */}
       <aside
-        className={`lg:hidden fixed top-0 left-0 h-full w-72 bg-white z-50 transform transition-transform duration-300 ease-in-out flex flex-col overflow-y-auto shadow-2xl border-r border-gray-100 ${isMobileOpen ? "translate-x-0" : "-translate-x-full"
-          }`}
+        className={`lg:hidden fixed top-0 left-0 h-full w-72 bg-white z-50 transform transition-transform duration-300 ease-in-out flex flex-col overflow-y-auto shadow-2xl border-r border-gray-100 ${
+          isMobileOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
       >
         {sidebarContent(true)}
       </aside>
 
       {/* Desktop sidebar */}
       <aside
-        className={`${isCollapsed ? "w-20" : "w-64"
-          } bg-white h-full flex-shrink-0 hidden lg:flex flex-col transition-[width] duration-300 ease-in-out shadow-lg border-r border-gray-100 overflow-hidden`}
+        className={`${
+          isCollapsed ? "w-20" : "w-64"
+        } bg-white h-full flex-shrink-0 hidden lg:flex flex-col transition-[width] duration-300 ease-in-out shadow-lg border-r border-gray-100 overflow-hidden`}
       >
         {sidebarContent(false)}
       </aside>
