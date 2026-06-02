@@ -119,6 +119,7 @@ export interface TemplateField {
   fieldKey: string;
   sourceKind:
     | "SHEET_COLUMN"
+    | "SHEET_CELL"
     | "WA_REGEX"
     | "WA_REGEX_RECORDS"
     | "WA_FIXED"
@@ -154,6 +155,7 @@ export interface Template {
   aiOutputSchema: Record<string, unknown> | null;
   decimalSeparator: string;
   commodity: string | null;
+  isTransportir: boolean;
   createdBy: string | null;
   createdAt: string;
   updatedAt: string;
@@ -174,6 +176,7 @@ export interface CreateTemplatePayload {
   aiOutputSchema?: Record<string, unknown>;
   decimalSeparator?: string;
   commodity?: string;
+  isTransportir?: boolean;
   fields?: {
     fieldKey: string;
     sourceKind: TemplateField["sourceKind"];
@@ -199,6 +202,7 @@ export interface UpdateTemplatePayload {
   aiOutputSchema?: Record<string, unknown> | null;
   decimalSeparator?: string;
   commodity?: string | null;
+  isTransportir?: boolean;
   fields?: {
     fieldKey: string;
     sourceKind: TemplateField["sourceKind"];

@@ -1,57 +1,56 @@
 import React, { useState } from "react";
 import { X, CheckCircle2, AlertCircle } from "lucide-react";
-import { useCreateReconciliationRecord } from "@/hooks/service/monitoring-api";
-import { useFilters } from "@/hooks/service/dashboard-api";
+import { useCreateBbmMonthly } from "@/hooks/service/bbm-api";
+import { useSites } from "@/hooks/service/site-api";
 
 type Props = {
   setOpenModal: (value: boolean) => void;
   onSuccess?: () => void;
 };
 
-export default function AddReconciliationModal({
-  setOpenModal,
-  onSuccess,
-}: Props) {
+export default function AddBbmModal({ setOpenModal, onSuccess }: Props) {
   const [formData, setFormData] = useState({
-    reportDate: "",
+    monthDate: "",
     siteId: "",
-    siteName: "",
-    supplierName: "",
-    metricType: "ENERGY_BBTUD",
-    periodType: "day",
-    periodValue: "",
-    waValue: "",
-    plnValue: "",
-    sheetValue: "",
-    finalValue: "",
-    finalSource: "",
-    resolution: "",
+    supplierId: "",
+    product: "HSD",
+    moda: "Truck",
+    unit: "LITER",
+    nomination: "",
+    realization: "",
+    usage: "",
   });
 
   const [showSuccess, setShowSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const createRecord = useCreateReconciliationRecord();
-  const { data: filtersData } = useFilters();
+  const createRecord = useCreateBbmMonthly();
+
+  const { data: tbbmData } = useSites({ type: "PEMASOK", commodity: "BBM" });
+  const { data: pembangkitData } = useSites({
+    type: "PEMBANGKIT",
+    commodity: "BBM",
+  });
 
   const handleSave = async () => {
     try {
       setError(null);
-      await createRecord.mutateAsync({
-        reportDate: formData.reportDate || undefined,
-        siteId: formData.siteId || undefined,
-        siteName: formData.siteName || undefined,
-        supplierName: formData.supplierName || undefined,
-        metricType: formData.metricType,
-        periodType: formData.periodType,
-        periodValue: formData.periodValue,
-        waValue: formData.waValue ? Number(formData.waValue) : null,
-        plnValue: formData.plnValue ? Number(formData.plnValue) : null,
-        sheetValue: formData.sheetValue ? Number(formData.sheetValue) : null,
-        finalValue: formData.finalValue ? Number(formData.finalValue) : null,
-        finalSource: formData.finalSource || null,
-        resolution: formData.resolution || null,
-      });
+      const payload: any = {
+        monthDate: formData.monthDate,
+        siteId: formData.siteId,
+        supplierId: formData.supplierId,
+        product: formData.product,
+        moda: formData.moda,
+        unit: formData.unit,
+      };
+
+      if (formData.nomination !== "")
+        payload.nomination = Number(formData.nomination);
+      if (formData.realization !== "")
+        payload.realization = Number(formData.realization);
+      if (formData.usage !== "") payload.usage = Number(formData.usage);
+
+      await createRecord.mutateAsync(payload);
 
       setShowSuccess(true);
       setTimeout(() => {
@@ -73,7 +72,7 @@ export default function AddReconciliationModal({
       <div className="relative bg-white w-full max-w-2xl rounded-xl shadow-lg p-6 z-10 max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-xl font-bold text-gray-900">
-            Tambah Data Tunggal
+            Tambah Data Tunggal BBM
           </h3>
           <button
             onClick={() => setOpenModal(false)}
@@ -100,105 +99,53 @@ export default function AddReconciliationModal({
         <div className="grid grid-cols-2 gap-4">
           <div className="col-span-2 sm:col-span-1">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Pembangkit <span className="text-red-500">*</span>
+              TBBM (Pemasok) <span className="text-red-500">*</span>
             </label>
             <select
-              value={formData.siteId}
-              onChange={(e) => {
-                const selected = filtersData?.pembangkit?.find(
-                  (p) => p.id === e.target.value,
-                );
-                setFormData({
-                  ...formData,
-                  siteId: e.target.value,
-                  siteName: selected ? selected.name : "",
-                });
-              }}
+              value={formData.supplierId}
+              onChange={(e) =>
+                setFormData({ ...formData, supplierId: e.target.value })
+              }
               className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
             >
-              <option value="">Pilih Pembangkit</option>
-              {filtersData?.pembangkit?.map((p) => (
+              <option value="">Pilih TBBM</option>
+              {tbbmData?.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
                 </option>
               ))}
             </select>
           </div>
+
           <div className="col-span-2 sm:col-span-1">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Pemasok <span className="text-red-500">*</span>
+              Pembangkit <span className="text-red-500">*</span>
             </label>
             <select
-              value={formData.supplierName}
+              value={formData.siteId}
               onChange={(e) =>
-                setFormData({ ...formData, supplierName: e.target.value })
+                setFormData({ ...formData, siteId: e.target.value })
               }
               className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
             >
-              <option value="">Pilih Pemasok</option>
-              {filtersData?.pemasok?.map((p) => (
-                <option key={p.id} value={p.name}>
+              <option value="">Pilih Pembangkit</option>
+              {pembangkitData?.map((p) => (
+                <option key={p.id} value={p.id}>
                   {p.name}
                 </option>
               ))}
             </select>
           </div>
-          <div className="col-span-2 sm:col-span-1">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Jenis Metrik <span className="text-red-500">*</span>
-            </label>
-            <select
-              value={formData.metricType}
-              onChange={(e) =>
-                setFormData({ ...formData, metricType: e.target.value })
-              }
-              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
-            >
-              <option value="ENERGY_BBTUD">ENERGY_BBTUD</option>
-              <option value="FLOWRATE_MMSCFD">FLOWRATE_MMSCFD</option>
-              <option value="OWN_USE_BBTUD">OWN_USE_BBTUD</option>
-              <option value="DISCREPANCY_BBTUD">DISCREPANCY_BBTUD</option>
-            </select>
-          </div>
-          <div className="col-span-2 sm:col-span-1">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Jenis Periode <span className="text-red-500">*</span>
-            </label>
-            <select
-              value={formData.periodType}
-              onChange={(e) =>
-                setFormData({ ...formData, periodType: e.target.value })
-              }
-              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
-            >
-              <option value="day">Daily</option>
-              <option value="hour">Hourly</option>
-            </select>
-          </div>
-          <div className="col-span-2 sm:col-span-1">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Nilai Periode <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={formData.periodValue}
-              onChange={(e) =>
-                setFormData({ ...formData, periodValue: e.target.value })
-              }
-              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
-              placeholder="Contoh: April 2026 / 2026-05-15 / 08:00"
-            />
-          </div>
 
           <div className="col-span-2 sm:col-span-1">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Tanggal Kegiatan <span className="text-red-500">*</span>
+              Bulan <span className="text-red-500">*</span>
             </label>
             <input
-              type="date"
-              value={formData.reportDate}
+              type="month"
+              value={formData.monthDate}
               onChange={(e) =>
-                setFormData({ ...formData, reportDate: e.target.value })
+                setFormData({ ...formData, monthDate: e.target.value })
               }
               className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
             />
@@ -206,67 +153,93 @@ export default function AddReconciliationModal({
 
           <div className="col-span-2 sm:col-span-1">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Nilai Dari WA
+              Produk <span className="text-red-500">*</span>
             </label>
-            <input
-              type="number"
-              value={formData.waValue}
+            <select
+              value={formData.product}
               onChange={(e) =>
-                setFormData({ ...formData, waValue: e.target.value })
+                setFormData({ ...formData, product: e.target.value })
               }
               className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
-            />
+            >
+              <option value="BIOSOLAR B-40">BIOSOLAR B-40</option>
+              <option value="HSD">HSD</option>
+              <option value="MFO">MFO</option>
+            </select>
           </div>
+
           <div className="col-span-2 sm:col-span-1">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Nilai Dari Email
+              Moda <span className="text-red-500">*</span>
             </label>
-            <input
-              type="number"
-              value={formData.plnValue}
+            <select
+              value={formData.moda}
               onChange={(e) =>
-                setFormData({ ...formData, plnValue: e.target.value })
+                setFormData({ ...formData, moda: e.target.value })
               }
               className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
-            />
+            >
+              <option value="Truck">Truck</option>
+              <option value="Pipa">Pipa</option>
+              <option value="Kapal">Kapal</option>
+            </select>
           </div>
+
           <div className="col-span-2 sm:col-span-1">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Nilai Dari Spreadsheet
+              Unit <span className="text-red-500">*</span>
             </label>
-            <input
-              type="number"
-              value={formData.sheetValue}
+            <select
+              value={formData.unit}
               onChange={(e) =>
-                setFormData({ ...formData, sheetValue: e.target.value })
+                setFormData({ ...formData, unit: e.target.value })
               }
               className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
-            />
+            >
+              <option value="LITER">LITER</option>
+              <option value="KILO LITER">KILO LITER</option>
+            </select>
           </div>
+
           <div className="col-span-2 sm:col-span-1">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Nilai Final
+              Nominasi
             </label>
             <input
               type="number"
-              value={formData.finalValue}
+              value={formData.nomination}
               onChange={(e) =>
-                setFormData({ ...formData, finalValue: e.target.value })
+                setFormData({ ...formData, nomination: e.target.value })
               }
               className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
             />
           </div>
-          <div className="col-span-2">
+
+          <div className="col-span-2 sm:col-span-1">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Resolution
+              Realisasi
             </label>
-            <textarea
-              value={formData.resolution}
+            <input
+              type="number"
+              value={formData.realization}
               onChange={(e) =>
-                setFormData({ ...formData, resolution: e.target.value })
+                setFormData({ ...formData, realization: e.target.value })
               }
-              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all resize-none"
-              rows={2}
+              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
+            />
+          </div>
+
+          <div className="col-span-2 sm:col-span-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Pemakaian
+            </label>
+            <input
+              type="number"
+              value={formData.usage}
+              onChange={(e) =>
+                setFormData({ ...formData, usage: e.target.value })
+              }
+              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
             />
           </div>
         </div>
@@ -282,8 +255,9 @@ export default function AddReconciliationModal({
             onClick={handleSave}
             disabled={
               createRecord.isPending ||
-              !formData.periodValue ||
-              !formData.reportDate
+              !formData.monthDate ||
+              !formData.siteId ||
+              !formData.supplierId
             }
             className="px-4 py-2 font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
           >

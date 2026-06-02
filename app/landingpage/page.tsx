@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronRight, Fuel, Flame, ArrowLeft } from "lucide-react";
+import { ChevronRight, Fuel, Flame, ArrowLeft, Wind } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useEffect } from "react";
@@ -42,8 +42,14 @@ export default function DashboardSelection() {
       {/* Animated Pattern Overlay - subtle on white */}
       <div className="absolute inset-0 opacity-30">
         <div className="absolute top-20 left-1/4 w-72 h-72 bg-[#14a2bb]/10 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-20 right-1/4 w-96 h-96 bg-[#14a2bb]/15 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
-        <div className="absolute top-1/2 left-10 w-48 h-48 bg-[#115d72]/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "2s" }} />
+        <div
+          className="absolute bottom-20 right-1/4 w-96 h-96 bg-[#14a2bb]/15 rounded-full blur-3xl animate-pulse"
+          style={{ animationDelay: "1s" }}
+        />
+        <div
+          className="absolute top-1/2 left-10 w-48 h-48 bg-[#115d72]/10 rounded-full blur-3xl animate-pulse"
+          style={{ animationDelay: "2s" }}
+        />
       </div>
 
       {/* Header with logos */}
@@ -53,7 +59,10 @@ export default function DashboardSelection() {
             onClick={() => logout()}
             className="flex items-center gap-2 text-slate-600 hover:text-[#115d72] transition-colors group"
           >
-            <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
+            <ArrowLeft
+              size={20}
+              className="group-hover:-translate-x-1 transition-transform"
+            />
             <span className="text-sm font-medium">Kembali</span>
           </button>
 
@@ -92,13 +101,15 @@ export default function DashboardSelection() {
             Pilih Dashboard
           </h1>
           <p className="text-slate-600 text-sm md:text-base max-w-md mx-auto leading-relaxed">
-            Akses pemantauan <span className="text-[#115d72] font-semibold">Gas Pipa</span> dan{" "}
-            <span className="text-[#115d72] font-semibold">BBM</span> secara real-time
+            Akses pemantauan{" "}
+            <span className="text-[#115d72] font-semibold">Gas Pipa</span> dan{" "}
+            <span className="text-[#115d72] font-semibold">BBM</span> secara
+            real-time
           </p>
         </div>
 
         {/* Dashboard Cards */}
-        <div className="flex flex-col md:flex-row gap-4 md:gap-6 w-full max-w-3xl">
+        <div className="flex flex-col md:flex-row gap-4 md:gap-6 w-full max-w-4xl">
           {/* Gas Pipa Card */}
           <div className="flex-1 group">
             <a
@@ -114,9 +125,11 @@ export default function DashboardSelection() {
                 hover:scale-[1.02] block no-underline"
             >
               {/* Icon */}
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#14a2bb] to-[#115d72] 
+              <div
+                className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#14a2bb] to-[#115d72] 
                 flex items-center justify-center mb-3 shadow-lg shadow-[#14a2bb]/30
-                group-hover:scale-110 transition-transform">
+                group-hover:scale-110 transition-transform"
+              >
                 <Flame className="w-6 h-6 text-white" />
               </div>
 
@@ -128,15 +141,20 @@ export default function DashboardSelection() {
                 Gas Pipa
               </h3>
               <p className="text-slate-600 text-xs md:text-sm mb-4 leading-relaxed">
-                Monitoring pasokan dan distribusi gas secara real-time dengan visualisasi data interaktif
+                Monitoring pasokan dan distribusi gas secara real-time dengan
+                visualisasi data interaktif
               </p>
 
               {/* Button */}
-              <div className="flex items-center justify-between py-3 px-4 rounded-xl
+              <div
+                className="flex items-center justify-between py-3 px-4 rounded-xl
                 bg-gradient-to-r from-[#14a2bb]/10 to-transparent
                 border border-[#14a2bb]/20 group-hover:border-[#14a2bb]/40
-                transition-all duration-300">
-                <span className="text-slate-700 font-medium">Akses Dashboard</span>
+                transition-all duration-300"
+              >
+                <span className="text-slate-700 font-medium">
+                  Akses Dashboard
+                </span>
                 <ChevronRight className="w-5 h-5 text-[#14a2bb] group-hover:translate-x-1 transition-transform" />
               </div>
             </a>
@@ -157,9 +175,11 @@ export default function DashboardSelection() {
                 hover:scale-[1.02] block no-underline"
             >
               {/* Icon */}
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#fb923c] to-[#ea580c] 
+              <div
+                className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#fb923c] to-[#ea580c] 
                 flex items-center justify-center mb-3 shadow-lg shadow-[#fb923c]/30
-                group-hover:scale-110 transition-transform">
+                group-hover:scale-110 transition-transform"
+              >
                 <Fuel className="w-6 h-6 text-white" />
               </div>
 
@@ -171,18 +191,68 @@ export default function DashboardSelection() {
                 BBM
               </h3>
               <p className="text-slate-600 text-xs md:text-sm mb-4 leading-relaxed">
-                Monitoring stok dan distribusi BBM dengan analitik komprehensif dan laporan harian
+                Monitoring stok dan distribusi BBM dengan analitik komprehensif
+                dan laporan harian
               </p>
 
               {/* Button */}
-              <div className="flex items-center justify-between py-3 px-4 rounded-xl
+              <div
+                className="flex items-center justify-between py-3 px-4 rounded-xl
                 bg-gradient-to-r from-[#fb923c]/10 to-transparent
                 border border-[#fb923c]/20 group-hover:border-[#fb923c]/40
-                transition-all duration-300">
-                <span className="text-slate-700 font-medium">Akses Dashboard</span>
+                transition-all duration-300"
+              >
+                <span className="text-slate-700 font-medium">
+                  Akses Dashboard
+                </span>
                 <ChevronRight className="w-5 h-5 text-[#fb923c] group-hover:translate-x-1 transition-transform" />
               </div>
             </a>
+          </div>
+          {/* LNG Card */}
+          <div className="flex-1 group">
+            <div
+              onClick={() => router.push("/dashboard/bbm")}
+              className="relative bg-white rounded-2xl p-5 md:p-6 
+                border border-slate-200 hover:border-[#fb923c]/50
+                cursor-pointer transition-all duration-300
+                shadow-lg shadow-slate-200/50 hover:shadow-xl hover:shadow-[#fb923c]/20
+                hover:scale-[1.02]"
+            >
+              {/* Icon */}
+              <div
+                className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600
+                flex items-center justify-center mb-3 shadow-lg shadow-cyan-500/30
+                group-hover:scale-110 transition-transform"
+              >
+                <Wind className="w-6 h-6 text-white" />
+              </div>
+
+              {/* Content */}
+              <h3 className="text-slate-800 text-xl md:text-2xl font-bold mb-1 tracking-tight">
+                Dashboard
+              </h3>
+              <h3 className="text-blue-600 text-xl md:text-2xl font-bold mb-3">
+                LNG
+              </h3>
+              <p className="text-slate-600 text-xs md:text-sm mb-4 leading-relaxed">
+                Monitoring stok dan distribusi LNG dengan analitik komprehensif
+                dan laporan harian
+              </p>
+
+              {/* Button */}
+              <div
+                className="flex items-center justify-between py-3 px-4 rounded-xl
+                bg-gradient-to-r from-cyan-400/10 to-blue-600/10
+                border border-cyan-400/20 group-hover:border-cyan-400/40
+                transition-all duration-300"
+              >
+                <span className="text-slate-700 font-medium">
+                  Akses Dashboard
+                </span>
+                <ChevronRight className="w-5 h-5 text-blue-600 group-hover:translate-x-1 transition-transform" />
+              </div>
+            </div>
           </div>
         </div>
 

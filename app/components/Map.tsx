@@ -27,7 +27,7 @@ import {
   type MapSite,
   type MapLegend,
 } from "@/hooks/service/dashboard-api";
-import { useRelations } from "@/hooks/service/site-api";
+import { useRelations, useSites } from "@/hooks/service/site-api";
 import { usePrivilege } from "@/hooks/usePrivilege";
 
 interface LeafletIconPrototype {
@@ -76,9 +76,15 @@ const buildIcons = (legend: MapLegend): Record<string, L.DivIcon> => {
 // Component
 // ---------------------------------------------------------------------------
 
-export default function Map() {
+export default function Map({ commodity }: { commodity?: string }) {
   // ---- API data -----------------------------------------------------------
-  const { data, isLoading, isError, error } = useMapLocations();
+  const { data, isLoading, isError, error } = useMapLocations(
+    undefined,
+    commodity,
+  );
+  const { data: gasSites } = useSites(
+    commodity ? { commodity } : undefined,
+  );
 
   const { hasPrivilege } = usePrivilege();
   const canReadSites = hasPrivilege("site_management", "READ");
@@ -174,17 +180,23 @@ export default function Map() {
     return rSet;
   }, [selectedRegion, data?.sites, relations]);
 
+  // Set of site IDs matching the requested commodity (from site_dim)
+  const gasSiteIds = useMemo(() => new Set(gasSites?.map((s) => s.id) || []), [gasSites]);
+
   // Unique region list for filter dropdown
   const regionOptions = useMemo(() => {
     if (!data?.sites) return [];
     const validIds = intersect([pemasokSet, pembangkitSet]);
 
     let validSites = data.sites;
+    if (commodity && gasSiteIds) {
+      validSites = validSites.filter(s => gasSiteIds.has(s.id));
+    }
     if (validIds) {
       validSites = validSites.filter(s => validIds.has(s.id));
     }
     return Array.from(new Set(validSites.map(s => s.region))).filter(Boolean).sort();
-  }, [data?.sites, pemasokSet, pembangkitSet, intersect]);
+  }, [data?.sites, pemasokSet, pembangkitSet, intersect, commodity, gasSiteIds]);
 
   // Names for autocomplete filters
   const pemasokNames = useMemo(() => {
@@ -192,22 +204,28 @@ export default function Map() {
     const validIds = intersect([regionSet, pembangkitSet]);
 
     let validSites = data.sites.filter(s => s.siteType === "PEMASOK");
+    if (commodity && gasSiteIds) {
+      validSites = validSites.filter(s => gasSiteIds.has(s.id));
+    }
     if (validIds) {
       validSites = validSites.filter(s => validIds.has(s.id));
     }
     return validSites.map(s => s.name).sort();
-  }, [data?.sites, regionSet, pembangkitSet, intersect]);
+  }, [data?.sites, regionSet, pembangkitSet, intersect, commodity, gasSiteIds]);
 
   const pembangkitNames = useMemo(() => {
     if (!data?.sites) return [];
     const validIds = intersect([regionSet, pemasokSet]);
 
     let validSites = data.sites.filter(s => s.siteType === "PEMBANGKIT");
+    if (commodity && gasSiteIds) {
+      validSites = validSites.filter(s => gasSiteIds.has(s.id));
+    }
     if (validIds) {
       validSites = validSites.filter(s => validIds.has(s.id));
     }
     return validSites.map(s => s.name).sort();
-  }, [data?.sites, regionSet, pemasokSet, intersect]);
+  }, [data?.sites, regionSet, pemasokSet, intersect, commodity, gasSiteIds]);
 
   // Reset pembangkit when current selection is no longer valid
   useEffect(() => {
@@ -231,9 +249,13 @@ export default function Map() {
   // Filtered sites
   const filteredSites = useMemo(() => {
     if (!data?.sites) return [];
+    if (commodity && !gasSites) return []; // wait for commodity-filtered sites to load
     const validIds = intersect([regionSet, pemasokSet, pembangkitSet]);
 
     return data.sites.filter((site) => {
+      // Only show sites that belong to the requested commodity
+      if (commodity && !gasSiteIds.has(site.id)) return false;
+
       if (!visibleSiteTypes[site.siteType]) return false;
 
       if (validIds && !validIds.has(site.id)) return false;
@@ -246,6 +268,9 @@ export default function Map() {
     });
   }, [
     data?.sites,
+    gasSites,
+    gasSiteIds,
+    commodity,
     visibleSiteTypes,
     selectedOwners,
     regionSet,

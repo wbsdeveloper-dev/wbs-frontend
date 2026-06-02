@@ -21,13 +21,23 @@ import { useModal } from "@/app/_hooks";
 import FuelTypeDonutChart from "@/app/components/FuelTypeDonutChart";
 import TopVolumeList from "@/app/components/TopVolumeList";
 import FilterAutocomplete from "@/app/components/FilterAutocomplete";
-import BBMDataTable from "@/app/components/BBMDataTable";
+import EditBbmDataTable from "@/app/components/EditBbmDataTable";
+import BbmCompositeChart from "@/app/components/BbmCompositeChart";
 
 // API services
-import { useReports } from "@/hooks/service/reports-api";
+import {
+  useBbmMonthly,
+  useTopTbbm,
+  useTopPembangkit,
+  useRealizationByModa,
+} from "@/hooks/service/bbm-api";
+import { useSites } from "@/hooks/service/site-api";
 
 // Dynamic map import
 const MapBBM = dynamic(() => import("../../components/MapBBM"), { ssr: false });
+
+// Chart view mode type
+type ChartMode = "akumulasi" | "realisasi-moda";
 
 // Helper to get current month date range
 function getCurrentMonthRange() {
@@ -38,6 +48,13 @@ function getCurrentMonthRange() {
     startDate: start.toISOString().split("T")[0],
     endDate: end.toISOString().split("T")[0],
   };
+}
+
+// Helper to get current year start date
+function getCurrentYearStart() {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), 0, 1);
+  return start.toISOString().split("T")[0];
 }
 
 // ---------------------------------------------------------------------------
@@ -60,29 +77,55 @@ const DUMMY_DONUT_PLANT = [
   { name: "PLTD Balikpapan", value: 150000 },
 ];
 
-const DUMMY_TOP_TBBM = [
-  { name: "TBBM Pertamina Tual", volume: "92.5" },
-  { name: "TBBM Pertamina Kalabahi", volume: "88.1" },
-  { name: "TBBM Pertamina Poso", volume: "85.4" },
-  { name: "TBBM Pertamina Tarakan", volume: "82.0" },
-  { name: "TBBM Pertamina Kupang", volume: "79.3" },
-];
-
-const DUMMY_TOP_PEMBANGKIT = [
-  { name: "PLTD Bima", volume: "10,120.00" },
-  { name: "PLTD Lumok", volume: "8,845.50" },
-  { name: "PLTD Labuan", volume: "7,210.20" },
-  { name: "PLTD Riau (HSD)", volume: "6,950.00" },
-  { name: "PLTD Balikpapan (B40)", volume: "5,800.30" },
-];
-
 const DUMMY_GRAPHIC_POOL = [
-  { name: "PLTD RIAU (HSD)", supplier: "TBBM Pertamina Tual", plant: "PLTD Riau (HSD)", nominasi: 120000, realisasi: 104500, pemakaian: 98200 },
-  { name: "PLTD RIAU (B40)", supplier: "TBBM Pertamina Tual", plant: "PLTD Riau (HSD)", nominasi: 95000, realisasi: 88000, pemakaian: 81200 },
-  { name: "PLTD BALIKPAPAN (B40)", supplier: "TBBM Pertamina Kalabahi", plant: "PLTD Balikpapan (B40)", nominasi: 78000, realisasi: 72400, pemakaian: 68500 },
-  { name: "PLTD BIMA", supplier: "TBBM Pertamina Poso", plant: "PLTD Bima", nominasi: 110000, realisasi: 98000, pemakaian: 91000 },
-  { name: "PLTD LUMOK", supplier: "TBBM Pertamina Tarakan", plant: "PLTD Lumok", nominasi: 85000, realisasi: 79200, pemakaian: 74100 },
-  { name: "PLTD LABUAN", supplier: "TBBM Pertamina Kupang", plant: "PLTD Labuan", nominasi: 72000, realisasi: 65100, pemakaian: 60500 },
+  {
+    name: "PLTD RIAU (HSD)",
+    supplier: "TBBM Pertamina Tual",
+    plant: "PLTD Riau (HSD)",
+    nominasi: 120000,
+    realisasi: 104500,
+    pemakaian: 98200,
+  },
+  {
+    name: "PLTD RIAU (B40)",
+    supplier: "TBBM Pertamina Tual",
+    plant: "PLTD Riau (HSD)",
+    nominasi: 95000,
+    realisasi: 88000,
+    pemakaian: 81200,
+  },
+  {
+    name: "PLTD BALIKPAPAN (B40)",
+    supplier: "TBBM Pertamina Kalabahi",
+    plant: "PLTD Balikpapan (B40)",
+    nominasi: 78000,
+    realisasi: 72400,
+    pemakaian: 68500,
+  },
+  {
+    name: "PLTD BIMA",
+    supplier: "TBBM Pertamina Poso",
+    plant: "PLTD Bima",
+    nominasi: 110000,
+    realisasi: 98000,
+    pemakaian: 91000,
+  },
+  {
+    name: "PLTD LUMOK",
+    supplier: "TBBM Pertamina Tarakan",
+    plant: "PLTD Lumok",
+    nominasi: 85000,
+    realisasi: 79200,
+    pemakaian: 74100,
+  },
+  {
+    name: "PLTD LABUAN",
+    supplier: "TBBM Pertamina Kupang",
+    plant: "PLTD Labuan",
+    nominasi: 72000,
+    realisasi: 65100,
+    pemakaian: 60500,
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -91,74 +134,168 @@ export default function Home() {
   const { isOpen, open, close } = useModal();
   const [filterType, setFilterType] = useState<string | null>("Pemasok");
 
+  // Chart mode toggle
+  const [chartMode, setChartMode] = useState<ChartMode>("akumulasi");
+
   // Date range states
-  const { startDate: initialStart, endDate: initialEnd } = useMemo(() => getCurrentMonthRange(), []);
-  
-  const [distributionStartDate, setDistributionStartDate] = useState(initialStart);
+  const { startDate: initialStart, endDate: initialEnd } = useMemo(
+    () => getCurrentMonthRange(),
+    [],
+  );
+  const initialYearStart = useMemo(() => getCurrentYearStart(), []);
+
+  const [distributionStartDate, setDistributionStartDate] =
+    useState(initialStart);
   const [distributionEndDate, setDistributionEndDate] = useState(initialEnd);
-  
-  const [topSuppliersStart, setTopSuppliersStart] = useState(initialStart);
+
+  const [topSuppliersStart, setTopSuppliersStart] = useState(initialYearStart);
   const [topSuppliersEnd, setTopSuppliersEnd] = useState(initialEnd);
-  
-  const [topPlantsStart, setTopPlantsStart] = useState(initialStart);
+  const [topSuppliersProduct, setTopSuppliersProduct] = useState<string | null>(
+    null,
+  );
+  const [topSuppliersModa, setTopSuppliersModa] = useState<string | null>(null);
+
+  const [topPlantsStart, setTopPlantsStart] = useState(initialYearStart);
   const [topPlantsEnd, setTopPlantsEnd] = useState(initialEnd);
+  const [topPlantsProduct, setTopPlantsProduct] = useState<string | null>(null);
+  const [topPlantsModa, setTopPlantsModa] = useState<string | null>(null);
 
   // Filter Grafik states
-  const [graphicFilterBy, setGraphicFilterBy] = useState<"supplier" | "plant">("supplier");
+  const [graphicFilterBy, setGraphicFilterBy] = useState<"supplier" | "plant">(
+    "supplier",
+  );
   const [graphicSupplier, setGraphicSupplier] = useState<string | null>(null);
   const [graphicPlant, setGraphicPlant] = useState<string | null>(null);
   const [graphicStart, setGraphicStart] = useState<string>(initialStart);
   const [graphicEnd, setGraphicEnd] = useState<string>(initialEnd);
+  const [graphicProduct, setGraphicProduct] = useState<string | null>(null);
+  const [graphicModa, setGraphicModa] = useState<string | null>(null);
 
   // 1. Card Volume BBM Donut Chart (Dummy Data)
   const dataPieChart = useMemo(() => {
     return filterType === "Pemasok" ? DUMMY_DONUT_SUPPLIER : DUMMY_DONUT_PLANT;
   }, [filterType]);
 
-  // 2. Top 5 TBBM Performer List (Dummy Data)
-  const topSuppliersList = useMemo(() => {
-    return DUMMY_TOP_TBBM;
-  }, []);
-
-  // 3. Top 5 Pembangkit Performer List (Dummy Data)
-  const topPembangkitList = useMemo(() => {
-    return DUMMY_TOP_PEMBANGKIT;
-  }, []);
-
-  // Fetch reports data for bottom table
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  
-  const { data: reportsData, isLoading: isReportsLoading } = useReports({
-    page,
-    limit: pageSize,
+  // 2. Fetch Top 5 TBBM Performer List
+  const { data: topTbbmData = [] } = useTopTbbm({
+    startDate: topSuppliersStart,
+    endDate: topSuppliersEnd,
+    product: topSuppliersProduct || undefined,
+    moda: topSuppliersModa || undefined,
   });
 
-  const handlePageChange = useCallback((newPage: number, newPageSize: number) => {
-    setPage(newPage);
-    setPageSize(newPageSize);
-  }, []);
+  const topSuppliersList = useMemo(() => {
+    return topTbbmData.map((item) => ({
+      name: item.name,
+      volume: item.totalVolume,
+    }));
+  }, [topTbbmData]);
 
-  // Dynamic filter options based on dummy data pool
+  // 3. Fetch Top 5 Pembangkit Performer List
+  const { data: topPembangkitData = [] } = useTopPembangkit({
+    startDate: topPlantsStart,
+    endDate: topPlantsEnd,
+    product: topPlantsProduct || undefined,
+    moda: topPlantsModa || undefined,
+  });
+
+  const topPembangkitList = useMemo(() => {
+    return topPembangkitData.map((item) => ({
+      name: item.name,
+      volume: item.totalVolume,
+    }));
+  }, [topPembangkitData]);
+
+  // Fetch reports data for bottom table
+  const { data: bbmMonthlyData, isLoading: isBbmMonthlyLoading } =
+    useBbmMonthly();
+  const { data: tbbmData } = useSites({ type: "PEMASOK", commodity: "BBM" });
+  const { data: pembangkitData } = useSites({
+    type: "PEMBANGKIT",
+    commodity: "BBM",
+  });
+
   const filterSupplierOptions = useMemo(() => {
-    const set = new Set(DUMMY_GRAPHIC_POOL.map((r) => r.supplier));
-    return Array.from(set).sort();
-  }, []);
+    if (!tbbmData) return [];
+    return Array.from(new Set(tbbmData.map((t) => t.name))).sort();
+  }, [tbbmData]);
 
   const filterPlantOptions = useMemo(() => {
-    const set = new Set(DUMMY_GRAPHIC_POOL.map((r) => r.plant));
-    return Array.from(set).sort();
-  }, []);
+    if (!pembangkitData) return [];
+    return Array.from(new Set(pembangkitData.map((p) => p.name))).sort();
+  }, [pembangkitData]);
 
-  // 4. Grafik BBM Bar Chart (Dummy Data)
+  const filterProductOptions = useMemo(() => {
+    if (!bbmMonthlyData) return [];
+    return Array.from(
+      new Set(bbmMonthlyData.map((r) => r.product).filter(Boolean)),
+    ).sort();
+  }, [bbmMonthlyData]);
+
+  const filterModaOptions = useMemo(() => {
+    if (!bbmMonthlyData) return [];
+    return Array.from(
+      new Set(bbmMonthlyData.map((r) => r.moda).filter(Boolean) as string[]),
+    ).sort();
+  }, [bbmMonthlyData]);
+
+  // 4. Grafik BBM Bar Chart (Real Data)
   const barChartData = useMemo(() => {
-    // Filter the pool client-side based on user filter selections
-    return DUMMY_GRAPHIC_POOL.filter((record) => {
-      if (graphicSupplier && record.supplier !== graphicSupplier) return false;
-      if (graphicPlant && record.plant !== graphicPlant) return false;
-      return true;
+    if (!bbmMonthlyData) return [];
+
+    return bbmMonthlyData
+      .filter((record) => {
+        if (graphicSupplier && record.tbbm !== graphicSupplier) return false;
+        if (graphicPlant && record.pembangkit !== graphicPlant) return false;
+        if (graphicProduct && record.product !== graphicProduct) return false;
+        if (graphicModa && record.moda !== graphicModa) return false;
+
+        const startMonth = graphicStart ? graphicStart.substring(0, 7) : null;
+        const endMonth = graphicEnd ? graphicEnd.substring(0, 7) : null;
+
+        if (startMonth && record.reportDate < startMonth) return false;
+        if (endMonth && record.reportDate > endMonth) return false;
+
+        return true;
+      })
+      .map((record) => ({
+        name:
+          graphicFilterBy === "supplier"
+            ? `${record.pembangkit || "Unknown"} (${record.product || "Unknown"})`
+            : `${record.tbbm || "Unknown"} (${record.product || "Unknown"})`,
+        supplier: record.tbbm,
+        plant: record.pembangkit,
+        nominasi: record.nomination || 0,
+        realisasi: record.realization || 0,
+        pemakaian: record.usage || 0,
+      }));
+  }, [
+    bbmMonthlyData,
+    graphicSupplier,
+    graphicPlant,
+    graphicStart,
+    graphicEnd,
+    graphicFilterBy,
+    graphicProduct,
+    graphicModa,
+  ]);
+
+  // 5. Composite chart data (realization by moda)
+  const { data: realizationByModaData, isLoading: isRealizationByModaLoading } =
+    useRealizationByModa({
+      startDate: graphicStart,
+      endDate: graphicEnd,
+      product: graphicProduct || undefined,
+      moda: graphicModa || undefined,
+      tbbm:
+        chartMode === "realisasi-moda" || graphicFilterBy === "supplier"
+          ? graphicSupplier || undefined
+          : undefined,
+      pembangkit:
+        chartMode === "realisasi-moda" || graphicFilterBy === "plant"
+          ? graphicPlant || undefined
+          : undefined,
     });
-  }, [graphicSupplier, graphicPlant]);
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -171,7 +308,8 @@ export default function Home() {
                 Dashboard BBM
               </h1>
               <p className="text-gray-600 mt-1 text-sm md:text-base">
-                Dashboard untuk monitoring data realtime BBM dan Pembangkit PLN EPI
+                Dashboard untuk monitoring data realtime BBM dan Pembangkit PLN
+                EPI
               </p>
             </div>
           </div>
@@ -200,18 +338,24 @@ export default function Home() {
             />
 
             <TopVolumeList
-              title="Top 5 performa TBBM"
+              title="Top 5 TBBM"
               list={topSuppliersList}
-              unit="%"
-              description="List top 5 performa TBBM dengan perhitungan Realisasi/TOP"
+              unit="KL"
+              description="List top 5 performa TBBM dengan volume tertinggi"
               startDate={topSuppliersStart}
               endDate={topSuppliersEnd}
               onStartDateChange={setTopSuppliersStart}
               onEndDateChange={setTopSuppliersEnd}
+              product={topSuppliersProduct}
+              moda={topSuppliersModa}
+              onProductChange={setTopSuppliersProduct}
+              onModaChange={setTopSuppliersModa}
+              productOptions={filterProductOptions}
+              modaOptions={filterModaOptions}
             />
 
             <TopVolumeList
-              title="Top 5 performa Pembangkit"
+              title="Top 5 Pembangkit"
               list={topPembangkitList}
               unit="KL"
               description="List top 5 performa pembangkit BBM dengan volume tertinggi"
@@ -219,6 +363,12 @@ export default function Home() {
               endDate={topPlantsEnd}
               onStartDateChange={setTopPlantsStart}
               onEndDateChange={setTopPlantsEnd}
+              product={topPlantsProduct}
+              moda={topPlantsModa}
+              onProductChange={setTopPlantsProduct}
+              onModaChange={setTopPlantsModa}
+              productOptions={filterProductOptions}
+              modaOptions={filterModaOptions}
             />
           </div>
 
@@ -226,49 +376,118 @@ export default function Home() {
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
             <div className="lg:col-span-3 bg-white rounded-xl border border-gray-200 p-6 flex flex-col justify-between shadow-sm">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                  Grafik BBM
-                </h3>
+                <div className="flex items-center justify-between mb-1">
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Grafik BBM
+                  </h3>
+
+                  {/* Toggle Switch */}
+                  <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
+                    <button
+                      onClick={() => setChartMode("akumulasi")}
+                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
+                        chartMode === "akumulasi"
+                          ? "bg-white text-gray-900 shadow-sm"
+                          : "text-gray-500 hover:text-gray-700"
+                      }`}
+                    >
+                      Grafik Akumulasi
+                    </button>
+                    <button
+                      onClick={() => setChartMode("realisasi-moda")}
+                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
+                        chartMode === "realisasi-moda"
+                          ? "bg-white text-gray-900 shadow-sm"
+                          : "text-gray-500 hover:text-gray-700"
+                      }`}
+                    >
+                      Realisasi Harian
+                    </button>
+                  </div>
+                </div>
                 <p className="text-xs text-gray-500 mb-6">
-                  Visualisasi perbandingan Rencana/Nominasi, Realisasi, dan Pemakaian per Unit Pembangkit
+                  {chartMode === "akumulasi"
+                    ? "Visualisasi perbandingan Rencana/Nominasi, Realisasi, dan Pemakaian per Unit Pembangkit"
+                    : "Visualisasi realisasi volume BBM per moda transportasi dengan akumulasi bulanan"}
                 </p>
               </div>
-              <div className="w-full">
-                {barChartData.length === 0 ? (
-                  <div className="flex items-center justify-center h-[320px] text-gray-400 text-sm">
-                    Tidak ada data laporan yang cocok dengan filter grafik
-                  </div>
+              <div className="w-full flex-1 min-h-[320px] mt-4">
+                {chartMode === "akumulasi" ? (
+                  /* ── Existing: Grafik Akumulasi ─────────────── */
+                  isBbmMonthlyLoading ? (
+                    <div className="flex items-center justify-center h-full text-gray-400 text-sm">
+                      <Loader2 className="animate-spin mr-2" size={20} />
+                      Memuat data grafik...
+                    </div>
+                  ) : barChartData.length === 0 ? (
+                    <div className="flex items-center justify-center h-full text-gray-400 text-sm">
+                      Tidak ada data laporan yang cocok dengan filter grafik
+                    </div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={barChartData}>
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          vertical={false}
+                          stroke="#f3f4f6"
+                        />
+                        <XAxis
+                          dataKey="name"
+                          tick={{ fill: "#6b7280", fontSize: 11 }}
+                          axisLine={{ stroke: "#e5e7eb" }}
+                          tickLine={false}
+                        />
+                        <YAxis
+                          tick={{ fill: "#6b7280", fontSize: 11 }}
+                          axisLine={false}
+                          tickLine={false}
+                          tickFormatter={(value) => {
+                            if (value >= 1000)
+                              return `${(value / 1000).toFixed(1).replace(/\\.0$/, "")}k`;
+                            return value.toString();
+                          }}
+                        />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: "#fff",
+                            borderRadius: "8px",
+                            border: "1px solid #e5e7eb",
+                            boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                          }}
+                          labelStyle={{ fontWeight: "bold", color: "#111827" }}
+                        />
+                        <Legend
+                          verticalAlign="top"
+                          height={36}
+                          iconType="circle"
+                        />
+                        <Bar
+                          dataKey="nominasi"
+                          name="Nominasi"
+                          fill="#fb923c"
+                          radius={[4, 4, 0, 0]}
+                        />
+                        <Bar
+                          dataKey="realisasi"
+                          name="Realisasi"
+                          fill="#60a5fa"
+                          radius={[4, 4, 0, 0]}
+                        />
+                        <Bar
+                          dataKey="pemakaian"
+                          name="Pemakaian"
+                          fill="#34d399"
+                          radius={[4, 4, 0, 0]}
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  )
                 ) : (
-                  <ResponsiveContainer width="100%" height={320}>
-                    <BarChart data={barChartData}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                      <XAxis
-                        dataKey="name"
-                        tick={{ fill: "#6b7280", fontSize: 11 }}
-                        axisLine={{ stroke: "#e5e7eb" }}
-                        tickLine={false}
-                      />
-                      <YAxis
-                        tick={{ fill: "#6b7280", fontSize: 11 }}
-                        axisLine={false}
-                        tickLine={false}
-                        tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
-                      />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: "#fff",
-                          borderRadius: "8px",
-                          border: "1px solid #e5e7eb",
-                          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-                        }}
-                        labelStyle={{ fontWeight: "bold", color: "#111827" }}
-                      />
-                      <Legend verticalAlign="top" height={36} iconType="circle" />
-                      <Bar dataKey="nominasi" name="Nominasi" fill="#fb923c" radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="realisasi" name="Realisasi" fill="#60a5fa" radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="pemakaian" name="Pemakaian" fill="#34d399" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
+                  /* ── New: Realisasi per Moda ────────────────── */
+                  <BbmCompositeChart
+                    data={realizationByModaData}
+                    isLoading={isRealizationByModaLoading}
+                  />
                 )}
               </div>
             </div>
@@ -279,29 +498,33 @@ export default function Home() {
                 <h3 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-100">
                   Filter Grafik
                 </h3>
-                
+
                 <div className="space-y-4">
                   {/* Filter Berdasar */}
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                      Filter Berdasar
-                    </label>
-                    <select
-                      value={graphicFilterBy}
-                      onChange={(e) => {
-                        setGraphicFilterBy(e.target.value as "supplier" | "plant");
-                        setGraphicSupplier(null);
-                        setGraphicPlant(null);
-                      }}
-                      className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/40 focus:border-[#14a2bb] transition-all"
-                    >
-                      <option value="supplier">Pemasok (TBBM)</option>
-                      <option value="plant">Pembangkit</option>
-                    </select>
-                  </div>
+                  {chartMode === "akumulasi" && (
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                        Filter Berdasar
+                      </label>
+                      <select
+                        value={graphicFilterBy}
+                        onChange={(e) => {
+                          setGraphicFilterBy(
+                            e.target.value as "supplier" | "plant",
+                          );
+                          setGraphicSupplier(null);
+                          setGraphicPlant(null);
+                        }}
+                        className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/40 focus:border-[#14a2bb] transition-all"
+                      >
+                        <option value="supplier">Pemasok (TBBM)</option>
+                        <option value="plant">Pembangkit</option>
+                      </select>
+                    </div>
+                  )}
 
                   {/* TBBM/Pemasok Select */}
-                  {graphicFilterBy === "supplier" ? (
+                  {(chartMode === "realisasi-moda" || graphicFilterBy === "supplier") && (
                     <FilterAutocomplete
                       label="TBBM / Pemasok"
                       options={filterSupplierOptions}
@@ -309,8 +532,10 @@ export default function Home() {
                       onChange={setGraphicSupplier}
                       placeholder="Semua Pemasok"
                     />
-                  ) : (
-                    /* Pembangkit Select */
+                  )}
+
+                  {/* Pembangkit Select */}
+                  {(chartMode === "realisasi-moda" || graphicFilterBy === "plant") && (
                     <FilterAutocomplete
                       label="Pembangkit"
                       options={filterPlantOptions}
@@ -319,6 +544,24 @@ export default function Home() {
                       placeholder="Semua Pembangkit"
                     />
                   )}
+
+                  {/* Produk Select */}
+                  <FilterAutocomplete
+                    label="Produk"
+                    options={filterProductOptions}
+                    value={graphicProduct}
+                    onChange={setGraphicProduct}
+                    placeholder="Semua Produk"
+                  />
+
+                  {/* Moda Transportasi Select */}
+                  <FilterAutocomplete
+                    label="Moda Transportasi"
+                    options={filterModaOptions}
+                    value={graphicModa}
+                    onChange={setGraphicModa}
+                    placeholder="Semua Moda Transportasi"
+                  />
 
                   {/* Tanggal Awal */}
                   <div>
@@ -354,6 +597,8 @@ export default function Home() {
                   onClick={() => {
                     setGraphicSupplier(null);
                     setGraphicPlant(null);
+                    setGraphicProduct(null);
+                    setGraphicModa(null);
                     setGraphicStart(initialStart);
                     setGraphicEnd(initialEnd);
                   }}
@@ -370,13 +615,10 @@ export default function Home() {
             <h2 className="text-lg md:text-xl font-semibold text-gray-900 mb-4">
               Daftar Realisasi Pengiriman BBM
             </h2>
-            <BBMDataTable
-              records={reportsData?.data ?? []}
-              totalItems={reportsData?.total ?? 0}
-              page={page}
-              pageSize={pageSize}
-              isLoading={isReportsLoading}
-              onPageChange={handlePageChange}
+            <EditBbmDataTable
+              records={bbmMonthlyData || []}
+              isLoading={isBbmMonthlyLoading}
+              hideActions={true}
             />
           </div>
         </div>

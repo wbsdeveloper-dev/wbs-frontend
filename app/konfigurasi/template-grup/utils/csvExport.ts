@@ -74,15 +74,16 @@ export function downloadFieldsCSV(fields: TemplateField[], templateName: string)
  * Get human-readable description for a field
  */
 function getFieldDescription(field: TemplateField): string {
-  const sourceDescriptions: Record<TemplateField["sourceKind"], string> = {
-    SHEET_COLUMN: "Extract from spreadsheet column",
-    WA_REGEX: "Extract using regex pattern",
-    WA_REGEX_RECORDS: "Extract multiple records using regex",
-    WA_FIXED: "Fixed value",
-    AI_JSON_PATH: "Extract using AI JSON path",
+  const SOURCE_KIND_LABELS: Record<TemplateField["sourceKind"], string> = {
+    SHEET_COLUMN: "Kolom Spreadsheet",
+    SHEET_CELL: "Sel Spreadsheet (Baris & Kolom)",
+    WA_REGEX: "Regular Expression",
+    WA_REGEX_RECORDS: "Multi-record Regex (JSON)",
+    WA_FIXED: "Nilai Statis",
+    AI_JSON_PATH: "Jalur Data AI",
   };
 
-  let desc = sourceDescriptions[field.sourceKind] || "Custom field";
+  let desc = SOURCE_KIND_LABELS[field.sourceKind] || "Custom field";
   
   if (field.transform) {
     desc += ` (transform: ${field.transform})`;
@@ -187,6 +188,7 @@ export function validateCSVFieldRow(row: CSVFieldRow): {
   // Validate sourceKind
   const validSourceKinds: TemplateField["sourceKind"][] = [
     "SHEET_COLUMN",
+    "SHEET_CELL",
     "WA_REGEX",
     "WA_REGEX_RECORDS",
     "WA_FIXED",
