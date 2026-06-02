@@ -222,7 +222,7 @@ export default function InputBAValidasiModal({
         response = await extractOcr.mutateAsync(singleFormData);
       }
 
-      console.log("OCR Response:", response);
+
 
       // Map response to extracted records
       const records = response?.data?.records || [];
@@ -303,17 +303,7 @@ export default function InputBAValidasiModal({
         if (f) submitData.append("files", f);
       });
 
-      // Log the payload to console and show an alert as requested
-      console.log("Simpan data payload:", recordsPayload);
-
       const response = await batchCreate.mutateAsync(submitData);
-      console.log("Batch create response:", response);
-
-      const insertedCount = response?.data?.insertedCount || 0;
-      const filesCount = response?.data?.files?.length || 0;
-      alert(
-        `Simpan Data berhasil!\n\n${insertedCount} record tersimpan. ${filesCount} file BA berhasil diunggah.\n\nData yang dikirim:\n${JSON.stringify(recordsPayload, null, 2)}`,
-      );
 
       setShowSuccess(true);
       setTimeout(() => {
@@ -543,7 +533,7 @@ export default function InputBAValidasiModal({
                         Tanggal Kegiatan <span className="text-red-500">*</span>
                       </label>
                       <input
-                        type="date"
+                        type="month"
                         value={formData.reportDate}
                         onChange={(e) =>
                           setFormData({
