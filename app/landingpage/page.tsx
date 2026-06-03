@@ -102,8 +102,10 @@ export default function DashboardSelection() {
           </h1>
           <p className="text-slate-600 text-sm md:text-base max-w-md mx-auto leading-relaxed">
             Akses pemantauan{" "}
-            <span className="text-[#115d72] font-semibold">Gas Pipa</span> dan{" "}
-            <span className="text-[#115d72] font-semibold">BBM</span> secara
+            <span className="text-[#115d72] font-semibold">Gas Pipa</span>
+            {", "}
+            <span className="text-[#115d72] font-semibold">BBM</span> dan{" "}
+            <span className="text-[#115d72] font-semibold">LNG</span> secara
             real-time
           </p>
         </div>

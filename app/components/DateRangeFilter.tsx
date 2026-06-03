@@ -27,7 +27,7 @@ export default function DateFilter({
     return dateStr;
   };
 
-  const handleDateChange = (val: string, setter: (value: string) => void, type: "date" | "month" | "year") => {
+  const handleDateChange = (val: string, setter: (value: string) => void, type: "date" | "month" | "year", isEndDate = false) => {
     if (!val) {
       setter("");
       return;
@@ -35,9 +35,20 @@ export default function DateFilter({
     if (type === "date") {
       setter(val);
     } else if (type === "month") {
-      setter(`${val}-01`);
+      if (isEndDate) {
+        // Last day of the month
+        const [year, month] = val.split("-");
+        const lastDay = new Date(Number(year), Number(month), 0).getDate();
+        setter(`${val}-${lastDay}`);
+      } else {
+        setter(`${val}-01`);
+      }
     } else if (type === "year") {
-      setter(`${val}-01-01`);
+      if (isEndDate) {
+        setter(`${val}-12-31`);
+      } else {
+        setter(`${val}-01-01`);
+      }
     }
   };
 
@@ -46,7 +57,7 @@ export default function DateFilter({
       <div className="flex flex-col gap-2">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Tanggal
+            {pickerType === "year" ? "Tahun" : pickerType === "month" ? "Bulan" : "Tanggal"}
           </label>
           <input
             type={pickerType === "year" ? "number" : pickerType}
@@ -70,7 +81,7 @@ export default function DateFilter({
     <div className="flex flex-col gap-2">
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Tanggal Awal
+          {pickerType === "year" ? "Tahun Awal" : pickerType === "month" ? "Bulan Awal" : "Tanggal Awal"}
         </label>
         <input
           type={pickerType === "year" ? "number" : pickerType}
@@ -86,7 +97,7 @@ export default function DateFilter({
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Tanggal Akhir
+          {pickerType === "year" ? "Tahun Akhir" : pickerType === "month" ? "Bulan Akhir" : "Tanggal Akhir"}
         </label>
         <input
           type={pickerType === "year" ? "number" : pickerType}
@@ -94,9 +105,9 @@ export default function DateFilter({
           max={pickerType === "year" ? "2100" : undefined}
           placeholder={pickerType === "year" ? "YYYY" : undefined}
           value={getInputValue(endDate, pickerType)}
-          onChange={(e) => handleDateChange(e.target.value, setEndDate, pickerType)}
+          onChange={(e) => handleDateChange(e.target.value, setEndDate, pickerType, true)}
           className="w-full px-4 py-2 rounded-lg text-[0.875rem] border border-gray-300
-                   focus:outline-none focus:ring-2 focus:ring-teal-500 text-gray-700"
+                   focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/40 focus:border-[#14a2bb] text-gray-700"
         />
       </div>
     </div>

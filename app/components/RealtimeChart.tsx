@@ -37,8 +37,14 @@ export type Granularity =
   | "month"
   | "three_month"
   | "six_month"
+  | "one_month"
   | "one_year"
-  | "three_year";
+  | "three_year"
+  | "year"
+  | "interval_hour"
+  | "interval_day"
+  | "interval_month"
+  | "interval_year";
 export type FilterBy = "supplier" | "plant";
 
 export interface RealtimeChartProps {
@@ -320,6 +326,63 @@ const DYNAMIC_COLORS = [
   "#f472b6",
 ];
 
+const CustomXAxisTick = (props: any) => {
+  const { x, y, payload, index, chartData, period, intervalMode } = props;
+  const originalIndex = payload.index !== undefined ? payload.index : index;
+  const item = chartData && chartData[originalIndex];
+
+  if (!item || period !== "3Y" || intervalMode !== "Bulan" || !item.yearStr) {
+    return (
+      <text x={x} y={y + 15} textAnchor="middle" fill="#666" fontSize={12}>
+        {payload.value}
+      </text>
+    );
+  }
+
+  const isFirstMonth = item.monthStr === "Jan";
+  const isMidYear = item.monthStr === "Jul";
+
+  return (
+    <g>
+      <text x={x} y={y + 15} textAnchor="middle" fill="#666" fontSize={11}>
+        {payload.value}
+      </text>
+      {isMidYear && (
+        <text
+          x={x}
+          y={y + 35}
+          textAnchor="middle"
+          fill="#333"
+          fontSize={12}
+          fontWeight="bold"
+        >
+          {item.yearStr}
+        </text>
+      )}
+      {/* Horizontal line under month */}
+      <line
+        x1={x - 50}
+        y1={y + 22}
+        x2={x + 50}
+        y2={y + 22}
+        stroke="#e5e7eb"
+        strokeWidth={1}
+      />
+      {/* Vertical separator before Jan */}
+      {isFirstMonth && originalIndex !== 0 && (
+        <line
+          x1={x - 14}
+          y1={y}
+          x2={x - 14}
+          y2={y + 40}
+          stroke="#e5e7eb"
+          strokeWidth={1}
+        />
+      )}
+    </g>
+  );
+};
+
 const CustomTooltip = ({
   active,
   payload,
@@ -580,7 +643,7 @@ export default function RealtimeChart({
         .filter(
           (p: FilterOption) =>
             p.commodity?.toUpperCase() === "LNG" ||
-            p.commodity?.toUpperCase() === "GAS PIPA"
+            p.commodity?.toUpperCase() === "GAS PIPA",
         )
         .map((p: FilterOption) => p.name);
     }
@@ -593,7 +656,7 @@ export default function RealtimeChart({
         .filter(
           (p: FilterOption) =>
             p.commodity?.toUpperCase() === "LNG" ||
-            p.commodity?.toUpperCase() === "GAS PIPA"
+            p.commodity?.toUpperCase() === "GAS PIPA",
         )
         .map((p: FilterOption) => p.name);
     return ["Pembangkit 1", "Pembangkit 2"];
@@ -620,6 +683,7 @@ export default function RealtimeChart({
         return d.toLocaleDateString("id-ID", {
           day: "2-digit",
           month: "short",
+          year: "numeric",
         });
       }
       if (chartFlowData.granularity === "year") {
@@ -656,7 +720,20 @@ export default function RealtimeChart({
     });
 
     return sortedTimestamps.map((rawTs) => {
-      const label = formatTimestamp(rawTs);
+      let label = formatTimestamp(rawTs);
+      let monthStr = "";
+      let yearStr = "";
+
+      const d = new Date(rawTs + (rawTs.length === 7 ? "-01" : ""));
+      if (!isNaN(d.getTime())) {
+        monthStr = d.toLocaleDateString("id-ID", { month: "short" });
+        yearStr = d.getFullYear().toString();
+        // If it's month granularity, we might want to just show the month name as label
+        if (chartFlowData.granularity === "month") {
+          label = monthStr;
+        }
+      }
+
       const values: Record<string, number> = {};
       const flowrates: Record<string, number> = {};
       seriesLookups.forEach(({ name, lookup }) => {
@@ -666,7 +743,14 @@ export default function RealtimeChart({
           flowrates[name] = data.flowrate;
         }
       });
-      return { label, values, flowrates, rawTimestamp: rawTs };
+      return {
+        label,
+        values,
+        flowrates,
+        rawTimestamp: rawTs,
+        monthStr,
+        yearStr,
+      };
     });
   }, [chartFlowData]);
 
@@ -875,8 +959,21 @@ export default function RealtimeChart({
                     <CartesianGrid stroke="#eee" strokeDasharray="5 5" />
                     <XAxis
                       dataKey="label"
-                      tick={{ fontSize: 12 }}
-                      interval="preserveStartEnd"
+                      tick={
+                        <CustomXAxisTick
+                          chartData={chartData}
+                          period={period}
+                          intervalMode={intervalMode}
+                        />
+                      }
+                      interval={
+                        period === "3Y" && intervalMode === "Bulan"
+                          ? 0
+                          : "preserveStartEnd"
+                      }
+                      height={
+                        period === "3Y" && intervalMode === "Bulan" ? 50 : 30
+                      }
                     />
                     <YAxis
                       domain={yDomain}
@@ -1278,201 +1375,135 @@ export default function RealtimeChart({
             <div className="mt-2">
               <div className="border border-gray-200 p-3 rounded-lg">
                 <p className="block text-sm font-medium text-gray-700 mb-2">
-                  Interval
+                  Filter Periode
                 </p>
-                <div className="flex gap-2 mb-3">
-                  {(["Jam", "Hari", "Bulan", "Tahun"] as const).map((mode) => (
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                  {[
+                    {
+                      label: "1 Hari",
+                      val: "1D",
+                      apiPeriod: "hour",
+                      interval: "Jam",
+                    },
+                    {
+                      label: "1 Minggu",
+                      val: "1W",
+                      apiPeriod: "day",
+                      interval: "Hari",
+                    },
+                    {
+                      label: "1 Bulan",
+                      val: "1M",
+                      apiPeriod: "one_month",
+                      interval: "Hari",
+                    },
+                    {
+                      label: "1 Tahun",
+                      val: "1Y",
+                      apiPeriod: "one_year",
+                      interval: "Bulan",
+                    },
+                    {
+                      label: "3 Tahun",
+                      val: "3Y",
+                      apiPeriod: "three_year",
+                      interval: "Tahun",
+                    },
+                  ].map((item) => (
                     <button
-                      key={mode}
-                      className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                        intervalMode === mode
+                      key={item.label}
+                      className={`px-3 py-2 text-sm font-medium rounded-md transition-colors text-center ${
+                        period === item.val
                           ? "bg-[#115d72] text-white shadow-sm"
-                          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                          : "bg-gray-50 text-gray-600 hover:bg-gray-100"
                       }`}
                       onClick={() => {
-                        setIntervalMode(mode);
-                        if (mode === "Jam") {
-                          setPeriod("1D");
-                          if (onPeriodChange) onPeriodChange("hour");
-                        } else if (mode === "Hari") {
-                          setPeriod("1W");
-                          if (onPeriodChange) onPeriodChange("day");
-                        } else if (mode === "Bulan") {
-                          setPeriod("3M");
-                          if (onPeriodChange) onPeriodChange("three_month");
-                        } else if (mode === "Tahun") {
-                          setPeriod("3Y");
-                          if (onPeriodChange) onPeriodChange("three_year");
+                        setPeriod(item.val);
+                        // Sensible default interval based on period
+                        setIntervalMode(item.interval as any);
+
+                        if (onPeriodChange)
+                          onPeriodChange(item.apiPeriod as Granularity);
+                        else {
+                          if (pemasok?.includes("Pemasok A"))
+                            setFallbackChartData(
+                              item.val === "1D"
+                                ? dataJamA
+                                : item.val === "1W"
+                                  ? data1MingguA
+                                  : item.val === "1M"
+                                    ? data3BulanA
+                                    : item.val === "1Y"
+                                      ? data1TahunA
+                                      : data3TahunA,
+                            );
+                          if (pemasok?.includes("Pemasok B"))
+                            setFallbackChartData(
+                              item.val === "1D"
+                                ? dataJamB
+                                : item.val === "1W"
+                                  ? data1MingguB
+                                  : item.val === "1M"
+                                    ? data3BulanB
+                                    : item.val === "1Y"
+                                      ? data1TahunB
+                                      : data3TahunB,
+                            );
                         }
                       }}
                     >
-                      {mode}
+                      {item.label}
                     </button>
                   ))}
                 </div>
 
                 <p className="block text-sm font-medium text-gray-700 mb-2">
-                  Filter Periode
+                  Interval
                 </p>
-                <div className="overflow-x-auto">
-                  <div className="flex gap-4 mb-3 min-w-max px-1">
-                    {intervalMode === "Jam" && (
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {(["Tahun", "Bulan", "Hari", "Jam"] as const).map((mode) => {
+                    // Hide invalid intervals based on selected period
+                    if (period === "1D" && mode !== "Jam") return null;
+                    if (period === "1W" && mode === "Tahun") return null;
+                    if (period === "1M" && mode === "Tahun") return null;
+                    if (period === "1Y" && mode === "Jam") return null;
+                    if (period === "3Y" && mode === "Jam") return null;
+
+                    return (
                       <button
-                        className={`text-[#115d72] font-medium text-sm transition-all ${
-                          period === "1D"
-                            ? "bg-[#14a2bb92] px-2 py-1 rounded-md"
-                            : ""
-                        } cursor-pointer hover:text-[#14a2bb]`}
+                        key={mode}
+                        className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                          intervalMode === mode
+                            ? "bg-[#7ec9d4] text-[#115d72] shadow-sm"
+                            : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+                        }`}
                         onClick={() => {
-                          setPeriod("1D");
-                          if (startDate) setEndDate(startDate);
-                          if (onPeriodChange) onPeriodChange("hour");
-                          else {
-                            if (pemasok?.includes("Pemasok A"))
-                              setFallbackChartData(dataJamA);
-                            if (pemasok?.includes("Pemasok B"))
-                              setFallbackChartData(dataJamB);
+                          setIntervalMode(mode);
+                          if (onPeriodChange) {
+                            if (mode === "Jam") onPeriodChange("interval_hour");
+                            else if (mode === "Hari")
+                              onPeriodChange("interval_day");
+                            else if (mode === "Bulan")
+                              onPeriodChange("interval_month");
+                            else if (mode === "Tahun")
+                              onPeriodChange("interval_year");
                           }
                         }}
                       >
-                        24 Jam
+                        {mode}
                       </button>
-                    )}
-
-                    {intervalMode === "Hari" && (
-                      <>
-                        <button
-                          className={`text-[#115d72] font-medium text-sm transition-all ${
-                            period === "1W"
-                              ? "bg-[#14a2bb92] px-2 py-1 rounded-md"
-                              : ""
-                          } cursor-pointer hover:text-[#14a2bb]`}
-                          onClick={() => {
-                            setPeriod("1W");
-                            if (onPeriodChange) onPeriodChange("day");
-                            else {
-                              if (pemasok?.includes("Pemasok A"))
-                                setFallbackChartData(data1MingguA);
-                              if (pemasok?.includes("Pemasok B"))
-                                setFallbackChartData(data1MingguB);
-                            }
-                          }}
-                        >
-                          7 Hari
-                        </button>
-                        <button
-                          className={`text-[#115d72] font-medium text-sm transition-all ${
-                            period === "30D"
-                              ? "bg-[#14a2bb92] px-2 py-1 rounded-md"
-                              : ""
-                          } cursor-pointer hover:text-[#14a2bb]`}
-                          onClick={() => {
-                            setPeriod("30D");
-                            if (onPeriodChange) onPeriodChange("day");
-                          }}
-                        >
-                          30 Hari
-                        </button>
-                      </>
-                    )}
-
-                    {intervalMode === "Bulan" && (
-                      <>
-                        <button
-                          className={`text-[#115d72] font-medium text-sm transition-all ${
-                            period === "3M"
-                              ? "bg-[#14a2bb92] px-2 py-1 rounded-md"
-                              : ""
-                          } cursor-pointer hover:text-[#14a2bb]`}
-                          onClick={() => {
-                            setPeriod("3M");
-                            if (onPeriodChange) onPeriodChange("three_month");
-                            else {
-                              if (pemasok?.includes("Pemasok A"))
-                                setFallbackChartData(data3BulanA);
-                              if (pemasok?.includes("Pemasok B"))
-                                setFallbackChartData(data3BulanB);
-                            }
-                          }}
-                        >
-                          3 Bulan
-                        </button>
-                        <button
-                          className={`text-[#115d72] font-medium text-sm transition-all ${
-                            period === "6M"
-                              ? "bg-[#14a2bb92] px-2 py-1 rounded-md"
-                              : ""
-                          } cursor-pointer hover:text-[#14a2bb]`}
-                          onClick={() => {
-                            setPeriod("6M");
-                            if (onPeriodChange) onPeriodChange("six_month");
-                            else {
-                              if (pemasok?.includes("Pemasok A"))
-                                setFallbackChartData(data6BulanA);
-                              if (pemasok?.includes("Pemasok B"))
-                                setFallbackChartData(data6BulanB);
-                            }
-                          }}
-                        >
-                          6 Bulan
-                        </button>
-                        <button
-                          className={`text-[#115d72] font-medium text-sm transition-all ${
-                            period === "12M"
-                              ? "bg-[#14a2bb92] px-2 py-1 rounded-md"
-                              : ""
-                          } cursor-pointer hover:text-[#14a2bb]`}
-                          onClick={() => {
-                            setPeriod("12M");
-                            if (onPeriodChange) onPeriodChange("one_year");
-                            else {
-                              if (pemasok?.includes("Pemasok A"))
-                                setFallbackChartData(data1TahunA);
-                              if (pemasok?.includes("Pemasok B"))
-                                setFallbackChartData(data1TahunB);
-                            }
-                          }}
-                        >
-                          12 Bulan
-                        </button>
-                      </>
-                    )}
-
-                    {intervalMode === "Tahun" && (
-                      <>
-                        <button
-                          className={`text-[#115d72] font-medium text-sm transition-all ${
-                            period === "3Y"
-                              ? "bg-[#14a2bb92] px-2 py-1 rounded-md"
-                              : ""
-                          } cursor-pointer hover:text-[#14a2bb]`}
-                          onClick={() => {
-                            setPeriod("3Y");
-                            if (onPeriodChange) onPeriodChange("three_year");
-                            else {
-                              if (pemasok?.includes("Pemasok A"))
-                                setFallbackChartData(data3TahunA);
-                              if (pemasok?.includes("Pemasok B"))
-                                setFallbackChartData(data3TahunB);
-                            }
-                          }}
-                        >
-                          3 Tahun
-                        </button>
-                      </>
-                    )}
-                  </div>
+                    );
+                  })}
                 </div>
-                {intervalMode !== "Bulan" && intervalMode !== "Tahun" && (
-                  <DateRangeFilter
-                    startDate={startDate}
-                    endDate={endDate}
-                    setStartDate={setStartDate}
-                    setEndDate={setEndDate}
-                    isSingleDate={period === "1D"}
-                    mode={intervalMode}
-                  />
-                )}
+
+                <DateRangeFilter
+                  startDate={startDate}
+                  endDate={endDate}
+                  setStartDate={setStartDate}
+                  setEndDate={setEndDate}
+                  isSingleDate={period === "1D"}
+                  mode={period === "3Y" ? "Tahun" : intervalMode}
+                />
               </div>
             </div>
             <div>

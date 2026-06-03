@@ -135,6 +135,14 @@ export default function GasDashboard() {
         setStartDateFilter(sevenDaysAgo.toISOString().split("T")[0]);
         setEndDateFilter(todayDate);
         setGranularity("day");
+      } else if (newGranularity === "interval_hour") {
+        setGranularity("hour");
+      } else if (newGranularity === "interval_day") {
+        setGranularity("day");
+      } else if (newGranularity === "interval_month") {
+        setGranularity("month");
+      } else if (newGranularity === "interval_year") {
+        setGranularity("year");
       } else {
         const getFirstDateOfMonth = (dateStr: string, monthsAgo: number) => {
           const d = new Date(dateStr);
@@ -142,22 +150,27 @@ export default function GasDashboard() {
           return d.toISOString().split("T")[0];
         };
 
-        if (newGranularity === "three_month") {
-          setStartDateFilter(getFirstDateOfMonth(startDate, 2));
-          setEndDateFilter(endDate);
+        if (newGranularity === "one_month") {
+          setStartDateFilter(getFirstDateOfMonth(todayDate, 1));
+          setEndDateFilter(todayDate);
+          setGranularity("day");
+        } else if (newGranularity === "three_month") {
+          setStartDateFilter(getFirstDateOfMonth(todayDate, 3));
+          setEndDateFilter(todayDate);
           setGranularity("month");
         } else if (newGranularity === "six_month") {
-          setStartDateFilter(getFirstDateOfMonth(startDate, 5));
-          setEndDateFilter(endDate);
+          setStartDateFilter(getFirstDateOfMonth(todayDate, 6));
+          setEndDateFilter(todayDate);
           setGranularity("month");
         } else if (newGranularity === "one_year") {
-          setStartDateFilter(getFirstDateOfMonth(startDate, 11));
-          setEndDateFilter(endDate);
+          setStartDateFilter(getFirstDateOfMonth(todayDate, 12));
+          setEndDateFilter(todayDate);
           setGranularity("month");
         } else if (newGranularity === "three_year") {
-          setStartDateFilter(getFirstDateOfMonth(startDate, 35));
-          setEndDateFilter(endDate);
-          setGranularity("month");
+          const currentYear = new Date(todayDate).getFullYear();
+          setStartDateFilter(`${currentYear - 2}-01-01`);
+          setEndDateFilter(`${currentYear}-12-31`);
+          setGranularity("year");
         }
       }
     },
