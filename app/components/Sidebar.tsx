@@ -33,7 +33,7 @@ export default function Sidebar() {
   const { user, logout } = useAuth();
   const { hasPrivilege } = usePrivilege();
 
-  const [subMenuOpen, setSubMenuOpen] = useState(false);
+  const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
@@ -321,15 +321,16 @@ export default function Sidebar() {
             const isSubmenuOpen = menu.children?.some((c) =>
               pathname.startsWith(c.path),
             );
+            const isOpen = isSubmenuOpen || openMenu === menu.title;
 
             return (
               <div key={index}>
                 {/* Parent menu */}
                 {menu.children ? (
                   <button
-                    onClick={() => setSubMenuOpen(!subMenuOpen)}
+                    onClick={() => setOpenMenu(openMenu === menu.title ? null : menu.title)}
                     className={
-                      isParentActive || isSubmenuOpen
+                      isParentActive || isOpen
                         ? menuActive
                         : menuNonActive
                     }
@@ -340,10 +341,10 @@ export default function Sidebar() {
                     )}
 
                     {/* Chevron */}
-                    {subMenuOpen && (!isCollapsed || isMobile) && (
+                    {isOpen && (!isCollapsed || isMobile) && (
                       <ChevronUp className={chevronBase} size={18} />
                     )}
-                    {!subMenuOpen && (!isCollapsed || isMobile) && (
+                    {!isOpen && (!isCollapsed || isMobile) && (
                       <ChevronDown className={chevronBase} size={18} />
                     )}
                   </button>
@@ -351,7 +352,7 @@ export default function Sidebar() {
                   <Link
                     href={menu.path || "#"}
                     className={
-                      isParentActive || isSubmenuOpen
+                      isParentActive || isOpen
                         ? menuActive
                         : menuNonActive
                     }
@@ -363,7 +364,7 @@ export default function Sidebar() {
                   </Link>
                 )}
                 {/* Submenu (auto open only when active) */}
-                {menu.children && (isSubmenuOpen || subMenuOpen) && (
+                {menu.children && isOpen && (
                   <div className={submenuWrapper}>
                     {menu.children.map((child, idx) => {
                       const isChildActive = pathname === child.path;

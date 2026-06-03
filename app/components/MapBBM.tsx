@@ -27,6 +27,7 @@ import {
   type MapSite,
   type MapLegend,
 } from "@/hooks/service/dashboard-api";
+import { useBbmSitesSummary } from "@/hooks/service/bbm-api";
 import { useRelations, useSites } from "@/hooks/service/site-api";
 import { usePrivilege } from "@/hooks/usePrivilege";
 
@@ -78,7 +79,7 @@ const buildIcons = (legend: MapLegend): Record<string, L.DivIcon> => {
 
 export default function Map() {
   // ---- API data -----------------------------------------------------------
-  const { data, isLoading, isError, error } = useMapLocations();
+  const { data, isLoading: isMapLoading, isError, error } = useMapLocations();
   const { data: bbmSites } = useSites({ commodity: "BBM" });
 
   const { hasPrivilege } = usePrivilege();
@@ -90,6 +91,17 @@ export default function Map() {
   // ---- UI state -----------------------------------------------------------
   const [legendExpanded, setLegendExpanded] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [modalSiteList, setModalSiteList] = useState<{
+    title: string;
+    list: {
+      id: string;
+      name: string;
+      siteType?: string;
+      totalNominasi?: number;
+      totalRealisasi?: number;
+      totalPemakaian?: number;
+    }[];
+  } | null>(null);
 
   // Visibility toggles per site type
   const [visibleSiteTypes, setVisibleSiteTypes] = useState<
@@ -110,11 +122,21 @@ export default function Map() {
     null,
   );
 
-  // BBM specific product and mode filters
   const [selectedMode, setSelectedMode] = useState<string>("All");
   const [selectedProduct, setSelectedProduct] = useState<string>("All");
 
-  const bbmSiteIds = useMemo(() => new Set(bbmSites?.map((s) => s.id) || []), [bbmSites]);
+  const { data: bbmSitesSummary, isLoading: isSummaryLoading } =
+    useBbmSitesSummary({
+      moda: selectedMode !== "All" ? selectedMode : undefined,
+      product: selectedProduct !== "All" ? selectedProduct : undefined,
+    });
+
+  const isLoading = isMapLoading || isSummaryLoading;
+
+  const bbmSiteIds = useMemo(
+    () => new Set(bbmSites?.map((s) => s.id) || []),
+    [bbmSites],
+  );
 
   // ---- Derived data -------------------------------------------------------
   const icons = useMemo(() => {
@@ -123,41 +145,56 @@ export default function Map() {
   }, [data?.legend]);
 
   // ---- Relational Filtering Helpers ---------------------------------------
-  const getConnectedSet = useCallback((siteName: string, siteType: string) => {
-    if (!data?.sites || !relations) return null;
-    const site = data.sites.find(s => s.siteType === siteType && s.name === siteName);
-    if (!site) return null;
+  const getConnectedSet = useCallback(
+    (siteName: string, siteType: string) => {
+      if (!data?.sites || !relations) return null;
+      const site = data.sites.find(
+        (s) => s.siteType === siteType && s.name === siteName,
+      );
+      if (!site) return null;
 
-    const connected = new Set<string>();
-    connected.add(site.id);
-    relations.forEach(rel => {
-      if (rel.source_site_id === site.id) connected.add(rel.target_site_id);
-      if (rel.target_site_id === site.id) connected.add(rel.source_site_id);
-    });
-    return connected;
-  }, [data?.sites, relations]);
+      const connected = new Set<string>();
+      connected.add(site.id);
+      relations.forEach((rel) => {
+        if (rel.source_site_id === site.id) connected.add(rel.target_site_id);
+        if (rel.target_site_id === site.id) connected.add(rel.source_site_id);
+      });
+      return connected;
+    },
+    [data?.sites, relations],
+  );
 
   const intersect = useCallback((sets: (Set<string> | null)[]) => {
     const activeSets = sets.filter((s): s is Set<string> => s !== null);
     if (activeSets.length === 0) return null;
     let result = new Set(activeSets[0]);
     for (let i = 1; i < activeSets.length; i++) {
-      result = new Set([...result].filter(x => activeSets[i].has(x)));
+      result = new Set([...result].filter((x) => activeSets[i].has(x)));
     }
     return result;
   }, []);
 
-  const pemasokSet = useMemo(() => selectedPemasok ? getConnectedSet(selectedPemasok, "PEMASOK") : null, [selectedPemasok, getConnectedSet]);
-  const pembangkitSet = useMemo(() => selectedPembangkit ? getConnectedSet(selectedPembangkit, "PEMBANGKIT") : null, [selectedPembangkit, getConnectedSet]);
+  const pemasokSet = useMemo(
+    () =>
+      selectedPemasok ? getConnectedSet(selectedPemasok, "PEMASOK") : null,
+    [selectedPemasok, getConnectedSet],
+  );
+  const pembangkitSet = useMemo(
+    () =>
+      selectedPembangkit
+        ? getConnectedSet(selectedPembangkit, "PEMBANGKIT")
+        : null,
+    [selectedPembangkit, getConnectedSet],
+  );
 
   const regionSet = useMemo(() => {
     if (!selectedRegion || !data?.sites) return null;
-    const regionSites = data.sites.filter(s => s.region === selectedRegion);
+    const regionSites = data.sites.filter((s) => s.region === selectedRegion);
     const rSet = new Set<string>();
-    regionSites.forEach(s => {
+    regionSites.forEach((s) => {
       rSet.add(s.id);
       if (relations) {
-        relations.forEach(rel => {
+        relations.forEach((rel) => {
           if (rel.source_site_id === s.id) rSet.add(rel.target_site_id);
           if (rel.target_site_id === s.id) rSet.add(rel.source_site_id);
         });
@@ -173,9 +210,11 @@ export default function Map() {
 
     let validSites = data.sites;
     if (validIds) {
-      validSites = validSites.filter(s => validIds.has(s.id));
+      validSites = validSites.filter((s) => validIds.has(s.id));
     }
-    return Array.from(new Set(validSites.map(s => s.region))).filter(Boolean).sort();
+    return Array.from(new Set(validSites.map((s) => s.region)))
+      .filter(Boolean)
+      .sort();
   }, [data?.sites, pemasokSet, pembangkitSet, intersect]);
 
   // Names for autocomplete filters
@@ -183,22 +222,22 @@ export default function Map() {
     if (!data?.sites) return [];
     const validIds = intersect([regionSet, pembangkitSet]);
 
-    let validSites = data.sites.filter(s => s.siteType === "PEMASOK");
+    let validSites = data.sites.filter((s) => s.siteType === "PEMASOK");
     if (validIds) {
-      validSites = validSites.filter(s => validIds.has(s.id));
+      validSites = validSites.filter((s) => validIds.has(s.id));
     }
-    return validSites.map(s => s.name).sort();
+    return validSites.map((s) => s.name).sort();
   }, [data?.sites, regionSet, pembangkitSet, intersect]);
 
   const pembangkitNames = useMemo(() => {
     if (!data?.sites) return [];
     const validIds = intersect([regionSet, pemasokSet]);
 
-    let validSites = data.sites.filter(s => s.siteType === "PEMBANGKIT");
+    let validSites = data.sites.filter((s) => s.siteType === "PEMBANGKIT");
     if (validIds) {
-      validSites = validSites.filter(s => validIds.has(s.id));
+      validSites = validSites.filter((s) => validIds.has(s.id));
     }
-    return validSites.map(s => s.name).sort();
+    return validSites.map((s) => s.name).sort();
   }, [data?.sites, regionSet, pemasokSet, intersect]);
 
   // Reset pembangkit when current selection is no longer valid
@@ -243,27 +282,32 @@ export default function Map() {
     regionSet,
     pemasokSet,
     pembangkitSet,
-    intersect
+    intersect,
   ]);
 
   // Filtered pipes – show only if both source and target are visible
   const filteredPipes = useMemo(() => {
     if (!data?.pipes || !showPipes) return [];
     const visibleIds = new Set(filteredSites.map((s) => s.id));
-    return data.pipes.filter(
-      (pipe) => {
-        if (!visibleIds.has(pipe.sourceSiteId) || !visibleIds.has(pipe.targetSiteId)) return false;
-        
-        // Client-side Mode Type filter: Pipeline, Truck, Vessel
-        if (selectedMode !== "All") {
-          const modeMatch = pipe.relationType?.toLowerCase() === selectedMode.toLowerCase() ||
-                            pipe.relationType?.toLowerCase()?.includes(selectedMode.toLowerCase());
-          if (!modeMatch) return false;
-        }
-        
-        return true;
+    return data.pipes.filter((pipe) => {
+      if (
+        !visibleIds.has(pipe.sourceSiteId) ||
+        !visibleIds.has(pipe.targetSiteId)
+      )
+        return false;
+
+      // Client-side Mode Type filter: Pipeline, Truck, Vessel
+      if (selectedMode !== "All") {
+        const modeMatch =
+          pipe.relationType?.toLowerCase() === selectedMode.toLowerCase() ||
+          pipe.relationType
+            ?.toLowerCase()
+            ?.includes(selectedMode.toLowerCase());
+        if (!modeMatch) return false;
       }
-    );
+
+      return true;
+    });
   }, [data?.pipes, filteredSites, showPipes, selectedMode]);
 
   // ---- helpers ------------------------------------------------------------
@@ -436,6 +480,71 @@ export default function Map() {
                           </span>
                         </div>
                       </div>
+
+                      {(() => {
+                        const summary = bbmSitesSummary?.find(
+                          (s) => s.id === site.id,
+                        );
+                        if (!summary) return null;
+
+                        return (
+                          <div className="mt-2 pt-2 border-t border-gray-200 space-y-1">
+                            <div className="flex justify-between text-xs">
+                              <span className="text-gray-500">
+                                Total Nominasi:
+                              </span>
+                              <span className="font-medium text-[#115d72]">
+                                {summary.totalNominasi?.toLocaleString()} kL
+                              </span>
+                            </div>
+                            <div className="flex justify-between text-xs">
+                              <span className="text-gray-500">
+                                Total Realisasi:
+                              </span>
+                              <span className="font-medium text-emerald-600">
+                                {summary.totalRealisasi?.toLocaleString()} kL
+                              </span>
+                            </div>
+                            <div className="flex justify-between text-xs">
+                              <span className="text-gray-500">
+                                Total Pemakaian:
+                              </span>
+                              <span className="font-medium text-amber-600">
+                                {summary.totalPemakaian?.toLocaleString()} kL
+                              </span>
+                            </div>
+
+                            {summary.pembangkitList &&
+                              summary.pembangkitList.length > 0 && (
+                                <button
+                                  onClick={() =>
+                                    setModalSiteList({
+                                      title: "Daftar Pembangkit",
+                                      list: summary.pembangkitList!,
+                                    })
+                                  }
+                                  className="w-full mt-2 py-1.5 px-2 bg-[#115d72]/10 hover:bg-[#115d72]/20 text-[#115d72] rounded text-xs font-semibold transition-colors"
+                                >
+                                  Lihat Daftar Pembangkit
+                                </button>
+                              )}
+                            {summary.pemasokList &&
+                              summary.pemasokList.length > 0 && (
+                                <button
+                                  onClick={() =>
+                                    setModalSiteList({
+                                      title: "Daftar Pemasok",
+                                      list: summary.pemasokList!,
+                                    })
+                                  }
+                                  className="w-full mt-2 py-1.5 px-2 bg-[#115d72]/10 hover:bg-[#115d72]/20 text-[#115d72] rounded text-xs font-semibold transition-colors"
+                                >
+                                  Lihat Daftar Pemasok
+                                </button>
+                              )}
+                          </div>
+                        );
+                      })()}
                       {connected.length > 0 && (
                         <div className="mt-2 pt-2 border-t border-gray-200">
                           <p className="text-xs text-gray-500 mb-1">Relasi:</p>
@@ -499,8 +608,9 @@ export default function Map() {
                     <button
                       key={st.type}
                       onClick={() => toggleSiteType(st.type)}
-                      className={`flex items-center gap-2 w-full py-1 px-1.5 rounded-md transition-all ${isVisible ? `bg-opacity-10` : "bg-gray-100 opacity-60"
-                        }`}
+                      className={`flex items-center gap-2 w-full py-1 px-1.5 rounded-md transition-all ${
+                        isVisible ? `bg-opacity-10` : "bg-gray-100 opacity-60"
+                      }`}
                       style={
                         isVisible
                           ? { backgroundColor: `${st.color}1A` }
@@ -610,23 +720,21 @@ export default function Map() {
             />
 
             {/* Produk (Mode Type & Product Type buttons) */}
-            <div className="border-t border-gray-100 pt-4">
-              <p className="text-sm font-semibold text-gray-800 mb-3">
-                Produk
+            <div className="border-t border-gray-100 pt-2">
+              <p className="text-sm font-semibold text-gray-800 mb-2">
+                Moda Transportasi
               </p>
-              
               {/* Mode Type Button Group */}
-              <div className="mb-4">
-                <span className="text-xs font-medium text-gray-500 block mb-2">MODE TYPE</span>
+              <div className="mb-3">
                 <div className="flex flex-wrap gap-1.5">
                   {["All", "Truck", "Vessel", "Pipeline"].map((mode) => (
                     <button
                       key={mode}
                       onClick={() => setSelectedMode(mode)}
-                      className={`px-3 py-1 text-xs font-medium rounded-full border transition-all duration-200 cursor-pointer ${
+                      className={`px-3 py-1 text-xs font-medium rounded-md transition-all duration-200 cursor-pointer ${
                         selectedMode === mode
-                          ? "bg-[#14a2bb]/10 border-[#14a2bb]/40 text-[#115d72] font-semibold"
-                          : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
+                          ? "bg-[#14a2bb92] text-[#115d72]"
+                          : "text-gray-600 hover:text-[#14a2bb] hover:bg-gray-50"
                       }`}
                     >
                       {mode}
@@ -634,19 +742,28 @@ export default function Map() {
                   ))}
                 </div>
               </div>
-
+              <p className="text-sm font-semibold text-gray-800 mb-2">Produk</p>
               {/* Product Type Button Group */}
               <div>
-                <span className="text-xs font-medium text-gray-500 block mb-2">PRODUCT TYPE</span>
                 <div className="flex flex-wrap gap-1.5">
-                  {["All", "B-30", "B-35", "B-40", "MSD", "MFO", "HSFO", "HSD", "LSFO"].map((prod) => (
+                  {[
+                    "All",
+                    "B30",
+                    "B35",
+                    "B40",
+                    "MSD",
+                    "MFO",
+                    "HSFO",
+                    "HSD",
+                    "LSFO",
+                  ].map((prod) => (
                     <button
                       key={prod}
                       onClick={() => setSelectedProduct(prod)}
-                      className={`px-2.5 py-1 text-xs font-medium rounded-full border transition-all duration-200 cursor-pointer ${
+                      className={`px-3 py-1 text-xs font-medium rounded-md transition-all duration-200 cursor-pointer ${
                         selectedProduct === prod
-                          ? "bg-[#14a2bb]/10 border-[#14a2bb]/40 text-[#115d72] font-semibold"
-                          : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
+                          ? "bg-[#14a2bb92] text-[#115d72]"
+                          : "text-gray-600 hover:text-[#14a2bb] hover:bg-gray-50"
                       }`}
                     >
                       {prod}
@@ -665,6 +782,112 @@ export default function Map() {
           className="lg:hidden fixed inset-0 bg-black/50 z-30"
           onClick={() => setFilterOpen(false)}
         />
+      )}
+
+      {/* Pembangkit / Pemasok List Modal */}
+      {modalSiteList && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md max-h-[80vh] flex flex-col animate-fade-in">
+            <div className="flex justify-between items-center p-4 border-b border-gray-100">
+              <h3 className="text-lg font-bold text-gray-900">
+                {modalSiteList.title}
+              </h3>
+              <button
+                onClick={() => setModalSiteList(null)}
+                className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-4 overflow-y-auto">
+              {modalSiteList.list.length === 0 ? (
+                <p className="text-sm text-gray-500 text-center py-4">
+                  Tidak ada data
+                </p>
+              ) : (
+                <ul className="space-y-3">
+                  {modalSiteList.list.map((p, idx) => (
+                    <li
+                      key={p.id || idx}
+                      className="flex flex-col gap-2 p-3 bg-gray-50 rounded-lg border border-gray-200 shadow-sm"
+                    >
+                      <div className="flex items-center gap-3 border-b border-gray-200 pb-2">
+                        <div className="w-8 h-8 rounded-full bg-[#115d72]/10 flex items-center justify-center text-[#115d72] font-semibold text-xs shrink-0">
+                          {idx + 1}
+                        </div>
+                        <span className="text-sm font-bold text-gray-800">
+                          {p.name}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-2 text-xs pt-1">
+                        <div className="flex flex-col bg-white p-2 rounded-md border border-gray-100">
+                          <span className="text-gray-500 mb-0.5">Nominasi</span>
+                          <span className="font-semibold text-[#115d72]">
+                            {p.totalNominasi?.toLocaleString() ?? 0} kL
+                          </span>
+                        </div>
+                        <div className="flex flex-col bg-white p-2 rounded-md border border-gray-100">
+                          <span className="text-gray-500 mb-0.5">
+                            Realisasi
+                          </span>
+                          <span className="font-semibold text-emerald-600">
+                            {p.totalRealisasi?.toLocaleString() ?? 0} kL
+                          </span>
+                        </div>
+                        <div className="flex flex-col bg-white p-2 rounded-md border border-gray-100">
+                          <span className="text-gray-500 mb-0.5">
+                            Pemakaian
+                          </span>
+                          <span className="font-semibold text-amber-600">
+                            {p.totalPemakaian?.toLocaleString() ?? 0} kL
+                          </span>
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            {/* Summary Totals */}
+            {modalSiteList.list.length > 0 && (
+              <div className="p-4 border-t border-gray-200 bg-gray-50 flex flex-col gap-2 shrink-0 rounded-b-xl">
+                <span className="text-sm font-bold text-gray-800">
+                  Total Keseluruhan
+                </span>
+                <div className="grid grid-cols-3 gap-2 text-xs">
+                  <div className="flex flex-col bg-white p-2 rounded-md border border-gray-200 shadow-sm">
+                    <span className="text-gray-500 mb-0.5">Nominasi</span>
+                    <span className="font-semibold text-[#115d72]">
+                      {modalSiteList.list
+                        .reduce((sum, p) => sum + (p.totalNominasi ?? 0), 0)
+                        .toLocaleString()}{" "}
+                      kL
+                    </span>
+                  </div>
+                  <div className="flex flex-col bg-white p-2 rounded-md border border-gray-200 shadow-sm">
+                    <span className="text-gray-500 mb-0.5">Realisasi</span>
+                    <span className="font-semibold text-emerald-600">
+                      {modalSiteList.list
+                        .reduce((sum, p) => sum + (p.totalRealisasi ?? 0), 0)
+                        .toLocaleString()}{" "}
+                      kL
+                    </span>
+                  </div>
+                  <div className="flex flex-col bg-white p-2 rounded-md border border-gray-200 shadow-sm">
+                    <span className="text-gray-500 mb-0.5">Pemakaian</span>
+                    <span className="font-semibold text-amber-600">
+                      {modalSiteList.list
+                        .reduce((sum, p) => sum + (p.totalPemakaian ?? 0), 0)
+                        .toLocaleString()}{" "}
+                      kL
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

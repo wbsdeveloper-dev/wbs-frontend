@@ -296,3 +296,78 @@ export function useRealizationByModa(
     ...options,
   });
 }
+export interface BbmSiteSummary {
+  id: string;
+  name: string;
+  siteType: string;
+  commodity: string;
+  lat: number;
+  lng: number;
+  region: string;
+  isEnabled: boolean;
+  capacity?: string | null;
+  owner?: string | null;
+  totalNominasi: number;
+  totalRealisasi: number;
+  totalPemakaian: number;
+  pembangkitList?: {
+    id: string;
+    name: string;
+    siteType?: string;
+    totalNominasi?: number;
+    totalRealisasi?: number;
+    totalPemakaian?: number;
+  }[];
+  pemasokList?: {
+    id: string;
+    name: string;
+    siteType?: string;
+    totalNominasi?: number;
+    totalRealisasi?: number;
+    totalPemakaian?: number;
+  }[];
+}
+
+export async function getBbmSitesSummary(filters?: {
+  moda?: string;
+  product?: string;
+}): Promise<BbmSiteSummary[]> {
+  const params = new URLSearchParams();
+  if (filters?.moda) params.append("moda", filters.moda);
+  if (filters?.product) params.append("product", filters.product);
+
+  const qs = params.toString() ? `?${params.toString()}` : "";
+  const url = `${DASHBOARD_API_HOST}/bbm-monthly/sites-summary${qs}`;
+  const accessToken = getAccessToken();
+
+  const res = await fetch(url, {
+    headers: {
+      "Content-Type": "application/json",
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error(`BBM Sites Summary API error: ${res.statusText}`);
+  }
+
+  const body = await res.json();
+  if (Array.isArray(body)) {
+    return body;
+  }
+  if (!body.success) {
+    throw new Error(body.message || "Unknown error");
+  }
+  return body.data as BbmSiteSummary[];
+}
+
+export function useBbmSitesSummary(
+  filters?: { moda?: string; product?: string },
+  options?: Partial<UseQueryOptions<BbmSiteSummary[]>>
+) {
+  return useQuery({
+    queryKey: [...bbmKeys.all, "sites-summary", filters],
+    queryFn: () => getBbmSitesSummary(filters),
+    ...options,
+  });
+}

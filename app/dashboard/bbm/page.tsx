@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useCallback } from "react";
 import dynamic from "next/dynamic";
-import { Loader2 } from "lucide-react";
+import { Loader2, BarChart3 } from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -129,6 +129,20 @@ const DUMMY_GRAPHIC_POOL = [
 ];
 
 // ---------------------------------------------------------------------------
+
+const EmptyChartState = ({ type }: { type: "supplier" | "plant" }) => (
+  <div className="flex flex-col items-center justify-center h-full text-center p-6 bg-gray-50/50 rounded-xl border border-dashed border-gray-200">
+    <div className="w-12 h-12 rounded-full bg-[#14a2bb]/10 flex items-center justify-center mb-4">
+      <BarChart3 className="text-[#14a2bb]" size={24} />
+    </div>
+    <h4 className="text-sm font-semibold text-gray-900 mb-1">
+      {type === "supplier" ? "Pilih Pemasok" : "Pilih Pembangkit"}
+    </h4>
+    <p className="text-xs text-gray-500 max-w-[280px]">
+      Silakan pilih {type === "supplier" ? "Pemasok (TBBM)" : "Pembangkit"} terlebih dahulu pada panel filter untuk menampilkan visualisasi data grafik.
+    </p>
+  </div>
+);
 
 export default function Home() {
   const { isOpen, open, close } = useModal();
@@ -282,20 +296,28 @@ export default function Home() {
 
   // 5. Composite chart data (realization by moda)
   const { data: realizationByModaData, isLoading: isRealizationByModaLoading } =
-    useRealizationByModa({
-      startDate: graphicStart,
-      endDate: graphicEnd,
-      product: graphicProduct || undefined,
-      moda: graphicModa || undefined,
-      tbbm:
-        chartMode === "realisasi-moda" || graphicFilterBy === "supplier"
-          ? graphicSupplier || undefined
-          : undefined,
-      pembangkit:
-        chartMode === "realisasi-moda" || graphicFilterBy === "plant"
-          ? graphicPlant || undefined
-          : undefined,
-    });
+    useRealizationByModa(
+      {
+        startDate: graphicStart,
+        endDate: graphicEnd,
+        product: graphicProduct || undefined,
+        moda: graphicModa || undefined,
+        tbbm:
+          chartMode === "realisasi-moda" || graphicFilterBy === "supplier"
+            ? graphicSupplier || undefined
+            : undefined,
+        pembangkit:
+          chartMode === "realisasi-moda" || graphicFilterBy === "plant"
+            ? graphicPlant || undefined
+            : undefined,
+      },
+      {
+        enabled:
+          graphicFilterBy === "supplier"
+            ? !!graphicSupplier
+            : !!graphicPlant,
+      }
+    );
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -414,7 +436,11 @@ export default function Home() {
               <div className="w-full flex-1 min-h-[320px] mt-4">
                 {chartMode === "akumulasi" ? (
                   /* ── Existing: Grafik Akumulasi ─────────────── */
-                  isBbmMonthlyLoading ? (
+                  graphicFilterBy === "supplier" && !graphicSupplier ? (
+                    <EmptyChartState type="supplier" />
+                  ) : graphicFilterBy === "plant" && !graphicPlant ? (
+                    <EmptyChartState type="plant" />
+                  ) : isBbmMonthlyLoading ? (
                     <div className="flex items-center justify-center h-full text-gray-400 text-sm">
                       <Loader2 className="animate-spin mr-2" size={20} />
                       Memuat data grafik...
@@ -484,10 +510,16 @@ export default function Home() {
                   )
                 ) : (
                   /* ── New: Realisasi per Moda ────────────────── */
-                  <BbmCompositeChart
-                    data={realizationByModaData}
-                    isLoading={isRealizationByModaLoading}
-                  />
+                  graphicFilterBy === "supplier" && !graphicSupplier ? (
+                    <EmptyChartState type="supplier" />
+                  ) : graphicFilterBy === "plant" && !graphicPlant ? (
+                    <EmptyChartState type="plant" />
+                  ) : (
+                    <BbmCompositeChart
+                      data={realizationByModaData}
+                      isLoading={isRealizationByModaLoading}
+                    />
+                  )
                 )}
               </div>
             </div>
