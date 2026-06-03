@@ -639,9 +639,11 @@ export default function RealtimeChart({
         // Handle both "2023" and "2023-01-01" formats
         return raw.length >= 4 ? raw.slice(0, 4) : raw;
       }
-      // month
+      // month — include year when spanning multiple years (e.g. 3Y periode)
       const d = new Date(raw + "-01");
-      return d.toLocaleDateString("id-ID", { month: "short" });
+      const monthShort = d.toLocaleDateString("id-ID", { month: "short" });
+      const year = d.getFullYear();
+      return `${monthShort} ${year}`;
     };
 
     // Collect ALL unique timestamps from ALL series
@@ -884,13 +886,38 @@ export default function RealtimeChart({
                 <ResponsiveContainer width="100%" height={chartHeight}>
                   <LineChart
                     data={chartData}
-                    margin={{ top: 10, right: 10, left: 5, bottom: 10 }}
+                    margin={{ top: 10, right: 10, left: 5, bottom: chartFlowData?.granularity === "month" && periode === "3Y" ? 30 : 10 }}
                   >
                     <CartesianGrid stroke="#eee" strokeDasharray="5 5" />
                     <XAxis
                       dataKey="label"
-                      tick={{ fontSize: 12 }}
-                      interval="preserveStartEnd"
+                      tick={chartFlowData?.granularity === "month" && periode === "3Y" ? (props: any) => {
+                        const { x, y, payload } = props;
+                        // label format: "Jan 2024", "Feb 2024", etc.
+                        const parts = (payload.value || "").split(" ");
+                        const month = parts[0] || "";
+                        const year = parts[1] || "";
+                        // Show year label only on the first occurrence of each year
+                        const allLabels = chartData.map((d) => d.label);
+                        const idx = payload.index;
+                        const prevLabel = idx > 0 ? allLabels[idx - 1] : "";
+                        const prevYear = prevLabel ? prevLabel.split(" ")[1] : "";
+                        const showYear = year !== prevYear;
+                        return (
+                          <g transform={`translate(${x},${y})`}>
+                            <text x={0} y={0} dy={12} textAnchor="middle" fontSize={10} fill="#666">
+                              {month}
+                            </text>
+                            {showYear && (
+                              <text x={0} y={0} dy={26} textAnchor="middle" fontSize={11} fontWeight={600} fill="#333">
+                                {year}
+                              </text>
+                            )}
+                          </g>
+                        );
+                      } : { fontSize: 12 }}
+                      interval={chartFlowData?.granularity === "month" && periode === "3Y" ? 0 : "preserveStartEnd"}
+                      height={chartFlowData?.granularity === "month" && periode === "3Y" ? 50 : undefined}
                     />
                     <YAxis
                       domain={yDomain}
