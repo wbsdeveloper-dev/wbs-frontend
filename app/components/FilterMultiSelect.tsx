@@ -98,9 +98,9 @@ export default function FilterMultiSelect({
             <div
               className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0
                 ${value.length === options.length
-                  ? "bg-[#115d72] border-[#115d72]"
+                  ? "bg-primary border-primary"
                   : value.length > 0
-                  ? "bg-[#115d72]/50 border-[#115d72]/50"
+                  ? "bg-primary/50 border-primary/50"
                   : "border-gray-300"
                 }`}
             >
@@ -126,7 +126,7 @@ export default function FilterMultiSelect({
                   <div
                     className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0
                       ${isSelected
-                        ? "bg-[#115d72] border-[#115d72]"
+                        ? "bg-primary border-primary"
                         : "border-gray-300"
                       }`}
                   >

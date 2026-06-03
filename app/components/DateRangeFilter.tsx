@@ -70,7 +70,7 @@ export default function DateFilter({
               handleDateChange(e.target.value, setEndDate, pickerType);
             }}
             className="w-full px-4 py-2 rounded-lg text-[0.875rem] border border-gray-300
-                     focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/40 focus:border-[#14a2bb] text-gray-700"
+                     focus:outline-none focus:ring-2 focus:ring-secondary/40 focus:border-secondary text-gray-700"
           />
         </div>
       </div>
@@ -107,7 +107,7 @@ export default function DateFilter({
           value={getInputValue(endDate, pickerType)}
           onChange={(e) => handleDateChange(e.target.value, setEndDate, pickerType, true)}
           className="w-full px-4 py-2 rounded-lg text-[0.875rem] border border-gray-300
-                   focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/40 focus:border-[#14a2bb] text-gray-700"
+                   focus:outline-none focus:ring-2 focus:ring-secondary/40 focus:border-secondary text-gray-700"
         />
       </div>
     </div>

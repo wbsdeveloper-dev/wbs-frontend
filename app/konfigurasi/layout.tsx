@@ -34,8 +34,8 @@ export default function KonfigurasiLayout({
 
       {/* Subtle pattern overlay */}
       <div className="absolute inset-0 opacity-30">
-        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-[#14a2bb]/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-1/4 w-[400px] h-[400px] bg-[#115d72]/5 rounded-full blur-3xl" />
+        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-secondary/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-1/4 w-[400px] h-[400px] bg-primary/5 rounded-full blur-3xl" />
       </div>
 
       {/* Content */}

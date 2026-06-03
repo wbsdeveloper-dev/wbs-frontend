@@ -349,8 +349,8 @@ export default function InputBAValidasiModal({
         <div className="flex-1 overflow-auto p-4 md:p-6 relative">
           {isProcessing && (
             <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/70 backdrop-blur-sm rounded-xl">
-              <div className="w-12 h-12 border-4 border-[#14a2bb]/30 border-t-[#14a2bb] rounded-full animate-spin"></div>
-              <p className="mt-4 text-[#115d72] font-semibold text-lg">
+              <div className="w-12 h-12 border-4 border-secondary/30 border-t-[#14a2bb] rounded-full animate-spin"></div>
+              <p className="mt-4 text-primary font-semibold text-lg">
                 {extractedRecords ? "Menyimpan Data..." : "Memproses dokumen PDF..."}
               </p>
               <p className="text-sm text-gray-500 mt-2">Mohon tunggu sebentar.</p>
@@ -394,7 +394,7 @@ export default function InputBAValidasiModal({
                             fileInputRef.current?.click();
                           }}
                         >
-                          <button className="px-6 py-2.5 bg-[#115d72] text-white font-medium rounded-lg hover:bg-[#0d4a5c] transition-colors flex items-center gap-2">
+                          <button className="px-6 py-2.5 bg-primary text-white font-medium rounded-lg hover:bg-[#0d4a5c] transition-colors flex items-center gap-2">
                             <Upload size={18} />
                             Unggah PDF{" "}
                             {formData.jenisBa === "Multi Stream" &&
@@ -549,7 +549,7 @@ export default function InputBAValidasiModal({
                             reportDate: e.target.value,
                           })
                         }
-                        className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
+                        className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all"
                       />
                     </div>
 
@@ -576,7 +576,7 @@ export default function InputBAValidasiModal({
                                 prompt: newPrompt,
                               });
                             }}
-                            className="w-4 h-4 text-[#115d72] focus:ring-[#14a2bb]"
+                            className="w-4 h-4 text-primary focus:ring-secondary"
                           />
                           <span className="text-sm text-gray-700">Tunggal</span>
                         </label>
@@ -598,7 +598,7 @@ export default function InputBAValidasiModal({
                                 prompt: newPrompt,
                               });
                             }}
-                            className="w-4 h-4 text-[#115d72] focus:ring-[#14a2bb]"
+                            className="w-4 h-4 text-primary focus:ring-secondary"
                           />
                           <span className="text-sm text-gray-700">
                             Multi Stream
@@ -637,7 +637,7 @@ export default function InputBAValidasiModal({
                                 });
                               }}
                               placeholder="Contoh: 1, 3, 5-7 (Kosongkan untuk seluruh halaman)"
-                              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
+                              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all"
                             />
                             <p className="text-xs text-gray-500 mt-1.5">
                               Masukkan nomor halaman spesifik yang ingin
@@ -665,7 +665,7 @@ export default function InputBAValidasiModal({
                                 });
                               }}
                               placeholder="Contoh: Tanggal, Volume, Harga (Pisahkan dengan koma)"
-                              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
+                              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all"
                             />
                             <datalist id="kolom-suggestions">
                               {kolomSuggestions.map((sug, i) => (
@@ -683,7 +683,7 @@ export default function InputBAValidasiModal({
                       <button
                         type="button"
                         onClick={() => setShowPrompt(!showPrompt)}
-                        className="text-[#115d72] hover:text-[#0d4a5c] text-sm font-medium flex items-center gap-1 transition-colors"
+                        className="text-primary hover:text-[#0d4a5c] text-sm font-medium flex items-center gap-1 transition-colors"
                       >
                         {showPrompt
                           ? "Sembunyikan Prompt"
@@ -704,7 +704,7 @@ export default function InputBAValidasiModal({
                               })
                             }
                             placeholder="Masukkan instruksi khusus untuk pemrosesan AI..."
-                            className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all resize-y min-h-[100px]"
+                            className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all resize-y min-h-[100px]"
                           />
                         </div>
                       )}
@@ -723,7 +723,7 @@ export default function InputBAValidasiModal({
                         !formData.supplierId ||
                         !formData.reportDate
                       }
-                      className="px-6 py-2.5 font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed w-full md:w-auto"
+                      className="px-6 py-2.5 font-medium text-white bg-primary rounded-lg hover:bg-[#0d4a5c] transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed w-full md:w-auto"
                     >
                       {isProcessing ? "Memproses..." : "Proses PDF"}
                     </button>
@@ -738,7 +738,7 @@ export default function InputBAValidasiModal({
                       </h4>
                       <button
                         onClick={() => setExtractedRecords(null)}
-                        className="text-sm text-[#115d72] hover:underline"
+                        className="text-sm text-primary hover:underline"
                       >
                         Kembali ke Form
                       </button>
@@ -765,10 +765,10 @@ export default function InputBAValidasiModal({
                             <div className="font-semibold text-gray-700 text-center">
                               S2 VOLUME
                             </div>
-                            <div className="font-semibold text-gray-700 text-center text-[#115d72]">
+                            <div className="font-semibold text-gray-700 text-center text-primary">
                               TOTAL FLOW
                             </div>
-                            <div className="font-semibold text-gray-700 text-center text-[#115d72]">
+                            <div className="font-semibold text-gray-700 text-center text-primary">
                               TOTAL VOL
                             </div>
                           </>
@@ -798,7 +798,7 @@ export default function InputBAValidasiModal({
                                 newRecs[index].tanggalKegiatan = e.target.value;
                                 setExtractedRecords(newRecs);
                               }}
-                              className={`w-full px-2 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] ${formData.jenisBa === "Multi Stream" ? "text-xs" : "text-sm"}`}
+                              className={`w-full px-2 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary ${formData.jenisBa === "Multi Stream" ? "text-xs" : "text-sm"}`}
                             />
                             {formData.jenisBa === "Multi Stream" && (
                               <>
@@ -819,7 +819,7 @@ export default function InputBAValidasiModal({
                                     );
                                     setExtractedRecords(newRecs);
                                   }}
-                                  className="w-full px-2 py-2 bg-white border border-gray-300 rounded-lg text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] text-right"
+                                  className="w-full px-2 py-2 bg-white border border-gray-300 rounded-lg text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary text-right"
                                 />
                                 <input
                                   type="text"
@@ -835,7 +835,7 @@ export default function InputBAValidasiModal({
                                     newRecs[index].volume = String(val1 + val2);
                                     setExtractedRecords(newRecs);
                                   }}
-                                  className="w-full px-2 py-2 bg-white border border-gray-300 rounded-lg text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] text-right"
+                                  className="w-full px-2 py-2 bg-white border border-gray-300 rounded-lg text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary text-right"
                                 />
                                 <input
                                   type="text"
@@ -854,7 +854,7 @@ export default function InputBAValidasiModal({
                                     );
                                     setExtractedRecords(newRecs);
                                   }}
-                                  className="w-full px-2 py-2 bg-white border border-gray-300 rounded-lg text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] text-right"
+                                  className="w-full px-2 py-2 bg-white border border-gray-300 rounded-lg text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary text-right"
                                 />
                                 <input
                                   type="text"
@@ -870,7 +870,7 @@ export default function InputBAValidasiModal({
                                     newRecs[index].volume = String(val1 + val2);
                                     setExtractedRecords(newRecs);
                                   }}
-                                  className="w-full px-2 py-2 bg-white border border-gray-300 rounded-lg text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] text-right"
+                                  className="w-full px-2 py-2 bg-white border border-gray-300 rounded-lg text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary text-right"
                                 />
                               </>
                             )}
@@ -882,7 +882,7 @@ export default function InputBAValidasiModal({
                                 newRecs[index].flowrate = e.target.value;
                                 setExtractedRecords(newRecs);
                               }}
-                              className={`w-full px-2 py-2 bg-white border ${formData.jenisBa === "Multi Stream" ? "border-[#115d72] bg-blue-50/30" : "border-gray-300"} rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] text-right font-medium ${formData.jenisBa === "Multi Stream" ? "text-xs" : "text-sm"}`}
+                              className={`w-full px-2 py-2 bg-white border ${formData.jenisBa === "Multi Stream" ? "border-primary bg-blue-50/30" : "border-gray-300"} rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary text-right font-medium ${formData.jenisBa === "Multi Stream" ? "text-xs" : "text-sm"}`}
                             />
                             <input
                               type="text"
@@ -892,7 +892,7 @@ export default function InputBAValidasiModal({
                                 newRecs[index].volume = e.target.value;
                                 setExtractedRecords(newRecs);
                               }}
-                              className={`w-full px-2 py-2 bg-white border ${formData.jenisBa === "Multi Stream" ? "border-[#115d72] bg-blue-50/30" : "border-gray-300"} rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] text-right font-medium ${formData.jenisBa === "Multi Stream" ? "text-xs" : "text-sm"}`}
+                              className={`w-full px-2 py-2 bg-white border ${formData.jenisBa === "Multi Stream" ? "border-primary bg-blue-50/30" : "border-gray-300"} rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary text-right font-medium ${formData.jenisBa === "Multi Stream" ? "text-xs" : "text-sm"}`}
                             />
                           </div>
                         ))}
@@ -945,7 +945,7 @@ export default function InputBAValidasiModal({
                               convertToMmscf: e.target.checked,
                             })
                           }
-                          className="w-4 h-4 text-[#115d72] rounded focus:ring-[#14a2bb]"
+                          className="w-4 h-4 text-primary rounded focus:ring-secondary"
                         />
                         <span className="text-sm text-gray-700">
                           Konversi ke MMSCF
@@ -961,7 +961,7 @@ export default function InputBAValidasiModal({
                               convertToBbtu: e.target.checked,
                             })
                           }
-                          className="w-4 h-4 text-[#115d72] rounded focus:ring-[#14a2bb]"
+                          className="w-4 h-4 text-primary rounded focus:ring-secondary"
                         />
                         <span className="text-sm text-gray-700">
                           Konversi ke BBTU
@@ -971,7 +971,7 @@ export default function InputBAValidasiModal({
                     <button
                       onClick={handleSimpanData}
                       disabled={isProcessing}
-                      className="px-6 py-2.5 font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed w-full md:w-auto"
+                      className="px-6 py-2.5 font-medium text-white bg-primary rounded-lg hover:bg-[#0d4a5c] transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed w-full md:w-auto"
                     >
                       {isProcessing ? "Menyimpan..." : "Simpan Data"}
                     </button>

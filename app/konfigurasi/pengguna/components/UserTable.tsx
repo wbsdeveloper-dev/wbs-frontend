@@ -242,7 +242,7 @@ export function UserTable({
               onClick={() => setShowFilters((v) => !v)}
               className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-all duration-200 ${
                 showFilters || activeFilterCount > 0
-                  ? "bg-[#115d72] text-white border-[#115d72]"
+                  ? "bg-primary text-white border-primary"
                   : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
               }`}
             >
@@ -273,7 +273,7 @@ export function UserTable({
                     value={localSearch}
                     onChange={(e) => setLocalSearch(e.target.value)}
                     placeholder="Nama atau email..."
-                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] transition-all"
+                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary transition-all"
                   />
                 </div>
               </div>
@@ -286,7 +286,7 @@ export function UserTable({
                 <select
                   value={localStatus}
                   onChange={(e) => setLocalStatus(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] transition-all bg-white"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary transition-all bg-white"
                 >
                   <option value="">Semua Status</option>
                   <option value="ACTIVE">Aktif</option>
@@ -305,7 +305,7 @@ export function UserTable({
               </button>
               <button
                 onClick={handleApplyFilters}
-                className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-all hover:shadow-md active:scale-95"
+                className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-[#0d4a5c] transition-all hover:shadow-md active:scale-95"
               >
                 <Search size={14} />
                 Terapkan Filter
@@ -351,7 +351,7 @@ export function UserTable({
                   >
                     <div className="flex items-center justify-center gap-2">
                       <Loader2
-                        className="animate-spin text-[#14a2bb]"
+                        className="animate-spin text-secondary"
                         size={20}
                       />
                       <span>Memuat data pengguna...</span>
@@ -420,7 +420,7 @@ export function UserTable({
                               </button>
                               <button
                                 onClick={() => onEdit(user)}
-                                className="p-1.5 text-[#115d72] hover:bg-[#115d72]/10 rounded-lg transition-colors"
+                                className="p-1.5 text-primary hover:bg-primary/10 rounded-lg transition-colors"
                                 title="Edit"
                               >
                                 <Pencil size={16} />

@@ -101,7 +101,7 @@ export function SiteMappingModal({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
           <div className="flex items-center gap-2">
-            <MessageSquare className="w-6 h-6 text-[#115d72]" />
+            <MessageSquare className="w-6 h-6 text-primary" />
             <h2 className="text-lg font-semibold text-gray-900">
               Mapping Pesan WhatsApp
             </h2>
@@ -138,7 +138,7 @@ export function SiteMappingModal({
                   source_type: e.target.value as "WA" | "EMAIL",
                 })
               }
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white transition-all duration-200"
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white transition-all duration-200"
             >
               <option value="WA">WhatsApp</option>
               <option value="EMAIL">Email</option>
@@ -158,7 +158,7 @@ export function SiteMappingModal({
                 setErrors({ ...errors, source_name: "" });
               }}
               placeholder="Masukkan nama grup atau pengirim WhatsApp"
-              className={`w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200 ${errors.source_name
+              className={`w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200 ${errors.source_name
                 ? "border-red-300 focus:ring-red-500"
                 : "border-gray-300"
                 }`}
@@ -184,7 +184,7 @@ export function SiteMappingModal({
                 setErrors({ ...errors, normalized_site_id: "" });
               }}
               disabled={isLoadingDropdowns}
-              className={`w-full px-4 py-2.5 border rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white transition-all duration-200 ${errors.normalized_site_id
+              className={`w-full px-4 py-2.5 border rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white transition-all duration-200 ${errors.normalized_site_id
                 ? "border-red-300 focus:ring-red-500"
                 : "border-gray-300"
                 }`}
@@ -216,7 +216,7 @@ export function SiteMappingModal({
                   mapping_method: e.target.value as "MANUAL" | "AUTO",
                 })
               }
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white transition-all duration-200"
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white transition-all duration-200"
             >
               <option value="MANUAL">Manual</option>
               <option value="AUTO">Otomatis</option>
@@ -236,7 +236,7 @@ export function SiteMappingModal({
           <button
             onClick={handleSubmit}
             disabled={createMappingMutation.isPending}
-            className="px-4 py-2.5 text-sm font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            className="px-4 py-2.5 text-sm font-medium text-white bg-primary rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95 disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
             {createMappingMutation.isPending
               ? "Menyimpan..."

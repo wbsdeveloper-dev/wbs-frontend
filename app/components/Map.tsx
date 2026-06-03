@@ -327,7 +327,7 @@ export default function Map({ commodity }: { commodity?: string }) {
         <div className="text-center">
           <Loader2
             size={32}
-            className="animate-spin text-[#115d72] mx-auto mb-3"
+            className="animate-spin text-primary mx-auto mb-3"
           />
           <p className="text-gray-500 text-sm">Memuat peta...</p>
         </div>
@@ -439,7 +439,7 @@ export default function Map({ commodity }: { commodity?: string }) {
                         {site.siteType === "PEMBANGKIT" && site.capacity && (
                           <div className="flex justify-between text-xs">
                             <span className="text-gray-500">Kapasitas:</span>
-                            <span className="font-medium text-[#115d72]">
+                            <span className="font-medium text-primary">
                               {parseFloat(site.capacity).toLocaleString()} MW
                             </span>
                           </div>
@@ -496,7 +496,7 @@ export default function Map({ commodity }: { commodity?: string }) {
                 onClick={() => setLegendExpanded(true)}
                 className="flex items-center gap-2 bg-white/95 backdrop-blur rounded-lg shadow-lg px-3 py-2 text-xs hover:bg-white transition-all"
               >
-                <Layers size={16} className="text-[#115d72]" />
+                <Layers size={16} className="text-primary" />
                 <span className="text-gray-700 font-medium">Legend</span>
                 <ChevronUp size={14} className="text-gray-400" />
               </button>
@@ -578,7 +578,7 @@ export default function Map({ commodity }: { commodity?: string }) {
       {/* Mobile Filter Button */}
       <button
         onClick={() => setFilterOpen(!filterOpen)}
-        className="lg:hidden fixed bottom-4 right-4 z-50 bg-gradient-to-r from-[#115d72] to-[#14a1bb] text-white p-3 rounded-full shadow-lg hover:shadow-xl transition-all"
+        className="lg:hidden fixed bottom-4 right-4 z-50 bg-gradient-to-r from-primary to-secondary text-white p-3 rounded-full shadow-lg hover:shadow-xl transition-all"
       >
         {filterOpen ? <X size={22} /> : <Filter size={22} />}
       </button>
@@ -647,7 +647,7 @@ export default function Map({ commodity }: { commodity?: string }) {
                       type="checkbox"
                       checked={selectedOwners.has(owner)}
                       onChange={() => toggleOwner(owner)}
-                      className="w-4 h-4 rounded border-gray-300 text-[#115d72] focus:ring-[#14a2bb] cursor-pointer"
+                      className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-secondary cursor-pointer"
                     />
                     <span className="text-sm text-gray-700 group-hover:text-gray-900 transition-colors">
                       {owner}

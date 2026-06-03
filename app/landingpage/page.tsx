@@ -22,7 +22,7 @@ export default function DashboardSelection() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-slate-100">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-[#14a2bb] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <div className="w-12 h-12 border-4 border-secondary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-gray-600">Loading...</p>
         </div>
       </div>
@@ -41,13 +41,13 @@ export default function DashboardSelection() {
 
       {/* Animated Pattern Overlay - subtle on white */}
       <div className="absolute inset-0 opacity-30">
-        <div className="absolute top-20 left-1/4 w-72 h-72 bg-[#14a2bb]/10 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute top-20 left-1/4 w-72 h-72 bg-secondary/10 rounded-full blur-3xl animate-pulse" />
         <div
-          className="absolute bottom-20 right-1/4 w-96 h-96 bg-[#14a2bb]/15 rounded-full blur-3xl animate-pulse"
+          className="absolute bottom-20 right-1/4 w-96 h-96 bg-secondary/15 rounded-full blur-3xl animate-pulse"
           style={{ animationDelay: "1s" }}
         />
         <div
-          className="absolute top-1/2 left-10 w-48 h-48 bg-[#115d72]/10 rounded-full blur-3xl animate-pulse"
+          className="absolute top-1/2 left-10 w-48 h-48 bg-primary/10 rounded-full blur-3xl animate-pulse"
           style={{ animationDelay: "2s" }}
         />
       </div>
@@ -57,7 +57,7 @@ export default function DashboardSelection() {
         <div className="flex items-center justify-between max-w-7xl mx-auto">
           <button
             onClick={() => logout()}
-            className="flex items-center gap-2 text-slate-600 hover:text-[#115d72] transition-colors group"
+            className="flex items-center gap-2 text-slate-600 hover:text-primary transition-colors group"
           >
             <ArrowLeft
               size={20}
@@ -96,16 +96,16 @@ export default function DashboardSelection() {
       <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 py-4 md:py-6">
         {/* Title Section */}
         <div className="text-center mb-6 md:mb-8">
-          <div className="w-20 h-1 bg-gradient-to-r from-[#14a2bb] to-[#115d72]/30 rounded-full mx-auto mb-4" />
+          <div className="w-20 h-1 bg-gradient-to-r from-secondary to-primary/30 rounded-full mx-auto mb-4" />
           <h1 className="text-slate-800 text-2xl md:text-3xl lg:text-4xl font-bold mb-2 leading-tight tracking-tight">
             Pilih Dashboard
           </h1>
           <p className="text-slate-600 text-sm md:text-base max-w-md mx-auto leading-relaxed">
             Akses pemantauan{" "}
-            <span className="text-[#115d72] font-semibold">Gas Pipa</span>
+            <span className="text-primary font-semibold">Gas Pipa</span>
             {", "}
-            <span className="text-[#115d72] font-semibold">BBM</span> dan{" "}
-            <span className="text-[#115d72] font-semibold">LNG</span> secara
+            <span className="text-primary font-semibold">BBM</span> dan{" "}
+            <span className="text-primary font-semibold">LNG</span> secara
             real-time
           </p>
         </div>
@@ -117,14 +117,14 @@ export default function DashboardSelection() {
             <div
               onClick={() => router.push("/dashboard/gas")}
               className="relative bg-white rounded-2xl p-5 md:p-6 
-                border border-slate-200 hover:border-[#14a2bb]/50
+                border border-slate-200 hover:border-secondary/50
                 cursor-pointer transition-all duration-300
                 shadow-lg shadow-slate-200/50 hover:shadow-xl hover:shadow-[#14a2bb]/20
                 hover:scale-[1.02]"
             >
               {/* Icon */}
               <div
-                className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#14a2bb] to-[#115d72] 
+                className="w-12 h-12 rounded-xl bg-gradient-to-br from-secondary to-primary 
                 flex items-center justify-center mb-3 shadow-lg shadow-[#14a2bb]/30
                 group-hover:scale-110 transition-transform"
               >
@@ -135,7 +135,7 @@ export default function DashboardSelection() {
               <h3 className="text-slate-800 text-xl md:text-2xl font-bold mb-1 tracking-tight">
                 Dashboard
               </h3>
-              <h3 className="text-[#14a2bb] text-xl md:text-2xl font-bold mb-3">
+              <h3 className="text-secondary text-xl md:text-2xl font-bold mb-3">
                 Gas Pipa
               </h3>
               <p className="text-slate-600 text-xs md:text-sm mb-4 leading-relaxed">
@@ -146,14 +146,14 @@ export default function DashboardSelection() {
               {/* Button */}
               <div
                 className="flex items-center justify-between py-3 px-4 rounded-xl
-                bg-gradient-to-r from-[#14a2bb]/10 to-transparent
-                border border-[#14a2bb]/20 group-hover:border-[#14a2bb]/40
+                bg-gradient-to-r from-secondary/10 to-transparent
+                border border-secondary/20 group-hover:border-secondary/40
                 transition-all duration-300"
               >
                 <span className="text-slate-700 font-medium">
                   Akses Dashboard
                 </span>
-                <ChevronRight className="w-5 h-5 text-[#14a2bb] group-hover:translate-x-1 transition-transform" />
+                <ChevronRight className="w-5 h-5 text-secondary group-hover:translate-x-1 transition-transform" />
               </div>
             </div>
           </div>

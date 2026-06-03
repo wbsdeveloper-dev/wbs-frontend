@@ -183,7 +183,7 @@ export function AddEditUserModal({
                 type="text"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
+                className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all"
                 placeholder="Masukkan nama lengkap"
               />
             </div>
@@ -196,7 +196,7 @@ export function AddEditUserModal({
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
+                className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all"
                 placeholder="email@example.com"
               />
             </div>
@@ -211,7 +211,7 @@ export function AddEditUserModal({
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-4 pr-10 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
+                    className="w-full pl-4 pr-10 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all"
                     placeholder="Minimal 12 karakter"
                   />
                   <button
@@ -237,7 +237,7 @@ export function AddEditUserModal({
                 onChange={(e) =>
                   setStatus(e.target.value as "ACTIVE" | "INACTIVE")
                 }
-                className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all appearance-none"
+                className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all appearance-none"
               >
                 <option value="ACTIVE">Active</option>
                 <option value="INACTIVE">Inactive</option>
@@ -252,7 +252,7 @@ export function AddEditUserModal({
                 <button
                   type="button"
                   onClick={() => setAddRoleModalOpen(true)}
-                  className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-[#115d72] bg-[#115d72]/10 hover:bg-[#115d72]/20 rounded-lg transition-colors border border-transparent hover:border-[#115d72]/30"
+                  className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded-lg transition-colors border border-transparent hover:border-primary/30"
                 >
                   <Plus size={14} />
                   Tambah Role
@@ -273,7 +273,7 @@ export function AddEditUserModal({
                         type="checkbox"
                         checked={selectedRoles.includes(role.name)}
                         onChange={() => toggleRole(role.name)}
-                        className="mt-0.5 rounded text-[#115d72] focus:ring-[#115d72]/20 mr-2.5"
+                        className="mt-0.5 rounded text-primary focus:ring-primary/20 mr-2.5"
                       />
                       <div className="flex flex-col flex-1">
                         <span className="text-sm font-medium text-gray-900 leading-none">
@@ -312,7 +312,7 @@ export function AddEditUserModal({
           <button
             type="submit"
             form="user-form"
-            className="px-5 py-2.5 text-sm font-medium text-white bg-[#115d72] rounded-xl hover:shadow-lg hover:bg-[#0d4a5c] active:scale-95 transition-all flex items-center justify-center min-w-[120px]"
+            className="px-5 py-2.5 text-sm font-medium text-white bg-primary rounded-xl hover:shadow-lg hover:bg-[#0d4a5c] active:scale-95 transition-all flex items-center justify-center min-w-[120px]"
             disabled={isSaving}
           >
             {isSaving ? (

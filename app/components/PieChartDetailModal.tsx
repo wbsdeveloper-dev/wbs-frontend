@@ -80,7 +80,7 @@ export default function PieChartDetailModal({
                 key={type}
                 className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer ${
                   filterType === type
-                    ? "bg-[#14a2bb] text-white shadow-sm"
+                    ? "bg-secondary text-white shadow-sm"
                     : "text-gray-600 hover:text-gray-900"
                 }`}
                 onClick={() => onFilterTypeChange(type)}
@@ -98,7 +98,7 @@ export default function PieChartDetailModal({
               onChange={(e) => onStartDateChange(e.target.value)}
               className="px-3 py-1.5 rounded-lg text-sm border border-gray-300
                          bg-white text-gray-700
-                         focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/40 focus:border-[#14a2bb]
+                         focus:outline-none focus:ring-2 focus:ring-secondary/40 focus:border-secondary
                          transition-all duration-200"
             />
             <span className="text-gray-500">-</span>
@@ -109,7 +109,7 @@ export default function PieChartDetailModal({
               onChange={(e) => onEndDateChange(e.target.value)}
               className="px-3 py-1.5 rounded-lg text-sm border border-gray-300
                          bg-white text-gray-700
-                         focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/40 focus:border-[#14a2bb]
+                         focus:outline-none focus:ring-2 focus:ring-secondary/40 focus:border-secondary
                          transition-all duration-200"
             />
           </div>

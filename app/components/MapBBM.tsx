@@ -311,8 +311,10 @@ export default function Map() {
   }, [data?.pipes, filteredSites, showPipes, selectedMode]);
 
   // ---- helpers ------------------------------------------------------------
-  const getSiteTypeLabel = (type: string) =>
-    data?.legend.siteTypes.find((st) => st.type === type)?.label || type;
+  const getSiteTypeLabel = (type: string) => {
+    if (type === "PEMASOK") return "TBBM";
+    return data?.legend.siteTypes.find((st) => st.type === type)?.label || type;
+  };
 
   const getSiteTypeColor = (type: string) =>
     data?.legend.siteTypes.find((st) => st.type === type)?.color || "#999999";
@@ -348,7 +350,7 @@ export default function Map() {
         <div className="text-center">
           <Loader2
             size={32}
-            className="animate-spin text-[#115d72] mx-auto mb-3"
+            className="animate-spin text-primary mx-auto mb-3"
           />
           <p className="text-gray-500 text-sm">Memuat peta...</p>
         </div>
@@ -460,7 +462,7 @@ export default function Map() {
                         {site.siteType === "PEMBANGKIT" && site.capacity && (
                           <div className="flex justify-between text-xs">
                             <span className="text-gray-500">Kapasitas:</span>
-                            <span className="font-medium text-[#115d72]">
+                            <span className="font-medium text-primary">
                               {parseFloat(site.capacity).toLocaleString()} MW
                             </span>
                           </div>
@@ -493,7 +495,7 @@ export default function Map() {
                               <span className="text-gray-500">
                                 Total Nominasi:
                               </span>
-                              <span className="font-medium text-[#115d72]">
+                              <span className="font-medium text-primary">
                                 {summary.totalNominasi?.toLocaleString()} kL
                               </span>
                             </div>
@@ -523,7 +525,7 @@ export default function Map() {
                                       list: summary.pembangkitList!,
                                     })
                                   }
-                                  className="w-full mt-2 py-1.5 px-2 bg-[#115d72]/10 hover:bg-[#115d72]/20 text-[#115d72] rounded text-xs font-semibold transition-colors"
+                                  className="w-full mt-2 py-1.5 px-2 bg-primary/10 hover:bg-primary/20 text-primary rounded text-xs font-semibold transition-colors"
                                 >
                                   Lihat Daftar Pembangkit
                                 </button>
@@ -537,7 +539,7 @@ export default function Map() {
                                       list: summary.pemasokList!,
                                     })
                                   }
-                                  className="w-full mt-2 py-1.5 px-2 bg-[#115d72]/10 hover:bg-[#115d72]/20 text-[#115d72] rounded text-xs font-semibold transition-colors"
+                                  className="w-full mt-2 py-1.5 px-2 bg-primary/10 hover:bg-primary/20 text-primary rounded text-xs font-semibold transition-colors"
                                 >
                                   Lihat Daftar Pemasok
                                 </button>
@@ -582,7 +584,7 @@ export default function Map() {
                 onClick={() => setLegendExpanded(true)}
                 className="flex items-center gap-2 bg-white/95 backdrop-blur rounded-lg shadow-lg px-3 py-2 text-xs hover:bg-white transition-all"
               >
-                <Layers size={16} className="text-[#115d72]" />
+                <Layers size={16} className="text-primary" />
                 <span className="text-gray-700 font-medium">Legend</span>
                 <ChevronUp size={14} className="text-gray-400" />
               </button>
@@ -602,7 +604,9 @@ export default function Map() {
                 </div>
 
                 {/* Site type toggles — driven by legend */}
-                {data.legend.siteTypes.map((st) => {
+                {data.legend.siteTypes
+                  .filter((st) => st.type === "PEMBANGKIT" || st.type === "PEMASOK")
+                  .map((st) => {
                   const isVisible = visibleSiteTypes[st.type] ?? true;
                   return (
                     <button
@@ -627,7 +631,7 @@ export default function Map() {
                         }}
                       />
                       <span className="text-gray-700 text-xs flex-1 text-left">
-                        {st.label}
+                        {getSiteTypeLabel(st.type)}
                       </span>
                       {isVisible ? (
                         <Eye size={14} style={{ color: st.color }} />
@@ -665,7 +669,7 @@ export default function Map() {
       {/* Mobile Filter Button */}
       <button
         onClick={() => setFilterOpen(!filterOpen)}
-        className="lg:hidden fixed bottom-4 right-4 z-50 bg-gradient-to-r from-[#115d72] to-[#14a1bb] text-white p-3 rounded-full shadow-lg hover:shadow-xl transition-all"
+        className="lg:hidden fixed bottom-4 right-4 z-50 bg-gradient-to-r from-primary to-secondary text-white p-3 rounded-full shadow-lg hover:shadow-xl transition-all"
       >
         {filterOpen ? <X size={22} /> : <Filter size={22} />}
       </button>
@@ -733,8 +737,8 @@ export default function Map() {
                       onClick={() => setSelectedMode(mode)}
                       className={`px-3 py-1 text-xs font-medium rounded-md transition-all duration-200 cursor-pointer ${
                         selectedMode === mode
-                          ? "bg-[#14a2bb92] text-[#115d72]"
-                          : "text-gray-600 hover:text-[#14a2bb] hover:bg-gray-50"
+                          ? "bg-secondary/90"
+                          : "text-gray-600 hover:text-secondary hover:bg-gray-50"
                       }`}
                     >
                       {mode}
@@ -762,8 +766,8 @@ export default function Map() {
                       onClick={() => setSelectedProduct(prod)}
                       className={`px-3 py-1 text-xs font-medium rounded-md transition-all duration-200 cursor-pointer ${
                         selectedProduct === prod
-                          ? "bg-[#14a2bb92] text-[#115d72]"
-                          : "text-gray-600 hover:text-[#14a2bb] hover:bg-gray-50"
+                          ? "bg-secondary/90"
+                          : "text-gray-600 hover:text-secondary hover:bg-gray-50"
                       }`}
                     >
                       {prod}
@@ -812,7 +816,7 @@ export default function Map() {
                       className="flex flex-col gap-2 p-3 bg-gray-50 rounded-lg border border-gray-200 shadow-sm"
                     >
                       <div className="flex items-center gap-3 border-b border-gray-200 pb-2">
-                        <div className="w-8 h-8 rounded-full bg-[#115d72]/10 flex items-center justify-center text-[#115d72] font-semibold text-xs shrink-0">
+                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-xs shrink-0">
                           {idx + 1}
                         </div>
                         <span className="text-sm font-bold text-gray-800">
@@ -823,7 +827,7 @@ export default function Map() {
                       <div className="grid grid-cols-3 gap-2 text-xs pt-1">
                         <div className="flex flex-col bg-white p-2 rounded-md border border-gray-100">
                           <span className="text-gray-500 mb-0.5">Nominasi</span>
-                          <span className="font-semibold text-[#115d72]">
+                          <span className="font-semibold text-primary">
                             {p.totalNominasi?.toLocaleString() ?? 0} kL
                           </span>
                         </div>
@@ -858,7 +862,7 @@ export default function Map() {
                 <div className="grid grid-cols-3 gap-2 text-xs">
                   <div className="flex flex-col bg-white p-2 rounded-md border border-gray-200 shadow-sm">
                     <span className="text-gray-500 mb-0.5">Nominasi</span>
-                    <span className="font-semibold text-[#115d72]">
+                    <span className="font-semibold text-primary">
                       {modalSiteList.list
                         .reduce((sum, p) => sum + (p.totalNominasi ?? 0), 0)
                         .toLocaleString()}{" "}

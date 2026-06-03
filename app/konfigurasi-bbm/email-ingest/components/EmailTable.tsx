@@ -67,7 +67,7 @@ export default function EmailTable({
                     type="checkbox"
                     checked={selectedRows.length === emails.length && emails.length > 0}
                     onChange={handleSelectAll}
-                    className="w-4 h-4 text-[#115d72] border-gray-300 rounded focus:ring-[#14a2bb] cursor-pointer"
+                    className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-secondary cursor-pointer"
                   />
                 )}
               </th>
@@ -121,7 +121,7 @@ export default function EmailTable({
                         handleSelectRow(email.id);
                       }}
                       onClick={(e) => e.stopPropagation()}
-                      className="w-4 h-4 text-[#115d72] border-gray-300 rounded focus:ring-[#14a2bb] cursor-pointer"
+                      className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-secondary cursor-pointer"
                     />
                   )}
                 </td>
@@ -166,7 +166,7 @@ export default function EmailTable({
                           e.stopPropagation();
                           onRowClick(email);
                         }}
-                        className="p-2 text-gray-500 hover:text-[#115d72] hover:bg-[#115d72]/10 rounded-lg transition-all duration-200"
+                        className="p-2 text-gray-500 hover:text-primary hover:bg-primary/10 rounded-lg transition-all duration-200"
                         title="Edit"
                       >
                         <Pencil size={16} />

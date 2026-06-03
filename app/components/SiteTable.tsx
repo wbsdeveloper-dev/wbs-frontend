@@ -62,7 +62,7 @@ const ActionButtons = ({
       {canUpdate && (
         <button
           onClick={() => onEdit(id)}
-          className="p-1.5 text-[#115d72] hover:bg-[#115d72]/10 rounded-lg transition-colors"
+          className="p-1.5 text-primary hover:bg-primary/10 rounded-lg transition-colors"
           title="Edit"
         >
           <Pencil size={16} />
@@ -340,7 +340,7 @@ export function DaftarSiteTable({ onEdit, onDelete, commodity }: SiteTableProps)
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Cari Pemasok / Pembangkit..."
-              className="w-48 md:w-56 pl-8 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200"
+              className="w-48 md:w-56 pl-8 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
             />
           </div>
         </div>
@@ -612,7 +612,7 @@ export function RelasiOperasionalTable({ onEdit, onDelete, commodity }: SiteTabl
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Cari relasi..."
-              className="w-48 md:w-56 pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200"
+              className="w-48 md:w-56 pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
             />
           </div>
         </div>

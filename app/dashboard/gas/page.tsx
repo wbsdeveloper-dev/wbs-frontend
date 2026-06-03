@@ -270,7 +270,7 @@ export default function GasDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
               {isDistLoading ? (
                 <div className="bg-white rounded-xl p-6 flex items-center justify-center">
-                  <Loader2 className="animate-spin text-[#14a2bb]" size={32} />
+                  <Loader2 className="animate-spin text-secondary" size={32} />
                 </div>
               ) : (
                 <FuelTypeDonutChart
@@ -286,7 +286,7 @@ export default function GasDashboard() {
               )}
               {isSuppliersLoading ? (
                 <div className="bg-white rounded-xl p-6 flex items-center justify-center">
-                  <Loader2 className="animate-spin text-[#14a2bb]" size={32} />
+                  <Loader2 className="animate-spin text-secondary" size={32} />
                 </div>
               ) : (
                 <TopVolumeList
@@ -302,7 +302,7 @@ export default function GasDashboard() {
               )}
               {isPlantsLoading ? (
                 <div className="bg-white rounded-xl p-6 flex items-center justify-center">
-                  <Loader2 className="animate-spin text-[#14a2bb]" size={32} />
+                  <Loader2 className="animate-spin text-secondary" size={32} />
                 </div>
               ) : (
                 <TopVolumeList

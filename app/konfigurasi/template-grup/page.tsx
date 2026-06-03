@@ -74,7 +74,7 @@ function TemplateEditorWrapper({
     return (
       <Card className="h-full min-h-[400px] flex items-center justify-center">
         <div className="text-center text-gray-500">
-          <Loader2 className="w-8 h-8 mx-auto mb-3 animate-spin text-[#14a2bb]" />
+          <Loader2 className="w-8 h-8 mx-auto mb-3 animate-spin text-secondary" />
           <p className="text-sm">Memuat detail template...</p>
         </div>
       </Card>
@@ -426,7 +426,7 @@ export default function TemplateGrupPage() {
           <span className="text-gray-400">/</span>
           <span>Konfigurasi Sistem</span>
           <span className="text-gray-400">/</span>
-          <span className="text-[#115d72] font-medium">Template Grup</span>
+          <span className="text-primary font-medium">Template Grup</span>
         </div>
         <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
           Template Grup
@@ -445,7 +445,7 @@ export default function TemplateGrupPage() {
             {canCreate && (
               <button
                 onClick={() => setIsCreateModalOpen(true)}
-                className="flex items-center gap-2 px-4 py-2.5 bg-[#115d72] text-white text-sm font-medium rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
+                className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white text-sm font-medium rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
               >
                 <Plus size={18} />
                 Buat Template
@@ -473,14 +473,14 @@ export default function TemplateGrupPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Cari template..."
-                className="w-full md:w-56 pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200"
+                className="w-full md:w-56 pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
               />
             </div>
             <div className="relative">
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="appearance-none pl-4 pr-10 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white cursor-pointer transition-all duration-200"
+                className="appearance-none pl-4 pr-10 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white cursor-pointer transition-all duration-200"
               >
                 <option value="all">Semua Status</option>
                 <option value="DRAFT">Draft (Rancangan)</option>
@@ -517,7 +517,7 @@ export default function TemplateGrupPage() {
               onClick={() => setScopeFilter(tab.key)}
               className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap ${
                 scopeFilter === tab.key
-                  ? "bg-[#115d72] text-white shadow-sm"
+                  ? "bg-primary text-white shadow-sm"
                   : "text-gray-600 hover:bg-gray-100"
               }`}
             >
@@ -538,7 +538,7 @@ export default function TemplateGrupPage() {
           {isLoadingTemplates ? (
             <Card className="h-full min-h-[400px] flex items-center justify-center">
               <div className="text-center text-gray-500">
-                <Loader2 className="w-8 h-8 mx-auto mb-3 animate-spin text-[#14a2bb]" />
+                <Loader2 className="w-8 h-8 mx-auto mb-3 animate-spin text-secondary" />
                 <p className="text-sm">Memuat template...</p>
               </div>
             </Card>
@@ -658,7 +658,7 @@ export default function TemplateGrupPage() {
               type="text"
               value={newTemplateName}
               onChange={(e) => setNewTemplateName(e.target.value)}
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent"
+              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent"
               placeholder="Contoh: Template Report Harian"
             />
           </div>
@@ -677,7 +677,7 @@ export default function TemplateGrupPage() {
                       | "EMAIL_INGEST",
                   )
                 }
-                className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white cursor-pointer pr-10"
+                className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white cursor-pointer pr-10"
               >
                 <option value="WA_GROUP">WhatsApp Grup</option>
                 <option value="SPREADSHEET_SOURCE">Sumber Spreadsheet</option>
@@ -694,7 +694,7 @@ export default function TemplateGrupPage() {
               <select
                 value={newTemplateDecimal}
                 onChange={(e) => setNewTemplateDecimal(e.target.value)}
-                className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white cursor-pointer pr-10"
+                className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white cursor-pointer pr-10"
               >
                 <option value=",">Koma (,)</option>
                 <option value=".">Titik (.)</option>
@@ -710,7 +710,7 @@ export default function TemplateGrupPage() {
               <select
                 value={newTemplateCommodity}
                 onChange={(e) => setNewTemplateCommodity(e.target.value)}
-                className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white cursor-pointer pr-10"
+                className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white cursor-pointer pr-10"
               >
                 <option value="GAS PIPA">GAS PIPA</option>
                 <option value="LNG">LNG</option>
@@ -734,7 +734,7 @@ export default function TemplateGrupPage() {
             <button
               onClick={handleCreateTemplate}
               disabled={createTemplateMutation.isPending}
-              className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-primary rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {createTemplateMutation.isPending ? (
                 <span className="flex items-center justify-center gap-2">
@@ -768,7 +768,7 @@ export default function TemplateGrupPage() {
               <select
                 value={testGroupId}
                 onChange={(e) => setTestGroupId(e.target.value)}
-                className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white cursor-pointer pr-10"
+                className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white cursor-pointer pr-10"
               >
                 <option value="" disabled>
                   Pilih Group...
@@ -796,7 +796,7 @@ export default function TemplateGrupPage() {
             <textarea
               value={testMessage}
               onChange={(e) => setTestMessage(e.target.value)}
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent min-h-[100px] resize-y"
+              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent min-h-[100px] resize-y"
               placeholder="Ketik isi pesan WhatsApp di sini..."
             />
           </div>
@@ -832,7 +832,7 @@ export default function TemplateGrupPage() {
                     <span className="text-xs font-medium text-gray-500 w-24">
                       Template:
                     </span>
-                    <span className="text-sm font-medium text-[#115d72]">
+                    <span className="text-sm font-medium text-primary">
                       {testResult.template.name}
                     </span>
                   </div>

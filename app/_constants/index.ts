@@ -36,8 +36,8 @@ export const PEMBANGKIT_COLORS: Record<string, string> = {
 
 // Theme colors
 export const THEME = {
-  primary: "#14a1bb",
-  primaryHover: "#115d72",
+  primary: "var(--theme-secondary)",
+  primaryHover: "var(--theme-primary)",
   primaryLight: "#14a2bb92",
 } as const;
 

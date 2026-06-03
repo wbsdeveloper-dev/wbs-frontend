@@ -199,7 +199,7 @@ const ActionButtons = ({
     {canUpdate && (
       <button
         onClick={() => onEdit(id)}
-        className="p-1.5 text-[#115d72] hover:bg-[#115d72]/10 rounded-lg transition-colors"
+        className="p-1.5 text-primary hover:bg-primary/10 rounded-lg transition-colors"
         title="Edit"
       >
         <Pencil size={16} />
@@ -284,9 +284,9 @@ export default function EditDataTable({
     if (sortField !== field)
       return <ChevronsUpDown size={12} className="ml-1 opacity-40" />;
     return sortDir === "asc" ? (
-      <ArrowUp size={12} className="ml-1 text-[#115d72]" />
+      <ArrowUp size={12} className="ml-1 text-primary" />
     ) : (
-      <ArrowDown size={12} className="ml-1 text-[#115d72]" />
+      <ArrowDown size={12} className="ml-1 text-primary" />
     );
   };
 
@@ -448,7 +448,7 @@ export default function EditDataTable({
                 onClick={() => setShowFilters((v) => !v)}
                 className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-all duration-200 ${
                   showFilters || activeFilterCount > 0
-                    ? "bg-[#115d72] text-white border-[#115d72]"
+                    ? "bg-primary text-white border-primary"
                     : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
                 }`}
               >
@@ -484,7 +484,7 @@ export default function EditDataTable({
                     value={localId}
                     onChange={(e) => setLocalId(e.target.value)}
                     placeholder="Cari berdasarkan ID..."
-                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200"
+                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
                   />
                 </div>
               </div>
@@ -501,7 +501,7 @@ export default function EditDataTable({
                     value={localSupplierName}
                     onChange={(e) => setLocalSupplierName(e.target.value)}
                     placeholder="Cari pemasok..."
-                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200"
+                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
                   />
                 </div>
               </div>
@@ -518,7 +518,7 @@ export default function EditDataTable({
                     value={localSiteName}
                     onChange={(e) => setLocalSiteName(e.target.value)}
                     placeholder="Cari pembangkit..."
-                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200"
+                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
                   />
                 </div>
               </div>
@@ -531,7 +531,7 @@ export default function EditDataTable({
                 <select
                   value={localStatus}
                   onChange={(e) => setLocalStatus(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200 bg-white"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200 bg-white"
                 >
                   {STATUS_OPTIONS.map((opt) => (
                     <option key={opt.value} value={opt.value}>
@@ -550,7 +550,7 @@ export default function EditDataTable({
                   type="date"
                   value={localStartDate}
                   onChange={(e) => setLocalStartDate(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
                 />
               </div>
 
@@ -563,7 +563,7 @@ export default function EditDataTable({
                   type="date"
                   value={localEndDate}
                   onChange={(e) => setLocalEndDate(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
                 />
               </div>
 
@@ -575,7 +575,7 @@ export default function EditDataTable({
                 <select
                   value={localPeriodType}
                   onChange={(e) => setLocalPeriodType(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200 bg-white"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200 bg-white"
                 >
                   {PERIOD_OPTIONS.map((opt) => (
                     <option key={opt.value} value={opt.value}>
@@ -597,7 +597,7 @@ export default function EditDataTable({
               </button>
               <button
                 onClick={handleApplyFilters}
-                className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
+                className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
               >
                 <Search size={14} />
                 Terapkan Filter
@@ -740,7 +740,7 @@ export default function EditDataTable({
                   >
                     <div className="flex items-center justify-center gap-2">
                       <Loader2
-                        className="animate-spin text-[#14a2bb]"
+                        className="animate-spin text-secondary"
                         size={20}
                       />
                       <span>Memuat data...</span>
@@ -851,7 +851,7 @@ export default function EditDataTable({
                   onChange={(e) => {
                     onPageChange(1, Number(e.target.value));
                   }}
-                  className="px-2 py-1 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/40 focus:border-[#14a2bb] transition-all duration-200"
+                  className="px-2 py-1 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-secondary/40 focus:border-secondary transition-all duration-200"
                 >
                   {[5, 10, 25, 50].map((size) => (
                     <option key={size} value={size}>
@@ -903,7 +903,7 @@ export default function EditDataTable({
                         onClick={() => onPageChange(p as number, itemsPerPage)}
                         className={`min-w-[2rem] h-8 rounded-lg text-sm font-medium transition-all duration-200 ${
                           p === displayPage
-                            ? "bg-[#115d72] text-white shadow-sm"
+                            ? "bg-primary text-white shadow-sm"
                             : "text-gray-700 hover:bg-gray-100"
                         }`}
                       >
@@ -951,11 +951,11 @@ function FilterTag({
   onRemove: () => void;
 }) {
   return (
-    <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#115d72]/10 text-[#115d72] rounded-full text-xs font-medium">
+    <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium">
       {label}
       <button
         onClick={onRemove}
-        className="hover:bg-[#115d72]/20 rounded-full p-0.5 transition-colors"
+        className="hover:bg-primary/20 rounded-full p-0.5 transition-colors"
       >
         <X size={12} />
       </button>

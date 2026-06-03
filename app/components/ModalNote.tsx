@@ -203,7 +203,7 @@ export default function ModalNote({
                   <button
                     className={`w-[100] font-medium py-2 rounded-lg transition-colors cursor-pointer text-white ${saving || !note.trim()
                       ? "bg-gray-300 cursor-not-allowed"
-                      : "bg-[#115d72] hover:bg-[#0d4a5c]"
+                      : "bg-primary hover:bg-[#0d4a5c]"
                       }`}
                     onClick={handleSave}
                     disabled={saving || !note.trim()}

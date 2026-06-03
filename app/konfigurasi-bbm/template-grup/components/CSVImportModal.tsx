@@ -182,7 +182,7 @@ export default function CSVImportModal({
     <Modal isOpen={isOpen} onClose={handleClose} title="Import Template Fields from CSV">
       <div className="space-y-6">
         {/* File Upload Section */}
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-[#14a2bb] transition-colors">
+        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-secondary transition-colors">
           <input
             type="file"
             accept=".csv"
@@ -194,8 +194,8 @@ export default function CSVImportModal({
             htmlFor="csv-import-input"
             className="cursor-pointer flex flex-col items-center gap-3"
           >
-            <div className="w-12 h-12 bg-[#14a2bb]/10 rounded-full flex items-center justify-center">
-              <Upload className="w-6 h-6 text-[#14a2bb]" />
+            <div className="w-12 h-12 bg-secondary/10 rounded-full flex items-center justify-center">
+              <Upload className="w-6 h-6 text-secondary" />
             </div>
             <div>
               <p className="text-sm font-medium text-gray-900">
@@ -246,7 +246,7 @@ export default function CSVImportModal({
                 <select
                   value={importStrategy}
                   onChange={(e) => setImportStrategy(e.target.value as "merge" | "replace")}
-                  className="w-full appearance-none px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white cursor-pointer pr-10"
+                  className="w-full appearance-none px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white cursor-pointer pr-10"
                 >
                   <option value="merge">Merge with existing fields</option>
                   <option value="replace">Replace all fields</option>
@@ -286,7 +286,7 @@ export default function CSVImportModal({
                   type="checkbox"
                   checked={selectedFields.size === csvFields.length}
                   onChange={toggleAllFields}
-                  className="w-4 h-4 rounded border-gray-300 text-[#14a2bb] focus:ring-[#14a2bb] cursor-pointer"
+                  className="w-4 h-4 rounded border-gray-300 text-secondary focus:ring-secondary cursor-pointer"
                 />
                 <span className="text-xs font-semibold text-gray-600 flex-1">
                   {selectedFields.size} of {csvFields.length} fields selected
@@ -309,7 +309,7 @@ export default function CSVImportModal({
                       type="checkbox"
                       checked={selectedFields.has(index)}
                       onChange={() => toggleFieldSelection(index)}
-                      className="w-4 h-4 rounded border-gray-300 text-[#14a2bb] focus:ring-[#14a2bb] cursor-pointer"
+                      className="w-4 h-4 rounded border-gray-300 text-secondary focus:ring-secondary cursor-pointer"
                     />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
@@ -355,7 +355,7 @@ export default function CSVImportModal({
               <button
                 onClick={handleImport}
                 disabled={selectedFields.size === 0 || isProcessing}
-                className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-primary rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isProcessing ? (
                   <>

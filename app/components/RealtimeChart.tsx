@@ -443,10 +443,10 @@ const CustomTooltip = ({
                   </span>
                 </div>
 
-                <div className="flex flex-col bg-[#14a2bb]/5 rounded p-1.5 border border-[#14a2bb]/10">
-                  <span className="text-[#115d72]/70 mb-0.5">Flowrate</span>
+                <div className="flex flex-col bg-secondary/5 rounded p-1.5 border border-secondary/10">
+                  <span className="text-primary/70 mb-0.5">Flowrate</span>
 
-                  <span className="font-semibold text-[#115d72] border-t border-[#14a2bb]/10 pt-0.5">
+                  <span className="font-semibold text-primary border-t border-secondary/10 pt-0.5">
                     {Number(flowrate).toLocaleString("id-ID", {
                       maximumFractionDigits: 2,
                     })}{" "}
@@ -474,9 +474,9 @@ const CustomTooltip = ({
                 {unit || "BBTUD"}
               </span>
             </div>
-            <div className="flex flex-col bg-[#14a2bb]/10 rounded p-1.5 border border-[#14a2bb]/20">
-              <span className="text-[#115d72]/80 mb-0.5">Total Flowrate</span>
-              <span className="font-semibold text-[#115d72] border-t border-[#14a2bb]/20 pt-0.5">
+            <div className="flex flex-col bg-secondary/10 rounded p-1.5 border border-secondary/20">
+              <span className="text-primary/80 mb-0.5">Total Flowrate</span>
+              <span className="font-semibold text-primary border-t border-secondary/20 pt-0.5">
                 {totalFlowrate.toLocaleString("id-ID", {
                   maximumFractionDigits: 2,
                 })}{" "}
@@ -905,7 +905,7 @@ export default function RealtimeChart({
     return (
       <div className="bg-white rounded-xl border border-gray-200 p-6 flex items-center justify-center min-h-[400px]">
         <div className="flex flex-col items-center gap-3">
-          <Loader2 className="animate-spin text-[#14a2bb]" size={40} />
+          <Loader2 className="animate-spin text-secondary" size={40} />
           <p className="text-gray-500">Memuat data grafik...</p>
         </div>
       </div>
@@ -1161,9 +1161,9 @@ export default function RealtimeChart({
           <div className="flex flex-col justify-center items-center text-center h-[400px] gap-4">
             {/* Decorative icon with subtle background */}
             <div className="relative">
-              <div className="absolute inset-0 bg-[#14a2bb]/10 rounded-full blur-xl scale-150" />
-              <div className="relative w-20 h-20 bg-gradient-to-br from-[#14a2bb]/20 to-[#115d72]/10 rounded-2xl flex items-center justify-center border border-[#14a2bb]/20">
-                <Info className="w-10 h-10 text-[#14a2bb]" />
+              <div className="absolute inset-0 bg-secondary/10 rounded-full blur-xl scale-150" />
+              <div className="relative w-20 h-20 bg-gradient-to-br from-secondary/20 to-primary/10 rounded-2xl flex items-center justify-center border border-secondary/20">
+                <Info className="w-10 h-10 text-secondary" />
               </div>
             </div>
 
@@ -1174,7 +1174,7 @@ export default function RealtimeChart({
               </h3>
               <p className="text-sm text-gray-500 leading-relaxed">
                 Silakan pilih{" "}
-                <span className="font-medium text-[#115d72]">
+                <span className="font-medium text-primary">
                   {filterType === "Pemasok" ? "Pemasok" : "Pembangkit"}
                 </span>{" "}
                 pada panel filter di samping kanan untuk menampilkan grafik
@@ -1204,7 +1204,7 @@ export default function RealtimeChart({
       {/* Mobile Filter Button */}
       <button
         onClick={() => setFilterOpen(!filterOpen)}
-        className="lg:hidden fixed bottom-4 right-4 z-50 bg-gradient-to-r from-[#115d72] to-[#14a1bb] text-white p-3 rounded-full shadow-lg hover:shadow-xl transition-all"
+        className="lg:hidden fixed bottom-4 right-4 z-50 bg-gradient-to-r from-primary to-secondary text-white p-3 rounded-full shadow-lg hover:shadow-xl transition-all"
       >
         {filterOpen ? <X size={22} /> : <Filter size={22} />}
       </button>
@@ -1414,7 +1414,7 @@ export default function RealtimeChart({
                       key={item.label}
                       className={`px-3 py-2 text-sm font-medium rounded-md transition-colors text-center ${
                         period === item.val
-                          ? "bg-[#115d72] text-white shadow-sm"
+                          ? "bg-primary text-white shadow-sm"
                           : "bg-gray-50 text-gray-600 hover:bg-gray-100"
                       }`}
                       onClick={() => {
@@ -1474,7 +1474,7 @@ export default function RealtimeChart({
                         key={mode}
                         className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
                           intervalMode === mode
-                            ? "bg-[#7ec9d4] text-[#115d72] shadow-sm"
+                            ? "bg-[#7ec9d4] text-primary shadow-sm"
                             : "bg-gray-50 text-gray-600 hover:bg-gray-100"
                         }`}
                         onClick={() => {
@@ -1519,11 +1519,11 @@ export default function RealtimeChart({
                       onChange={(e) => setMeanLineActive(e.target.checked)}
                       sx={{
                         "& .MuiSwitch-switchBase.Mui-checked": {
-                          color: "#14a1bb",
+                          color: "var(--theme-secondary)",
                         },
                         "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
                           {
-                            backgroundColor: "#14a1bb",
+                            backgroundColor: "var(--theme-secondary)",
                           },
                       }}
                     />
@@ -1537,11 +1537,11 @@ export default function RealtimeChart({
                       onChange={(e) => setTopLineActive(e.target.checked)}
                       sx={{
                         "& .MuiSwitch-switchBase.Mui-checked": {
-                          color: "#14a1bb",
+                          color: "var(--theme-secondary)",
                         },
                         "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
                           {
-                            backgroundColor: "#14a1bb",
+                            backgroundColor: "var(--theme-secondary)",
                           },
                       }}
                     />
@@ -1555,11 +1555,11 @@ export default function RealtimeChart({
                       onChange={(e) => setJphLineActive(e.target.checked)}
                       sx={{
                         "& .MuiSwitch-switchBase.Mui-checked": {
-                          color: "#14a1bb",
+                          color: "var(--theme-secondary)",
                         },
                         "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
                           {
-                            backgroundColor: "#14a1bb",
+                            backgroundColor: "var(--theme-secondary)",
                           },
                       }}
                     />
