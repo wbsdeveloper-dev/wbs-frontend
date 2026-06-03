@@ -576,14 +576,26 @@ export default function RealtimeChart({
   const pemasokOptions = useMemo(() => {
     let opts = ["Pemasok A", "Pemasok B"];
     if (filtersData?.pemasok) {
-      opts = filtersData.pemasok.map((p: FilterOption) => p.name);
+      opts = filtersData.pemasok
+        .filter(
+          (p: FilterOption) =>
+            p.commodity?.toUpperCase() === "LNG" ||
+            p.commodity?.toUpperCase() === "GAS PIPA"
+        )
+        .map((p: FilterOption) => p.name);
     }
     return ["Semua Pemasok", ...opts];
   }, [filtersData]);
 
   const pembangkitOptions = useMemo(() => {
     if (filtersData?.pembangkit)
-      return filtersData.pembangkit.map((p: FilterOption) => p.name);
+      return filtersData.pembangkit
+        .filter(
+          (p: FilterOption) =>
+            p.commodity?.toUpperCase() === "LNG" ||
+            p.commodity?.toUpperCase() === "GAS PIPA"
+        )
+        .map((p: FilterOption) => p.name);
     return ["Pembangkit 1", "Pembangkit 2"];
   }, [filtersData]);
 

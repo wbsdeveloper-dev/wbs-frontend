@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { X, CheckCircle2, AlertCircle } from "lucide-react";
+import { Autocomplete, TextField } from "@mui/material";
 import { useCreateBbmMonthly } from "@/hooks/service/bbm-api";
 import { useSites } from "@/hooks/service/site-api";
 
@@ -13,9 +14,9 @@ export default function AddBbmModal({ setOpenModal, onSuccess }: Props) {
     monthDate: "",
     siteId: "",
     supplierId: "",
-    product: "HSD",
+    product: "B40",
     moda: "Truck",
-    unit: "LITER",
+    unit: "KILOLITER",
     nomination: "",
     realization: "",
     usage: "",
@@ -96,45 +97,92 @@ export default function AddBbmModal({ setOpenModal, onSuccess }: Props) {
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-4">
+        {/* Informasi Dasar */}
+        <div className="grid grid-cols-2 gap-4 mb-6">
           <div className="col-span-2 sm:col-span-1">
             <label className="block text-sm font-medium text-gray-700 mb-1">
               TBBM (Pemasok) <span className="text-red-500">*</span>
             </label>
-            <select
-              value={formData.supplierId}
-              onChange={(e) =>
-                setFormData({ ...formData, supplierId: e.target.value })
+            <Autocomplete
+              options={tbbmData || []}
+              getOptionLabel={(option) => option.name}
+              value={
+                tbbmData?.find((p) => p.id === formData.supplierId) || null
               }
-              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
-            >
-              <option value="">Pilih TBBM</option>
-              {tbbmData?.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
+              onChange={(event, newValue) => {
+                setFormData({
+                  ...formData,
+                  supplierId: newValue ? newValue.id : "",
+                });
+              }}
+              isOptionEqualToValue={(option, value) => option.id === value?.id}
+              renderOption={(props, option) => {
+                const { key, ...otherProps } = props as any;
+                return (
+                  <li key={option.id} {...otherProps}>
+                    {option.name}
+                  </li>
+                );
+              }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  placeholder="Pilih TBBM"
+                  variant="outlined"
+                  size="small"
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: "0.75rem",
+                      backgroundColor: "white",
+                    },
+                  }}
+                />
+              )}
+              className="w-full"
+            />
           </div>
 
           <div className="col-span-2 sm:col-span-1">
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Pembangkit <span className="text-red-500">*</span>
             </label>
-            <select
-              value={formData.siteId}
-              onChange={(e) =>
-                setFormData({ ...formData, siteId: e.target.value })
+            <Autocomplete
+              options={pembangkitData || []}
+              getOptionLabel={(option) => option.name}
+              value={
+                pembangkitData?.find((p) => p.id === formData.siteId) || null
               }
-              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
-            >
-              <option value="">Pilih Pembangkit</option>
-              {pembangkitData?.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
+              onChange={(event, newValue) => {
+                setFormData({
+                  ...formData,
+                  siteId: newValue ? newValue.id : "",
+                });
+              }}
+              isOptionEqualToValue={(option, value) => option.id === value?.id}
+              renderOption={(props, option) => {
+                const { key, ...otherProps } = props as any;
+                return (
+                  <li key={option.id} {...otherProps}>
+                    {option.name}
+                  </li>
+                );
+              }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  placeholder="Pilih Pembangkit"
+                  variant="outlined"
+                  size="small"
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: "0.75rem",
+                      backgroundColor: "white",
+                    },
+                  }}
+                />
+              )}
+              className="w-full"
+            />
           </div>
 
           <div className="col-span-2 sm:col-span-1">
@@ -162,26 +210,10 @@ export default function AddBbmModal({ setOpenModal, onSuccess }: Props) {
               }
               className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
             >
-              <option value="BIOSOLAR B-40">BIOSOLAR B-40</option>
+              <option value="B40">B40</option>
+              <option value="B35">B35</option>
               <option value="HSD">HSD</option>
               <option value="MFO">MFO</option>
-            </select>
-          </div>
-
-          <div className="col-span-2 sm:col-span-1">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Moda <span className="text-red-500">*</span>
-            </label>
-            <select
-              value={formData.moda}
-              onChange={(e) =>
-                setFormData({ ...formData, moda: e.target.value })
-              }
-              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
-            >
-              <option value="Truck">Truck</option>
-              <option value="Pipa">Pipa</option>
-              <option value="Kapal">Kapal</option>
             </select>
           </div>
 
@@ -196,51 +228,85 @@ export default function AddBbmModal({ setOpenModal, onSuccess }: Props) {
               }
               className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
             >
+              <option value="KILOLITER">KILO LITER</option>
               <option value="LITER">LITER</option>
-              <option value="KILO LITER">KILO LITER</option>
             </select>
           </div>
+        </div>
 
-          <div className="col-span-2 sm:col-span-1">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Nominasi
-            </label>
-            <input
-              type="number"
-              value={formData.nomination}
-              onChange={(e) =>
-                setFormData({ ...formData, nomination: e.target.value })
-              }
-              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
-            />
+        {/* Grup Data Metrik */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Grup 1: Realisasi & Moda */}
+          <div className="bg-gray-50 p-5 rounded-xl border border-gray-200 shadow-sm flex flex-col gap-4">
+            <h4 className="text-sm font-semibold text-gray-800 border-b border-gray-200 pb-2">
+              Realisasi Pengiriman
+            </h4>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Moda <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={formData.moda}
+                onChange={(e) =>
+                  setFormData({ ...formData, moda: e.target.value })
+                }
+                className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
+              >
+                <option value="Truck">Truck</option>
+                <option value="Pipa">Pipa</option>
+                <option value="Kapal">Kapal</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Realisasi
+              </label>
+              <input
+                type="number"
+                value={formData.realization}
+                onChange={(e) =>
+                  setFormData({ ...formData, realization: e.target.value })
+                }
+                className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
+              />
+            </div>
           </div>
 
-          <div className="col-span-2 sm:col-span-1">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Realisasi
-            </label>
-            <input
-              type="number"
-              value={formData.realization}
-              onChange={(e) =>
-                setFormData({ ...formData, realization: e.target.value })
-              }
-              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
-            />
-          </div>
+          {/* Grup 2: Nominasi & Pemakaian */}
+          <div className="bg-gray-50 p-5 rounded-xl border border-gray-200 shadow-sm flex flex-col gap-4">
+            <h4 className="text-sm font-semibold text-gray-800 border-b border-gray-200 pb-2">
+              Rencana & Pemakaian
+            </h4>
 
-          <div className="col-span-2 sm:col-span-1">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Pemakaian
-            </label>
-            <input
-              type="number"
-              value={formData.usage}
-              onChange={(e) =>
-                setFormData({ ...formData, usage: e.target.value })
-              }
-              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Nominasi (Rencana)
+              </label>
+              <input
+                type="number"
+                value={formData.nomination}
+                onChange={(e) =>
+                  setFormData({ ...formData, nomination: e.target.value })
+                }
+                className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Pemakaian
+              </label>
+              <input
+                type="number"
+                value={formData.usage}
+                onChange={(e) =>
+                  setFormData({ ...formData, usage: e.target.value })
+                }
+                className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
+              />
+            </div>
           </div>
         </div>
 
