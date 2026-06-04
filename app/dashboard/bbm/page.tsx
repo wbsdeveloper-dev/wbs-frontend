@@ -257,32 +257,98 @@ export default function Home() {
   const barChartData = useMemo(() => {
     if (!bbmMonthlyData) return [];
 
-    return bbmMonthlyData
-      .filter((record) => {
-        if (graphicSupplier && record.tbbm !== graphicSupplier) return false;
-        if (graphicPlant && record.pembangkit !== graphicPlant) return false;
-        if (graphicProduct && record.product !== graphicProduct) return false;
-        if (graphicModa && record.moda !== graphicModa) return false;
+    const filtered = bbmMonthlyData.filter((record) => {
+      if (graphicSupplier && record.tbbm !== graphicSupplier) return false;
+      if (graphicPlant && record.pembangkit !== graphicPlant) return false;
+      if (graphicProduct && record.product !== graphicProduct) return false;
+      if (graphicModa && record.moda !== graphicModa) return false;
 
-        const startMonth = graphicStart ? graphicStart.substring(0, 7) : null;
-        const endMonth = graphicEnd ? graphicEnd.substring(0, 7) : null;
+      const startMonth = graphicStart ? graphicStart.substring(0, 7) : null;
+      const endMonth = graphicEnd ? graphicEnd.substring(0, 7) : null;
 
-        if (startMonth && record.reportDate < startMonth) return false;
-        if (endMonth && record.reportDate > endMonth) return false;
+      if (startMonth && record.reportDate < startMonth) return false;
+      if (endMonth && record.reportDate > endMonth) return false;
 
-        return true;
-      })
-      .map((record) => ({
-        name:
-          graphicFilterBy === "supplier"
-            ? `${record.pembangkit || "Unknown"} (${record.product || "Unknown"})`
-            : `${record.tbbm || "Unknown"} (${record.product || "Unknown"})`,
-        supplier: record.tbbm,
-        plant: record.pembangkit,
-        nominasi: record.nomination || 0,
-        realisasi: record.realization || 0,
-        pemakaian: record.usage || 0,
-      }));
+      return true;
+    });
+
+    const monthlyGroups: Record<
+      string,
+      {
+        reportDate: string;
+        tbbm: string;
+        pembangkit: string;
+        product: string;
+        nominasi: number;
+        realisasi: number;
+        pemakaian: number;
+      }
+    > = {};
+
+    filtered.forEach((record) => {
+      const groupKey = `${record.reportDate}|${record.tbbm}|${record.pembangkit}|${record.product}`;
+
+      if (!monthlyGroups[groupKey]) {
+        monthlyGroups[groupKey] = {
+          reportDate: record.reportDate,
+          tbbm: record.tbbm,
+          pembangkit: record.pembangkit,
+          product: record.product,
+          nominasi: record.nomination || 0,
+          realisasi: record.realization || 0,
+          pemakaian: record.usage || 0,
+        };
+      } else {
+        // Same month + tbbm + pembangkit + product but different moda:
+        // - nominasi & pemakaian: do not accumulate, just take the value (max)
+        // - realisasi: accumulate (sum) the values
+        monthlyGroups[groupKey].nominasi = Math.max(
+          monthlyGroups[groupKey].nominasi,
+          record.nomination || 0,
+        );
+        monthlyGroups[groupKey].realisasi += record.realization || 0;
+        monthlyGroups[groupKey].pemakaian = Math.max(
+          monthlyGroups[groupKey].pemakaian,
+          record.usage || 0,
+        );
+      }
+    });
+
+    const chartGroups: Record<
+      string,
+      {
+        name: string;
+        supplier: string;
+        plant: string;
+        nominasi: number;
+        realisasi: number;
+        pemakaian: number;
+      }
+    > = {};
+
+    Object.values(monthlyGroups).forEach((record) => {
+      const name =
+        graphicFilterBy === "supplier"
+          ? `${record.pembangkit || "Unknown"} (${record.product || "Unknown"})`
+          : `${record.tbbm || "Unknown"} (${record.product || "Unknown"})`;
+
+      if (!chartGroups[name]) {
+        chartGroups[name] = {
+          name,
+          supplier: record.tbbm,
+          plant: record.pembangkit,
+          nominasi: 0,
+          realisasi: 0,
+          pemakaian: 0,
+        };
+      }
+
+      chartGroups[name].nominasi += record.nominasi;
+      chartGroups[name].realisasi += record.realisasi;
+      chartGroups[name].pemakaian += record.pemakaian;
+    });
+
+    return Object.values(chartGroups);
   }, [
     bbmMonthlyData,
     graphicSupplier,
