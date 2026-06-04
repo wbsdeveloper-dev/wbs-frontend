@@ -117,12 +117,12 @@ export function RolePrivilegeModal({ open, onClose, role }: RolePrivilegeModalPr
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-[#115d72]/10 flex items-center justify-center">
-              <Shield className="text-[#115d72]" size={20} />
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+              <Shield className="text-primary" size={20} />
             </div>
             <div>
               <h2 className="text-lg font-bold text-gray-900">Hak Akses Peran</h2>
-              <p className="text-sm text-gray-500">Edit privileges for: <span className="font-semibold text-[#115d72]">{role.name}</span></p>
+              <p className="text-sm text-gray-500">Edit privileges for: <span className="font-semibold text-primary">{role.name}</span></p>
             </div>
           </div>
           <button
@@ -137,7 +137,7 @@ export function RolePrivilegeModal({ open, onClose, role }: RolePrivilegeModalPr
         <div className="p-6 overflow-y-auto flex-1 bg-gray-50/30">
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-12 gap-3">
-              <Loader2 className="w-8 h-8 text-[#14a2bb] animate-spin" />
+              <Loader2 className="w-8 h-8 text-secondary animate-spin" />
               <p className="text-gray-500 text-sm">Memuat konfigurasi hak akses...</p>
             </div>
           ) : updateMutation.isError ? (
@@ -147,7 +147,7 @@ export function RolePrivilegeModal({ open, onClose, role }: RolePrivilegeModalPr
           ) : (
             <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm bg-white">
               <table className="w-full text-sm">
-                <thead className="bg-[#115d72] text-white">
+                <thead className="bg-primary text-white">
                   <tr>
                     <th className="px-4 py-3 text-left font-medium w-48 border-r border-[#0d4a5c]">Resource / Modul</th>
                     {allPossibleActions.map(action => (
@@ -166,16 +166,16 @@ export function RolePrivilegeModal({ open, onClose, role }: RolePrivilegeModalPr
                     const isAllSelected = !!availableActions.length && rowSet.size === availableActions.length;
 
                     return (
-                      <tr key={resourceKey} className={`hover:bg-[#14a2bb]/5 transition-colors ${isEven ? 'bg-white' : 'bg-gray-50/50'}`}>
+                      <tr key={resourceKey} className={`hover:bg-secondary/5 transition-colors ${isEven ? 'bg-white' : 'bg-gray-50/50'}`}>
                         <td className="px-4 py-3 border-r border-gray-200 font-medium text-gray-700 uppercase tracking-wide text-xs">
                           <label className="flex items-center gap-2 cursor-pointer w-full h-full group">
                             <input 
                               type="checkbox"
                               checked={isAllSelected}
                               onChange={() => handleToggleRow(resourceKey)}
-                              className="w-4 h-4 text-[#115d72] border-gray-300 rounded focus:ring-[#115d72] cursor-pointer"
+                              className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary cursor-pointer"
                             />
-                            <span className="group-hover:text-[#115d72] transition-colors">{resourceKey.replace(/_/g, " ")}</span>
+                            <span className="group-hover:text-primary transition-colors">{resourceKey.replace(/_/g, " ")}</span>
                           </label>
                         </td>
                         {allPossibleActions.map(action => {
@@ -197,7 +197,7 @@ export function RolePrivilegeModal({ open, onClose, role }: RolePrivilegeModalPr
                                   type="checkbox"
                                   checked={isChecked}
                                   onChange={() => handleToggle(resourceKey, action)}
-                                  className="w-4 h-4 text-[#14a2bb] border-gray-300 rounded focus:ring-[#14a2bb] cursor-pointer"
+                                  className="w-4 h-4 text-secondary border-gray-300 rounded focus:ring-secondary cursor-pointer"
                                 />
                               </label>
                             </td>
@@ -224,7 +224,7 @@ export function RolePrivilegeModal({ open, onClose, role }: RolePrivilegeModalPr
           <button
             onClick={handleSave}
             disabled={updateMutation.isPending || isLoading}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-all hover:shadow-md active:scale-95 disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-[#0d4a5c] transition-all hover:shadow-md active:scale-95 disabled:opacity-50"
           >
             {updateMutation.isPending ? (
               <Loader2 size={16} className="animate-spin" />

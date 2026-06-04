@@ -9,7 +9,7 @@ export default function KontrakPage() {
       <div className="flex items-center gap-2 text-sm text-gray-500 mb-2 animate-fadeIn">
         <span>Dashboard</span>
         <span className="text-gray-400">/</span>
-        <span className="text-[#115d72] font-medium">
+        <span className="text-primary font-medium">
           Kontrak &amp; Dokumen
         </span>
       </div>

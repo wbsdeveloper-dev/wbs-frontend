@@ -73,11 +73,11 @@ export default function BaFilesPage() {
     label: string;
     onRemove: () => void;
   }) => (
-    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-[#115d72]/10 text-[#115d72]">
+    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-primary/10 text-primary">
       {label}
       <button
         onClick={onRemove}
-        className="p-0.5 hover:bg-[#115d72]/20 rounded-full transition-colors"
+        className="p-0.5 hover:bg-primary/20 rounded-full transition-colors"
       >
         <X size={12} />
       </button>
@@ -148,7 +148,7 @@ export default function BaFilesPage() {
                 onClick={() => setShowFilters(!showFilters)}
                 className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-all duration-200 ${
                   showFilters || activeFilterCount > 0
-                    ? "bg-[#115d72] text-white border-[#115d72]"
+                    ? "bg-primary text-white border-primary"
                     : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
                 }`}
               >
@@ -181,7 +181,7 @@ export default function BaFilesPage() {
                         value={localReportMonth}
                         onChange={(e) => setLocalReportMonth(e.target.value)}
                         placeholder="Contoh: 11-2025"
-                        className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]"
+                        className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary"
                       />
                     </div>
                   </div>
@@ -196,7 +196,7 @@ export default function BaFilesPage() {
                         value={localSupplierName}
                         onChange={(e) => setLocalSupplierName(e.target.value)}
                         placeholder="Cari pemasok..."
-                        className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]"
+                        className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary"
                       />
                     </div>
                   </div>
@@ -211,7 +211,7 @@ export default function BaFilesPage() {
                         value={localSiteName}
                         onChange={(e) => setLocalSiteName(e.target.value)}
                         placeholder="Cari pembangkit..."
-                        className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]"
+                        className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary"
                       />
                     </div>
                   </div>
@@ -225,7 +225,7 @@ export default function BaFilesPage() {
                   </button>
                   <button
                     onClick={handleApplyFilters}
-                    className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-all duration-200"
+                    className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-[#0d4a5c] transition-all duration-200"
                   >
                     <Search size={14} /> Terapkan Filter
                   </button>
@@ -307,7 +307,7 @@ export default function BaFilesPage() {
                         colSpan={6}
                         className="px-6 py-12 text-center text-gray-500"
                       >
-                        <Loader2 className="animate-spin w-8 h-8 mx-auto mb-3 text-[#14a2bb]" />
+                        <Loader2 className="animate-spin w-8 h-8 mx-auto mb-3 text-secondary" />
                         <span className="font-medium">Memuat data...</span>
                       </td>
                     </tr>
@@ -355,14 +355,14 @@ export default function BaFilesPage() {
                                 href={fileUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-[#115d72] bg-blue-50 border border-blue-100 rounded-lg hover:bg-blue-100 transition-colors"
+                                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-primary bg-blue-50 border border-blue-100 rounded-lg hover:bg-blue-100 transition-colors"
                               >
                                 <ExternalLink size={16} /> Preview
                               </a>
                               <a
                                 href={fileUrl}
                                 download={file.filename}
-                                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] shadow-sm transition-colors"
+                                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-[#0d4a5c] shadow-sm transition-colors"
                               >
                                 <Download size={16} /> Unduh
                               </a>
@@ -418,7 +418,7 @@ export default function BaFilesPage() {
                         setPageSize(Number(e.target.value));
                         setPage(1);
                       }}
-                      className="text-sm border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] bg-white cursor-pointer"
+                      className="text-sm border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-secondary bg-white cursor-pointer"
                     >
                       {[10, 25, 50, 100].map((size) => (
                         <option key={size} value={size}>

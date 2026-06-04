@@ -159,7 +159,7 @@ export function AddRelationModal({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
           <div className="flex items-center gap-2">
-            <ArrowRightLeft className="w-6 h-6 text-[#115d72]" />
+            <ArrowRightLeft className="w-6 h-6 text-primary" />
             <h2 className="text-lg font-semibold text-gray-900">
               {editingId ? "Edit Relasi" : "Tambah Relasi Pemasok - Pembangkit"}
             </h2>
@@ -186,7 +186,7 @@ export function AddRelationModal({
                 placeholder="Cari sumber..."
                 value={sourceSearch}
                 onChange={(e) => setSourceSearch(e.target.value)}
-                className="w-full pl-9 pr-3 py-1.5 text-xs text-gray-400 border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-[#14a2bb] focus:border-transparent transition-all"
+                className="w-full pl-9 pr-3 py-1.5 text-xs text-gray-400 border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-secondary focus:border-transparent transition-all"
               />
             </div>
             <div className="w-full max-h-48 overflow-y-auto border border-gray-300 rounded-lg bg-white p-2 space-y-1">
@@ -195,7 +195,7 @@ export function AddRelationModal({
                   key={site.id}
                   className={`flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors ${
                     selectedSourceSites.includes(site.id)
-                      ? "bg-[#14a2bb]/10 text-[#115d72]"
+                      ? "bg-secondary/10 text-primary"
                       : "hover:bg-gray-50 text-gray-700"
                   }`}
                 >
@@ -219,7 +219,7 @@ export function AddRelationModal({
                       setErrors({ ...errors, source_site_ids: "" });
                     }}
                     disabled={isLoadingDropdowns}
-                    className="mr-3 w-4 h-4 text-[#14a2bb] focus:ring-[#14a2bb] border-gray-300 rounded cursor-pointer"
+                    className="mr-3 w-4 h-4 text-secondary focus:ring-secondary border-gray-300 rounded cursor-pointer"
                   />
                   <span className="text-sm">{site.name}</span>
                 </label>
@@ -251,7 +251,7 @@ export function AddRelationModal({
                 placeholder="Cari tujuan..."
                 value={targetSearch}
                 onChange={(e) => setTargetSearch(e.target.value)}
-                className="w-full pl-9 pr-3 py-1.5 text-xs text-gray-400 border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-[#14a2bb] focus:border-transparent transition-all"
+                className="w-full pl-9 pr-3 py-1.5 text-xs text-gray-400 border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-secondary focus:border-transparent transition-all"
               />
             </div>
             <div className="w-full max-h-48 overflow-y-auto border border-gray-300 rounded-lg bg-white p-2 space-y-1">
@@ -260,7 +260,7 @@ export function AddRelationModal({
                   key={site.id}
                   className={`flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors ${
                     selectedTargetSites.includes(site.id)
-                      ? "bg-[#14a2bb]/10 text-[#115d72]"
+                      ? "bg-secondary/10 text-primary"
                       : "hover:bg-gray-50 text-gray-700"
                   }`}
                 >
@@ -284,7 +284,7 @@ export function AddRelationModal({
                       setErrors({ ...errors, target_site_ids: "" });
                     }}
                     disabled={isLoadingDropdowns}
-                    className="mr-3 w-4 h-4 text-[#14a2bb] focus:ring-[#14a2bb] border-gray-300 rounded cursor-pointer"
+                    className="mr-3 w-4 h-4 text-secondary focus:ring-secondary border-gray-300 rounded cursor-pointer"
                   />
                   <span className="text-sm">{site.name}</span>
                 </label>
@@ -315,7 +315,7 @@ export function AddRelationModal({
                 setFormData({ ...formData, commodity: e.target.value });
                 setErrors({ ...errors, commodity: "" });
               }}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white transition-all duration-200"
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white transition-all duration-200"
             >
               <option value="">Pilih komoditas...</option>
               <option value="BBM">BBM</option>
@@ -341,7 +341,7 @@ export function AddRelationModal({
               createRelationMutation.isPending ||
               updateRelationMutation.isPending
             }
-            className="px-4 py-2.5 text-sm font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            className="px-4 py-2.5 text-sm font-medium text-white bg-primary rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95 disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
             {createRelationMutation.isPending ||
             updateRelationMutation.isPending

@@ -35,9 +35,9 @@ import { OutboxLogger } from "./OutboxLogger";
 
 // MUI Switch brand color shared sx
 const SWITCH_SX = {
-  "& .MuiSwitch-switchBase.Mui-checked": { color: "#14a2bb" },
+  "& .MuiSwitch-switchBase.Mui-checked": { color: "var(--theme-secondary)" },
   "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
-    backgroundColor: "#14a2bb",
+    backgroundColor: "var(--theme-secondary)",
   },
 };
 
@@ -161,7 +161,7 @@ const BotStatusCard: React.FC<BotStatusCardProps> = ({
     connecting: {
       dot: "bg-amber-400",
       label: "Connecting...",
-      bar: "bg-linear-to-r from-[#14a2bb] to-[#115d72]",
+      bar: "bg-linear-to-r from-secondary to-primary",
       barWidth: "60%",
     },
     standby: {
@@ -366,7 +366,7 @@ function GroupsSection({
           <button
             onClick={handleSync}
             disabled={syncGroups.isPending}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-[#14a2bb] text-white rounded-lg hover:bg-[#118d9f] transition-all disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-secondary text-white rounded-lg hover:bg-[#118d9f] transition-all disabled:opacity-50"
           >
             {syncGroups.isPending ? "Syncing..." : "Sinkronisasi Data"}
           </button>
@@ -377,7 +377,7 @@ function GroupsSection({
         <button
           onClick={handleSelectAll}
           disabled={updateGroups.isPending || activeCount === list.length}
-          className="px-3 py-1.5 text-xs font-medium text-[#115d72] bg-[#14a2bb]/10 rounded-lg hover:bg-[#14a2bb]/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-3 py-1.5 text-xs font-medium text-primary bg-secondary/10 rounded-lg hover:bg-secondary/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Pilih Semua
         </button>
@@ -401,7 +401,7 @@ function GroupsSection({
               checked={group.enabled}
               onChange={() => handleToggle(group.id)}
               disabled={updateGroups.isPending}
-              className="w-4.5 h-4.5 accent-[#14a2bb] rounded border-gray-300 focus:ring-2 focus:ring-[#14a2bb]"
+              className="w-4.5 h-4.5 accent-[#14a2bb] rounded border-gray-300 focus:ring-2 focus:ring-secondary"
             />
             <span className="text-sm text-gray-700 flex-1 truncate">
               {group.name}{" "}
@@ -485,13 +485,13 @@ function KeywordsSection({
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleAdd()}
             placeholder="Tambahkan kata kunci baru"
-            className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200"
+            className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
           />
         </div>
         <button
           onClick={handleAdd}
           disabled={addKw.isPending}
-          className="flex items-center gap-2 px-5 py-2.5 bg-[#115d72] text-white text-sm font-medium rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95 disabled:opacity-50"
+          className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white text-sm font-medium rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95 disabled:opacity-50"
         >
           <Plus size={16} />
           {addKw.isPending ? "..." : "Tambah"}
@@ -763,7 +763,7 @@ function HumanizeSection({
                   handleSliderChange("minProcessingDelay", v)
                 }
                 disabled={update.isPending}
-                sx={{ color: "#14a2bb" }}
+                sx={{ color: "var(--theme-secondary)" }}
               />
             </div>
             <div className="flex-1">
@@ -778,7 +778,7 @@ function HumanizeSection({
                   handleSliderChange("maxProcessingDelay", v)
                 }
                 disabled={update.isPending}
-                sx={{ color: "#14a2bb" }}
+                sx={{ color: "var(--theme-secondary)" }}
               />
             </div>
           </div>
@@ -800,7 +800,7 @@ function HumanizeSection({
                 size="small"
                 onChange={(_e, v) => handleSliderChange("minReadDelay", v)}
                 disabled={update.isPending}
-                sx={{ color: "#14a2bb" }}
+                sx={{ color: "var(--theme-secondary)" }}
               />
             </div>
             <div className="flex-1">
@@ -813,7 +813,7 @@ function HumanizeSection({
                 size="small"
                 onChange={(_e, v) => handleSliderChange("maxReadDelay", v)}
                 disabled={update.isPending}
-                sx={{ color: "#14a2bb" }}
+                sx={{ color: "var(--theme-secondary)" }}
               />
             </div>
           </div>
@@ -845,7 +845,7 @@ function HumanizeSection({
             size="small"
             onChange={(_e, v) => handleSliderChange("offlineChance", v)}
             disabled={update.isPending}
-            sx={{ color: "#14a2bb" }}
+            sx={{ color: "var(--theme-secondary)" }}
           />
         </div>
       </div>

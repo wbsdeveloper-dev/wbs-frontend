@@ -29,12 +29,18 @@ import type {
 import { useDeleteMonitoringRecord } from "@/hooks/service/monitoring-api";
 import { usePrivilege } from "@/hooks/usePrivilege";
 
-// ---------------------------------------------------------------------------
-// Props
-// ---------------------------------------------------------------------------
+export interface NotificationRecord {
+  id: string;
+  reportDate: string;
+  supplierName: string;
+  siteName: string;
+  metricType: string;
+  finalValue: number | null;
+  status: string;
+}
 
-interface EditDataTableProps {
-  records: MonitoringRecord[];
+interface NotificationDataTableProps {
+  records: NotificationRecord[];
   pagination: MonitoringPagination;
   isLoading: boolean;
   onPageChange: (page: number, pageSize: number) => void;
@@ -42,23 +48,10 @@ interface EditDataTableProps {
   onFilterChange?: (filters: MonitoringParams) => void;
 }
 
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
 const STATUS_OPTIONS = [
   { value: "", label: "Semua Status" },
-  { value: "BA_VALIDATION", label: "Tervalidasi BA" },
-  { value: "MANUAL", label: "Manual" },
-  { value: "EMAIL", label: "Email" },
-  { value: "SPREADSHEET", label: "Spreadsheet" },
-  { value: "WHATSAPP", label: "Whatsapp" },
-];
-
-const PERIOD_OPTIONS = [
-  { value: "", label: "Semua Periode" },
-  { value: "day", label: "Daily" },
-  { value: "hour", label: "Hourly" },
+  { value: "DI_BAWAH_TOP", label: "Di Bawah TOP" },
+  { value: "DATA_HILANG", label: "Data Hilang" },
 ];
 
 // ---------------------------------------------------------------------------
@@ -150,15 +143,8 @@ const formatNormalizeText = (text: string) => {
 
 const StatusBadge = ({ status }: { status: string }) => {
   const config: Record<string, { bg: string; text: string; dot: string; label?: string }> = {
-    BA_VALIDATION: { bg: "bg-purple-50", text: "text-purple-700", dot: "bg-purple-500", label: "Tervalidasi BA" },
-    MANUAL: { bg: "bg-green-50", text: "text-green-700", dot: "bg-green-500", label: "Manual" },
-    EMAIL: { bg: "bg-blue-50", text: "text-blue-700", dot: "bg-blue-500", label: "Email" },
-    SPREADSHEET: { bg: "bg-indigo-50", text: "text-indigo-700", dot: "bg-indigo-500", label: "Spreadsheet" },
-    WHATSAPP: { bg: "bg-teal-50", text: "text-teal-700", dot: "bg-teal-500", label: "Whatsapp" },
-    MATCHED: { bg: "bg-emerald-50", text: "text-emerald-700", dot: "bg-emerald-500", label: "Matched" },
-    MISMATCH: { bg: "bg-red-50", text: "text-red-700", dot: "bg-red-500", label: "Mismatch" },
-    NEED_REVIEW: { bg: "bg-amber-50", text: "text-amber-700", dot: "bg-amber-500", label: "Need Review" },
-    RESOLVED: { bg: "bg-blue-50", text: "text-blue-700", dot: "bg-blue-500", label: "Resolved" },
+    DI_BAWAH_TOP: { bg: "bg-red-50", text: "text-red-700", dot: "bg-red-500", label: "Di Bawah TOP" },
+    DATA_HILANG: { bg: "bg-amber-50", text: "text-amber-700", dot: "bg-amber-500", label: "Data Hilang" },
   };
   const c = config[status] ?? {
     bg: "bg-gray-100",
@@ -221,14 +207,14 @@ const ActionButtons = ({
 // Component
 // ---------------------------------------------------------------------------
 
-export default function EditDataTable({
+export default function NotificationDataTable({
   records,
   pagination,
   isLoading,
   onPageChange,
   filters = {},
   onFilterChange,
-}: EditDataTableProps) {
+}: NotificationDataTableProps) {
   const router = useRouter();
   const { hasPrivilege } = usePrivilege();
   const canUpdate = hasPrivilege("data_management", "UPDATE");
@@ -247,7 +233,7 @@ export default function EditDataTable({
   const paginatedRecords = records;
 
   // Sort state
-  type SortField = keyof MonitoringRecord;
+  type SortField = keyof NotificationRecord;
   const [sortField, setSortField] = useState<SortField | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
@@ -335,9 +321,6 @@ export default function EditDataTable({
   const [localSiteName, setLocalSiteName] = useState(filters.siteName ?? "");
   const [localStartDate, setLocalStartDate] = useState(filters.startDate ?? "");
   const [localEndDate, setLocalEndDate] = useState(filters.endDate ?? "");
-  const [localPeriodType, setLocalPeriodType] = useState(
-    filters.periodType ?? "",
-  );
   const [localStatus, setLocalStatus] = useState(filters.status ?? "");
 
   const activeFilterCount = [
@@ -345,7 +328,6 @@ export default function EditDataTable({
     filters.supplierName,
     filters.siteName,
     filters.startDate || filters.endDate,
-    filters.periodType,
     filters.status,
   ].filter(Boolean).length;
 
@@ -356,7 +338,6 @@ export default function EditDataTable({
       ...(localSiteName ? { siteName: localSiteName } : {}),
       ...(localStartDate ? { startDate: localStartDate } : {}),
       ...(localEndDate ? { endDate: localEndDate } : {}),
-      ...(localPeriodType ? { periodType: localPeriodType } : {}),
       ...(localStatus ? { status: localStatus } : {}),
     });
   };
@@ -367,7 +348,6 @@ export default function EditDataTable({
     setLocalSiteName("");
     setLocalStartDate("");
     setLocalEndDate("");
-    setLocalPeriodType("");
     setLocalStatus("");
     onFilterChange?.({});
   };
@@ -566,24 +546,6 @@ export default function EditDataTable({
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
                 />
               </div>
-
-              {/* Periode filter */}
-              <div>
-                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
-                  Periode
-                </label>
-                <select
-                  value={localPeriodType}
-                  onChange={(e) => setLocalPeriodType(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200 bg-white"
-                >
-                  {PERIOD_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
             </div>
 
             {/* Filter actions */}
@@ -653,15 +615,6 @@ export default function EditDataTable({
                 }}
               />
             )}
-            {filters.periodType && (
-              <FilterTag
-                label={`Periode: ${filters.periodType}`}
-                onRemove={() => {
-                  setLocalPeriodType("");
-                  onFilterChange?.({ ...filters, periodType: undefined });
-                }}
-              />
-            )}
             {filters.status && (
               <FilterTag
                 label={`Status: ${filters.status}`}
@@ -682,31 +635,11 @@ export default function EditDataTable({
 
         {/* Status Legend */}
         <div className="px-4 py-3 bg-white border-b border-gray-200 flex flex-wrap items-center gap-x-6 gap-y-3">
-          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Hirarki Data:</span>
+          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Legenda Status:</span>
           
           <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
-            <span className="text-xs font-medium text-gray-600">Tier 1</span>
-            <div className="w-px h-4 bg-gray-300 mx-1"></div>
-            <StatusBadge status="BA_VALIDATION" />
-            <StatusBadge status="MANUAL" />
-          </div>
-
-          <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
-            <span className="text-xs font-medium text-gray-600">Tier 2</span>
-            <div className="w-px h-4 bg-gray-300 mx-1"></div>
-            <StatusBadge status="EMAIL" />
-          </div>
-
-          <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
-            <span className="text-xs font-medium text-gray-600">Tier 3</span>
-            <div className="w-px h-4 bg-gray-300 mx-1"></div>
-            <StatusBadge status="SPREADSHEET" />
-          </div>
-
-          <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
-            <span className="text-xs font-medium text-gray-600">Tier 4</span>
-            <div className="w-px h-4 bg-gray-300 mx-1"></div>
-            <StatusBadge status="WHATSAPP" />
+            <StatusBadge status="DI_BAWAH_TOP" />
+            <StatusBadge status="DATA_HILANG" />
           </div>
         </div>
 
@@ -720,14 +653,8 @@ export default function EditDataTable({
                 <Th label="Pemasok" field="supplierName" align="left" />
                 <Th label="Pembangkit" field="siteName" align="left" />
                 <Th label="Metrik" field="metricType" />
-                <Th label="Periode" field="periodType" />
-                <Th label="Jam" field="periodValue" />
-                <Th label="Nilai Dari WA" field="waValue" />
-                <Th label="Nilai Dari Email" field="plnValue" />
                 <Th label="Nilai Final" field="finalValue" />
-                <Th label="Delta" field="delta" />
                 <Th label="Status" field="status" />
-                <Th label="ID" />
                 <Th label="Aksi" />
               </tr>
             </thead>
@@ -777,46 +704,28 @@ export default function EditDataTable({
                     <td className="px-4 py-3 text-center text-gray-700 whitespace-nowrap">
                       {formatNormalizeText(record.metricType)}
                     </td>
-                    <td className="px-4 py-3 text-center text-gray-700">
-                      {formatNormalizeText(record.periodType)}
-                    </td>
-                    <td className="px-4 py-3 text-center text-gray-700 font-mono text-xs">
-                      {record.periodValue || "-"}
-                    </td>
-                    <td className="px-4 py-3 text-center text-gray-700 font-mono">
-                      {fmt4(record.waValue)}
-                    </td>
-                    <td className="px-4 py-3 text-center text-gray-700 font-mono">
-                      {fmt4(record.plnValue)}
-                    </td>
                     <td className="px-4 py-3 text-center text-gray-700 font-mono font-medium">
                       {fmt4(record.finalValue)}
-                    </td>
-                    <td className="px-4 py-3 text-center text-gray-700 font-mono">
-                      {fmt4(record.delta)}
                     </td>
                     <td className="px-4 py-3 text-center">
                       <StatusBadge status={record.status} />
                     </td>
-                    <td className="px-4 py-3 text-center text-gray-900 font-medium">
-                      {record.id}
+                    <td className="px-4 py-3">
+                      <ActionButtons
+                        id={record.id}
+                        onEdit={(id) => {
+                          // onEdit(id)
+                        }}
+                        onDelete={(id) => {
+                          handleDeleteClick(
+                            id,
+                            `${record.reportDate} - ${record.siteName}`,
+                          );
+                        }}
+                        canUpdate={canUpdate}
+                        canDelete={canDelete}
+                      />
                     </td>
-                    {hasAction && (
-                      <td className="px-4 py-3 text-center">
-                        <ActionButtons
-                          id={record.id}
-                          onEdit={(id) => router.push(`/edit/${id}`)}
-                          onDelete={(id) =>
-                            handleDeleteClick(
-                              id,
-                              `${record.siteName} - ${record.reportDate}`,
-                            )
-                          }
-                          canUpdate={canUpdate}
-                          canDelete={canDelete}
-                        />
-                      </td>
-                    )}
                   </tr>
                 ))
               )}

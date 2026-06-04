@@ -114,7 +114,7 @@ export default function AddReconciliationModal({
                   siteName: selected ? selected.name : "",
                 });
               }}
-              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
+              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all"
             >
               <option value="">Pilih Pembangkit</option>
               {filtersData?.pembangkit?.map((p) => (
@@ -133,7 +133,7 @@ export default function AddReconciliationModal({
               onChange={(e) =>
                 setFormData({ ...formData, supplierName: e.target.value })
               }
-              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
+              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all"
             >
               <option value="">Pilih Pemasok</option>
               {filtersData?.pemasok?.map((p) => (
@@ -152,7 +152,7 @@ export default function AddReconciliationModal({
               onChange={(e) =>
                 setFormData({ ...formData, metricType: e.target.value })
               }
-              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
+              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all"
             >
               <option value="ENERGY_BBTUD">ENERGY_BBTUD</option>
               <option value="FLOWRATE_MMSCFD">FLOWRATE_MMSCFD</option>
@@ -169,7 +169,7 @@ export default function AddReconciliationModal({
               onChange={(e) =>
                 setFormData({ ...formData, periodType: e.target.value })
               }
-              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
+              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all"
             >
               <option value="day">Daily</option>
               <option value="hour">Hourly</option>
@@ -185,7 +185,7 @@ export default function AddReconciliationModal({
               onChange={(e) =>
                 setFormData({ ...formData, periodValue: e.target.value })
               }
-              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
+              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all"
               placeholder="Contoh: April 2026 / 2026-05-15 / 08:00"
             />
           </div>
@@ -200,7 +200,7 @@ export default function AddReconciliationModal({
               onChange={(e) =>
                 setFormData({ ...formData, reportDate: e.target.value })
               }
-              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
+              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all"
             />
           </div>
 
@@ -214,7 +214,7 @@ export default function AddReconciliationModal({
               onChange={(e) =>
                 setFormData({ ...formData, waValue: e.target.value })
               }
-              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
+              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all"
             />
           </div>
           <div className="col-span-2 sm:col-span-1">
@@ -227,7 +227,7 @@ export default function AddReconciliationModal({
               onChange={(e) =>
                 setFormData({ ...formData, plnValue: e.target.value })
               }
-              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
+              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all"
             />
           </div>
           <div className="col-span-2 sm:col-span-1">
@@ -240,7 +240,7 @@ export default function AddReconciliationModal({
               onChange={(e) =>
                 setFormData({ ...formData, sheetValue: e.target.value })
               }
-              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
+              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all"
             />
           </div>
           <div className="col-span-2 sm:col-span-1">
@@ -253,7 +253,7 @@ export default function AddReconciliationModal({
               onChange={(e) =>
                 setFormData({ ...formData, finalValue: e.target.value })
               }
-              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
+              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all"
             />
           </div>
           <div className="col-span-2">
@@ -265,7 +265,7 @@ export default function AddReconciliationModal({
               onChange={(e) =>
                 setFormData({ ...formData, resolution: e.target.value })
               }
-              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all resize-none"
+              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all resize-none"
               rows={2}
             />
           </div>
@@ -285,7 +285,7 @@ export default function AddReconciliationModal({
               !formData.periodValue ||
               !formData.reportDate
             }
-            className="px-4 py-2 font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+            className="px-4 py-2 font-medium text-white bg-primary rounded-lg hover:bg-[#0d4a5c] transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
             {createRecord.isPending ? "Menyimpan..." : "Simpan Data"}
           </button>

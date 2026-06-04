@@ -124,41 +124,54 @@ export default function GasDashboard() {
 
   // Chart flow callbacks
   const handlePeriodChange = useCallback(
-    (newPeriode: Periode, newGranularity: Granularity) => {
-      setGranularity(newGranularity);
+    (newGranularity: Granularity) => {
+      if (newGranularity === "hour") {
+        setStartDateFilter(todayDate);
+        setEndDateFilter(todayDate);
+        setGranularity("hour");
+      } else if (newGranularity === "day") {
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(new Date(todayDate).getDate() - 7);
+        setStartDateFilter(sevenDaysAgo.toISOString().split("T")[0]);
+        setEndDateFilter(todayDate);
+        setGranularity("day");
+      } else if (newGranularity === "interval_hour") {
+        setGranularity("hour");
+      } else if (newGranularity === "interval_day") {
+        setGranularity("day");
+      } else if (newGranularity === "interval_month") {
+        setGranularity("month");
+      } else if (newGranularity === "interval_year") {
+        setGranularity("year");
+      } else {
+        const getFirstDateOfMonth = (dateStr: string, monthsAgo: number) => {
+          const d = new Date(dateStr);
+          d.setMonth(d.getMonth() - monthsAgo);
+          return d.toISOString().split("T")[0];
+        };
 
-      const getDateNDaysAgo = (days: number) => {
-        const d = new Date();
-        d.setDate(d.getDate() - days);
-        return d.toISOString().split("T")[0];
-      };
-      const getDateNMonthsAgo = (months: number) => {
-        const d = new Date();
-        d.setMonth(d.getMonth() - months);
-        return d.toISOString().split("T")[0];
-      };
-
-      switch (newPeriode) {
-        case "1D":
-          setStartDateFilter(todayDate);
+        if (newGranularity === "one_month") {
+          setStartDateFilter(getFirstDateOfMonth(todayDate, 1));
           setEndDateFilter(todayDate);
-          break;
-        case "1W":
-          setStartDateFilter(getDateNDaysAgo(7));
+          setGranularity("day");
+        } else if (newGranularity === "three_month") {
+          setStartDateFilter(getFirstDateOfMonth(todayDate, 3));
           setEndDateFilter(todayDate);
-          break;
-        case "1M":
-          setStartDateFilter(getDateNMonthsAgo(1));
+          setGranularity("month");
+        } else if (newGranularity === "six_month") {
+          setStartDateFilter(getFirstDateOfMonth(todayDate, 6));
           setEndDateFilter(todayDate);
-          break;
-        case "1Y":
-          setStartDateFilter(getDateNMonthsAgo(12));
+          setGranularity("month");
+        } else if (newGranularity === "one_year") {
+          setStartDateFilter(getFirstDateOfMonth(todayDate, 12));
           setEndDateFilter(todayDate);
-          break;
-        case "3Y":
-          setStartDateFilter(getDateNMonthsAgo(36));
-          setEndDateFilter(todayDate);
-          break;
+          setGranularity("month");
+        } else if (newGranularity === "three_year") {
+          const currentYear = new Date(todayDate).getFullYear();
+          setStartDateFilter(`${currentYear - 2}-01-01`);
+          setEndDateFilter(`${currentYear}-12-31`);
+          setGranularity("year");
+        }
       }
     },
     [todayDate],
@@ -252,7 +265,7 @@ export default function GasDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
               {isDistLoading ? (
                 <div className="bg-white rounded-xl p-6 flex items-center justify-center">
-                  <Loader2 className="animate-spin text-[#14a2bb]" size={32} />
+                  <Loader2 className="animate-spin text-secondary" size={32} />
                 </div>
               ) : (
                 <FuelTypeDonutChart
@@ -268,7 +281,7 @@ export default function GasDashboard() {
               )}
               {isSuppliersLoading ? (
                 <div className="bg-white rounded-xl p-6 flex items-center justify-center">
-                  <Loader2 className="animate-spin text-[#14a2bb]" size={32} />
+                  <Loader2 className="animate-spin text-secondary" size={32} />
                 </div>
               ) : (
                 <TopVolumeList
@@ -284,7 +297,7 @@ export default function GasDashboard() {
               )}
               {isPlantsLoading ? (
                 <div className="bg-white rounded-xl p-6 flex items-center justify-center">
-                  <Loader2 className="animate-spin text-[#14a2bb]" size={32} />
+                  <Loader2 className="animate-spin text-secondary" size={32} />
                 </div>
               ) : (
                 <TopVolumeList

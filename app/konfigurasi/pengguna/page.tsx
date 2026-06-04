@@ -58,14 +58,14 @@ export default function PenggunaPage() {
         <span className="text-gray-400">/</span>
         <span>Konfigurasi Sistem</span>
         <span className="text-gray-400">/</span>
-        <span className="text-[#115d72] font-medium">Pengguna</span>
+        <span className="text-primary font-medium">Pengguna</span>
       </div>
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 md:mb-6 animate-fade-in">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900 flex items-center gap-3">
-            <Users className="text-[#115d72]" size={28} />
+            <Users className="text-primary" size={28} />
             {activeTab === "users" ? "Manajemen Pengguna" : "Hak Akses & Peran"}
           </h1>
           <p className="text-gray-600 mt-1 text-sm md:text-base">
@@ -76,7 +76,7 @@ export default function PenggunaPage() {
           {activeTab === "users" && hasPrivilege("users", "CREATE") && (
             <button
               onClick={handleAddUser}
-              className="flex items-center gap-2 px-4 py-2.5 bg-[#115d72] text-white text-sm font-medium rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
+              className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white text-sm font-medium rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
             >
               <Plus size={18} />
               Tambah Pengguna
@@ -88,7 +88,7 @@ export default function PenggunaPage() {
       <div className="flex border-b border-gray-200 mb-6">
         <button
           onClick={() => setActiveTab("users")}
-          className={`pb-3 px-1 text-sm font-medium border-b-2 mr-8 transition-colors ${activeTab === "users" ? "border-[#14a2bb] text-[#14a2bb]" : "border-transparent text-gray-500 hover:text-gray-700"}`}
+          className={`pb-3 px-1 text-sm font-medium border-b-2 mr-8 transition-colors ${activeTab === "users" ? "border-secondary text-secondary" : "border-transparent text-gray-500 hover:text-gray-700"}`}
         >
           <div className="flex items-center gap-2">
             <Users size={16} /> Pengguna
@@ -96,7 +96,7 @@ export default function PenggunaPage() {
         </button>
         <button
           onClick={() => setActiveTab("roles")}
-          className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors ${activeTab === "roles" ? "border-[#14a2bb] text-[#14a2bb]" : "border-transparent text-gray-500 hover:text-gray-700"}`}
+          className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors ${activeTab === "roles" ? "border-secondary text-secondary" : "border-transparent text-gray-500 hover:text-gray-700"}`}
         >
           <div className="flex items-center gap-2">
             <Shield size={16} /> Peran

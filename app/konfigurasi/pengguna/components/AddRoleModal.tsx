@@ -73,7 +73,7 @@ export function AddRoleModal({ open, onClose, onSuccess }: AddRoleModalProps) {
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all uppercase"
+                className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all uppercase"
                 placeholder="Contoh: SUPER_ADMIN"
               />
             </div>
@@ -86,7 +86,7 @@ export function AddRoleModal({ open, onClose, onSuccess }: AddRoleModalProps) {
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={3}
-                className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
+                className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all"
                 placeholder="Penjelasan hak akses..."
               />
             </div>
@@ -106,7 +106,7 @@ export function AddRoleModal({ open, onClose, onSuccess }: AddRoleModalProps) {
           <button
             type="submit"
             form="add-role-form"
-            className="px-5 py-2 text-sm font-medium text-white bg-gradient-to-r from-[#115d72] to-[#14a2bb] rounded-xl hover:shadow-lg hover:shadow-[#115d72]/20 active:scale-95 transition-all flex items-center justify-center min-w-[100px]"
+            className="px-5 py-2 text-sm font-medium text-white bg-gradient-to-r from-primary to-secondary rounded-xl hover:shadow-lg hover:shadow-[#115d72]/20 active:scale-95 transition-all flex items-center justify-center min-w-[100px]"
             disabled={isSaving}
           >
             {isSaving ? (

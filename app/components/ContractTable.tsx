@@ -1390,7 +1390,7 @@ export default function ContractTable() {
                         borderRadius: "8px !important",
                         color: "#9ca3af",
                         "&.Mui-selected": {
-                            backgroundColor: "#115d72",
+                            backgroundColor: "var(--theme-primary)",
                             color: "#fff",
                             border: "1px solid #115d72",
                             "&:hover": {
@@ -1440,8 +1440,8 @@ export default function ContractTable() {
                         <IconButton
                             size="small"
                             sx={{
-                                color: document ? "#115d72" : "#f59e0b", // Green if has document, amber if not
-                                "&:hover": { color: document ? "#115d72" : "#d97706" },
+                                color: document ? "var(--theme-primary)" : "#f59e0b", // Green if has document, amber if not
+                                "&:hover": { color: document ? "var(--theme-primary)" : "#d97706" },
                             }}
                             onClick={() => setDocumentModalRowId(params.row.id as string)}
                             title="Kelola Dokumen"
@@ -1476,14 +1476,14 @@ export default function ContractTable() {
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
                 <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
                     <div className="flex items-center gap-2">
-                        <FileText size={18} className="text-[#115d72]" />
+                        <FileText size={18} className="text-primary" />
                         <h3 className="text-sm font-semibold text-gray-800">
                             Tabel Kontrak Gas Pipa
                         </h3>
                     </div>
                 </div>
                 <div className="flex items-center justify-center py-20">
-                    <CircularProgress size={40} sx={{ color: "#115d72" }} />
+                    <CircularProgress size={40} sx={{ color: "var(--theme-primary)" }} />
                     <span className="ml-3 text-sm text-gray-500">
                         Memuat data kontrak...
                     </span>
@@ -1498,7 +1498,7 @@ export default function ContractTable() {
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
                 <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
                     <div className="flex items-center gap-2">
-                        <FileText size={18} className="text-[#115d72]" />
+                        <FileText size={18} className="text-primary" />
                         <h3 className="text-sm font-semibold text-gray-800">
                             Tabel Kontrak Gas Pipa
                         </h3>
@@ -1513,7 +1513,7 @@ export default function ContractTable() {
                     </div>
                     <button
                         onClick={() => refetch()}
-                        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-all duration-200"
+                        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-[#0d4a5c] transition-all duration-200"
                     >
                         <RefreshCw size={14} />
                         Coba Lagi
@@ -1536,14 +1536,14 @@ export default function ContractTable() {
             {/* Card Header with Actions */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
                 <div className="flex items-center gap-2">
-                    <FileText size={18} className="text-[#115d72]" />
+                    <FileText size={18} className="text-primary" />
                     <h3 className="text-sm font-semibold text-gray-800">
                         Tabel Kontrak Gas Pipa
                     </h3>
                 </div>
                 <div className="flex items-center gap-3">
                     {/* Export button */}
-                    <button onClick={handleExport} className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-[#115d72] bg-[#115d72]/5 border border-[#115d72]/20 rounded-lg hover:bg-[#115d72]/10 transition-all duration-200">
+                    <button onClick={handleExport} className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-primary bg-primary/5 border border-primary/20 rounded-lg hover:bg-primary/10 transition-all duration-200">
                         <FileText size={16} />
                         Ekspor
                     </button>
@@ -1552,7 +1552,7 @@ export default function ContractTable() {
                     {isEditMode && canCreate && (
                         <button
                             onClick={handleAddRow}
-                            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
+                            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
                         >
                             <Plus size={16} />
                             Tambah Baris
@@ -1590,7 +1590,7 @@ export default function ContractTable() {
                         canUpdate && (
                             <button
                                 onClick={() => setIsEditMode(true)}
-                                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
+                                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
                             >
                                 <Pencil size={16} />
                                 Edit Data
@@ -1836,7 +1836,7 @@ export default function ContractTable() {
                                     {doc ? (
                                         <div className="flex items-center justify-between bg-white border border-gray-200 rounded-md p-3">
                                             <div className="flex items-center gap-2 overflow-hidden">
-                                                <FileText size={18} className="text-[#115d72] shrink-0" />
+                                                <FileText size={18} className="text-primary shrink-0" />
                                                 <Typography variant="body2" sx={{ color: "#4b5563", fontWeight: 500 }} noWrap>
                                                     {doc.original_name}
                                                 </Typography>
@@ -1844,7 +1844,7 @@ export default function ContractTable() {
                                             <div className="flex items-center gap-1 shrink-0 ml-2">
                                                 <IconButton
                                                     size="small"
-                                                    sx={{ color: "#115d72", "&:hover": { color: "#0d4a5c", backgroundColor: "#eff6ff" } }}
+                                                    sx={{ color: "var(--theme-primary)", "&:hover": { color: "#0d4a5c", backgroundColor: "#eff6ff" } }}
                                                     title="Pratinjau Dokumen"
                                                     onClick={async () => {
                                                         try {
@@ -1858,7 +1858,7 @@ export default function ContractTable() {
                                                 </IconButton>
                                                 <IconButton
                                                     size="small"
-                                                    sx={{ color: "#115d72", "&:hover": { color: "#0d4a5c", backgroundColor: "#eff6ff" } }}
+                                                    sx={{ color: "var(--theme-primary)", "&:hover": { color: "#0d4a5c", backgroundColor: "#eff6ff" } }}
                                                     title="Unduh Dokumen"
                                                     onClick={async () => {
                                                         try {
@@ -1913,8 +1913,8 @@ export default function ContractTable() {
                                             textTransform: "none",
                                             fontWeight: 500,
                                             borderRadius: "8px",
-                                            color: "#115d72",
-                                            borderColor: "#115d72",
+                                            color: "var(--theme-primary)",
+                                            borderColor: "var(--theme-primary)",
                                             "&:hover": {
                                                 borderColor: "#0d4a5c",
                                                 backgroundColor: "#f8fafc"
@@ -1991,7 +1991,7 @@ export default function ContractTable() {
                             color: "#ffffffff",
                             fontWeight: 500,
                             borderRadius: "8px",
-                            backgroundColor: "#115d72",
+                            backgroundColor: "var(--theme-primary)",
                             "&:hover": { backgroundColor: "#0d4a5c" },
                             "&.Mui-disabled": { backgroundColor: "#0d4a5c", color: "#ffffff" }
                         }}

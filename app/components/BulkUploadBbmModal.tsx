@@ -609,7 +609,7 @@ export default function BulkUploadBbmModal({ setOpenModal, onSuccess }: Props) {
         {/* Header */}
         <div className="flex justify-between items-center pb-4 border-b border-gray-100">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-[#115d72]/10 text-[#115d72] rounded-lg">
+            <div className="p-2 bg-primary/10 text-primary rounded-lg">
               <FileSpreadsheet size={24} />
             </div>
             <div>
@@ -688,7 +688,7 @@ export default function BulkUploadBbmModal({ setOpenModal, onSuccess }: Props) {
                     if (isParsing) return;
                     fileInputRef.current?.click();
                   }}
-                  className={`border-2 border-dashed border-gray-300 hover:border-[#115d72] bg-gray-50/50 hover:bg-[#115d72]/5 rounded-2xl p-8 text-center cursor-pointer transition-all flex flex-col items-center justify-center group ${
+                  className={`border-2 border-dashed border-gray-300 hover:border-primary bg-gray-50/50 hover:bg-primary/5 rounded-2xl p-8 text-center cursor-pointer transition-all flex flex-col items-center justify-center group ${
                     isParsing
                       ? "opacity-50 cursor-not-allowed border-gray-200 bg-gray-50 hover:bg-gray-50"
                       : ""
@@ -696,7 +696,7 @@ export default function BulkUploadBbmModal({ setOpenModal, onSuccess }: Props) {
                 >
                   <Upload
                     size={36}
-                    className="text-gray-400 group-hover:text-[#115d72] group-hover:scale-105 transition-all mb-3"
+                    className="text-gray-400 group-hover:text-primary group-hover:scale-105 transition-all mb-3"
                   />
                   <p className="text-sm font-semibold text-gray-700">
                     {file ? file.name : "Pilih atau Seret File Excel (.xlsx)"}
@@ -738,7 +738,7 @@ export default function BulkUploadBbmModal({ setOpenModal, onSuccess }: Props) {
                             isParsing ? "opacity-50 cursor-not-allowed" : ""
                           } ${
                             isSelected
-                              ? "bg-[#115d72]/10 border-[#115d72]/30 text-[#115d72]"
+                              ? "bg-primary/10 border-primary/30 text-primary"
                               : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
                           }`}
                         >
@@ -747,7 +747,7 @@ export default function BulkUploadBbmModal({ setOpenModal, onSuccess }: Props) {
                             checked={isSelected}
                             disabled={isParsing}
                             onChange={() => handleSheetToggle(name)}
-                            className="rounded-xs border-gray-300 text-[#115d72] focus:ring-[#115d72] h-3.5 w-3.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="rounded-xs border-gray-300 text-primary focus:ring-primary h-3.5 w-3.5 disabled:opacity-50 disabled:cursor-not-allowed"
                           />
                           <span className="truncate">{name}</span>
                         </label>
@@ -872,7 +872,7 @@ export default function BulkUploadBbmModal({ setOpenModal, onSuccess }: Props) {
                                   e.target.value,
                                 )
                               }
-                              className={`w-full text-xs px-2.5 py-1 bg-white border rounded-lg focus:outline-none focus:ring-1 focus:ring-[#115d72] ${
+                              className={`w-full text-xs px-2.5 py-1 bg-white border rounded-lg focus:outline-none focus:ring-1 focus:ring-primary ${
                                 row.siteId
                                   ? "border-gray-200 text-gray-900"
                                   : "border-amber-400 bg-amber-50/30 text-amber-900"
@@ -906,7 +906,7 @@ export default function BulkUploadBbmModal({ setOpenModal, onSuccess }: Props) {
                                   e.target.value,
                                 )
                               }
-                              className={`w-full text-xs px-2.5 py-1 bg-white border rounded-lg focus:outline-none focus:ring-1 focus:ring-[#115d72] ${
+                              className={`w-full text-xs px-2.5 py-1 bg-white border rounded-lg focus:outline-none focus:ring-1 focus:ring-primary ${
                                 row.supplierId
                                   ? "border-gray-200 text-gray-900"
                                   : "border-amber-400 bg-amber-50/30 text-amber-900"
@@ -966,7 +966,7 @@ export default function BulkUploadBbmModal({ setOpenModal, onSuccess }: Props) {
                                       : Math.round(val * 10000) / 10000,
                                   );
                                 }}
-                                className="w-full text-xs pl-2 pr-6 py-1 border border-gray-200 rounded-lg text-right font-mono text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#115d72]"
+                                className="w-full text-xs pl-2 pr-6 py-1 border border-gray-200 rounded-lg text-right font-mono text-gray-900 focus:outline-none focus:ring-1 focus:ring-primary"
                               />
                               <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-gray-400 font-semibold select-none">
                                 kL
@@ -995,7 +995,7 @@ export default function BulkUploadBbmModal({ setOpenModal, onSuccess }: Props) {
                                       : Math.round(val * 10000) / 10000,
                                   );
                                 }}
-                                className="w-full text-xs pl-2 pr-6 py-1 border border-gray-200 rounded-lg text-right font-mono text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#115d72]"
+                                className="w-full text-xs pl-2 pr-6 py-1 border border-gray-200 rounded-lg text-right font-mono text-gray-900 focus:outline-none focus:ring-1 focus:ring-primary"
                               />
                               <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-gray-400 font-semibold select-none">
                                 kL
@@ -1039,7 +1039,7 @@ export default function BulkUploadBbmModal({ setOpenModal, onSuccess }: Props) {
                 type="button"
                 onClick={handleParse}
                 disabled={!file || selectedSheets.length === 0 || isParsing}
-                className="px-5 py-2.5 bg-[#115d72] text-white hover:bg-[#0d4a5c] disabled:opacity-50 disabled:cursor-not-allowed rounded-xl text-sm font-semibold flex items-center gap-2 transition-colors cursor-pointer shadow-md shadow-[#115d72]/10"
+                className="px-5 py-2.5 bg-primary text-white hover:bg-[#0d4a5c] disabled:opacity-50 disabled:cursor-not-allowed rounded-xl text-sm font-semibold flex items-center gap-2 transition-colors cursor-pointer shadow-md shadow-[#115d72]/10"
               >
                 {isParsing ? (
                   <>

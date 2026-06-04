@@ -195,7 +195,7 @@ export default function AddBbmModal({ setOpenModal, onSuccess }: Props) {
               onChange={(e) =>
                 setFormData({ ...formData, monthDate: e.target.value })
               }
-              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
+              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all"
             />
           </div>
 
@@ -208,7 +208,7 @@ export default function AddBbmModal({ setOpenModal, onSuccess }: Props) {
               onChange={(e) =>
                 setFormData({ ...formData, product: e.target.value })
               }
-              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
+              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all"
             >
               <option value="B40">B40</option>
               <option value="B35">B35</option>
@@ -226,7 +226,7 @@ export default function AddBbmModal({ setOpenModal, onSuccess }: Props) {
               onChange={(e) =>
                 setFormData({ ...formData, unit: e.target.value })
               }
-              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
+              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all"
             >
               <option value="KILOLITER">KILO LITER</option>
               <option value="LITER">LITER</option>
@@ -251,7 +251,7 @@ export default function AddBbmModal({ setOpenModal, onSuccess }: Props) {
                 onChange={(e) =>
                   setFormData({ ...formData, moda: e.target.value })
                 }
-                className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
+                className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all"
               >
                 <option value="Truck">Truck</option>
                 <option value="Pipa">Pipa</option>
@@ -269,7 +269,7 @@ export default function AddBbmModal({ setOpenModal, onSuccess }: Props) {
                 onChange={(e) =>
                   setFormData({ ...formData, realization: e.target.value })
                 }
-                className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
+                className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all"
               />
             </div>
           </div>
@@ -290,7 +290,7 @@ export default function AddBbmModal({ setOpenModal, onSuccess }: Props) {
                 onChange={(e) =>
                   setFormData({ ...formData, nomination: e.target.value })
                 }
-                className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
+                className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all"
               />
             </div>
 
@@ -304,7 +304,7 @@ export default function AddBbmModal({ setOpenModal, onSuccess }: Props) {
                 onChange={(e) =>
                   setFormData({ ...formData, usage: e.target.value })
                 }
-                className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
+                className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all"
               />
             </div>
           </div>
@@ -325,7 +325,7 @@ export default function AddBbmModal({ setOpenModal, onSuccess }: Props) {
               !formData.siteId ||
               !formData.supplierId
             }
-            className="px-4 py-2 font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+            className="px-4 py-2 font-medium text-white bg-primary rounded-lg hover:bg-[#0d4a5c] transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
             {createRecord.isPending ? "Menyimpan..." : "Simpan Data"}
           </button>

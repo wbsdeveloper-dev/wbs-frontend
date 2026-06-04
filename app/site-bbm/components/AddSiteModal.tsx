@@ -191,7 +191,7 @@ export function AddSiteModal({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
           <div className="flex items-center gap-2">
-            <MapPin className="w-6 h-6 text-[#115d72]" />
+            <MapPin className="w-6 h-6 text-primary" />
             <h2 className="text-lg font-semibold text-gray-900">
               {editingId ? "Edit Site" : "Tambah Site Baru"}
             </h2>
@@ -219,7 +219,7 @@ export function AddSiteModal({
               onChange={(e) =>
                 setFormData({ ...formData, commodity: e.target.value })
               }
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white transition-all duration-200"
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white transition-all duration-200"
             >
               <option value="">Pilih Komoditas</option>
               <option value="BBM">BBM</option>
@@ -235,7 +235,7 @@ export function AddSiteModal({
               onChange={(e) =>
                 handleSiteTypeChange(e.target.value as "PEMBANGKIT" | "PEMASOK")
               }
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white transition-all duration-200"
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white transition-all duration-200"
             >
               <option value="PEMBANGKIT">Pembangkit</option>
               <option value="PEMASOK">TBBM</option>
@@ -253,7 +253,7 @@ export function AddSiteModal({
                 onChange={(e) =>
                   setFormData({ ...formData, owner: e.target.value })
                 }
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white transition-all duration-200"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white transition-all duration-200"
               >
                 <option value="">Pilih kepemilikan</option>
                 <option value="PLN">PLN</option>
@@ -275,7 +275,7 @@ export function AddSiteModal({
                 setFormData({ ...formData, name: e.target.value })
               }
               placeholder="Masukkan nama site"
-              className={`w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200 ${
+              className={`w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200 ${
                 errors.name
                   ? "border-red-300 focus:ring-red-500"
                   : "border-gray-300"
@@ -300,7 +300,7 @@ export function AddSiteModal({
                   setFormData({ ...formData, region: e.target.value })
                 }
                 placeholder="Masukkan region"
-                className={`w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200 ${
+                className={`w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200 ${
                   errors.region
                     ? "border-red-300 focus:ring-red-500"
                     : "border-gray-300"
@@ -330,7 +330,7 @@ export function AddSiteModal({
                     })
                   }
                   placeholder="Masukkan kapasitas"
-                  className={`w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200 ${
+                  className={`w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200 ${
                     errors.capacity
                       ? "border-red-300 focus:ring-red-500"
                       : "border-gray-300"
@@ -358,7 +358,7 @@ export function AddSiteModal({
               }
               step="any"
               placeholder="-6.123456"
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200"
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
             />
           </div>
 
@@ -378,7 +378,7 @@ export function AddSiteModal({
               }
               step="any"
               placeholder="106.123456"
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200"
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
             />
           </div>
         </form>
@@ -397,7 +397,7 @@ export function AddSiteModal({
             disabled={
               createSiteMutation.isPending || updateSiteMutation.isPending
             }
-            className="px-4 py-2.5 text-sm font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            className="px-4 py-2.5 text-sm font-medium text-white bg-primary rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95 disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
             {createSiteMutation.isPending || updateSiteMutation.isPending
               ? "Menyimpan..."

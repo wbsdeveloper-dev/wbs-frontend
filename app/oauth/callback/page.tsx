@@ -42,8 +42,8 @@ function OAuthCallbackContent() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
       <div className="max-w-md w-full bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center space-y-6">
-        <div className="mx-auto w-16 h-16 bg-[#115d72]/10 rounded-full flex items-center justify-center">
-          <Loader2 className="w-8 h-8 text-[#115d72] animate-spin" />
+        <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
+          <Loader2 className="w-8 h-8 text-primary animate-spin" />
         </div>
         <div>
           <h1 className="text-xl font-bold text-gray-900 mb-2">Autentikasi Google</h1>
@@ -60,8 +60,8 @@ export default function OAuthCallbackPage() {
       fallback={
         <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
           <div className="max-w-md w-full bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center space-y-6">
-            <div className="mx-auto w-16 h-16 bg-[#115d72]/10 rounded-full flex items-center justify-center">
-              <Loader2 className="w-8 h-8 text-[#115d72] animate-spin" />
+            <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
+              <Loader2 className="w-8 h-8 text-primary animate-spin" />
             </div>
             <div>
               <h1 className="text-xl font-bold text-gray-900 mb-2">Autentikasi Google</h1>

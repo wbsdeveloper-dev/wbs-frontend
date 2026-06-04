@@ -314,7 +314,7 @@ export default function SiteMap() {
     return (
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm flex items-center justify-center h-[400px]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#115d72] mx-auto mb-3"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-3"></div>
           <p className="text-gray-500 text-sm">Memuat peta...</p>
         </div>
       </div>
@@ -443,7 +443,7 @@ export default function SiteMap() {
                         type="checkbox"
                         checked={isChecked}
                         onChange={(e) => handleCheck(e.target.checked)}
-                        className="w-4 h-4 text-[#115d72] rounded border-gray-300 focus:ring-[#14a2bb]"
+                        className="w-4 h-4 text-primary rounded border-gray-300 focus:ring-secondary"
                       />
                       <span className="flex items-center gap-1.5">
                         <span
@@ -472,7 +472,7 @@ export default function SiteMap() {
                     type="checkbox"
                     checked={showActive}
                     onChange={(e) => setShowActive(e.target.checked)}
-                    className="w-4 h-4 text-[#115d72] rounded border-gray-300 focus:ring-[#14a2bb]"
+                    className="w-4 h-4 text-primary rounded border-gray-300 focus:ring-secondary"
                   />
                   <span className="flex items-center gap-1.5">
                     <span className="w-3 h-3 rounded-full bg-green-500" />
@@ -484,7 +484,7 @@ export default function SiteMap() {
                     type="checkbox"
                     checked={showInactive}
                     onChange={(e) => setShowInactive(e.target.checked)}
-                    className="w-4 h-4 text-[#115d72] rounded border-gray-300 focus:ring-[#14a2bb]"
+                    className="w-4 h-4 text-primary rounded border-gray-300 focus:ring-secondary"
                   />
                   <span className="flex items-center gap-1.5">
                     <span className="w-3 h-3 rounded-full bg-red-500" />
@@ -507,7 +507,7 @@ export default function SiteMap() {
                 onChange={(e) =>
                   setSelectedRegion(e.target.value || null)
                 }
-                className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white"
+                className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white"
               >
                 <option value="">Semua Region</option>
                 {regions.map((region) => (
@@ -531,7 +531,7 @@ export default function SiteMap() {
                   type="checkbox"
                   checked={showPipes}
                   onChange={(e) => setShowPipes(e.target.checked)}
-                  className="w-4 h-4 text-[#115d72] rounded border-gray-300 focus:ring-[#14a2bb]"
+                  className="w-4 h-4 text-primary rounded border-gray-300 focus:ring-secondary"
                 />
                 <span>Tampilkan Pipa</span>
               </label>

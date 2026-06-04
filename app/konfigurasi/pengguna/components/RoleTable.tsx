@@ -32,7 +32,7 @@ export function RoleTable() {
           </div>
           <div className="flex items-center gap-2">
             {/* <button
-              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-all"
+              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-[#0d4a5c] transition-all"
             >
               <Plus size={16} />
               Tambah Peran
@@ -68,7 +68,7 @@ export function RoleTable() {
                   >
                     <div className="flex items-center justify-center gap-2">
                       <Loader2
-                        className="animate-spin text-[#14a2bb]"
+                        className="animate-spin text-secondary"
                         size={20}
                       />
                       <span>Memuat data peran...</span>
@@ -104,7 +104,7 @@ export function RoleTable() {
                         {canUpdate && (
                           <button
                             onClick={() => handleEditPrivileges(role)}
-                            className="p-1.5 text-[#115d72] hover:bg-[#115d72]/10 rounded-lg transition-colors"
+                            className="p-1.5 text-primary hover:bg-primary/10 rounded-lg transition-colors"
                             title="Atur Hak Akses"
                           >
                             <Settings2 size={16} />

@@ -132,14 +132,16 @@ const DUMMY_GRAPHIC_POOL = [
 
 const EmptyChartState = ({ type }: { type: "supplier" | "plant" }) => (
   <div className="flex flex-col items-center justify-center h-full text-center p-6 bg-gray-50/50 rounded-xl border border-dashed border-gray-200">
-    <div className="w-12 h-12 rounded-full bg-[#14a2bb]/10 flex items-center justify-center mb-4">
-      <BarChart3 className="text-[#14a2bb]" size={24} />
+    <div className="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center mb-4">
+      <BarChart3 className="text-secondary" size={24} />
     </div>
     <h4 className="text-sm font-semibold text-gray-900 mb-1">
       {type === "supplier" ? "Pilih Pemasok" : "Pilih Pembangkit"}
     </h4>
     <p className="text-xs text-gray-500 max-w-[280px]">
-      Silakan pilih {type === "supplier" ? "Pemasok (TBBM)" : "Pembangkit"} terlebih dahulu pada panel filter untuk menampilkan visualisasi data grafik.
+      Silakan pilih {type === "supplier" ? "Pemasok (TBBM)" : "Pembangkit"}{" "}
+      terlebih dahulu pada panel filter untuk menampilkan visualisasi data
+      grafik.
     </p>
   </div>
 );
@@ -379,10 +381,8 @@ export default function Home() {
       },
       {
         enabled:
-          graphicFilterBy === "supplier"
-            ? !!graphicSupplier
-            : !!graphicPlant,
-      }
+          graphicFilterBy === "supplier" ? !!graphicSupplier : !!graphicPlant,
+      },
     );
 
   return (
@@ -574,18 +574,16 @@ export default function Home() {
                       </BarChart>
                     </ResponsiveContainer>
                   )
+                ) : /* ── New: Realisasi per Moda ────────────────── */
+                graphicFilterBy === "supplier" && !graphicSupplier ? (
+                  <EmptyChartState type="supplier" />
+                ) : graphicFilterBy === "plant" && !graphicPlant ? (
+                  <EmptyChartState type="plant" />
                 ) : (
-                  /* ── New: Realisasi per Moda ────────────────── */
-                  graphicFilterBy === "supplier" && !graphicSupplier ? (
-                    <EmptyChartState type="supplier" />
-                  ) : graphicFilterBy === "plant" && !graphicPlant ? (
-                    <EmptyChartState type="plant" />
-                  ) : (
-                    <BbmCompositeChart
-                      data={realizationByModaData}
-                      isLoading={isRealizationByModaLoading}
-                    />
-                  )
+                  <BbmCompositeChart
+                    data={realizationByModaData}
+                    isLoading={isRealizationByModaLoading}
+                  />
                 )}
               </div>
             </div>
@@ -613,7 +611,7 @@ export default function Home() {
                           setGraphicSupplier(null);
                           setGraphicPlant(null);
                         }}
-                        className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/40 focus:border-[#14a2bb] transition-all"
+                        className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-secondary/40 focus:border-secondary transition-all"
                       >
                         <option value="supplier">Pemasok (TBBM)</option>
                         <option value="plant">Pembangkit</option>
@@ -622,7 +620,8 @@ export default function Home() {
                   )}
 
                   {/* TBBM/Pemasok Select */}
-                  {(chartMode === "realisasi-moda" || graphicFilterBy === "supplier") && (
+                  {(chartMode === "realisasi-moda" ||
+                    graphicFilterBy === "supplier") && (
                     <FilterAutocomplete
                       label="TBBM / Pemasok"
                       options={filterSupplierOptions}
@@ -633,7 +632,8 @@ export default function Home() {
                   )}
 
                   {/* Pembangkit Select */}
-                  {(chartMode === "realisasi-moda" || graphicFilterBy === "plant") && (
+                  {(chartMode === "realisasi-moda" ||
+                    graphicFilterBy === "plant") && (
                     <FilterAutocomplete
                       label="Pembangkit"
                       options={filterPlantOptions}
@@ -670,7 +670,7 @@ export default function Home() {
                       type="date"
                       value={graphicStart}
                       onChange={(e) => setGraphicStart(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/40 focus:border-[#14a2bb] transition-all"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-secondary/40 focus:border-secondary transition-all"
                     />
                   </div>
 
@@ -684,26 +684,10 @@ export default function Home() {
                       value={graphicEnd}
                       min={graphicStart}
                       onChange={(e) => setGraphicEnd(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/40 focus:border-[#14a2bb] transition-all"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-secondary/40 focus:border-secondary transition-all"
                     />
                   </div>
                 </div>
-              </div>
-
-              <div className="pt-4">
-                <button
-                  onClick={() => {
-                    setGraphicSupplier(null);
-                    setGraphicPlant(null);
-                    setGraphicProduct(null);
-                    setGraphicModa(null);
-                    setGraphicStart(initialStart);
-                    setGraphicEnd(initialEnd);
-                  }}
-                  className="w-full py-2 border border-gray-200 rounded-lg text-xs font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors"
-                >
-                  Reset Filter Grafik
-                </button>
               </div>
             </div>
           </div>

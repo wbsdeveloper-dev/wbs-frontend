@@ -100,7 +100,7 @@ export default function SupplierResumeTable({
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-8">
-        <Loader2 className="animate-spin text-[#14a2bb]" size={32} />
+        <Loader2 className="animate-spin text-secondary" size={32} />
       </div>
     );
   }
@@ -124,7 +124,7 @@ export default function SupplierResumeTable({
           className="min-w-[300px] w-full flex-shrink-0 snap-start"
         >
           {contracts.length > 1 && (
-            <p className="text-xs font-semibold text-[#115d72] mb-2 uppercase tracking-wide">
+            <p className="text-xs font-semibold text-primary mb-2 uppercase tracking-wide">
               {contract.pembangkit_name ? `${contract.pembangkit_name}` : ""}
             </p>
           )}

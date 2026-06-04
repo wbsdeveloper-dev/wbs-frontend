@@ -121,8 +121,8 @@ export default function DetailDrawer({
             
             <section className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm space-y-4">
               <div className="flex items-center gap-2 mb-4">
-                <div className="p-1.5 bg-[#115d72]/10 rounded-md">
-                  <Info className="w-4 h-4 text-[#115d72]" />
+                <div className="p-1.5 bg-primary/10 rounded-md">
+                  <Info className="w-4 h-4 text-primary" />
                 </div>
                 <h3 className="text-base font-semibold text-gray-900">Informasi Umum</h3>
               </div>
@@ -137,7 +137,7 @@ export default function DetailDrawer({
                   onChange={(e) =>
                     setFormData({ ...formData, name: e.target.value })
                   }
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200"
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
                   placeholder="Contoh: Invoice Telkomsel"
                 />
               </div>
@@ -162,7 +162,7 @@ export default function DetailDrawer({
                     }
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[#14a2bb] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#115d72]"></div>
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-secondary rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                   <span className="ml-3 text-sm font-medium text-gray-700">
                     Sistem Aktif ({formData.isEnabled ? 'Ya' : 'Tidak'})
                   </span>
@@ -172,8 +172,8 @@ export default function DetailDrawer({
 
             <section className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm space-y-4">
               <div className="flex items-center gap-2 mb-4">
-                <div className="p-1.5 bg-[#14a2bb]/10 rounded-md">
-                  <Filter className="w-4 h-4 text-[#14a2bb]" />
+                <div className="p-1.5 bg-secondary/10 rounded-md">
+                  <Filter className="w-4 h-4 text-secondary" />
                 </div>
                 <h3 className="text-base font-semibold text-gray-900">Email Filter Criteria</h3>
               </div>
@@ -188,7 +188,7 @@ export default function DetailDrawer({
                   onChange={(e) =>
                     setFormData({ ...formData, subjectFilter: e.target.value || null })
                   }
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200"
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
                   placeholder="e.g. Laporan Harian, Invoice"
                 />
               </div>
@@ -203,7 +203,7 @@ export default function DetailDrawer({
                   onChange={(e) =>
                     setFormData({ ...formData, senderFilter: e.target.value || null })
                   }
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200"
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
                   placeholder="e.g. noreply@pln.co.id"
                 />
               </div>
@@ -218,7 +218,7 @@ export default function DetailDrawer({
                   onChange={(e) =>
                     setFormData({ ...formData, labelFilter: e.target.value || null })
                   }
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200"
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
                   placeholder="e.g. INBOX, CATEGORY_PROMOTIONS"
                 />
               </div>
@@ -282,7 +282,7 @@ export default function DetailDrawer({
           <button
             onClick={handleSave}
             disabled={isUpdatePending}
-            className="flex items-center gap-2 px-6 py-2 text-sm font-medium text-white bg-[#115d72] hover:bg-[#0d4a5c] rounded-lg transition-colors ring-2 ring-transparent ring-offset-2 hover:ring-[#115d72]/30 focus:outline-none disabled:opacity-50"
+            className="flex items-center gap-2 px-6 py-2 text-sm font-medium text-white bg-primary hover:bg-[#0d4a5c] rounded-lg transition-colors ring-2 ring-transparent ring-offset-2 hover:ring-primary/30 focus:outline-none disabled:opacity-50"
           >
             {isUpdatePending ? (
               <Loader2 className="w-4 h-4 animate-spin" />

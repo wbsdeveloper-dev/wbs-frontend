@@ -45,7 +45,7 @@ const ActionButtons = ({
     {canUpdate && (
       <button
         onClick={() => onEdit(id)}
-        className="p-1.5 text-[#115d72] hover:bg-[#115d72]/10 rounded-lg transition-colors"
+        className="p-1.5 text-primary hover:bg-primary/10 rounded-lg transition-colors"
         title="Edit"
       >
         <Pencil size={16} />
@@ -70,11 +70,11 @@ const FilterTag = ({
   label: string;
   onRemove: () => void;
 }) => (
-  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-[#115d72]/10 text-[#115d72]">
+  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
     {label}
     <button
       onClick={onRemove}
-      className="p-0.5 rounded-full hover:bg-[#115d72]/20 transition-colors"
+      className="p-0.5 rounded-full hover:bg-primary/20 transition-colors"
     >
       <X size={12} />
     </button>
@@ -291,9 +291,9 @@ export default function EditBbmDataTable({
     if (sortField !== field)
       return <ChevronsUpDown size={12} className="ml-1 opacity-40" />;
     return sortDir === "asc" ? (
-      <ArrowUp size={12} className="ml-1 text-[#115d72]" />
+      <ArrowUp size={12} className="ml-1 text-primary" />
     ) : (
-      <ArrowDown size={12} className="ml-1 text-[#115d72]" />
+      <ArrowDown size={12} className="ml-1 text-primary" />
     );
   };
 
@@ -346,7 +346,7 @@ export default function EditBbmDataTable({
             onClick={() => setShowFilters((v) => !v)}
             className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-all duration-200 ${
               showFilters || activeFilterCount > 0
-                ? "bg-[#115d72] text-white border-[#115d72]"
+                ? "bg-primary text-white border-primary"
                 : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
             }`}
           >
@@ -380,7 +380,7 @@ export default function EditBbmDataTable({
                   value={localTbbm}
                   onChange={(e) => setLocalTbbm(e.target.value)}
                   placeholder="Cari TBBM..."
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] transition-all"
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary transition-all"
                 />
               </div>
             </div>
@@ -396,7 +396,7 @@ export default function EditBbmDataTable({
                   value={localPembangkit}
                   onChange={(e) => setLocalPembangkit(e.target.value)}
                   placeholder="Cari Pembangkit..."
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] transition-all"
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary transition-all"
                 />
               </div>
             </div>
@@ -412,7 +412,7 @@ export default function EditBbmDataTable({
                   value={localProduct}
                   onChange={(e) => setLocalProduct(e.target.value)}
                   placeholder="Cari Produk..."
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] transition-all"
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary transition-all"
                 />
               </div>
             </div>
@@ -428,7 +428,7 @@ export default function EditBbmDataTable({
                   value={localModa}
                   onChange={(e) => setLocalModa(e.target.value)}
                   placeholder="Cari Moda..."
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] transition-all"
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary transition-all"
                 />
               </div>
             </div>
@@ -441,7 +441,7 @@ export default function EditBbmDataTable({
                 type="date"
                 value={localStartDate}
                 onChange={(e) => setLocalStartDate(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] transition-all"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary transition-all"
               />
             </div>
 
@@ -453,7 +453,7 @@ export default function EditBbmDataTable({
                 type="date"
                 value={localEndDate}
                 onChange={(e) => setLocalEndDate(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] transition-all"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary transition-all"
               />
             </div>
           </div>
@@ -468,7 +468,7 @@ export default function EditBbmDataTable({
             </button>
             <button
               onClick={handleApplyFilters}
-              className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-all duration-200"
+              className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-[#0d4a5c] transition-all duration-200"
             >
               <Search size={14} />
               Terapkan Filter
@@ -567,7 +567,7 @@ export default function EditBbmDataTable({
                 >
                   <div className="flex items-center justify-center gap-2">
                     <Loader2
-                      className="animate-spin text-[#14a2bb]"
+                      className="animate-spin text-secondary"
                       size={20}
                     />
                     <span>Memuat data...</span>
@@ -683,7 +683,7 @@ export default function EditBbmDataTable({
                     setPageSize(Number(e.target.value));
                     setPage(1);
                   }}
-                  className="appearance-none bg-gray-50 border border-gray-200 text-gray-700 text-sm rounded-lg focus:ring-[#14a2bb] focus:border-[#14a2bb] block pl-3 pr-8 py-1.5 cursor-pointer outline-none hover:bg-gray-100 transition-colors"
+                  className="appearance-none bg-gray-50 border border-gray-200 text-gray-700 text-sm rounded-lg focus:ring-secondary focus:border-secondary block pl-3 pr-8 py-1.5 cursor-pointer outline-none hover:bg-gray-100 transition-colors"
                 >
                   <option value={10}>10</option>
                   <option value={25}>25</option>

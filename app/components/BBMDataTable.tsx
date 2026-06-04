@@ -64,9 +64,9 @@ export default function BBMDataTable({
     if (sortField !== field)
       return <ChevronsUpDown size={12} className="ml-1 opacity-40" />;
     return sortDir === "asc" ? (
-      <ArrowUp size={12} className="ml-1 text-[#115d72]" />
+      <ArrowUp size={12} className="ml-1 text-primary" />
     ) : (
-      <ArrowDown size={12} className="ml-1 text-[#115d72]" />
+      <ArrowDown size={12} className="ml-1 text-primary" />
     );
   };
 
@@ -128,7 +128,7 @@ export default function BBMDataTable({
                 >
                   <div className="flex items-center justify-center gap-2">
                     <Loader2
-                      className="animate-spin text-[#14a2bb]"
+                      className="animate-spin text-secondary"
                       size={20}
                     />
                     <span>Memuat data...</span>
@@ -202,7 +202,7 @@ export default function BBMDataTable({
                 <select
                   value={pageSize}
                   onChange={(e) => onPageChange(1, Number(e.target.value))}
-                  className="appearance-none bg-gray-50 border border-gray-200 text-gray-700 text-sm rounded-lg focus:ring-[#14a2bb] focus:border-[#14a2bb] block pl-3 pr-8 py-1.5 cursor-pointer outline-none hover:bg-gray-100 transition-colors"
+                  className="appearance-none bg-gray-50 border border-gray-200 text-gray-700 text-sm rounded-lg focus:ring-secondary focus:border-secondary block pl-3 pr-8 py-1.5 cursor-pointer outline-none hover:bg-gray-100 transition-colors"
                 >
                   <option value={10}>10</option>
                   <option value={25}>25</option>

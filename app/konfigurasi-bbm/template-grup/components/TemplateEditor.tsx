@@ -501,7 +501,7 @@ export default function TemplateEditor({
               onChange={(e) =>
                 setFormData({ ...formData, name: e.target.value })
               }
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent"
+              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent"
             />
           </div>
           {/* Scope */}
@@ -527,7 +527,7 @@ export default function TemplateEditor({
                     scope: e.target.value as Template["scope"],
                   })
                 }
-                className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white cursor-pointer pr-10"
+                className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white cursor-pointer pr-10"
               >
                 <option value="WA_GROUP">WhatsApp Grup</option>
                 <option value="SPREADSHEET_SOURCE">Sumber Spreadsheet</option>
@@ -562,7 +562,7 @@ export default function TemplateEditor({
                     parserMode: e.target.value as Template["parserMode"],
                   })
                 }
-                className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white cursor-pointer pr-10"
+                className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white cursor-pointer pr-10"
               >
                 <option value="RULE_BASED">
                   Berdasarkan Aturan (Rule Based)
@@ -596,7 +596,7 @@ export default function TemplateEditor({
                     decimalSeparator: e.target.value,
                   })
                 }
-                className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white cursor-pointer pr-10"
+                className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white cursor-pointer pr-10"
               >
                 <option value=",">Koma (,)</option>
                 <option value=".">Titik (.)</option>
@@ -628,7 +628,7 @@ export default function TemplateEditor({
                     commodity: e.target.value,
                   })
                 }
-                className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white cursor-pointer pr-10"
+                className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white cursor-pointer pr-10"
               >
                 <option value="GAS PIPA">GAS PIPA</option>
                 <option value="LNG">LNG</option>
@@ -651,7 +651,7 @@ export default function TemplateEditor({
                     isTransportir: e.target.checked,
                   })
                 }
-                className="w-4 h-4 text-[#115d72] border-gray-300 rounded focus:ring-[#14a2bb]"
+                className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-secondary"
               />
               <label
                 htmlFor={`is-transportir-${formData.id}`}
@@ -687,7 +687,7 @@ export default function TemplateEditor({
                   <button
                     type="button"
                     onClick={() => setIsAddingGroup(true)}
-                    className="ml-auto flex items-center gap-1 px-2 py-1 text-xs font-medium text-white bg-[#115d72] rounded hover:bg-[#0d4a5c] transition-all duration-200"
+                    className="ml-auto flex items-center gap-1 px-2 py-1 text-xs font-medium text-white bg-primary rounded hover:bg-[#0d4a5c] transition-all duration-200"
                   >
                     <Plus size={14} /> Tambah Baru
                   </button>
@@ -709,14 +709,14 @@ export default function TemplateEditor({
                       <label
                         key={gc.id}
                         className={`flex items-center gap-3 p-2 rounded-md cursor-pointer transition-colors ${
-                          isSelected ? "bg-[#14a2bb]/10" : "hover:bg-gray-50"
+                          isSelected ? "bg-secondary/10" : "hover:bg-gray-50"
                         } ${!gc.isEnabled && !isSelected ? "opacity-60" : ""}`}
                       >
                         <input
                           type="checkbox"
                           checked={isSelected}
                           onChange={() => toggleSourceLink(gc.id, "WA_GROUP")}
-                          className="w-4 h-4 text-[#115d72] border-gray-300 rounded focus:ring-[#14a2bb]"
+                          className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-secondary"
                         />
                         <div className="flex flex-col">
                           <span className="text-sm font-medium text-gray-900">
@@ -765,7 +765,7 @@ export default function TemplateEditor({
                       <label
                         key={ss.id}
                         className={`flex items-center gap-3 p-2 rounded-md cursor-pointer transition-colors ${
-                          isSelected ? "bg-[#14a2bb]/10" : "hover:bg-gray-50"
+                          isSelected ? "bg-secondary/10" : "hover:bg-gray-50"
                         }`}
                       >
                         <input
@@ -774,7 +774,7 @@ export default function TemplateEditor({
                           onChange={() =>
                             toggleSourceLink(ss.id, "SPREADSHEET_SOURCE")
                           }
-                          className="w-4 h-4 text-[#115d72] border-gray-300 rounded focus:ring-[#14a2bb]"
+                          className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-secondary"
                         />
                         <span className="text-sm font-medium text-gray-900">
                           {ss.name}
@@ -818,7 +818,7 @@ export default function TemplateEditor({
                       <label
                         key={es.id}
                         className={`flex items-center gap-3 p-2 rounded-md cursor-pointer transition-colors ${
-                          isSelected ? "bg-[#14a2bb]/10" : "hover:bg-gray-50"
+                          isSelected ? "bg-secondary/10" : "hover:bg-gray-50"
                         }`}
                       >
                         <input
@@ -827,7 +827,7 @@ export default function TemplateEditor({
                           onChange={() =>
                             toggleSourceLink(es.id, "EMAIL_INGEST")
                           }
-                          className="w-4 h-4 text-[#115d72] border-gray-300 rounded focus:ring-[#14a2bb]"
+                          className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-secondary"
                         />
                         <div className="flex flex-col">
                           <span className="text-sm font-medium text-gray-900">
@@ -854,7 +854,7 @@ export default function TemplateEditor({
                 onChange={(e) =>
                   setFormData({ ...formData, isDefault: e.target.checked })
                 }
-                className="w-4 h-4 text-[#115d72] border-gray-300 rounded focus:ring-[#14a2bb]"
+                className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-secondary"
               />
               <span className="text-sm text-gray-700 font-medium">
                 Tetapkan sebagai Utama (Default)
@@ -893,7 +893,7 @@ export default function TemplateEditor({
                         })
                       }
                       placeholder="e.g., LAPORAN HARIAN"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary"
                     />
                   </div>
                   <div>
@@ -910,7 +910,7 @@ export default function TemplateEditor({
                         })
                       }
                       placeholder="e.g., PLN"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary"
                     />
                   </div>
                 </>
@@ -931,7 +931,7 @@ export default function TemplateEditor({
                         })
                       }
                       placeholder="e.g., Gas Pipa"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary"
                     />
                   </div>
                   <div>
@@ -948,7 +948,7 @@ export default function TemplateEditor({
                         })
                       }
                       placeholder="1"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary"
                     />
                   </div>
                 </>
@@ -983,7 +983,7 @@ export default function TemplateEditor({
                     onChange={(e) =>
                       setFormData({ ...formData, aiModel: e.target.value })
                     }
-                    className="w-full appearance-none px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white cursor-pointer pr-10"
+                    className="w-full appearance-none px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white cursor-pointer pr-10"
                   >
                     <option value="">Pilih Model</option>
                     {isLoadingModels ? (
@@ -1023,7 +1023,7 @@ export default function TemplateEditor({
                   }
                   rows={4}
                   placeholder="Use {{message}} as placeholder..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] resize-none font-mono"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary resize-none font-mono"
                 />
               </div>
               <div>
@@ -1064,7 +1064,7 @@ export default function TemplateEditor({
                   }}
                   rows={3}
                   placeholder='{"type": "object", "properties": {...}}'
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] resize-none font-mono"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary resize-none font-mono"
                 />
               </div>
             </div>
@@ -1103,7 +1103,7 @@ export default function TemplateEditor({
                     resetFieldForm();
                     setIsFieldModalOpen(true);
                   }}
-                  className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-all duration-200"
+                  className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-[#0d4a5c] transition-all duration-200"
                 >
                   <Plus size={16} />
                   Tambah Bidang
@@ -1196,7 +1196,7 @@ export default function TemplateEditor({
                         {canUpdate && (
                           <button
                             onClick={() => handleEditField(field)}
-                            className="p-1.5 text-gray-400 hover:text-[#115d72] hover:bg-[#115d72]/10 rounded transition-colors"
+                            className="p-1.5 text-gray-400 hover:text-primary hover:bg-primary/10 rounded transition-colors"
                           >
                             <Pencil size={14} />
                           </button>
@@ -1241,12 +1241,12 @@ export default function TemplateEditor({
                   ? "Paste sample WA message here..."
                   : '{"A": "value1", "B": "value2", ...}'
               }
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] resize-none"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary resize-none"
             />
           </div>
           <button
             onClick={handleTestParse}
-            className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-all duration-200"
+            className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-primary rounded-lg hover:bg-[#0d4a5c] transition-all duration-200"
           >
             <Play size={16} />
             Run Test
@@ -1317,7 +1317,7 @@ export default function TemplateEditor({
                         : fieldForm.sourceKind,
                   });
                 }}
-                className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] bg-white cursor-pointer pr-10"
+                className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary bg-white cursor-pointer pr-10"
               >
                 <option value="">Pilih Target Property</option>
                 {FIELD_KEY_OPTIONS.map((key) => (
@@ -1342,7 +1342,7 @@ export default function TemplateEditor({
                   setFieldForm({ ...fieldForm, customFieldKey: e.target.value })
                 }
                 placeholder="e.g., custom_field"
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]"
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary"
               />
             </div>
           )}
@@ -1369,7 +1369,7 @@ export default function TemplateEditor({
                     sourceKind: e.target.value as TemplateField["sourceKind"],
                   })
                 }
-                className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] bg-white cursor-pointer pr-10"
+                className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary bg-white cursor-pointer pr-10"
               >
                 {SOURCE_KIND_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>
@@ -1410,7 +1410,7 @@ export default function TemplateEditor({
                       alert("Format JSON tidak valid");
                     }
                   }}
-                  className="px-2 py-0.5 text-[10px] font-semibold text-[#115d72] bg-[#115d72]/5 rounded hover:bg-[#115d72]/10 transition-colors border border-[#115d72]/20"
+                  className="px-2 py-0.5 text-[10px] font-semibold text-primary bg-primary/5 rounded hover:bg-primary/10 transition-colors border border-primary/20"
                 >
                   Rapikan JSON (Tidy)
                 </button>
@@ -1424,7 +1424,7 @@ export default function TemplateEditor({
                 placeholder={
                   '[\n  {"metric_type": "FLOWRATE", "regex": "Flow:\\s*([\\d.]+)"}\n]'
                 }
-                className="w-full px-3 py-3 border border-gray-300 rounded-lg text-[13px] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] font-mono resize-none bg-gray-50/80 shadow-inner leading-relaxed"
+                className="w-full px-3 py-3 border border-gray-300 rounded-lg text-[13px] text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary font-mono resize-none bg-gray-50/80 shadow-inner leading-relaxed"
               />
             </div>
           ) : (
@@ -1456,7 +1456,7 @@ export default function TemplateEditor({
                         ? "e.g., $.site_name"
                         : "Fixed value"
                 }
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] font-mono"
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary font-mono"
               />
             </div>
           )}
@@ -1480,7 +1480,7 @@ export default function TemplateEditor({
                 onChange={(e) =>
                   setFieldForm({ ...fieldForm, transform: e.target.value })
                 }
-                className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] bg-white cursor-pointer pr-10"
+                className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary bg-white cursor-pointer pr-10"
               >
                 <option value="">None</option>
                 <option value="date">Date (→ YYYY-MM-DD)</option>
@@ -1502,7 +1502,7 @@ export default function TemplateEditor({
                 onChange={(e) =>
                   setFieldForm({ ...fieldForm, isRequired: e.target.checked })
                 }
-                className="w-4 h-4 text-[#115d72] border-gray-300 rounded focus:ring-[#14a2bb]"
+                className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-secondary"
               />
               <div className="flex items-center gap-1.5">
                 <span className="text-sm text-gray-700 font-medium">
@@ -1528,7 +1528,7 @@ export default function TemplateEditor({
             </button>
             <button
               onClick={handleAddField}
-              className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-all duration-200"
+              className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-primary rounded-lg hover:bg-[#0d4a5c] transition-all duration-200"
             >
               {editingField ? "Simpan Perubahan" : "Tambah Bidang"}
             </button>
@@ -1558,7 +1558,7 @@ export default function TemplateEditor({
               type="text"
               value={botGroupSearch}
               onChange={(e) => setBotGroupSearch(e.target.value)}
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent"
+              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent"
               placeholder="Ketik untuk filter group..."
               autoFocus
             />
@@ -1608,7 +1608,7 @@ export default function TemplateEditor({
                     key={bg.id}
                     className={`flex items-center gap-3 px-3 py-2.5 cursor-pointer transition-colors ${
                       selectedBotGroupId === bg.id
-                        ? "bg-[#14a2bb]/10"
+                        ? "bg-secondary/10"
                         : "hover:bg-gray-50"
                     }`}
                   >
@@ -1642,9 +1642,9 @@ export default function TemplateEditor({
 
           {/* Selected group preview */}
           {selectedBotGroupId && (
-            <div className="px-3 py-2 bg-[#14a2bb]/5 border border-[#14a2bb]/20 rounded-lg">
+            <div className="px-3 py-2 bg-secondary/5 border border-secondary/20 rounded-lg">
               <p className="text-xs text-gray-500">Group yang dipilih:</p>
-              <p className="text-sm font-medium text-[#115d72]">
+              <p className="text-sm font-medium text-primary">
                 {newGroupName}
               </p>
               <p className="text-xs text-gray-400 font-mono mt-0.5">
@@ -1679,7 +1679,7 @@ export default function TemplateEditor({
                 }
               }}
               disabled={!selectedBotGroupId}
-              className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-primary rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Tambah Group
             </button>

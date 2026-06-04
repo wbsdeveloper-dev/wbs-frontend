@@ -31,8 +31,20 @@ import { Loader2 } from "lucide-react";
 
 const filterTypeOptions = ["Pemasok", "Pembangkit"];
 
-export type Granularity = "hour" | "day" | "month" | "year";
-export type Periode = "1D" | "1W" | "1M" | "1Y" | "3Y";
+export type Granularity =
+  | "hour"
+  | "day"
+  | "month"
+  | "three_month"
+  | "six_month"
+  | "one_month"
+  | "one_year"
+  | "three_year"
+  | "year"
+  | "interval_hour"
+  | "interval_day"
+  | "interval_month"
+  | "interval_year";
 export type FilterBy = "supplier" | "plant";
 
 // Map each periode to the valid interval (granularity) options
@@ -347,6 +359,63 @@ const DYNAMIC_COLORS = [
   "#f472b6",
 ];
 
+const CustomXAxisTick = (props: any) => {
+  const { x, y, payload, index, chartData, period, intervalMode } = props;
+  const originalIndex = payload.index !== undefined ? payload.index : index;
+  const item = chartData && chartData[originalIndex];
+
+  if (!item || period !== "3Y" || intervalMode !== "Bulan" || !item.yearStr) {
+    return (
+      <text x={x} y={y + 15} textAnchor="middle" fill="#666" fontSize={12}>
+        {payload.value}
+      </text>
+    );
+  }
+
+  const isFirstMonth = item.monthStr === "Jan";
+  const isMidYear = item.monthStr === "Jul";
+
+  return (
+    <g>
+      <text x={x} y={y + 15} textAnchor="middle" fill="#666" fontSize={11}>
+        {payload.value}
+      </text>
+      {isMidYear && (
+        <text
+          x={x}
+          y={y + 35}
+          textAnchor="middle"
+          fill="#333"
+          fontSize={12}
+          fontWeight="bold"
+        >
+          {item.yearStr}
+        </text>
+      )}
+      {/* Horizontal line under month */}
+      <line
+        x1={x - 50}
+        y1={y + 22}
+        x2={x + 50}
+        y2={y + 22}
+        stroke="#e5e7eb"
+        strokeWidth={1}
+      />
+      {/* Vertical separator before Jan */}
+      {isFirstMonth && originalIndex !== 0 && (
+        <line
+          x1={x - 14}
+          y1={y}
+          x2={x - 14}
+          y2={y + 40}
+          stroke="#e5e7eb"
+          strokeWidth={1}
+        />
+      )}
+    </g>
+  );
+};
+
 const CustomTooltip = ({
   active,
   payload,
@@ -407,10 +476,10 @@ const CustomTooltip = ({
                   </span>
                 </div>
 
-                <div className="flex flex-col bg-[#14a2bb]/5 rounded p-1.5 border border-[#14a2bb]/10">
-                  <span className="text-[#115d72]/70 mb-0.5">Flowrate</span>
+                <div className="flex flex-col bg-secondary/5 rounded p-1.5 border border-secondary/10">
+                  <span className="text-primary/70 mb-0.5">Flowrate</span>
 
-                  <span className="font-semibold text-[#115d72] border-t border-[#14a2bb]/10 pt-0.5">
+                  <span className="font-semibold text-primary border-t border-secondary/10 pt-0.5">
                     {Number(flowrate).toLocaleString("id-ID", {
                       maximumFractionDigits: 2,
                     })}{" "}
@@ -438,9 +507,9 @@ const CustomTooltip = ({
                 {unit || "BBTUD"}
               </span>
             </div>
-            <div className="flex flex-col bg-[#14a2bb]/10 rounded p-1.5 border border-[#14a2bb]/20">
-              <span className="text-[#115d72]/80 mb-0.5">Total Flowrate</span>
-              <span className="font-semibold text-[#115d72] border-t border-[#14a2bb]/20 pt-0.5">
+            <div className="flex flex-col bg-secondary/10 rounded p-1.5 border border-secondary/20">
+              <span className="text-primary/80 mb-0.5">Total Flowrate</span>
+              <span className="font-semibold text-primary border-t border-secondary/20 pt-0.5">
                 {totalFlowrate.toLocaleString("id-ID", {
                   maximumFractionDigits: 2,
                 })}{" "}
@@ -605,7 +674,7 @@ export default function RealtimeChart({
         .filter(
           (p: FilterOption) =>
             p.commodity?.toUpperCase() === "LNG" ||
-            p.commodity?.toUpperCase() === "GAS PIPA"
+            p.commodity?.toUpperCase() === "GAS PIPA",
         )
         .map((p: FilterOption) => p.name);
     }
@@ -618,7 +687,7 @@ export default function RealtimeChart({
         .filter(
           (p: FilterOption) =>
             p.commodity?.toUpperCase() === "LNG" ||
-            p.commodity?.toUpperCase() === "GAS PIPA"
+            p.commodity?.toUpperCase() === "GAS PIPA",
         )
         .map((p: FilterOption) => p.name);
     return ["Pembangkit 1", "Pembangkit 2"];
@@ -645,6 +714,7 @@ export default function RealtimeChart({
         return d.toLocaleDateString("id-ID", {
           day: "2-digit",
           month: "short",
+          year: "numeric",
         });
       }
       if (chartFlowData.granularity === "year") {
@@ -684,7 +754,20 @@ export default function RealtimeChart({
     });
 
     return sortedTimestamps.map((rawTs) => {
-      const label = formatTimestamp(rawTs);
+      let label = formatTimestamp(rawTs);
+      let monthStr = "";
+      let yearStr = "";
+
+      const d = new Date(rawTs + (rawTs.length === 7 ? "-01" : ""));
+      if (!isNaN(d.getTime())) {
+        monthStr = d.toLocaleDateString("id-ID", { month: "short" });
+        yearStr = d.getFullYear().toString();
+        // If it's month granularity, we might want to just show the month name as label
+        if (chartFlowData.granularity === "month") {
+          label = monthStr;
+        }
+      }
+
       const values: Record<string, number> = {};
       const flowrates: Record<string, number> = {};
       seriesLookups.forEach(({ name, lookup }) => {
@@ -694,7 +777,14 @@ export default function RealtimeChart({
           flowrates[name] = data.flowrate;
         }
       });
-      return { label, values, flowrates, rawTimestamp: rawTs };
+      return {
+        label,
+        values,
+        flowrates,
+        rawTimestamp: rawTs,
+        monthStr,
+        yearStr,
+      };
     });
   }, [chartFlowData]);
 
@@ -849,7 +939,7 @@ export default function RealtimeChart({
     return (
       <div className="bg-white rounded-xl border border-gray-200 p-6 flex items-center justify-center min-h-[400px]">
         <div className="flex flex-col items-center gap-3">
-          <Loader2 className="animate-spin text-[#14a2bb]" size={40} />
+          <Loader2 className="animate-spin text-secondary" size={40} />
           <p className="text-gray-500">Memuat data grafik...</p>
         </div>
       </div>
@@ -903,33 +993,21 @@ export default function RealtimeChart({
                     <CartesianGrid stroke="#eee" strokeDasharray="5 5" />
                     <XAxis
                       dataKey="label"
-                      tick={chartFlowData?.granularity === "month" && periode === "3Y" ? (props: any) => {
-                        const { x, y, payload } = props;
-                        // label format: "Jan 2024", "Feb 2024", etc.
-                        const parts = (payload.value || "").split(" ");
-                        const month = parts[0] || "";
-                        const year = parts[1] || "";
-                        // Show year label only on the first occurrence of each year
-                        const allLabels = chartData.map((d) => d.label);
-                        const idx = payload.index;
-                        const prevLabel = idx > 0 ? allLabels[idx - 1] : "";
-                        const prevYear = prevLabel ? prevLabel.split(" ")[1] : "";
-                        const showYear = year !== prevYear;
-                        return (
-                          <g transform={`translate(${x},${y})`}>
-                            <text x={0} y={0} dy={12} textAnchor="middle" fontSize={10} fill="#666">
-                              {month}
-                            </text>
-                            {showYear && (
-                              <text x={0} y={0} dy={26} textAnchor="middle" fontSize={11} fontWeight={600} fill="#333">
-                                {year}
-                              </text>
-                            )}
-                          </g>
-                        );
-                      } : { fontSize: 12 }}
-                      interval={chartFlowData?.granularity === "month" && periode === "3Y" ? 0 : "preserveStartEnd"}
-                      height={chartFlowData?.granularity === "month" && periode === "3Y" ? 50 : undefined}
+                      tick={
+                        <CustomXAxisTick
+                          chartData={chartData}
+                          period={period}
+                          intervalMode={intervalMode}
+                        />
+                      }
+                      interval={
+                        period === "3Y" && intervalMode === "Bulan"
+                          ? 0
+                          : "preserveStartEnd"
+                      }
+                      height={
+                        period === "3Y" && intervalMode === "Bulan" ? 50 : 30
+                      }
                     />
                     <YAxis
                       domain={yDomain}
@@ -1116,9 +1194,9 @@ export default function RealtimeChart({
           <div className="flex flex-col justify-center items-center text-center h-[400px] gap-4">
             {/* Decorative icon with subtle background */}
             <div className="relative">
-              <div className="absolute inset-0 bg-[#14a2bb]/10 rounded-full blur-xl scale-150" />
-              <div className="relative w-20 h-20 bg-gradient-to-br from-[#14a2bb]/20 to-[#115d72]/10 rounded-2xl flex items-center justify-center border border-[#14a2bb]/20">
-                <Info className="w-10 h-10 text-[#14a2bb]" />
+              <div className="absolute inset-0 bg-secondary/10 rounded-full blur-xl scale-150" />
+              <div className="relative w-20 h-20 bg-gradient-to-br from-secondary/20 to-primary/10 rounded-2xl flex items-center justify-center border border-secondary/20">
+                <Info className="w-10 h-10 text-secondary" />
               </div>
             </div>
 
@@ -1129,7 +1207,7 @@ export default function RealtimeChart({
               </h3>
               <p className="text-sm text-gray-500 leading-relaxed">
                 Silakan pilih{" "}
-                <span className="font-medium text-[#115d72]">
+                <span className="font-medium text-primary">
                   {filterType === "Pemasok" ? "Pemasok" : "Pembangkit"}
                 </span>{" "}
                 pada panel filter di samping kanan untuk menampilkan grafik
@@ -1159,7 +1237,7 @@ export default function RealtimeChart({
       {/* Mobile Filter Button */}
       <button
         onClick={() => setFilterOpen(!filterOpen)}
-        className="lg:hidden fixed bottom-4 right-4 z-50 bg-gradient-to-r from-[#115d72] to-[#14a1bb] text-white p-3 rounded-full shadow-lg hover:shadow-xl transition-all"
+        className="lg:hidden fixed bottom-4 right-4 z-50 bg-gradient-to-r from-primary to-secondary text-white p-3 rounded-full shadow-lg hover:shadow-xl transition-all"
       >
         {filterOpen ? <X size={22} /> : <Filter size={22} />}
       </button>
@@ -1320,42 +1398,86 @@ export default function RealtimeChart({
                   placeholder="Pilih Pemasok"
                 />
               )}
-            <FilterAutocomplete
-              label="Transportir"
-              options={transportirOptions}
-              value={transportir}
-              onChange={setTransportir}
-              placeholder="Pilih Transportir"
-            />
             <div className="mt-2">
               <div className="border border-gray-200 p-3 rounded-lg">
                 <p className="block text-sm font-medium text-gray-700 mb-2">
                   Filter Periode
                 </p>
-                <div className="flex flex-wrap gap-2 mb-3">
-                  {([
-                    { key: "1D" as Periode, label: "1 Hari" },
-                    { key: "1W" as Periode, label: "1 Minggu" },
-                    { key: "1M" as Periode, label: "1 Bulan" },
-                    { key: "1Y" as Periode, label: "1 Tahun" },
-                    { key: "3Y" as Periode, label: "3 Tahun" },
-                  ] as const).map((opt) => (
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                  {[
+                    {
+                      label: "1 Hari",
+                      val: "1D",
+                      apiPeriod: "hour",
+                      interval: "Jam",
+                    },
+                    {
+                      label: "1 Minggu",
+                      val: "1W",
+                      apiPeriod: "day",
+                      interval: "Hari",
+                    },
+                    {
+                      label: "1 Bulan",
+                      val: "1M",
+                      apiPeriod: "one_month",
+                      interval: "Hari",
+                    },
+                    {
+                      label: "1 Tahun",
+                      val: "1Y",
+                      apiPeriod: "one_year",
+                      interval: "Bulan",
+                    },
+                    {
+                      label: "3 Tahun",
+                      val: "3Y",
+                      apiPeriod: "three_year",
+                      interval: "Tahun",
+                    },
+                  ].map((item) => (
                     <button
-                      key={opt.key}
-                      className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${periode === opt.key
-                        ? "bg-[#115d72] text-white shadow-sm"
-                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      key={item.label}
+                      className={`px-3 py-2 text-sm font-medium rounded-md transition-colors text-center ${period === item.val
+                          ? "bg-primary text-white shadow-sm"
+                          : "bg-gray-50 text-gray-600 hover:bg-gray-100"
                         }`}
                       onClick={() => {
-                        setPeriode(opt.key);
-                        // Auto-select the default interval for this periode
-                        const validIntervals = getValidIntervals(opt.key);
-                        const defaultInterval = validIntervals[0].key;
-                        setInterval(defaultInterval);
-                        onPeriodChange?.(opt.key, defaultInterval);
+                        setPeriod(item.val);
+                        // Sensible default interval based on period
+                        setIntervalMode(item.interval as any);
+
+                        if (onPeriodChange)
+                          onPeriodChange(item.apiPeriod as Granularity);
+                        else {
+                          if (pemasok?.includes("Pemasok A"))
+                            setFallbackChartData(
+                              item.val === "1D"
+                                ? dataJamA
+                                : item.val === "1W"
+                                  ? data1MingguA
+                                  : item.val === "1M"
+                                    ? data3BulanA
+                                    : item.val === "1Y"
+                                      ? data1TahunA
+                                      : data3TahunA,
+                            );
+                          if (pemasok?.includes("Pemasok B"))
+                            setFallbackChartData(
+                              item.val === "1D"
+                                ? dataJamB
+                                : item.val === "1W"
+                                  ? data1MingguB
+                                  : item.val === "1M"
+                                    ? data3BulanB
+                                    : item.val === "1Y"
+                                      ? data1TahunB
+                                      : data3TahunB,
+                            );
+                        }
                       }}
                     >
-                      {opt.label}
+                      {item.label}
                     </button>
                   ))}
                 </div>
@@ -1363,29 +1485,48 @@ export default function RealtimeChart({
                 <p className="block text-sm font-medium text-gray-700 mb-2">
                   Interval
                 </p>
-                <div className="flex flex-wrap gap-2 mb-3">
-                  {getValidIntervals(periode).map((opt) => (
-                    <button
-                      key={opt.key}
-                      className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${interval === opt.key
-                        ? "bg-[#14a2bb92] text-[#115d72] shadow-sm"
-                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                        }`}
-                      onClick={() => {
-                        setInterval(opt.key);
-                        onPeriodChange?.(periode, opt.key);
-                      }}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {(["Tahun", "Bulan", "Hari", "Jam"] as const).map((mode) => {
+                    // Hide invalid intervals based on selected period
+                    if (period === "1D" && mode !== "Jam") return null;
+                    if (period === "1W" && mode === "Tahun") return null;
+                    if (period === "1M" && mode === "Tahun") return null;
+                    if (period === "1Y" && mode === "Jam") return null;
+                    if (period === "3Y" && mode === "Jam") return null;
+
+                    return (
+                      <button
+                        key={mode}
+                        className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${intervalMode === mode
+                            ? "bg-[#7ec9d4] text-primary shadow-sm"
+                            : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+                          }`}
+                        onClick={() => {
+                          setIntervalMode(mode);
+                          if (onPeriodChange) {
+                            if (mode === "Jam") onPeriodChange("interval_hour");
+                            else if (mode === "Hari")
+                              onPeriodChange("interval_day");
+                            else if (mode === "Bulan")
+                              onPeriodChange("interval_month");
+                            else if (mode === "Tahun")
+                              onPeriodChange("interval_year");
+                          }
+                        }}
+                      >
+                        {mode}
+                      </button>
+                    );
+                  })}
                 </div>
+
                 <DateRangeFilter
                   startDate={startDate}
                   endDate={endDate}
                   setStartDate={setStartDate}
                   setEndDate={setEndDate}
-                  periode={periode}
+                  isSingleDate={period === "1D"}
+                  mode={period === "3Y" ? "Tahun" : intervalMode}
                 />
               </div>
             </div>
@@ -1402,11 +1543,11 @@ export default function RealtimeChart({
                       onChange={(e) => setMeanLineActive(e.target.checked)}
                       sx={{
                         "& .MuiSwitch-switchBase.Mui-checked": {
-                          color: "#14a1bb",
+                          color: "var(--theme-secondary)",
                         },
                         "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
                         {
-                          backgroundColor: "#14a1bb",
+                          backgroundColor: "var(--theme-secondary)",
                         },
                       }}
                     />
@@ -1420,11 +1561,11 @@ export default function RealtimeChart({
                       onChange={(e) => setTopLineActive(e.target.checked)}
                       sx={{
                         "& .MuiSwitch-switchBase.Mui-checked": {
-                          color: "#14a1bb",
+                          color: "var(--theme-secondary)",
                         },
                         "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
                         {
-                          backgroundColor: "#14a1bb",
+                          backgroundColor: "var(--theme-secondary)",
                         },
                       }}
                     />
@@ -1438,11 +1579,11 @@ export default function RealtimeChart({
                       onChange={(e) => setJphLineActive(e.target.checked)}
                       sx={{
                         "& .MuiSwitch-switchBase.Mui-checked": {
-                          color: "#14a1bb",
+                          color: "var(--theme-secondary)",
                         },
                         "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
                         {
-                          backgroundColor: "#14a1bb",
+                          backgroundColor: "var(--theme-secondary)",
                         },
                       }}
                     />

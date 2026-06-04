@@ -101,7 +101,7 @@ export function ResetPasswordModal({
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-4 pr-10 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/20 focus:border-[#14a2bb] transition-all"
+                  className="w-full pl-4 pr-10 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all"
                   placeholder="Minimal 12 karakter"
                 />
                 <button
@@ -132,7 +132,7 @@ export function ResetPasswordModal({
           <button
             type="submit"
             form="reset-pwd-form"
-            className="px-5 py-2.5 text-sm font-medium text-white bg-[#115d72] rounded-xl hover:shadow-lg hover:shadow-[#115d72]/20 active:scale-95 transition-all flex items-center justify-center min-w-[120px]"
+            className="px-5 py-2.5 text-sm font-medium text-white bg-primary rounded-xl hover:shadow-lg hover:shadow-[#115d72]/20 active:scale-95 transition-all flex items-center justify-center min-w-[120px]"
             disabled={isSaving}
           >
             {isSaving ? (

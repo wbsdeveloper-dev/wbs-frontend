@@ -114,7 +114,7 @@ export function OutboxLogger({
                 setStatusFilter(e.target.value);
                 setPage(1);
               }}
-              className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-[#14a2bb]"
+              className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-secondary"
             >
               <option value="all">Semua Status</option>
               <option value="pending">Pending</option>

@@ -115,7 +115,7 @@ export default function ApiKeyManagerPage() {
           <span className="text-gray-400">/</span>
           <span>Konfigurasi Sistem</span>
           <span className="text-gray-400">/</span>
-          <span className="text-[#115d72] font-medium flex items-center gap-1">
+          <span className="text-primary font-medium flex items-center gap-1">
             <KeyRound className="w-4 h-4" /> API Keys
           </span>
         </div>
@@ -136,7 +136,7 @@ export default function ApiKeyManagerPage() {
             canCreate ? (
               <button
                 onClick={() => setIsGenerateModalOpen(true)}
-                className="flex items-center gap-2 px-4 py-2.5 bg-[#115d72] text-white text-sm font-medium rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
+                className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white text-sm font-medium rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
               >
                 <Plus className="w-4 h-4" />
                 Buat API Key
@@ -263,7 +263,7 @@ export default function ApiKeyManagerPage() {
                 )
               }
               placeholder="e.g. data-worker-1"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all bg-white"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all bg-white"
               disabled={generateApiKey.isPending}
             />
             <p className="mt-1.5 text-xs text-gray-500">
@@ -290,7 +290,7 @@ export default function ApiKeyManagerPage() {
             <button
               type="submit"
               disabled={generateApiKey.isPending || !newServiceName}
-              className="flex items-center gap-2 px-4 py-2.5 bg-[#115d72] text-white text-sm font-medium rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
+              className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white text-sm font-medium rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
             >
               {generateApiKey.isPending && (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -337,7 +337,7 @@ export default function ApiKeyManagerPage() {
               <button
                 type="button"
                 onClick={handleCopySecret}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-md bg-white border border-gray-200 text-gray-600 hover:text-[#14a2bb] hover:border-[#14a2bb] shadow-sm transition-all"
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-md bg-white border border-gray-200 text-gray-600 hover:text-secondary hover:border-secondary shadow-sm transition-all"
                 title="Copy API Key"
               >
                 {copied ? (
@@ -353,7 +353,7 @@ export default function ApiKeyManagerPage() {
             <button
               type="button"
               onClick={closeResultModal}
-              className="flex items-center gap-2 px-4 py-2.5 bg-[#115d72] text-white text-sm font-medium rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
+              className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white text-sm font-medium rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
             >
               Saya Sudah Menyimpannya
             </button>

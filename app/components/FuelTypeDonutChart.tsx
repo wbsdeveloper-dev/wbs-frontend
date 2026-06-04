@@ -92,7 +92,7 @@ export default function FuelTypeDonutChart({
             onClick={() => setShowDateFilter(!showDateFilter)}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer ${
               showDateFilter
-                ? "bg-[#14a2bb]/10 text-[#115d72] border border-[#14a2bb]/30"
+                ? "bg-secondary/10 text-primary border border-secondary/30"
                 : "text-gray-500 hover:bg-gray-100 border border-transparent"
             }`}
           >
@@ -130,7 +130,7 @@ export default function FuelTypeDonutChart({
                 onChange={(e) => setTempStartDate(e.target.value)}
                 className="w-full px-3 py-2 rounded-lg text-sm border border-gray-300
                          bg-white text-gray-700
-                         focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/40 focus:border-[#14a2bb]
+                         focus:outline-none focus:ring-2 focus:ring-secondary/40 focus:border-secondary
                          transition-all duration-200"
               />
             </div>
@@ -145,7 +145,7 @@ export default function FuelTypeDonutChart({
                 onChange={(e) => setTempEndDate(e.target.value)}
                 className="w-full px-3 py-2 rounded-lg text-sm border border-gray-300
                          bg-white text-gray-700
-                         focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/40 focus:border-[#14a2bb]
+                         focus:outline-none focus:ring-2 focus:ring-secondary/40 focus:border-secondary
                          transition-all duration-200"
               />
             </div>
@@ -153,7 +153,7 @@ export default function FuelTypeDonutChart({
           <div className="flex justify-end mt-3">
             <button
               onClick={handleApply}
-              className="px-4 py-1.5 bg-[#115d72] text-white text-sm font-medium rounded-md hover:bg-[#0d4a5c] transition-colors"
+              className="px-4 py-1.5 bg-primary text-white text-sm font-medium rounded-md hover:bg-[#0d4a5c] transition-colors"
             >
               Terapkan
             </button>
@@ -169,7 +169,7 @@ export default function FuelTypeDonutChart({
               key={type}
               className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer ${
                 filterType === type
-                  ? "bg-[#14a2bb] text-white shadow-sm"
+                  ? "bg-secondary text-white shadow-sm"
                   : "text-gray-600 hover:text-gray-900"
               }`}
               onClick={() => changeFilterType(type)}
