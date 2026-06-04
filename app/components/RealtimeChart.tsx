@@ -1365,13 +1365,6 @@ export default function RealtimeChart({
                   placeholder="Pilih Pemasok"
                 />
               )}
-            <FilterAutocomplete
-              label="Transportir"
-              options={transportirOptions}
-              value={transportir}
-              onChange={setTransportir}
-              placeholder="Pilih Transportir"
-            />
             <div className="mt-2">
               <div className="border border-gray-200 p-3 rounded-lg">
                 <p className="block text-sm font-medium text-gray-700 mb-2">
