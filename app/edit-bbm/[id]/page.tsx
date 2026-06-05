@@ -10,97 +10,53 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import {
-  useMonitoringRecord,
-  useUpdateMonitoringRecord,
-  type UpdateMonitoringPayload,
-} from "@/hooks/service/monitoring-api";
-
-// ---------------------------------------------------------------------------
-// Status options
-// ---------------------------------------------------------------------------
-
-const STATUS_OPTIONS = [
-  { value: "MATCHED", label: "Matched" },
-  { value: "MISMATCH", label: "Mismatch" },
-  { value: "NEED_REVIEW", label: "Need Review" },
-  { value: "RESOLVED", label: "Resolved" },
-];
-
-// ---------------------------------------------------------------------------
-// Status badge (consistent with table)
-// ---------------------------------------------------------------------------
-
-const StatusBadge = ({ status }: { status: string }) => {
-  const config: Record<string, { bg: string; text: string; dot: string }> = {
-    MATCHED: { bg: "bg-green-50", text: "text-green-700", dot: "bg-green-500" },
-    MISMATCH: { bg: "bg-red-50", text: "text-red-700", dot: "bg-red-500" },
-    NEED_REVIEW: {
-      bg: "bg-amber-50",
-      text: "text-amber-700",
-      dot: "bg-amber-500",
-    },
-    RESOLVED: { bg: "bg-blue-50", text: "text-blue-700", dot: "bg-blue-500" },
-  };
-  const c = config[status] ?? {
-    bg: "bg-gray-50",
-    text: "text-gray-700",
-    dot: "bg-gray-500",
-  };
-
-  return (
-    <span
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${c.bg} ${c.text}`}
-    >
-      <span className={`w-1.5 h-1.5 rounded-full ${c.dot}`} />
-      {status}
-    </span>
-  );
-};
+  useBbmMonthlyById,
+  useUpdateBbmMonthly,
+  type CreateBbmPayload,
+} from "@/hooks/service/bbm-api";
 
 // ---------------------------------------------------------------------------
 // Page component
 // ---------------------------------------------------------------------------
 
-export default function EditRecordPage() {
+export default function EditBbmRecordPage() {
   const params = useParams();
   const router = useRouter();
   const recordId = params.id as string;
 
-  const { data: record, isLoading, isError } = useMonitoringRecord(recordId);
-  const updateMutation = useUpdateMonitoringRecord();
+  const { data: record, isLoading, isError } = useBbmMonthlyById(recordId);
+  const updateMutation = useUpdateBbmMonthly();
 
   // Form state
-  const [form, setForm] = useState<UpdateMonitoringPayload>({});
+  const [form, setForm] = useState<Partial<CreateBbmPayload>>({});
   const [showSuccess, setShowSuccess] = useState(false);
 
   // Populate form when record loads
   useEffect(() => {
     if (record) {
       setForm({
-        waValue: record.waValue,
-        plnValue: record.plnValue,
-        sheetValue: record.sheetValue,
-        finalValue: record.finalValue,
-        finalSource: record.finalSource,
-        resolution: record.resolution,
-        status: record.status,
-        reason: record.reason,
+        nomination: record.nomination,
+        realization: record.realization,
+        usage: record.usage,
+        product: record.product,
+        moda: record.moda,
+        unit: record.unit,
       });
     }
   }, [record]);
 
   const handleChange = (
-    field: keyof UpdateMonitoringPayload,
-    value: string | number | null,
+    field: keyof CreateBbmPayload,
+    value: string | number | null | undefined,
   ) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleNumberChange = (
-    field: keyof UpdateMonitoringPayload,
+    field: keyof CreateBbmPayload,
     raw: string,
   ) => {
-    const value = raw === "" ? null : Number(raw);
+    const value = raw === "" ? undefined : Number(raw);
     handleChange(field, value);
   };
 
@@ -130,7 +86,7 @@ export default function EditRecordPage() {
       <div className="p-4 md:p-6 lg:p-8">
         <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
           <AlertCircle className="mx-auto mb-3 text-red-500" size={36} />
-          <p className="text-red-700 font-medium">Gagal memuat data record.</p>
+          <p className="text-red-700 font-medium">Gagal memuat data BBM.</p>
           <button
             onClick={() => router.back()}
             className="mt-4 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all"
@@ -148,28 +104,25 @@ export default function EditRecordPage() {
       <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
         <span>Dashboard</span>
         <span className="text-gray-400">/</span>
-        <span>Manajemen Data</span>
+        <span>Manajemen Data BBM</span>
         <span className="text-gray-400">/</span>
-        <span className="text-primary font-medium">Edit Record</span>
+        <span className="text-primary font-medium">Edit Data</span>
       </div>
 
       {/* Header */}
-      <div className="mb-6 md:mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => router.back()}
-            className="p-2 rounded-lg bg-white border border-gray-200 shadow-sm hover:bg-gray-50 transition-all"
-          >
-            <ArrowLeft size={20} className="text-gray-600" />
-          </button>
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-              Edit Data Monitoring
-            </h1>
-            <p className="text-gray-500 mt-1 text-sm">ID: {record.id}</p>
-          </div>
+      <div className="mb-6 md:mb-8 flex flex-col sm:flex-row sm:items-center gap-4">
+        <button
+          onClick={() => router.back()}
+          className="p-2 rounded-lg bg-white border border-gray-200 shadow-sm hover:bg-gray-50 transition-all"
+        >
+          <ArrowLeft size={20} className="text-gray-600" />
+        </button>
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+            Edit Data BBM
+          </h1>
+          {/* <p className="text-gray-500 mt-1 text-sm">ID: {record.id}</p> */}
         </div>
-        <StatusBadge status={record.status} />
       </div>
 
       {/* Success toast */}
@@ -193,82 +146,118 @@ export default function EditRecordPage() {
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
           <div className="px-6 py-4 border-b border-gray-200">
             <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">
-              Informasi Record
+              Informasi Data
             </h2>
           </div>
           <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            <ReadOnlyField label="Tanggal Laporan" value={record.reportDate} />
-            <ReadOnlyField label="Nama Pemasok" value={record.supplierName} />
-            <ReadOnlyField label="Nama Pembangkit" value={record.siteName} />
-            <ReadOnlyField label="Jenis Metrik" value={record.metricType} />
-            <ReadOnlyField label="Jenis Periode" value={record.periodType} />
-            <ReadOnlyField label="Nilai Periode" value={record.periodValue} />
-            <ReadOnlyField
-              label="Dibuat Pada"
-              value={new Date(record.createdAt).toLocaleString("id-ID")}
-            />
+            <ReadOnlyField label="Bulan Laporan" value={record.reportDate} />
+            <ReadOnlyField label="TBBM (Pemasok)" value={record.tbbm} />
+            <ReadOnlyField label="Pembangkit" value={record.pembangkit} />
           </div>
         </div>
 
-        {/* Editable fields card */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">
-              Data Nilai
-            </h2>
-          </div>
-          <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            <NumberField
-              label="Niali Dari WA"
-              value={form.waValue}
-              onChange={(v) => handleNumberChange("waValue", v)}
-            />
-            <NumberField
-              label="Nilai Dari Email"
-              value={form.plnValue}
-              onChange={(v) => handleNumberChange("plnValue", v)}
-            />
-            <NumberField
-              label="Nilai Dari Spreadsheet"
-              value={form.sheetValue}
-              onChange={(v) => handleNumberChange("sheetValue", v)}
-            />
-            <NumberField
-              label="Nilai Final"
-              value={form.finalValue}
-              onChange={(v) => handleNumberChange("finalValue", v)}
-            />
-            <ReadOnlyField
-              label="Sumber Final"
-              value={form.finalSource ?? ""}
-            />
-          </div>
-        </div>
+        {/* Editable fields */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Produk & Unit (if we want to mimic AddBbmModal, they are in a grid) */}
+          <div className="col-span-1 md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Produk <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={form.product ?? "B40"}
+                onChange={(e) => handleChange("product", e.target.value)}
+                className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all"
+              >
+                <option value="B40">B40</option>
+                <option value="B35">B35</option>
+                <option value="HSD">HSD</option>
+                <option value="MFO">MFO</option>
+              </select>
+            </div>
 
-        {/* Resolution card */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">
-              Resolusi & Status
-            </h2>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Unit <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={form.unit ?? "KILOLITER"}
+                onChange={(e) => handleChange("unit", e.target.value)}
+                className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all"
+              >
+                <option value="KILOLITER">KILO LITER</option>
+                <option value="LITER">LITER</option>
+              </select>
+            </div>
           </div>
-          <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <SelectField
-              label="Status"
-              value={form.status ?? ""}
-              options={STATUS_OPTIONS}
-              onChange={(v) => handleChange("status", v)}
-            />
-            <TextField
-              label="Resolusi"
-              value={form.resolution ?? ""}
-              onChange={(v) => handleChange("resolution", v === "" ? null : v)}
-            />
-            <div className="sm:col-span-2">
-              <TextAreaField
-                label="Alasan"
-                value={form.reason ?? ""}
-                onChange={(v) => handleChange("reason", v === "" ? null : v)}
+
+          {/* Grup 1: Realisasi & Moda */}
+          <div className="bg-gray-50 p-5 rounded-xl border border-gray-200 shadow-sm flex flex-col gap-4">
+            <h4 className="text-sm font-semibold text-gray-800 border-b border-gray-200 pb-2">
+              Realisasi Pengiriman
+            </h4>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Moda <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={form.moda ?? "Truck"}
+                onChange={(e) => handleChange("moda", e.target.value)}
+                className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all"
+              >
+                <option value="Truck">Truck</option>
+                <option value="Pipa">Pipa</option>
+                <option value="Kapal">Kapal</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Penerimaan
+              </label>
+              <input
+                type="number"
+                step="any"
+                value={form.realization ?? ""}
+                onChange={(e) => handleNumberChange("realization", e.target.value)}
+                className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all"
+                placeholder="Masukkan penerimaan"
+              />
+            </div>
+          </div>
+
+          {/* Grup 2: Nominasi & Pemakaian */}
+          <div className="bg-gray-50 p-5 rounded-xl border border-gray-200 shadow-sm flex flex-col gap-4">
+            <h4 className="text-sm font-semibold text-gray-800 border-b border-gray-200 pb-2">
+              Rencana & Pemakaian
+            </h4>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Nominasi (Rencana)
+              </label>
+              <input
+                type="number"
+                step="any"
+                value={form.nomination ?? ""}
+                onChange={(e) => handleNumberChange("nomination", e.target.value)}
+                className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all"
+                placeholder="Masukkan nominasi"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Pemakaian
+              </label>
+              <input
+                type="number"
+                step="any"
+                value={form.usage ?? ""}
+                onChange={(e) => handleNumberChange("usage", e.target.value)}
+                className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all"
+                placeholder="Masukkan pemakaian"
               />
             </div>
           </div>
@@ -388,62 +377,6 @@ function TextField({
         className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
         placeholder={`Masukkan ${label.toLowerCase()}`}
       />
-    </div>
-  );
-}
-
-function TextAreaField({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-}) {
-  return (
-    <div>
-      <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
-        {label}
-      </label>
-      <textarea
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        rows={3}
-        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200 resize-none"
-        placeholder={`Masukkan ${label.toLowerCase()}`}
-      />
-    </div>
-  );
-}
-
-function SelectField({
-  label,
-  value,
-  options,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  options: { value: string; label: string }[];
-  onChange: (v: string) => void;
-}) {
-  return (
-    <div>
-      <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
-        {label}
-      </label>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200 bg-white"
-      >
-        {options.map((opt) => (
-          <option key={opt.value} value={opt.value}>
-            {opt.label}
-          </option>
-        ))}
-      </select>
     </div>
   );
 }

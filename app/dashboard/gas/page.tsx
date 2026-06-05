@@ -52,7 +52,7 @@ export default function GasDashboard() {
   const [endDateFilter, setEndDateFilter] = useState<string | null>(todayDate);
 
   // Chart flow state
-  const [granularity, setGranularity] = useState<Granularity>("hour");
+  const [granularity, setGranularity] = useState<"hour" | "day" | "month" | "year">("hour");
   const [chartBy, setChartBy] = useState<"supplier" | "plant">("supplier");
   const [selectedPemasokId, setSelectedPemasokId] = useState<
     string | undefined

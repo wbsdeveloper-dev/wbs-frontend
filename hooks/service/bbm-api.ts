@@ -18,6 +18,7 @@ export interface BbmRecord {
   usage: number;
   realization: number;
   moda?: string;
+  unit?: string;
 }
 
 export interface CreateBbmPayload {
@@ -153,6 +154,115 @@ export function useCreateBbmMonthlyBulk(
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (payload: CreateBbmPayload[]) => createBbmMonthlyBulk(payload),
+    onSuccess: (...args) => {
+      qc.invalidateQueries({ queryKey: bbmKeys.all });
+      options?.onSuccess?.(...args);
+    },
+    ...options,
+  });
+}
+
+export async function getBbmMonthlyById(id: string): Promise<BbmRecord> {
+  const url = `${DASHBOARD_API_HOST}/bbm-monthly/${id}`;
+  const accessToken = getAccessToken();
+
+  const res = await fetch(url, {
+    headers: {
+      "Content-Type": "application/json",
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error(`BBM API error: ${res.statusText}`);
+  }
+
+  const body = await res.json();
+  if (!body.success) {
+    throw new Error(body.message || "Unknown BBM API error");
+  }
+
+  return body.data as BbmRecord;
+}
+
+export function useBbmMonthlyById(id: string, options?: Partial<UseQueryOptions<BbmRecord>>) {
+  return useQuery({
+    queryKey: [...bbmKeys.all, "detail", id],
+    queryFn: () => getBbmMonthlyById(id),
+    enabled: !!id,
+    ...options,
+  });
+}
+
+export async function updateBbmMonthly(id: string, payload: Partial<CreateBbmPayload>): Promise<BbmRecord> {
+  const url = `${DASHBOARD_API_HOST}/bbm-monthly/${id}`;
+  const accessToken = getAccessToken();
+
+  const res = await fetch(url, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    throw new Error(`BBM API error: ${res.statusText}`);
+  }
+
+  const body = await res.json();
+  if (!body.success) {
+    throw new Error(body.message || "Unknown BBM API error");
+  }
+
+  return body.data as BbmRecord;
+}
+
+export function useUpdateBbmMonthly(
+  options?: Partial<UseMutationOptions<BbmRecord, Error, { id: string; payload: Partial<CreateBbmPayload> }>>,
+) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }) => updateBbmMonthly(id, payload),
+    onSuccess: (...args) => {
+      qc.invalidateQueries({ queryKey: bbmKeys.all });
+      options?.onSuccess?.(...args);
+    },
+    ...options,
+  });
+}
+
+export async function deleteBbmMonthly(id: string): Promise<boolean> {
+  const url = `${DASHBOARD_API_HOST}/bbm-monthly/${id}`;
+  const accessToken = getAccessToken();
+
+  const res = await fetch(url, {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error(`BBM API error: ${res.statusText}`);
+  }
+
+  const body = await res.json();
+  if (!body.success) {
+    throw new Error(body.message || "Unknown BBM API error");
+  }
+
+  return true;
+}
+
+export function useDeleteBbmMonthly(
+  options?: Partial<UseMutationOptions<boolean, Error, string>>,
+) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteBbmMonthly(id),
     onSuccess: (...args) => {
       qc.invalidateQueries({ queryKey: bbmKeys.all });
       options?.onSuccess?.(...args);

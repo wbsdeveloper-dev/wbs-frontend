@@ -46,6 +46,7 @@ export type Granularity =
   | "interval_month"
   | "interval_year";
 export type FilterBy = "supplier" | "plant";
+export type Periode = "1D" | "1W" | "1M" | "1Y" | "3Y";
 
 // Map each periode to the valid interval (granularity) options
 function getValidIntervals(
@@ -57,12 +58,10 @@ function getValidIntervals(
     case "1W":
       return [
         { key: "day", label: "Hari" },
-        { key: "hour", label: "Jam" },
       ];
     case "1M":
       return [
         { key: "day", label: "Hari" },
-        { key: "hour", label: "Jam" },
       ];
     case "1Y":
       return [
@@ -86,7 +85,7 @@ export interface RealtimeChartProps {
   contractData?: Contract[] | null;
   isLoading?: boolean;
   isContractLoading?: boolean;
-  onPeriodChange?: (periode: Periode, granularity: Granularity) => void;
+  onPeriodChange?: (granularity: Granularity) => void;
   onFilterByChange?: (by: FilterBy | null) => void;
   onPemasokChange?: (pemasokId: string | null) => void;
   onPembangkitChange?: (pembangkitId: string | null) => void;
@@ -537,6 +536,7 @@ export default function RealtimeChart({
 }: RealtimeChartProps = {}) {
   const [periode, setPeriode] = useState<Periode>("1D");
   const [interval, setInterval] = useState<Granularity>("hour");
+  const [intervalMode, setIntervalMode] = useState<"Tahun" | "Bulan" | "Hari" | "Jam">("Jam");
   const [filterType, setFilterType] = useState<string | null>("Pemasok");
   const [pemasok, setPemasok] = useState<string[]>(["Semua Pemasok"]);
   const [pembangkit, setPembangkit] = useState<string | null>(null);
@@ -996,17 +996,17 @@ export default function RealtimeChart({
                       tick={
                         <CustomXAxisTick
                           chartData={chartData}
-                          period={period}
+                          period={periode}
                           intervalMode={intervalMode}
                         />
                       }
                       interval={
-                        period === "3Y" && intervalMode === "Bulan"
+                        periode === "3Y" && intervalMode === "Bulan"
                           ? 0
                           : "preserveStartEnd"
                       }
                       height={
-                        period === "3Y" && intervalMode === "Bulan" ? 50 : 30
+                        periode === "3Y" && intervalMode === "Bulan" ? 50 : 30
                       }
                     />
                     <YAxis
@@ -1438,12 +1438,12 @@ export default function RealtimeChart({
                   ].map((item) => (
                     <button
                       key={item.label}
-                      className={`px-3 py-2 text-sm font-medium rounded-md transition-colors text-center ${period === item.val
+                      className={`px-3 py-2 text-sm font-medium rounded-md transition-colors text-center ${periode === item.val
                           ? "bg-primary text-white shadow-sm"
                           : "bg-gray-50 text-gray-600 hover:bg-gray-100"
                         }`}
                       onClick={() => {
-                        setPeriod(item.val);
+                        setPeriode(item.val as Periode);
                         // Sensible default interval based on period
                         setIntervalMode(item.interval as any);
 
@@ -1488,11 +1488,11 @@ export default function RealtimeChart({
                 <div className="flex flex-wrap gap-2 mb-4">
                   {(["Tahun", "Bulan", "Hari", "Jam"] as const).map((mode) => {
                     // Hide invalid intervals based on selected period
-                    if (period === "1D" && mode !== "Jam") return null;
-                    if (period === "1W" && mode === "Tahun") return null;
-                    if (period === "1M" && mode === "Tahun") return null;
-                    if (period === "1Y" && mode === "Jam") return null;
-                    if (period === "3Y" && mode === "Jam") return null;
+                    if (periode === "1D" && mode !== "Jam") return null;
+                    if (periode === "1W" && (mode === "Tahun" || mode === "Bulan" || mode === "Jam")) return null;
+                    if (periode === "1M" && (mode === "Tahun" || mode === "Bulan" || mode === "Jam")) return null;
+                    if (periode === "1Y" && mode === "Jam") return null;
+                    if (periode === "3Y" && mode === "Jam") return null;
 
                     return (
                       <button
@@ -1525,8 +1525,9 @@ export default function RealtimeChart({
                   endDate={endDate}
                   setStartDate={setStartDate}
                   setEndDate={setEndDate}
-                  isSingleDate={period === "1D"}
-                  mode={period === "3Y" ? "Tahun" : intervalMode}
+                  periode={periode}
+                  isSingleDate={periode === "1D"}
+                  mode={periode === "3Y" ? "Tahun" : intervalMode}
                 />
               </div>
             </div>

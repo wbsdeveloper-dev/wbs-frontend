@@ -21,6 +21,7 @@ import {
 import { useRouter } from "next/navigation";
 import type { BbmRecord } from "@/hooks/service/bbm-api";
 import { usePrivilege } from "@/hooks/usePrivilege";
+import { useDeleteBbmMonthly } from "@/hooks/service/bbm-api";
 
 interface EditBbmDataTableProps {
   records: BbmRecord[];
@@ -91,6 +92,8 @@ export default function EditBbmDataTable({
   const canUpdate = hasPrivilege("data_management", "UPDATE");
   const canDelete = hasPrivilege("data_management", "DELETE");
   const hasAction = !hideActions && (canUpdate || canDelete);
+  
+  const deleteMutation = useDeleteBbmMonthly();
 
   type SortField = keyof BbmRecord;
   const [sortField, setSortField] = useState<SortField | null>(null);
@@ -325,10 +328,14 @@ export default function EditBbmDataTable({
     return val.toLocaleString("id-ID");
   };
 
-  const handleDeleteClick = (id: string, name: string) => {
-    // TBD: connect to a delete API if needed
-    if (window.confirm(`Apakah Anda yakin ingin menghapus record ${name}?`)) {
-      alert("Delete action triggered for " + id);
+  const handleDeleteClick = async (id: string, name: string) => {
+    if (window.confirm(`Apakah Anda yakin ingin menghapus data ${name}?`)) {
+      try {
+        await deleteMutation.mutateAsync(id);
+        alert("Data berhasil dihapus");
+      } catch (e: any) {
+        alert("Gagal menghapus data: " + (e?.message || "Unknown error"));
+      }
     }
   };
 
@@ -344,11 +351,10 @@ export default function EditBbmDataTable({
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowFilters((v) => !v)}
-            className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-all duration-200 ${
-              showFilters || activeFilterCount > 0
+            className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-all duration-200 ${showFilters || activeFilterCount > 0
                 ? "bg-primary text-white border-primary"
                 : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-            }`}
+              }`}
           >
             <Filter size={16} />
             Filter
@@ -553,7 +559,7 @@ export default function EditBbmDataTable({
               <Th label="Produk" field="product" />
               <Th label="Moda" field="moda" />
               <Th label="Nominasi" field="nomination" />
-              <Th label="Realisasi" field="realization" />
+              <Th label="Penerimaan" field="realization" />
               <Th label="Pemakaian" field="usage" />
               {hasAction && <Th label="Aksi" />}
             </tr>
@@ -594,9 +600,8 @@ export default function EditBbmDataTable({
                     key={rowId}
                     onMouseEnter={() => setHoveredGroupId(groupKey)}
                     onMouseLeave={() => setHoveredGroupId(null)}
-                    className={`transition-colors ${
-                      hoveredGroupId === groupKey ? "bg-gray-50" : ""
-                    }`}
+                    className={`transition-colors ${hoveredGroupId === groupKey ? "bg-gray-50" : ""
+                      }`}
                   >
                     <td className="px-4 py-3 text-center text-gray-700">
                       {startIndex + index + 1}

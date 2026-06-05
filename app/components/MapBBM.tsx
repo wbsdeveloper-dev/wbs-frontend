@@ -501,7 +501,7 @@ export default function Map() {
                             </div>
                             <div className="flex justify-between text-xs">
                               <span className="text-gray-500">
-                                Total Realisasi:
+                                Total Penerimaan:
                               </span>
                               <span className="font-medium text-emerald-600">
                                 {summary.totalRealisasi?.toLocaleString()} kL
@@ -607,40 +607,39 @@ export default function Map() {
                 {data.legend.siteTypes
                   .filter((st) => st.type === "PEMBANGKIT" || st.type === "PEMASOK")
                   .map((st) => {
-                  const isVisible = visibleSiteTypes[st.type] ?? true;
-                  return (
-                    <button
-                      key={st.type}
-                      onClick={() => toggleSiteType(st.type)}
-                      className={`flex items-center gap-2 w-full py-1 px-1.5 rounded-md transition-all ${
-                        isVisible ? `bg-opacity-10` : "bg-gray-100 opacity-60"
-                      }`}
-                      style={
-                        isVisible
-                          ? { backgroundColor: `${st.color}1A` }
-                          : undefined
-                      }
-                    >
-                      <span
-                        className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full`}
-                        style={{
-                          backgroundColor: st.color,
-                          boxShadow: isVisible
-                            ? `0 0 0 4px ${st.color}33`
-                            : "none",
-                        }}
-                      />
-                      <span className="text-gray-700 text-xs flex-1 text-left">
-                        {getSiteTypeLabel(st.type)}
-                      </span>
-                      {isVisible ? (
-                        <Eye size={14} style={{ color: st.color }} />
-                      ) : (
-                        <EyeOff size={14} className="text-gray-400" />
-                      )}
-                    </button>
-                  );
-                })}
+                    const isVisible = visibleSiteTypes[st.type] ?? true;
+                    return (
+                      <button
+                        key={st.type}
+                        onClick={() => toggleSiteType(st.type)}
+                        className={`flex items-center gap-2 w-full py-1 px-1.5 rounded-md transition-all ${isVisible ? `bg-opacity-10` : "bg-gray-100 opacity-60"
+                          }`}
+                        style={
+                          isVisible
+                            ? { backgroundColor: `${st.color}1A` }
+                            : undefined
+                        }
+                      >
+                        <span
+                          className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full`}
+                          style={{
+                            backgroundColor: st.color,
+                            boxShadow: isVisible
+                              ? `0 0 0 4px ${st.color}33`
+                              : "none",
+                          }}
+                        />
+                        <span className="text-gray-700 text-xs flex-1 text-left">
+                          {getSiteTypeLabel(st.type)}
+                        </span>
+                        {isVisible ? (
+                          <Eye size={14} style={{ color: st.color }} />
+                        ) : (
+                          <EyeOff size={14} className="text-gray-400" />
+                        )}
+                      </button>
+                    );
+                  })}
 
                 {/* Pipe type legend items */}
                 {data.legend.pipeTypes.length > 0 && (
@@ -735,11 +734,10 @@ export default function Map() {
                     <button
                       key={mode}
                       onClick={() => setSelectedMode(mode)}
-                      className={`px-3 py-1 text-xs font-medium rounded-md transition-all duration-200 cursor-pointer ${
-                        selectedMode === mode
+                      className={`px-3 py-1 text-xs font-medium rounded-md transition-all duration-200 cursor-pointer ${selectedMode === mode
                           ? "bg-secondary/90"
                           : "text-gray-600 hover:text-secondary hover:bg-gray-50"
-                      }`}
+                        }`}
                     >
                       {mode}
                     </button>
@@ -764,11 +762,10 @@ export default function Map() {
                     <button
                       key={prod}
                       onClick={() => setSelectedProduct(prod)}
-                      className={`px-3 py-1 text-xs font-medium rounded-md transition-all duration-200 cursor-pointer ${
-                        selectedProduct === prod
+                      className={`px-3 py-1 text-xs font-medium rounded-md transition-all duration-200 cursor-pointer ${selectedProduct === prod
                           ? "bg-secondary/90"
                           : "text-gray-600 hover:text-secondary hover:bg-gray-50"
-                      }`}
+                        }`}
                     >
                       {prod}
                     </button>
@@ -833,7 +830,7 @@ export default function Map() {
                         </div>
                         <div className="flex flex-col bg-white p-2 rounded-md border border-gray-100">
                           <span className="text-gray-500 mb-0.5">
-                            Realisasi
+                            Penerimaan
                           </span>
                           <span className="font-semibold text-emerald-600">
                             {p.totalRealisasi?.toLocaleString() ?? 0} kL
@@ -870,7 +867,7 @@ export default function Map() {
                     </span>
                   </div>
                   <div className="flex flex-col bg-white p-2 rounded-md border border-gray-200 shadow-sm">
-                    <span className="text-gray-500 mb-0.5">Realisasi</span>
+                    <span className="text-gray-500 mb-0.5">Penerimaan</span>
                     <span className="font-semibold text-emerald-600">
                       {modalSiteList.list
                         .reduce((sum, p) => sum + (p.totalRealisasi ?? 0), 0)
