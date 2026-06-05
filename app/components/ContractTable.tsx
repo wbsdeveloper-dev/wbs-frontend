@@ -691,8 +691,8 @@ export default function ContractTable() {
     }>({ open: false, message: "", severity: "success" });
 
     // ---- API hooks ----
-    const { data: supplierSitesData } = useSites({ type: "PEMASOK" });
-    const { data: powerplantSitesData } = useSites({ type: "PEMBANGKIT" });
+    const { data: supplierSitesData } = useSites({ type: "PEMASOK", commodity: "GAS PIPA" });
+    const { data: powerplantSitesData } = useSites({ type: "PEMBANGKIT", commodity: "GAS PIPA" });
 
     const supplierSites = useMemo(() => supplierSitesData || [], [supplierSitesData]);
     const powerplantSites = useMemo(() => powerplantSitesData || [], [powerplantSitesData]);

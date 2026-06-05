@@ -214,13 +214,12 @@ export default function GasDashboard() {
     }));
   }, [distributionData]);
 
-  // Transform top data for list components
   const topPemasokList = useMemo(() => {
     if (!topSuppliersData?.items) return [];
     return topSuppliersData.items.map(
-      (item: { name: string; percentage: number }) => ({
+      (item: { name: string; value: number }) => ({
         name: item.name,
-        volume: `${item.percentage.toFixed(1)}`,
+        volume: `${item.value.toFixed(1)}`,
       }),
     );
   }, [topSuppliersData]);
