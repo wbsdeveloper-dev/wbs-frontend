@@ -246,6 +246,8 @@ export default function EditDataTable({
   const endIndex = startIndex + itemsPerPage;
   const paginatedRecords = records;
 
+  const [viewMode, setViewMode] = useState<"short" | "detail">("short");
+
   // Sort state
   type SortField = keyof MonitoringRecord;
   const [sortField, setSortField] = useState<SortField | null>(null);
@@ -441,6 +443,28 @@ export default function EditDataTable({
             <span className="text-sm font-medium text-gray-700">
               Tabel Monitoring Data
             </span>
+            <div className="flex bg-gray-100 p-0.5 rounded-lg border border-gray-200 ml-4">
+              <button
+                onClick={() => setViewMode("short")}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-200 ${
+                  viewMode === "short"
+                    ? "bg-white text-gray-900 shadow-sm"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                Short
+              </button>
+              <button
+                onClick={() => setViewMode("detail")}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-200 ${
+                  viewMode === "detail"
+                    ? "bg-white text-gray-900 shadow-sm"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                Detail
+              </button>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             {filtersEnabled && (
@@ -719,15 +743,23 @@ export default function EditDataTable({
                 <Th label="Tanggal" field="reportDate" />
                 <Th label="Pemasok" field="supplierName" align="left" />
                 <Th label="Pembangkit" field="siteName" align="left" />
-                <Th label="Metrik" field="metricType" />
                 <Th label="Periode" field="periodType" />
                 <Th label="Jam" field="periodValue" />
-                <Th label="Nilai Dari WA" field="waValue" />
-                <Th label="Nilai Dari Email" field="plnValue" />
-                <Th label="Nilai Final" field="finalValue" />
-                <Th label="Delta" field="delta" />
+                <Th label="MMSCFD" field="finalValueMmscfd" />
+                <Th label="BBTUD" field="finalValueBbtud" />
                 <Th label="Status" field="status" />
-                <Th label="ID" />
+                {viewMode === "detail" && (
+                  <>
+                    <Th label="WA MMSCFD" field="waValueMmscfd" />
+                    <Th label="WA BBTUD" field="waValueBbtud" />
+                    <Th label="EMAIL MMSCFD" field="plnValueMmscfd" />
+                    <Th label="EMAIL BBTUD" field="plnValueBbtud" />
+                    <Th label="SHEET MMSCFD" field="sheetValueMmscfd" />
+                    <Th label="SHEET BBTUD" field="sheetValueBbtud" />
+                    <Th label="ID BBTUD" />
+                    <Th label="ID MMSCFD" />
+                  </>
+                )}
                 <Th label="Aksi" />
               </tr>
             </thead>
@@ -735,7 +767,7 @@ export default function EditDataTable({
               {isLoading ? (
                 <tr>
                   <td
-                    colSpan={hasAction ? 14 : 13}
+                    colSpan={hasAction ? (viewMode === "detail" ? 18 : 10) : (viewMode === "detail" ? 17 : 9)}
                     className="px-4 py-8 text-center text-gray-500"
                   >
                     <div className="flex items-center justify-center gap-2">
@@ -750,7 +782,7 @@ export default function EditDataTable({
               ) : records.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={hasAction ? 14 : 13}
+                    colSpan={hasAction ? (viewMode === "detail" ? 18 : 10) : (viewMode === "detail" ? 17 : 9)}
                     className="px-4 py-8 text-center text-gray-500"
                   >
                     Tidak ada data monitoring
@@ -759,7 +791,7 @@ export default function EditDataTable({
               ) : (
                 sortedRecords.map((record, index) => (
                   <tr
-                    key={record.id}
+                    key={record.idBbtud || record.idMmscfd || index}
                     className="hover:bg-gray-50 transition-colors"
                   >
                     <td className="px-4 py-3 text-center text-gray-700">
@@ -774,37 +806,53 @@ export default function EditDataTable({
                     <td className="px-4 py-3 text-gray-900">
                       {record.siteName}
                     </td>
-                    <td className="px-4 py-3 text-center text-gray-700 whitespace-nowrap">
-                      {formatNormalizeText(record.metricType)}
-                    </td>
                     <td className="px-4 py-3 text-center text-gray-700">
                       {formatNormalizeText(record.periodType)}
                     </td>
                     <td className="px-4 py-3 text-center text-gray-700 font-mono text-xs">
                       {record.periodValue || "-"}
                     </td>
-                    <td className="px-4 py-3 text-center text-gray-700 font-mono">
-                      {fmt4(record.waValue)}
-                    </td>
-                    <td className="px-4 py-3 text-center text-gray-700 font-mono">
-                      {fmt4(record.plnValue)}
+                    <td className="px-4 py-3 text-center text-gray-700 font-mono font-medium">
+                      {fmt4(record.finalValueMmscfd)}
                     </td>
                     <td className="px-4 py-3 text-center text-gray-700 font-mono font-medium">
-                      {fmt4(record.finalValue)}
-                    </td>
-                    <td className="px-4 py-3 text-center text-gray-700 font-mono">
-                      {fmt4(record.delta)}
+                      {fmt4(record.finalValueBbtud)}
                     </td>
                     <td className="px-4 py-3 text-center">
                       <StatusBadge status={record.status} />
                     </td>
-                    <td className="px-4 py-3 text-center text-gray-900 font-medium">
-                      {record.id}
-                    </td>
+                    {viewMode === "detail" && (
+                      <>
+                        <td className="px-4 py-3 text-center text-gray-700 font-mono">
+                          {fmt4(record.waValueMmscfd)}
+                        </td>
+                        <td className="px-4 py-3 text-center text-gray-700 font-mono">
+                          {fmt4(record.waValueBbtud)}
+                        </td>
+                        <td className="px-4 py-3 text-center text-gray-700 font-mono">
+                          {fmt4(record.plnValueMmscfd)}
+                        </td>
+                        <td className="px-4 py-3 text-center text-gray-700 font-mono">
+                          {fmt4(record.plnValueBbtud)}
+                        </td>
+                        <td className="px-4 py-3 text-center text-gray-700 font-mono">
+                          {fmt4(record.sheetValueMmscfd)}
+                        </td>
+                        <td className="px-4 py-3 text-center text-gray-700 font-mono">
+                          {fmt4(record.sheetValueBbtud)}
+                        </td>
+                        <td className="px-4 py-3 text-center text-gray-500 font-mono text-xs truncate max-w-[100px]" title={record.idBbtud || ""}>
+                          {record.idBbtud || "-"}
+                        </td>
+                        <td className="px-4 py-3 text-center text-gray-500 font-mono text-xs truncate max-w-[100px]" title={record.idMmscfd || ""}>
+                          {record.idMmscfd || "-"}
+                        </td>
+                      </>
+                    )}
                     {hasAction && (
                       <td className="px-4 py-3 text-center">
                         <ActionButtons
-                          id={record.id}
+                          id={record.idBbtud || record.idMmscfd || ""}
                           onEdit={(id) => router.push(`/edit/${id}`)}
                           onDelete={(id) =>
                             handleDeleteClick(

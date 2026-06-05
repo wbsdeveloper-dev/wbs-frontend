@@ -119,18 +119,31 @@ function CustomTooltip({
           </div>
         )}
         {nominationEntry && nominationEntry.value > 0 && (
-          <div className="flex items-center justify-between gap-6 pt-1 border-t border-gray-100">
-            <div className="flex items-center gap-2">
-              <span className="w-4 h-0.5 rounded bg-[#a855f7]" style={{ borderTop: "2px dashed #a855f7" }} />
-              <span className="text-gray-600 font-medium">Nominasi</span>
+          <>
+            <div className="flex items-center justify-between gap-6 pt-1 border-t border-gray-100">
+              <div className="flex items-center gap-2">
+                <span className="w-4 h-0.5 rounded bg-[#a855f7]" style={{ borderTop: "2px dashed #a855f7" }} />
+                <span className="text-gray-600 font-medium">Nominasi</span>
+              </div>
+              <span className="font-bold text-[#a855f7]">
+                {nominationEntry.value?.toLocaleString("id-ID", {
+                  maximumFractionDigits: 2,
+                })}{" "}
+                KL
+              </span>
             </div>
-            <span className="font-bold text-[#a855f7]">
-              {nominationEntry.value?.toLocaleString("id-ID", {
-                maximumFractionDigits: 2,
-              })}{" "}
-              KL
-            </span>
-          </div>
+            {cumulativeEntry && (
+              <div className="flex items-center justify-between gap-6 pt-1.5 border-t border-gray-100">
+                <span className="text-gray-500 font-medium text-xs">% Capaian (Akumulasi/Nominasi)</span>
+                <span className="font-bold text-gray-800 text-xs">
+                  {((cumulativeEntry.value / nominationEntry.value) * 100).toLocaleString("id-ID", {
+                    maximumFractionDigits: 1,
+                  })}
+                  %
+                </span>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
@@ -259,23 +272,23 @@ export default function BbmCompositeChart({
           />
         ))}
 
-        {/* Nomination reference line (flat dashed line for the month) */}
-        {nomination > 0 && (
-          <ReferenceLine
-            yAxisId="left"
-            y={nomination}
-            stroke="#a855f7"
-            strokeDasharray="6 4"
-            strokeWidth={2}
-            label={{
-              value: `Nominasi: ${nomination.toLocaleString("id-ID")} KL`,
-              position: "insideTopRight",
-              fill: "#a855f7",
-              fontSize: 11,
-              fontWeight: 600,
-            }}
-          />
-        )}
+        {/* Nomination line */}
+        <Line
+          yAxisId="right"
+          type="monotone"
+          dataKey="nomination"
+          name="Nominasi"
+          stroke="#a855f7"
+          strokeWidth={2}
+          strokeDasharray="6 4"
+          dot={false}
+          activeDot={{
+            r: 4,
+            fill: "#a855f7",
+            stroke: "#fff",
+            strokeWidth: 2,
+          }}
+        />
 
         {/* Cumulative line */}
         <Line

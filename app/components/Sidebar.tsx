@@ -351,16 +351,18 @@ export default function Sidebar() {
                   {user?.roles?.join(", ") || "User"}
                 </p>
               </div>
-              <div
-                onClick={() => router.push("/notification")}
-                className="relative p-1.5 rounded-full hover:bg-gray-200 cursor-pointer text-gray-500 transition-colors"
-                title="Notifikasi"
-              >
-                <Bell size={18} />
-                <span className="absolute top-1 right-1 flex h-3 w-3 items-center justify-center rounded-full bg-red-500 text-[8px] font-bold text-white ring-2 ring-white">
-                  2
-                </span>
-              </div>
+              {!isBbmRoute && (
+                <div
+                  onClick={() => router.push("/notification")}
+                  className="relative p-1.5 rounded-full hover:bg-gray-200 cursor-pointer text-gray-500 transition-colors"
+                  title="Notifikasi"
+                >
+                  <Bell size={18} />
+                  <span className="absolute top-1 right-1 flex h-3 w-3 items-center justify-center rounded-full bg-red-500 text-[8px] font-bold text-white ring-2 ring-white">
+                    2
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         ) : (
@@ -378,16 +380,18 @@ export default function Sidebar() {
             >
               <User size={16} className="text-gray-600" />
             </div>
-            <div 
-              onClick={() => router.push("/notification")}
-              title="Notifikasi"
-              className="relative w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center shrink-0 shadow-sm cursor-pointer hover:opacity-90 transition-opacity text-gray-600"
-            >
-              <Bell size={16} />
-              <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-gray-100">
-                2
-              </span>
-            </div>
+            {!isBbmRoute && (
+              <div 
+                onClick={() => router.push("/notification")}
+                title="Notifikasi"
+                className="relative w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center shrink-0 shadow-sm cursor-pointer hover:opacity-90 transition-opacity text-gray-600"
+              >
+                <Bell size={16} />
+                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-gray-100">
+                  2
+                </span>
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -88,7 +88,7 @@ export default function GasDashboard() {
   const { data: chartFlowData, isLoading: isChartLoading } = useChartFlow(
     startDateFilter || "",
     endDateFilter || "",
-    granularity,
+    granularity as any,
     chartBy,
     selectedPemasokId,
     selectedPembangkitId,

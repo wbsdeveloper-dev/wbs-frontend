@@ -15,21 +15,40 @@ import {
 // ---------------------------------------------------------------------------
 
 export interface MonitoringRecord {
-  id: string;
+  id?: string;
+  idBbtud?: string | null;
+  idMmscfd?: string | null;
   reportDate: string;
   siteId: string;
   siteName: string;
+  supplierId?: string | null;
   supplierName: string | null;
-  metricType: string;
+  metricType?: string;
   periodType: string;
   periodValue: string;
-  waValue: number | null;
-  plnValue: number | null;
-  sheetValue: number | null;
-  finalValue: number | null;
-  finalSource: string | null;
+  
+  waValue?: number | null;
+  plnValue?: number | null;
+  sheetValue?: number | null;
+  finalValue?: number | null;
+  finalSource?: string | null;
+  delta?: number | null;
+
+  waValueBbtud?: number | null;
+  plnValueBbtud?: number | null;
+  sheetValueBbtud?: number | null;
+  finalValueBbtud?: number | null;
+  finalSourceBbtud?: string | null;
+  deltaBbtud?: number | null;
+
+  waValueMmscfd?: number | null;
+  plnValueMmscfd?: number | null;
+  sheetValueMmscfd?: number | null;
+  finalValueMmscfd?: number | null;
+  finalSourceMmscfd?: string | null;
+  deltaMmscfd?: number | null;
+
   resolution: string | null;
-  delta: number | null;
   status: string;
   reason: string | null;
   resolvedAt: string | null;
@@ -607,17 +626,19 @@ export function useBatchCreateOcrReconciliationRecords(
 // ---------------------------------------------------------------------------
 
 export interface BaFileRow {
-  id: string;
+  supplier_id: string;
   site_id: string;
-  supplier_id: string | null;
   report_month: string;
-  filename: string;
-  stored_name: string;
-  file_path: string;
-  uploaded_by: string;
-  created_at: string;
   site_name: string | null;
   supplier_name: string | null;
+  files: {
+    id: string;
+    filename: string;
+    stored_name: string;
+    file_path: string;
+    uploaded_by: string;
+    created_at: string;
+  }[];
 }
 
 export async function fetchBaFiles(params?: {

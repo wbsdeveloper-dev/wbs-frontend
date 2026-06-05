@@ -14,6 +14,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Menu,
+  FileText,
 } from "lucide-react";
 
 export default function BaFilesPage() {
@@ -292,11 +293,8 @@ export default function BaFilesPage() {
                     <th className="px-6 py-4 border-b border-gray-200">
                       Pembangkit
                     </th>
-                    <th className="px-6 py-4 border-b border-gray-200">
-                      Nama File
-                    </th>
-                    <th className="px-6 py-4 border-b border-gray-200 text-center">
-                      Aksi
+                    <th className="px-6 py-4 border-b border-gray-200 w-1/2">
+                      Daftar File & Aksi
                     </th>
                   </tr>
                 </thead>
@@ -322,13 +320,9 @@ export default function BaFilesPage() {
                     </tr>
                   ) : paginatedFiles.length > 0 ? (
                     paginatedFiles.map((file, index) => {
-                      const rootUrl = DASHBOARD_API_HOST.replace(/\/api$/, "");
-                      const cleanFilePath = file.file_path.replace(/^\//, "");
-                      const fileUrl = `${rootUrl}/${cleanFilePath}`;
-
                       return (
                         <tr
-                          key={file.id}
+                          key={file.supplier_id + file.site_id + file.report_month + index}
                           className="hover:bg-gray-50 transition-colors"
                         >
                           <td className="px-6 py-4 text-gray-700">
@@ -343,29 +337,43 @@ export default function BaFilesPage() {
                           <td className="px-6 py-4 text-gray-700">
                             {file.site_name || "-"}
                           </td>
-                          <td
-                            className="px-6 py-4 text-gray-500 font-mono text-xs max-w-[200px] sm:max-w-[300px] truncate"
-                            title={file.filename}
-                          >
-                            {file.filename}
-                          </td>
                           <td className="px-6 py-4">
-                            <div className="flex items-center justify-center gap-2">
-                              <a
-                                href={fileUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-primary bg-blue-50 border border-blue-100 rounded-lg hover:bg-blue-100 transition-colors"
-                              >
-                                <ExternalLink size={16} /> Preview
-                              </a>
-                              <a
-                                href={fileUrl}
-                                download={file.filename}
-                                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-[#0d4a5c] shadow-sm transition-colors"
-                              >
-                                <Download size={16} /> Unduh
-                              </a>
+                            <div className="flex flex-col gap-3">
+                              {file.files && file.files.length > 0 ? (
+                                file.files.map((f: any) => {
+                                  const rootUrl = DASHBOARD_API_HOST.replace(/\/api$/, "");
+                                  const cleanFilePath = f.file_path.replace(/^\//, "");
+                                  const fileUrl = `${rootUrl}/${cleanFilePath}`;
+                                  
+                                  return (
+                                    <div key={f.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-white border border-gray-200 rounded-lg shadow-sm">
+                                      <div className="flex items-center gap-2 overflow-hidden">
+                                          <FileText size={16} className="text-gray-400 shrink-0" />
+                                          <span className="text-gray-600 font-mono text-xs truncate" title={f.filename}>{f.filename}</span>
+                                      </div>
+                                      <div className="flex items-center gap-2 shrink-0">
+                                        <a
+                                          href={fileUrl}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary bg-blue-50 border border-blue-100 rounded-md hover:bg-blue-100 transition-colors"
+                                        >
+                                          <ExternalLink size={14} /> Preview
+                                        </a>
+                                        <a
+                                          href={fileUrl}
+                                          download={f.filename}
+                                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-primary rounded-md hover:bg-[#0d4a5c] shadow-sm transition-colors"
+                                        >
+                                          <Download size={14} /> Unduh
+                                        </a>
+                                      </div>
+                                    </div>
+                                  );
+                                })
+                              ) : (
+                                <div className="text-sm text-gray-500 italic">Tidak ada file</div>
+                              )}
                             </div>
                           </td>
                         </tr>

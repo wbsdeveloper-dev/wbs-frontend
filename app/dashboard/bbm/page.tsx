@@ -39,14 +39,22 @@ const MapBBM = dynamic(() => import("../../components/MapBBM"), { ssr: false });
 // Chart view mode type
 type ChartMode = "akumulasi" | "realisasi-moda";
 
+// Helper to format date as YYYY-MM-DD in local time
+function formatLocalISODate(date: Date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
 // Helper to get current month date range
 function getCurrentMonthRange() {
   const now = new Date();
   const start = new Date(now.getFullYear(), now.getMonth(), 1);
   const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
   return {
-    startDate: start.toISOString().split("T")[0],
-    endDate: end.toISOString().split("T")[0],
+    startDate: formatLocalISODate(start),
+    endDate: formatLocalISODate(end),
   };
 }
 
@@ -54,7 +62,7 @@ function getCurrentMonthRange() {
 function getCurrentYearStart() {
   const now = new Date();
   const start = new Date(now.getFullYear(), 0, 1);
-  return start.toISOString().split("T")[0];
+  return formatLocalISODate(start);
 }
 
 // ---------------------------------------------------------------------------
@@ -164,14 +172,14 @@ export default function Home() {
     useState(initialStart);
   const [distributionEndDate, setDistributionEndDate] = useState(initialEnd);
 
-  const [topSuppliersStart, setTopSuppliersStart] = useState(initialYearStart);
+  const [topSuppliersStart, setTopSuppliersStart] = useState(initialStart);
   const [topSuppliersEnd, setTopSuppliersEnd] = useState(initialEnd);
   const [topSuppliersProduct, setTopSuppliersProduct] = useState<string | null>(
     null,
   );
   const [topSuppliersModa, setTopSuppliersModa] = useState<string | null>(null);
 
-  const [topPlantsStart, setTopPlantsStart] = useState(initialYearStart);
+  const [topPlantsStart, setTopPlantsStart] = useState(initialStart);
   const [topPlantsEnd, setTopPlantsEnd] = useState(initialEnd);
   const [topPlantsProduct, setTopPlantsProduct] = useState<string | null>(null);
   const [topPlantsModa, setTopPlantsModa] = useState<string | null>(null);

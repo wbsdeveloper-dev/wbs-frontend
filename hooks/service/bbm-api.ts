@@ -317,6 +317,7 @@ export interface BbmSiteSummary {
     totalNominasi?: number;
     totalRealisasi?: number;
     totalPemakaian?: number;
+    [key: string]: any;
   }[];
   pemasokList?: {
     id: string;
@@ -325,6 +326,7 @@ export interface BbmSiteSummary {
     totalNominasi?: number;
     totalRealisasi?: number;
     totalPemakaian?: number;
+    [key: string]: any;
   }[];
 }
 
