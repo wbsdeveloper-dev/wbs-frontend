@@ -867,91 +867,111 @@ export default function TemplateEditor({
         </div>
 
         {/* Hints Section */}
-        {formData.scope !== "EMAIL_INGEST" && (
-          <div className="mt-4 pt-4 border-t border-gray-200">
-            <h4 className="text-sm font-medium text-gray-700 mb-3">
-              Petunjuk & Konfigurasi (Hints)
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {formData.scope === "WA_GROUP" && (
-                <>
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">
-                      Kata Kunci WA (Hint)
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.waKeywordHint || ""}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          waKeywordHint: e.target.value,
-                        })
-                      }
-                      placeholder="e.g., LAPORAN HARIAN"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">
-                      Pengirim WA (Hint)
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.waSenderHint || ""}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          waSenderHint: e.target.value,
-                        })
-                      }
-                      placeholder="e.g., PLN"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary"
-                    />
-                  </div>
-                </>
-              )}
-              {formData.scope === "SPREADSHEET_SOURCE" && (
-                <>
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">
-                      Tab Sheet (Hint)
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.sheetTabHint || ""}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          sheetTabHint: e.target.value,
-                        })
-                      }
-                      placeholder="e.g., Gas Pipa"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">
-                      Baris Header Sheet
-                    </label>
-                    <input
-                      type="number"
-                      value={formData.sheetHeaderRow || ""}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          sheetHeaderRow: parseInt(e.target.value) || null,
-                        })
-                      }
-                      placeholder="1"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary"
-                    />
-                  </div>
-                </>
-              )}
-            </div>
+        <div className="mt-4 pt-4 border-t border-gray-200">
+          <h4 className="text-sm font-medium text-gray-700 mb-3">
+            Petunjuk & Konfigurasi (Hints)
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {formData.scope === "WA_GROUP" && (
+              <>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">
+                    Kata Kunci WA (Hint)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.waKeywordHint || ""}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        waKeywordHint: e.target.value,
+                      })
+                    }
+                    placeholder="e.g., LAPORAN HARIAN"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">
+                    Pengirim WA (Hint)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.waSenderHint || ""}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        waSenderHint: e.target.value,
+                      })
+                    }
+                    placeholder="e.g., PLN"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary"
+                  />
+                </div>
+              </>
+            )}
+            {formData.scope === "SPREADSHEET_SOURCE" && (
+              <>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">
+                    Tab Sheet (Hint)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.sheetTabHint || ""}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        sheetTabHint: e.target.value,
+                      })
+                    }
+                    placeholder="e.g., Gas Pipa"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">
+                    Baris Header Sheet
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.sheetHeaderRow || ""}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        sheetHeaderRow: parseInt(e.target.value) || null,
+                      })
+                    }
+                    placeholder="1"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary"
+                  />
+                </div>
+              </>
+            )}
+            {formData.scope === "EMAIL_INGEST" && (
+              <>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">
+                    Tab Excel (Hint)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.sheetTabHint || ""}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        sheetTabHint: e.target.value,
+                      })
+                    }
+                    placeholder="e.g., Sheet1, Laporan"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">Nama tab di file Excel yang akan diproses</p>
+                </div>
+              </>
+            )}
           </div>
-        )}
+        </div>
 
         {/* AI Settings */}
         {formData.parserMode === "AI_ASSISTED" && (
@@ -1017,10 +1037,21 @@ export default function TemplateEditor({
                       aiPromptTemplate: e.target.value,
                     })
                   }
-                  rows={4}
-                  placeholder="Use {{message}} as placeholder..."
+                  rows={5}
+                  placeholder={
+                    formData.scope === "EMAIL_INGEST"
+                      ? "Contoh: Kamu adalah asisten ekstraksi data. Dari data tabel Excel berikut, ekstrak semua record dengan field: siteName, metricType, periodType, periodValue, value, unit.\n\nGunakan {{DATA}} sebagai placeholder untuk data file Excel."
+                      : "Use {{DATA}} as placeholder for the data content..."
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary resize-none font-mono"
                 />
+                {formData.scope === "EMAIL_INGEST" && (
+                  <p className="text-xs text-gray-500 mt-1 flex items-start gap-1">
+                    <span className="text-cyan-600 font-medium">💡 Email Ingest:</span>
+                    Gunakan <code className="bg-gray-100 px-1 rounded">{"{{DATA}}"}</code> sebagai placeholder di mana data dari file Excel/PDF attachment akan disisipkan ke dalam prompt.
+                  </p>
+                )}
+
               </div>
               <div>
                 <div className="flex items-center gap-1.5 mb-1">

@@ -88,6 +88,7 @@ export default function Sidebar() {
       resource: "data_management",
       children: [
         { title: "Data Input", path: "/edit", resource: "data_management" },
+        { title: "Data Transportir", path: "/edit/transportir", resource: "data_management" },
         {
           title: "File Berita Acara",
           path: "/edit/ba-files",

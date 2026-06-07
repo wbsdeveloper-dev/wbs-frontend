@@ -77,6 +77,7 @@ export default function EmailIngestPage() {
     subjectFilter: "",
     senderFilter: "",
     labelFilter: "INBOX",
+    attachmentFilenameFilter: "",
   });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
@@ -134,6 +135,7 @@ export default function EmailIngestPage() {
       subjectFilter: addForm.subjectFilter || undefined,
       senderFilter: addForm.senderFilter || undefined,
       labelFilter: addForm.labelFilter || undefined,
+      attachmentFilenameFilter: addForm.attachmentFilenameFilter || undefined,
     };
 
     createMutation.mutate(payload, {
@@ -146,6 +148,7 @@ export default function EmailIngestPage() {
           subjectFilter: "",
           senderFilter: "",
           labelFilter: "INBOX",
+          attachmentFilenameFilter: "",
         });
         setFormErrors({});
       },
@@ -161,6 +164,7 @@ export default function EmailIngestPage() {
       subjectFilter: source.subjectFilter,
       senderFilter: source.senderFilter,
       labelFilter: source.labelFilter,
+      attachmentFilenameFilter: source.attachmentFilenameFilter,
     };
 
     updateMutation.mutate(
@@ -697,6 +701,23 @@ export default function EmailIngestPage() {
               placeholder="INBOX"
             />
           </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Filter Nama Attachment
+            </label>
+            <input
+              type="text"
+              value={addForm.attachmentFilenameFilter}
+              onChange={(e) => setAddForm({ ...addForm, attachmentFilenameFilter: e.target.value })}
+              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent"
+              placeholder="Contoh: laporan,daily,metering"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Comma-separated keywords untuk filter nama file attachment. Hanya attachment dengan nama mengandung keyword ini yang akan diproses.
+            </p>
+          </div>
+
 
           <div className="flex gap-3 pt-4 border-t border-gray-200">
             <button

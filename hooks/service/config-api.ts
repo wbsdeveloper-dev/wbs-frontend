@@ -782,6 +782,7 @@ export interface EmailSource {
   subjectFilter: string | null;
   senderFilter: string | null;
   labelFilter: string | null;
+  attachmentFilenameFilter: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -793,6 +794,7 @@ export interface CreateEmailSourcePayload {
   subjectFilter?: string;
   senderFilter?: string;
   labelFilter?: string;
+  attachmentFilenameFilter?: string;
 }
 
 export interface UpdateEmailSourcePayload {
@@ -803,6 +805,7 @@ export interface UpdateEmailSourcePayload {
   subjectFilter?: string | null;
   senderFilter?: string | null;
   labelFilter?: string | null;
+  attachmentFilenameFilter?: string | null;
 }
 
 // ---------------------------------------------------------------------------

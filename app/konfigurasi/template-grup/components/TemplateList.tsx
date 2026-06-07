@@ -4,6 +4,7 @@ import React from "react";
 import {
   Copy,
   Archive,
+  Mail,
   MessageSquare,
   FileSpreadsheet,
   CheckCircle,
@@ -39,6 +40,14 @@ export default function TemplateList({
         <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-purple-100 text-purple-700 rounded-full">
           <MessageSquare size={10} />
           WA
+        </span>
+      );
+    }
+    if (scope === "EMAIL_INGEST") {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-cyan-100 text-cyan-700 rounded-full">
+          <Mail size={10} />
+          Email
         </span>
       );
     }

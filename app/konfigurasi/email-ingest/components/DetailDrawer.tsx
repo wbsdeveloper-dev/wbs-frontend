@@ -222,6 +222,24 @@ export default function DetailDrawer({
                   placeholder="e.g. INBOX, CATEGORY_PROMOTIONS"
                 />
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Filter Nama Attachment
+                </label>
+                <input
+                  type="text"
+                  value={formData.attachmentFilenameFilter || ""}
+                  onChange={(e) =>
+                    setFormData({ ...formData, attachmentFilenameFilter: e.target.value || null })
+                  }
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
+                  placeholder="e.g. laporan,daily,metering"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Comma-separated keywords — hanya attachment dengan nama mengandung keyword ini yang diproses.
+                </p>
+              </div>
             </section>
 
             <section className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm space-y-4">
