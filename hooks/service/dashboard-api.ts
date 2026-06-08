@@ -171,9 +171,16 @@ export interface DashboardEvent {
   siteId: string;
   siteName: string;
   occurredAt: string;
+  created_at?: string;
+  createdAt?: string;
   title: string;
   description: string;
   severity: "INFO" | "WARNING" | "CRITICAL";
+  document?: string;
+  user?: {
+    fullName: string | null;
+    roles: string[];
+  } | null;
 }
 
 /** POST /dashboard/events */
@@ -184,6 +191,7 @@ export interface CreateEventPayload {
   title: string;
   description: string;
   severity?: "INFO" | "WARNING" | "CRITICAL";
+  document?: string;
 }
 
 export interface EventsPagination {
@@ -374,15 +382,7 @@ export async function getTopPlants(
 export async function getChartFlow(
   startDate: string,
   endDate: string,
-  granularity:
-    | "hour"
-    | "day"
-    | "month"
-    | "three_month"
-    | "six_month"
-    | "one_year"
-    | "three_year"
-    | "year",
+  granularity: "hour" | "day" | "month" | "year",
   by: "supplier" | "plant",
   pemasokId?: string,
   pembangkitId?: string,
@@ -419,6 +419,47 @@ export async function createEvent(payload: CreateEventPayload) {
   return dashboardFetch<DashboardEvent>("/dashboard/events", {
     method: "POST",
     body: JSON.stringify(payload),
+  });
+}
+
+export async function uploadEventFile(file: File): Promise<{ filename: string }> {
+  const url = `${DASHBOARD_API_HOST}/dashboard/events/upload`;
+  const accessToken = getAccessToken();
+
+  const formData = new FormData();
+  formData.append("bukti", file);
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
+    body: formData,
+  });
+
+  if (!res.ok) {
+    let msg = res.statusText;
+    try {
+      const body = await res.json();
+      if (body.message) msg = body.message;
+      else if (body.error) msg = body.error;
+    } catch {
+      /* ignore */
+    }
+    throw new ApiError(res.status, msg);
+  }
+
+  const body = await res.json() as any;
+  if (!body.success) {
+    throw new ApiError(res.status, body.message || "Gagal mengunggah file");
+  }
+
+  return body.data;
+}
+
+export async function deleteEvent(id: string) {
+  return dashboardFetch<null>(`/dashboard/events/${id}`, {
+    method: "DELETE",
   });
 }
 
@@ -492,15 +533,7 @@ export function useTopPlants(
 export function useChartFlow(
   startDate: string,
   endDate: string,
-  granularity:
-    | "hour"
-    | "day"
-    | "month"
-    | "three_month"
-    | "six_month"
-    | "one_year"
-    | "three_year"
-    | "year",
+  granularity: "hour" | "day" | "month" | "year",
   by: "supplier" | "plant",
   pemasokId?: string,
   pembangkitId?: string,
@@ -565,6 +598,19 @@ export function useCreateEvent(
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (payload: CreateEventPayload) => createEvent(payload),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: dashboardKeys.all });
+    },
+    ...options,
+  });
+}
+
+export function useDeleteEvent(
+  options?: Partial<UseMutationOptions<null, Error, string>>,
+) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteEvent(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: dashboardKeys.all });
     },

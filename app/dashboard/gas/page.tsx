@@ -17,7 +17,7 @@ import {
   useEvents,
 } from "@/hooks/service/dashboard-api";
 import { useContracts } from "@/hooks/service/contract-api";
-import type { Granularity } from "@/app/components/RealtimeChart";
+import type { Granularity, Periode } from "@/app/components/RealtimeChart";
 
 // Components
 import FuelTypeDonutChart from "@/app/components/FuelTypeDonutChart";
@@ -52,7 +52,7 @@ export default function GasDashboard() {
   const [endDateFilter, setEndDateFilter] = useState<string | null>(todayDate);
 
   // Chart flow state
-  const [granularity, setGranularity] = useState<Granularity>("hour");
+  const [granularity, setGranularity] = useState<"hour" | "day" | "month" | "year">("hour");
   const [chartBy, setChartBy] = useState<"supplier" | "plant">("supplier");
   const [selectedPemasokId, setSelectedPemasokId] = useState<
     string | undefined
@@ -174,7 +174,7 @@ export default function GasDashboard() {
         }
       }
     },
-    [todayDate, startDate, endDate],
+    [todayDate],
   );
 
   const handlePemasokChange = useCallback((pemasokId: string | null) => {
@@ -189,11 +189,6 @@ export default function GasDashboard() {
     (startDate: string | null, endDate: string | null) => {
       setStartDateFilter(startDate);
       setEndDateFilter(endDate);
-      if (startDate && startDate === endDate) {
-        setGranularity("hour");
-      } else {
-        setGranularity("day");
-      }
     },
     [],
   );
@@ -219,13 +214,12 @@ export default function GasDashboard() {
     }));
   }, [distributionData]);
 
-  // Transform top data for list components
   const topPemasokList = useMemo(() => {
     if (!topSuppliersData?.items) return [];
     return topSuppliersData.items.map(
-      (item: { name: string; percentage: number }) => ({
+      (item: { name: string; value: number }) => ({
         name: item.name,
-        volume: `${item.percentage.toFixed(1)}`,
+        volume: `${item.value.toFixed(1)}`,
       }),
     );
   }, [topSuppliersData]);

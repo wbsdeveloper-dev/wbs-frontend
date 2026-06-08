@@ -114,13 +114,17 @@ export default function DashboardSelection() {
         <div className="flex flex-col md:flex-row gap-4 md:gap-6 w-full max-w-4xl">
           {/* Gas Pipa Card */}
           <div className="flex-1 group">
-            <div
-              onClick={() => router.push("/dashboard/gas")}
+            <a
+              href="/dashboard/gas"
+              onClick={(e) => {
+                e.preventDefault();
+                router.push("/dashboard/gas");
+              }}
               className="relative bg-white rounded-2xl p-5 md:p-6 
                 border border-slate-200 hover:border-secondary/50
                 cursor-pointer transition-all duration-300
                 shadow-lg shadow-slate-200/50 hover:shadow-xl hover:shadow-[#14a2bb]/20
-                hover:scale-[1.02]"
+                hover:scale-[1.02] block no-underline"
             >
               {/* Icon */}
               <div
@@ -155,18 +159,22 @@ export default function DashboardSelection() {
                 </span>
                 <ChevronRight className="w-5 h-5 text-secondary group-hover:translate-x-1 transition-transform" />
               </div>
-            </div>
+            </a>
           </div>
 
           {/* BBM Card */}
           <div className="flex-1 group">
-            <div
-              onClick={() => router.push("/dashboard/bbm")}
+            <a
+              href="/dashboard/bbm"
+              onClick={(e) => {
+                e.preventDefault();
+                router.push("/dashboard/bbm");
+              }}
               className="relative bg-white rounded-2xl p-5 md:p-6 
                 border border-slate-200 hover:border-[#fb923c]/50
                 cursor-pointer transition-all duration-300
                 shadow-lg shadow-slate-200/50 hover:shadow-xl hover:shadow-[#fb923c]/20
-                hover:scale-[1.02]"
+                hover:scale-[1.02] block no-underline"
             >
               {/* Icon */}
               <div
@@ -201,7 +209,7 @@ export default function DashboardSelection() {
                 </span>
                 <ChevronRight className="w-5 h-5 text-[#fb923c] group-hover:translate-x-1 transition-transform" />
               </div>
-            </div>
+            </a>
           </div>
           {/* LNG Card */}
           <div className="flex-1 group">

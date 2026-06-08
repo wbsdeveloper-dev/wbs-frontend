@@ -21,6 +21,7 @@ import {
 import { useRouter } from "next/navigation";
 import type { BbmRecord } from "@/hooks/service/bbm-api";
 import { usePrivilege } from "@/hooks/usePrivilege";
+import { useDeleteBbmMonthly } from "@/hooks/service/bbm-api";
 
 interface EditBbmDataTableProps {
   records: BbmRecord[];
@@ -91,12 +92,15 @@ export default function EditBbmDataTable({
   const canUpdate = hasPrivilege("data_management", "UPDATE");
   const canDelete = hasPrivilege("data_management", "DELETE");
   const hasAction = !hideActions && (canUpdate || canDelete);
+  
+  const deleteMutation = useDeleteBbmMonthly();
 
   type SortField = keyof BbmRecord;
   const [sortField, setSortField] = useState<SortField | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [hoveredGroupId, setHoveredGroupId] = useState<string | null>(null);
 
   const handleSort = (field: SortField) => {
     if (sortField !== field) {
@@ -222,6 +226,68 @@ export default function EditBbmDataTable({
     startIndex + pageSize,
   );
 
+  const rowSpans = useMemo(() => {
+    const spans = paginatedRecords.map((record) => ({
+      nominationSpan: 1,
+      usageSpan: 1,
+      showNomination: true,
+      showUsage: true,
+      nominationValue: record.nomination,
+      usageValue: record.usage,
+    }));
+
+    let i = 0;
+    while (i < paginatedRecords.length) {
+      let j = i + 1;
+      const keyI = `${paginatedRecords[i].reportDate}|${paginatedRecords[i].tbbm}|${paginatedRecords[i].pembangkit}|${paginatedRecords[i].product}`;
+
+      while (j < paginatedRecords.length) {
+        const keyJ = `${paginatedRecords[j].reportDate}|${paginatedRecords[j].tbbm}|${paginatedRecords[j].pembangkit}|${paginatedRecords[j].product}`;
+        if (keyI === keyJ) {
+          j++;
+        } else {
+          break;
+        }
+      }
+
+      // Find first non-empty nomination and usage value in this group
+      let nominationVal = paginatedRecords[i].nomination;
+      for (let k = i; k < j; k++) {
+        const val = paginatedRecords[k].nomination;
+        if (val != null && val !== 0) {
+          nominationVal = val;
+          break;
+        }
+      }
+
+      let usageVal = paginatedRecords[i].usage;
+      for (let k = i; k < j; k++) {
+        const val = paginatedRecords[k].usage;
+        if (val != null && val !== 0) {
+          usageVal = val;
+          break;
+        }
+      }
+
+      const count = j - i;
+      spans[i].nominationSpan = count;
+      spans[i].usageSpan = count;
+      spans[i].nominationValue = nominationVal;
+      spans[i].usageValue = usageVal;
+
+      if (count > 1) {
+        for (let k = i + 1; k < j; k++) {
+          spans[k].showNomination = false;
+          spans[k].showUsage = false;
+          spans[k].nominationSpan = 0;
+          spans[k].usageSpan = 0;
+        }
+      }
+      i = j;
+    }
+    return spans;
+  }, [paginatedRecords]);
+
   // Reset page to 1 when search term changes
 
   const SortIcon = ({ field }: { field: SortField }) => {
@@ -244,11 +310,10 @@ export default function EditBbmDataTable({
     align?: "left" | "center" | "right";
   }) => (
     <th
-      className={`px-4 py-3 text-${align} text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap ${
-        field
-          ? "cursor-pointer select-none hover:bg-gray-100 transition-colors"
-          : ""
-      }`}
+      className={`px-4 py-3 text-${align} text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap ${field
+        ? "cursor-pointer select-none hover:bg-gray-100 transition-colors"
+        : ""
+        }`}
       onClick={field ? () => handleSort(field) : undefined}
     >
       <span className="inline-flex items-center justify-center">
@@ -263,10 +328,14 @@ export default function EditBbmDataTable({
     return val.toLocaleString("id-ID");
   };
 
-  const handleDeleteClick = (id: string, name: string) => {
-    // TBD: connect to a delete API if needed
-    if (window.confirm(`Apakah Anda yakin ingin menghapus record ${name}?`)) {
-      alert("Delete action triggered for " + id);
+  const handleDeleteClick = async (id: string, name: string) => {
+    if (window.confirm(`Apakah Anda yakin ingin menghapus data ${name}?`)) {
+      try {
+        await deleteMutation.mutateAsync(id);
+        alert("Data berhasil dihapus");
+      } catch (e: any) {
+        alert("Gagal menghapus data: " + (e?.message || "Unknown error"));
+      }
     }
   };
 
@@ -282,11 +351,10 @@ export default function EditBbmDataTable({
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowFilters((v) => !v)}
-            className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-all duration-200 ${
-              showFilters || activeFilterCount > 0
+            className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-all duration-200 ${showFilters || activeFilterCount > 0
                 ? "bg-primary text-white border-primary"
                 : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-            }`}
+              }`}
           >
             <Filter size={16} />
             Filter
@@ -491,7 +559,7 @@ export default function EditBbmDataTable({
               <Th label="Produk" field="product" />
               <Th label="Moda" field="moda" />
               <Th label="Nominasi" field="nomination" />
-              <Th label="Realisasi" field="realization" />
+              <Th label="Penerimaan" field="realization" />
               <Th label="Pemakaian" field="usage" />
               {hasAction && <Th label="Aksi" />}
             </tr>
@@ -526,10 +594,14 @@ export default function EditBbmDataTable({
                 const rowId =
                   record.id ||
                   `${record.pembangkit}-${record.reportDate}-${index}`;
+                const groupKey = `${record.reportDate}|${record.tbbm}|${record.pembangkit}|${record.product}`;
                 return (
                   <tr
                     key={rowId}
-                    className="hover:bg-gray-50 transition-colors"
+                    onMouseEnter={() => setHoveredGroupId(groupKey)}
+                    onMouseLeave={() => setHoveredGroupId(null)}
+                    className={`transition-colors ${hoveredGroupId === groupKey ? "bg-gray-50" : ""
+                      }`}
                   >
                     <td className="px-4 py-3 text-center text-gray-700">
                       {startIndex + index + 1}
@@ -547,15 +619,25 @@ export default function EditBbmDataTable({
                     <td className="px-4 py-3 text-center text-gray-700">
                       {record.moda}
                     </td>
-                    <td className="px-4 py-3 text-center text-gray-700 font-mono">
-                      {fmt(record.nomination)}
-                    </td>
+                    {rowSpans[index]?.showNomination && (
+                      <td
+                        rowSpan={rowSpans[index]?.nominationSpan}
+                        className="px-4 py-3 text-center text-gray-700 font-mono align-middle"
+                      >
+                        {fmt(rowSpans[index]?.nominationValue)}
+                      </td>
+                    )}
                     <td className="px-4 py-3 text-center text-gray-700 font-mono font-medium">
                       {fmt(record.realization)}
                     </td>
-                    <td className="px-4 py-3 text-center text-gray-700 font-mono">
-                      {fmt(record.usage)}
-                    </td>
+                    {rowSpans[index]?.showUsage && (
+                      <td
+                        rowSpan={rowSpans[index]?.usageSpan}
+                        className="px-4 py-3 text-center text-gray-700 font-mono align-middle"
+                      >
+                        {fmt(rowSpans[index]?.usageValue)}
+                      </td>
+                    )}
                     {hasAction && (
                       <td className="px-4 py-3 text-center">
                         <ActionButtons

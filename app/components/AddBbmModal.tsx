@@ -261,7 +261,7 @@ export default function AddBbmModal({ setOpenModal, onSuccess }: Props) {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Realisasi
+                Penerimaan
               </label>
               <input
                 type="number"

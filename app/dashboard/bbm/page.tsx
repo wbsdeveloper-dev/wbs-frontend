@@ -154,6 +154,121 @@ const EmptyChartState = ({ type }: { type: "supplier" | "plant" }) => (
   </div>
 );
 
+// ---------------------------------------------------------------------------
+// Custom Tooltip for Grafik Akumulasi
+// ---------------------------------------------------------------------------
+
+interface AccumulationTooltipPayloadEntry {
+  name: string;
+  value: number;
+  color: string;
+  dataKey: string;
+  payload: {
+    name: string;
+    supplier: string;
+    plant: string;
+    nominasi: number;
+    realisasi: number;
+    pemakaian: number;
+    modaRealisasi?: Record<string, number>;
+  };
+}
+
+function AccumulationTooltip({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean;
+  payload?: AccumulationTooltipPayloadEntry[];
+  label?: string;
+}) {
+  if (!active || !payload || payload.length === 0) return null;
+
+  const data = payload[0].payload;
+  const modaRealisasi = data.modaRealisasi || {};
+
+  const getModaLabel = (moda: string) => {
+    const labels: Record<string, string> = {
+      TRUCK: "Truck",
+      KAPAL: "Kapal",
+      PIPA: "Pipa",
+      LAINNYA: "Lainnya",
+    };
+    return labels[moda.toUpperCase()] || moda;
+  };
+
+  const getModaColor = (moda: string) => {
+    const colors: Record<string, string> = {
+      TRUCK: "#f97316",   // orange
+      KAPAL: "#3b82f6",   // blue
+      PIPA: "#10b981",    // emerald
+      LAINNYA: "#8b5cf6", // purple
+    };
+    return colors[moda.toUpperCase()] || "#6b7280";
+  };
+
+  return (
+    <div className="bg-white/95 backdrop-blur rounded-lg shadow-lg border border-gray-200 px-4 py-3 text-sm min-w-[240px]">
+      <p className="font-semibold text-gray-900 mb-2 border-b border-gray-100 pb-1.5">
+        {label}
+      </p>
+      <div className="space-y-2">
+        {payload.map((entry, idx) => {
+          const isPenerimaan = entry.dataKey === "realisasi";
+
+          return (
+            <div key={idx} className="flex flex-col">
+              <div className="flex items-center justify-between gap-6">
+                <div className="flex items-center gap-2">
+                  <span
+                    className="w-2.5 h-2.5 rounded-sm"
+                    style={{ backgroundColor: entry.color }}
+                  />
+                  <span className="text-gray-600">{entry.name}</span>
+                </div>
+                <span className="font-semibold text-gray-900">
+                  {entry.value?.toLocaleString("id-ID", {
+                    maximumFractionDigits: 2,
+                  })}{" "}
+                  KL
+                </span>
+              </div>
+
+              {/* If this is Penerimaan (realisasi), show detail per moda */}
+              {isPenerimaan && Object.keys(modaRealisasi).length > 0 && (
+                <div className="mt-1.5 pl-3 border-l-2 border-blue-200 space-y-1 ml-1">
+                  {Object.entries(modaRealisasi)
+                    .filter(([_, val]) => val > 0) // only show modes with positive realization
+                    .map(([moda, val]) => (
+                      <div key={moda} className="flex items-center justify-between text-xs gap-4">
+                        <div className="flex items-center gap-1.5">
+                          <span
+                            className="w-1.5 h-1.5 rounded-full"
+                            style={{ backgroundColor: getModaColor(moda) }}
+                          />
+                          <span className="text-gray-500">{getModaLabel(moda)}</span>
+                        </div>
+                        <span className="font-medium text-gray-700">
+                          {val.toLocaleString("id-ID", {
+                            maximumFractionDigits: 2,
+                          })}{" "}
+                          KL
+                        </span>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+
 export default function Home() {
   const { isOpen, open, close } = useModal();
   const [filterType, setFilterType] = useState<string | null>("Pemasok");
@@ -267,32 +382,115 @@ export default function Home() {
   const barChartData = useMemo(() => {
     if (!bbmMonthlyData) return [];
 
-    return bbmMonthlyData
-      .filter((record) => {
-        if (graphicSupplier && record.tbbm !== graphicSupplier) return false;
-        if (graphicPlant && record.pembangkit !== graphicPlant) return false;
-        if (graphicProduct && record.product !== graphicProduct) return false;
-        if (graphicModa && record.moda !== graphicModa) return false;
+    const filtered = bbmMonthlyData.filter((record) => {
+      if (graphicSupplier && record.tbbm !== graphicSupplier) return false;
+      if (graphicPlant && record.pembangkit !== graphicPlant) return false;
+      if (graphicProduct && record.product !== graphicProduct) return false;
+      if (graphicModa && record.moda !== graphicModa) return false;
 
-        const startMonth = graphicStart ? graphicStart.substring(0, 7) : null;
-        const endMonth = graphicEnd ? graphicEnd.substring(0, 7) : null;
+      const startMonth = graphicStart ? graphicStart.substring(0, 7) : null;
+      const endMonth = graphicEnd ? graphicEnd.substring(0, 7) : null;
 
-        if (startMonth && record.reportDate < startMonth) return false;
-        if (endMonth && record.reportDate > endMonth) return false;
+      if (startMonth && record.reportDate < startMonth) return false;
+      if (endMonth && record.reportDate > endMonth) return false;
 
-        return true;
-      })
-      .map((record) => ({
-        name:
-          graphicFilterBy === "supplier"
-            ? `${record.pembangkit || "Unknown"} (${record.product || "Unknown"})`
-            : `${record.tbbm || "Unknown"} (${record.product || "Unknown"})`,
-        supplier: record.tbbm,
-        plant: record.pembangkit,
-        nominasi: record.nomination || 0,
-        realisasi: record.realization || 0,
-        pemakaian: record.usage || 0,
-      }));
+      return true;
+    });
+
+    const monthlyGroups: Record<
+      string,
+      {
+        reportDate: string;
+        tbbm: string;
+        pembangkit: string;
+        product: string;
+        nominasi: number;
+        realisasi: number;
+        pemakaian: number;
+        modaRealisasi: Record<string, number>;
+      }
+    > = {};
+
+    filtered.forEach((record) => {
+      const groupKey = `${record.reportDate}|${record.tbbm}|${record.pembangkit}|${record.product}`;
+      const moda = record.moda || "Lainnya";
+      const realization = record.realization || 0;
+
+      if (!monthlyGroups[groupKey]) {
+        monthlyGroups[groupKey] = {
+          reportDate: record.reportDate,
+          tbbm: record.tbbm,
+          pembangkit: record.pembangkit,
+          product: record.product,
+          nominasi: record.nomination || 0,
+          realisasi: record.realization || 0,
+          pemakaian: record.usage || 0,
+          modaRealisasi: { [moda]: realization },
+        };
+      } else {
+        // Same month + tbbm + pembangkit + product but different moda:
+        // - nominasi & pemakaian: do not accumulate, just take the value (max)
+        // - realisasi: accumulate (sum) the values
+        monthlyGroups[groupKey].nominasi = Math.max(
+          monthlyGroups[groupKey].nominasi,
+          record.nomination || 0,
+        );
+        monthlyGroups[groupKey].realisasi += record.realization || 0;
+        monthlyGroups[groupKey].pemakaian = Math.max(
+          monthlyGroups[groupKey].pemakaian,
+          record.usage || 0,
+        );
+        if (!monthlyGroups[groupKey].modaRealisasi[moda]) {
+          monthlyGroups[groupKey].modaRealisasi[moda] = 0;
+        }
+        monthlyGroups[groupKey].modaRealisasi[moda] += realization;
+      }
+    });
+
+    const chartGroups: Record<
+      string,
+      {
+        name: string;
+        supplier: string;
+        plant: string;
+        nominasi: number;
+        realisasi: number;
+        pemakaian: number;
+        modaRealisasi: Record<string, number>;
+      }
+    > = {};
+
+    Object.values(monthlyGroups).forEach((record) => {
+      const name =
+        graphicFilterBy === "supplier"
+          ? `${record.pembangkit || "Unknown"} (${record.product || "Unknown"})`
+          : `${record.tbbm || "Unknown"} (${record.product || "Unknown"})`;
+
+      if (!chartGroups[name]) {
+        chartGroups[name] = {
+          name,
+          supplier: record.tbbm,
+          plant: record.pembangkit,
+          nominasi: 0,
+          realisasi: 0,
+          pemakaian: 0,
+          modaRealisasi: {},
+        };
+      }
+
+      chartGroups[name].nominasi += record.nominasi;
+      chartGroups[name].realisasi += record.realisasi;
+      chartGroups[name].pemakaian += record.pemakaian;
+
+      Object.entries(record.modaRealisasi).forEach(([moda, val]) => {
+        if (!chartGroups[name].modaRealisasi[moda]) {
+          chartGroups[name].modaRealisasi[moda] = 0;
+        }
+        chartGroups[name].modaRealisasi[moda] += val;
+      });
+    });
+
+    return Object.values(chartGroups);
   }, [
     bbmMonthlyData,
     graphicSupplier,
@@ -415,21 +613,19 @@ export default function Home() {
                   <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
                     <button
                       onClick={() => setChartMode("akumulasi")}
-                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
-                        chartMode === "akumulasi"
-                          ? "bg-white text-gray-900 shadow-sm"
-                          : "text-gray-500 hover:text-gray-700"
-                      }`}
+                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${chartMode === "akumulasi"
+                        ? "bg-white text-gray-900 shadow-sm"
+                        : "text-gray-500 hover:text-gray-700"
+                        }`}
                     >
                       Grafik Akumulasi
                     </button>
                     <button
                       onClick={() => setChartMode("realisasi-moda")}
-                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
-                        chartMode === "realisasi-moda"
-                          ? "bg-white text-gray-900 shadow-sm"
-                          : "text-gray-500 hover:text-gray-700"
-                      }`}
+                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${chartMode === "realisasi-moda"
+                        ? "bg-white text-gray-900 shadow-sm"
+                        : "text-gray-500 hover:text-gray-700"
+                        }`}
                     >
                       Realisasi Harian
                     </button>
@@ -481,19 +677,26 @@ export default function Home() {
                             return value.toString();
                           }}
                         />
-                        <Tooltip
-                          contentStyle={{
-                            backgroundColor: "#fff",
-                            borderRadius: "8px",
-                            border: "1px solid #e5e7eb",
-                            boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-                          }}
-                          labelStyle={{ fontWeight: "bold", color: "#111827" }}
-                        />
+                        <Tooltip content={<AccumulationTooltip />} />
                         <Legend
                           verticalAlign="top"
                           height={36}
-                          iconType="circle"
+                          content={() => (
+                            <div className="flex justify-center items-center gap-6 mb-4">
+                              <div className="flex items-center gap-2">
+                                <span className="w-2.5 h-2.5 rounded-full bg-[#fb923c]" />
+                                <span className="text-xs font-medium text-gray-600">Nominasi</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="w-2.5 h-2.5 rounded-full bg-[#60a5fa]" />
+                                <span className="text-xs font-medium text-gray-600">Penerimaan</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="w-2.5 h-2.5 rounded-full bg-[#34d399]" />
+                                <span className="text-xs font-medium text-gray-600">Pemakaian</span>
+                              </div>
+                            </div>
+                          )}
                         />
                         <Bar
                           dataKey="nominasi"
@@ -503,7 +706,7 @@ export default function Home() {
                         />
                         <Bar
                           dataKey="realisasi"
-                          name="Realisasi"
+                          name="Penerimaan"
                           fill="#60a5fa"
                           radius={[4, 4, 0, 0]}
                         />
@@ -517,16 +720,16 @@ export default function Home() {
                     </ResponsiveContainer>
                   )
                 ) : /* ── New: Realisasi per Moda ────────────────── */
-                graphicFilterBy === "supplier" && !graphicSupplier ? (
-                  <EmptyChartState type="supplier" />
-                ) : graphicFilterBy === "plant" && !graphicPlant ? (
-                  <EmptyChartState type="plant" />
-                ) : (
-                  <BbmCompositeChart
-                    data={realizationByModaData}
-                    isLoading={isRealizationByModaLoading}
-                  />
-                )}
+                  graphicFilterBy === "supplier" && !graphicSupplier ? (
+                    <EmptyChartState type="supplier" />
+                  ) : graphicFilterBy === "plant" && !graphicPlant ? (
+                    <EmptyChartState type="plant" />
+                  ) : (
+                    <BbmCompositeChart
+                      data={realizationByModaData}
+                      isLoading={isRealizationByModaLoading}
+                    />
+                  )}
               </div>
             </div>
 
@@ -564,26 +767,26 @@ export default function Home() {
                   {/* TBBM/Pemasok Select */}
                   {(chartMode === "realisasi-moda" ||
                     graphicFilterBy === "supplier") && (
-                    <FilterAutocomplete
-                      label="TBBM / Pemasok"
-                      options={filterSupplierOptions}
-                      value={graphicSupplier}
-                      onChange={setGraphicSupplier}
-                      placeholder="Semua Pemasok"
-                    />
-                  )}
+                      <FilterAutocomplete
+                        label="TBBM / Pemasok"
+                        options={filterSupplierOptions}
+                        value={graphicSupplier}
+                        onChange={setGraphicSupplier}
+                        placeholder="Semua Pemasok"
+                      />
+                    )}
 
                   {/* Pembangkit Select */}
                   {(chartMode === "realisasi-moda" ||
                     graphicFilterBy === "plant") && (
-                    <FilterAutocomplete
-                      label="Pembangkit"
-                      options={filterPlantOptions}
-                      value={graphicPlant}
-                      onChange={setGraphicPlant}
-                      placeholder="Semua Pembangkit"
-                    />
-                  )}
+                      <FilterAutocomplete
+                        label="Pembangkit"
+                        options={filterPlantOptions}
+                        value={graphicPlant}
+                        onChange={setGraphicPlant}
+                        placeholder="Semua Pembangkit"
+                      />
+                    )}
 
                   {/* Produk Select */}
                   <FilterAutocomplete

@@ -31,6 +31,9 @@ export function AddRelationModal({
       onClose();
       resetForm();
     },
+    onError: (error: any) => {
+      setApiError(error.message || "Gagal menambahkan relasi");
+    },
   });
 
   const updateRelationMutation = useUpdateRelation({
@@ -39,15 +42,18 @@ export function AddRelationModal({
       onClose();
       resetForm();
     },
+    onError: (error: any) => {
+      setApiError(error.message || "Gagal mengubah relasi");
+    },
   });
 
-  const [formData, setFormData] = useState<
-    Omit<CreateRelationPayload, "target_site_ids" | "source_site_ids">
-  >({
-    relation_type: "",
+  const [formData, setFormData] = useState<Omit<CreateRelationPayload, "target_site_ids" | "source_site_ids">>({
+    relation_type: "PEMASOK - PEMBANGKIT",
     commodity: "",
     priority: 1,
   });
+
+  const [apiError, setApiError] = useState<string | null>(null);
 
   const [selectedSourceSites, setSelectedSourceSites] = useState<string[]>([]);
   const [selectedTargetSites, setSelectedTargetSites] = useState<string[]>([]);
@@ -56,24 +62,11 @@ export function AddRelationModal({
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Load relation data for editing
-  const { data: editingRelation } = useRelation(editingId || "");
-
-  // Populate form when editing
-  useEffect(() => {
-    if (editingId && editingRelation) {
-      setFormData({
-        relation_type: editingRelation.relation_type,
-        commodity: editingRelation.commodity,
-        priority: editingRelation.priority,
-      });
-      setSelectedSourceSites([editingRelation.source_site_id]);
-      setSelectedTargetSites([editingRelation.target_site_id]);
-    }
-  }, [editingId, editingRelation]);
+  const { data: editingRelation, isLoading: isLoadingRelation } = useRelation(editingId || "");
 
   const resetForm = () => {
     setFormData({
-      relation_type: "",
+      relation_type: "PEMASOK - PEMBANGKIT",
       commodity: "",
       priority: 1,
     });
@@ -82,7 +75,29 @@ export function AddRelationModal({
     setSourceSearch("");
     setTargetSearch("");
     setErrors({});
+    setApiError(null);
   };
+
+  // Manage form state based on open/edit status
+  useEffect(() => {
+    if (open) {
+      if (editingId) {
+        if (editingRelation) {
+          setFormData({
+            relation_type: editingRelation.relation_type,
+            commodity: editingRelation.commodity,
+            priority: editingRelation.priority,
+          });
+          setSelectedSourceSites([editingRelation.source_site_id]);
+          setSelectedTargetSites([editingRelation.target_site_id]);
+        }
+      } else {
+        resetForm();
+      }
+    } else {
+      resetForm();
+    }
+  }, [open, editingId, editingRelation]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -118,7 +133,7 @@ export function AddRelationModal({
     const payload: CreateRelationPayload = {
       source_site_ids: selectedSourceSites,
       target_site_ids: selectedTargetSites,
-      relation_type: "PEMASOK - PEMBANGKIT",
+      relation_type: formData.relation_type || "PEMASOK - PEMBANGKIT",
       commodity: formData.commodity,
       priority: formData.priority,
     };
@@ -129,7 +144,7 @@ export function AddRelationModal({
         payload: {
           source_site_id: selectedSourceSites[0],
           target_site_id: selectedTargetSites[0],
-          relation_type: "PEMASOK - PEMBANGKIT",
+          relation_type: formData.relation_type || "PEMASOK - PEMBANGKIT",
           commodity: formData.commodity,
           priority: formData.priority,
         },
@@ -193,11 +208,10 @@ export function AddRelationModal({
               {filteredSuppliers.map((site) => (
                 <label
                   key={site.id}
-                  className={`flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors ${
-                    selectedSourceSites.includes(site.id)
+                  className={`flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors ${selectedSourceSites.includes(site.id)
                       ? "bg-secondary/10 text-primary"
                       : "hover:bg-gray-50 text-gray-700"
-                  }`}
+                    }`}
                 >
                   <input
                     type={editingId ? "radio" : "checkbox"}
@@ -258,11 +272,10 @@ export function AddRelationModal({
               {filteredPlants.map((site) => (
                 <label
                   key={site.id}
-                  className={`flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors ${
-                    selectedTargetSites.includes(site.id)
+                  className={`flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors ${selectedTargetSites.includes(site.id)
                       ? "bg-secondary/10 text-primary"
                       : "hover:bg-gray-50 text-gray-700"
-                  }`}
+                    }`}
                 >
                   <input
                     type={editingId ? "radio" : "checkbox"}
@@ -325,6 +338,12 @@ export function AddRelationModal({
               <p className="text-xs text-red-600 mt-1">{errors.commodity}</p>
             )}
           </div>
+
+          {apiError && (
+            <div className="p-3 mt-4 text-sm text-red-700 bg-red-50 rounded-lg border border-red-200">
+              {apiError}
+            </div>
+          )}
         </form>
 
         {/* Footer */}
@@ -340,14 +359,17 @@ export function AddRelationModal({
             onClick={handleSubmit}
             disabled={
               createRelationMutation.isPending ||
-              updateRelationMutation.isPending
+              updateRelationMutation.isPending ||
+              (!!editingId && isLoadingRelation)
             }
             className="px-4 py-2.5 text-sm font-medium text-white bg-primary rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95 disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
             {createRelationMutation.isPending ||
-            updateRelationMutation.isPending
+              updateRelationMutation.isPending
               ? "Menyimpan..."
-              : "Simpan"}
+              : !!editingId && isLoadingRelation
+                ? "Memuat..."
+                : "Simpan"}
           </button>
         </div>
       </div>
