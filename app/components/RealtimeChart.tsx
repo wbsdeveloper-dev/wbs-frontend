@@ -12,6 +12,9 @@ import {
   Tooltip,
   ReferenceLine,
   ReferenceDot,
+  BarChart,
+  Bar,
+  LabelList,
 } from "recharts";
 
 import FilterAutocomplete from "./FilterAutocomplete";
@@ -22,6 +25,7 @@ import ModalNote from "./ModalNote";
 import DateRangeFilter from "./DateRangeFilter";
 import {
   useEvents,
+  useTransportirChart,
   type ChartFlowResponse,
   type DashboardFilters,
   type FilterOption,
@@ -95,6 +99,65 @@ const COLORS: Record<string, string> = {
   "Mean Pembangkit 2": "#fb923c",
   "Mean Pembangkit 3": "#facc15",
   "Mean Pembangkit 4": "#60a5fa",
+};
+
+const UPSTREAM_COLORS = ["#115d72", "#14a2bb", "#0284c7", "#4f46e5", "#059669", "#475569"];
+const DOWNSTREAM_FILLS = ["#ccfbf1", "#e0f2fe", "#e0e7ff", "#d1fae5", "#f1f5f9", "#ffedd5"];
+
+const getUpstreamColor = (name: string) => {
+  if (!name) return UPSTREAM_COLORS[0];
+  if (name.includes("KEI")) return "#115d72";
+  if (name.includes("HCML MAC")) return "#14a2bb";
+  if (name.includes("HCML 2M")) return "#0284c7";
+  const index = Array.from(name).reduce((acc, char) => acc + char.charCodeAt(0), 0) % UPSTREAM_COLORS.length;
+  return UPSTREAM_COLORS[index];
+};
+
+const getDownstreamFillColor = (name: string) => {
+  if (!name) return DOWNSTREAM_FILLS[0];
+  if (name.includes("Grati")) return "#ccfbf1";
+  if (name.includes("Gresik")) return "#e0f2fe";
+  const index = Array.from(name).reduce((acc, char) => acc + char.charCodeAt(0), 0) % DOWNSTREAM_FILLS.length;
+  return DOWNSTREAM_FILLS[index];
+};
+
+const CustomHuluBarLabel = (props: any) => {
+  const { x, y, width, height, value, name } = props;
+  if (!value || height < 40) return null; // Hide label if bar is too small
+  const cx = x + width / 2;
+  const cy = y + height / 2;
+
+  return (
+    <g>
+      <text x={cx} y={cy - 8} textAnchor="middle" fill="#fff" fontSize={12} fontWeight="bold">
+        {name}
+      </text>
+      <text x={cx} y={cy + 8} textAnchor="middle" fill="#fff" fontSize={12} fontWeight="bold">
+        {value.toFixed(2)}
+      </text>
+    </g>
+  );
+};
+
+const CustomHilirBarLabel = (props: any) => {
+  const { x, y, width, height, value, name1, name2 } = props;
+  if (!value || height < 50) return null; // Hide label if bar is too small
+  const cx = x + width / 2;
+  const cy = y + height / 2;
+
+  return (
+    <g>
+      <text x={cx} y={cy - 12} textAnchor="middle" fill="#ffffff" fontSize={11} fontWeight="bold">
+        {name1}
+      </text>
+      <text x={cx} y={cy} textAnchor="middle" fill="#ffffff" fontSize={11} fontWeight="bold">
+        {name2}
+      </text>
+      <text x={cx} y={cy + 12} textAnchor="middle" fill="#ffffff" fontSize={11} fontWeight="bold">
+        {value.toFixed(2)}
+      </text>
+    </g>
+  );
 };
 
 const dataJamA: ChartItem[] = [
@@ -383,6 +446,89 @@ const CustomXAxisTick = (props: any) => {
   );
 };
 
+const CustomTransportirTooltip = ({
+  active,
+  payload,
+  label,
+  unit,
+}: {
+  active?: boolean;
+  payload?: TooltipPayload[];
+  label?: string;
+  unit?: string;
+}) => {
+  if (!active || !payload || payload.length === 0) return null;
+
+  // Filter out zero values or undefined values
+  const validPayload = payload.filter((item) => Number(item.value) > 0);
+  if (validPayload.length === 0) return null;
+
+  const totalVolume = validPayload.reduce(
+    (sum, item) => sum + Number(item.value || 0),
+    0,
+  );
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-lg shadow-md p-3 text-sm text-gray-900 min-w-[280px] max-w-[600px] z-100">
+      <p className="font-semibold mb-3 border-b border-gray-100 pb-2">
+        {label}
+      </p>
+
+      <ul
+        className={`
+      grid gap-3 items-start
+      ${validPayload.length > 4 ? "grid-cols-2" : "grid-cols-1"}
+    `}
+      >
+        {validPayload.map((item, index) => {
+          return (
+            <div key={index} className="flex flex-col min-w-[220px]">
+              <div className="flex items-center gap-2 mb-1.5">
+                <div
+                  className="w-2 h-3 rounded-full"
+                  style={{ backgroundColor: item.color }}
+                />
+                <div className="font-medium text-gray-800">{item.name}</div>
+              </div>
+
+              <div className="grid grid-cols-1 text-xs gap-2 pl-4">
+                <div className="flex flex-col bg-gray-50 rounded p-1.5 border border-gray-100">
+                  <span className="text-gray-500 mb-0.5">Volume</span>
+                  <span className="font-semibold text-gray-900 border-t border-gray-100 pt-0.5">
+                    {Number(item.value).toLocaleString("id-ID", {
+                      maximumFractionDigits: 2,
+                    })}{" "}
+                    {unit || "BBTUD"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </ul>
+
+      {validPayload.length > 1 && (
+        <div className="border-t border-gray-100 pt-3 mt-3">
+          <div className="font-medium text-gray-800 mb-2">
+            Total Keseluruhan
+          </div>
+          <div className="grid grid-cols-1 text-xs gap-2">
+            <div className="flex flex-col bg-gray-100 rounded p-1.5 border border-gray-200">
+              <span className="text-gray-600 mb-0.5">Total Volume</span>
+              <span className="font-semibold text-gray-900 border-t border-gray-200 pt-0.5">
+                {totalVolume.toLocaleString("id-ID", {
+                  maximumFractionDigits: 2,
+                })}{" "}
+                {unit || "BBTUD"}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const CustomTooltip = ({
   active,
   payload,
@@ -505,8 +651,24 @@ export default function RealtimeChart({
   const [intervalMode, setIntervalMode] = useState<
     "Jam" | "Hari" | "Bulan" | "Tahun"
   >("Jam");
+  const [chartMode, setChartMode] = useState<"non-transportir" | "transportir">("non-transportir");
   const [period, setPeriod] = useState("1D");
   const [filterType, setFilterType] = useState<string | null>("Pemasok");
+
+  useEffect(() => {
+    if (chartMode === "transportir") {
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0); // last day of month
+      
+      const tzOffset = now.getTimezoneOffset() * 60000;
+      const startIso = new Date(startOfMonth.getTime() - tzOffset).toISOString().split('T')[0];
+      const endIso = new Date(endOfMonth.getTime() - tzOffset).toISOString().split('T')[0];
+
+      setStartDate(startIso);
+      setEndDate(endIso);
+    }
+  }, [chartMode]);
   const [pemasok, setPemasok] = useState<string[]>(["Semua Pemasok"]);
   const [pembangkit, setPembangkit] = useState<string | null>(null);
   const [transportir, setTransportir] = useState<string | null>(null);
@@ -558,14 +720,45 @@ export default function RealtimeChart({
   }, [chartFlowData]);
 
   // Fetch events for the chart range — do NOT pass siteId to avoid 400 error with multiple IDs
+  const chartStartDateStr = startDate || chartFlowData?.period?.start || new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+  const chartEndDateStr = endDate || chartFlowData?.period?.end || new Date().toISOString().split("T")[0];
+
   const { data: eventsData } = useEvents(
-    startDate ||
-      new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-        .toISOString()
-        .split("T")[0],
-    endDate || new Date().toISOString().split("T")[0],
+    chartStartDateStr,
+    chartEndDateStr,
     100,
   );
+
+  // Fetch real transportir data
+  const { data: transportirData, isLoading: transportirLoading } = useTransportirChart(chartStartDateStr, chartEndDateStr);
+
+  const realTransportirData = useMemo(() => {
+    if (!transportirData) return [];
+    
+    const huluObj: any = { category: "Hulu" };
+    const hilirObj: any = { category: "Hilir" };
+
+    transportirData.hulu.forEach(h => {
+      huluObj[h.upstreamName] = Number(h.value);
+    });
+
+    transportirData.hilir.forEach(h => {
+      hilirObj[`${h.downstreamName}_${h.upstreamName}`] = Number(h.value);
+    });
+
+    return [huluObj, hilirObj];
+  }, [transportirData]);
+
+  const transportirKeys = useMemo(() => {
+    if (!transportirData) return { huluKeys: [], hilirKeys: [] };
+    const huluKeys = transportirData.hulu.filter(h => Number(h.value) > 0).map(h => h.upstreamName);
+    const hilirKeys = transportirData.hilir.filter(h => Number(h.value) > 0).map(h => ({
+      key: `${h.downstreamName}_${h.upstreamName}`,
+      downstreamName: h.downstreamName,
+      upstreamName: h.upstreamName
+    }));
+    return { huluKeys, hilirKeys };
+  }, [transportirData]);
 
   // Map events to timestamps for quick lookup, filtering by relevant site IDs
   const pointsWithNotes = useMemo(() => {
@@ -917,29 +1110,30 @@ export default function RealtimeChart({
       {pemasok || pembangkit ? (
         <div className="lg:col-span-9 lg:pr-6">
           <div>
-            <div className="flex justify-between mb-6">
-              <h3 className="text-lg font-semibold text-gray-900">
-                Grafik Penyaluran Gas -{" "}
-                {filterType === "Pembangkit" ? (
-                  <>
-                    {pembangkit ?? ""}
-                    {pemasok && pemasok.length > 0 && (
-                      <>
-                        {" "}
-                        Dari{" "}
-                        {Array.isArray(pemasok) ? pemasok.join(", ") : pemasok}
-                      </>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    {Array.isArray(pemasok) ? pemasok.join(", ") : pemasok}
-                    {pembangkit && <> Ke {pembangkit}</>}
-                  </>
-                )}
-              </h3>
-              <div>
-                <p className="text-gray-700 font-bold">
+            <div className="flex justify-between items-start mb-6">
+              <div className="flex flex-col gap-1">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Grafik Penyaluran Gas -{" "}
+                  {filterType === "Pembangkit" ? (
+                    <>
+                      {pembangkit ?? ""}
+                      {pemasok && pemasok.length > 0 && (
+                        <>
+                          {" "}
+                          Dari{" "}
+                          {Array.isArray(pemasok) ? pemasok.join(", ") : pemasok}
+                        </>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      {Array.isArray(pemasok) ? pemasok.join(", ") : pemasok}
+                      {pembangkit && <> Ke {pembangkit}</>}
+                    </>
+                  )}
+                </h3>
+                
+                <p className="text-gray-500 font-medium text-sm mt-1">
                   {formattedStartDate}{" "}
                   {formattedEndDate
                     ? formattedEndDate == formattedStartDate
@@ -948,8 +1142,92 @@ export default function RealtimeChart({
                     : ""}
                 </p>
               </div>
+              
+              {/* Toggle Switch */}
+              <div className="flex items-center bg-gray-100 rounded-lg p-0.5 h-fit shrink-0">
+                <button
+                  onClick={() => setChartMode("non-transportir")}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
+                    chartMode === "non-transportir"
+                      ? "bg-white text-gray-900 shadow-sm"
+                      : "text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  Non-Transportir
+                </button>
+                <button
+                  onClick={() => setChartMode("transportir")}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
+                    chartMode === "transportir"
+                      ? "bg-white text-gray-900 shadow-sm"
+                      : "text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  Transportir
+                </button>
+              </div>
             </div>
-            {chartData.length > 0 ? (
+            {chartMode === "transportir" ? (
+              <div className="mt-4 mb-8">
+                <ResponsiveContainer width="100%" height={500}>
+                  {transportirLoading ? (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+                    </div>
+                  ) : (
+                    <BarChart data={realTransportirData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }} maxBarSize={100}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
+                      <XAxis 
+                        dataKey="category" 
+                        tick={{ fontSize: 14, fontWeight: "600", fill: "#4b5563" }} 
+                        axisLine={{ stroke: "#e5e7eb" }}
+                        tickLine={false}
+                        dy={10}
+                      />
+                      <YAxis 
+                        tick={{ fontSize: 12, fill: "#6b7280" }} 
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <Tooltip 
+                        content={<CustomTransportirTooltip unit={chartFlowData?.unit} />}
+                        cursor={{ fill: 'transparent' }}
+                      />
+                      
+                      {/* Data Hulu Bars */}
+                      {transportirKeys.huluKeys.map((key, index) => (
+                        <Bar 
+                          key={key} 
+                          dataKey={key} 
+                          stackId="a" 
+                          fill={getUpstreamColor(key)} 
+                          radius={index === transportirKeys.huluKeys.length - 1 ? [8, 8, 0, 0] : [0, 0, 0, 0]}
+                          isAnimationActive={false}
+                        >
+                          <LabelList content={<CustomHuluBarLabel name={key} />} />
+                        </Bar>
+                      ))}
+
+                      {/* Data Hilir Bars */}
+                      {transportirKeys.hilirKeys.map((h, index) => (
+                        <Bar 
+                          key={h.key} 
+                          dataKey={h.key} 
+                          stackId="a" 
+                          fill={getUpstreamColor(h.upstreamName)} 
+                          stroke="#ffffff" 
+                          strokeWidth={1} 
+                          radius={index === transportirKeys.hilirKeys.length - 1 ? [8, 8, 0, 0] : [0, 0, 0, 0]}
+                          isAnimationActive={false}
+                        >
+                          <LabelList content={<CustomHilirBarLabel name1={h.downstreamName} name2={`(${h.upstreamName})`} />} />
+                        </Bar>
+                      ))}
+                    </BarChart>
+                  )}
+                </ResponsiveContainer>
+              </div>
+            ) : chartData.length > 0 ? (
               <>
                 <ResponsiveContainer width="100%" height={chartHeight}>
                   <LineChart
@@ -1143,18 +1421,22 @@ export default function RealtimeChart({
             24 jam
           </p> */}
           </div>
-          <div className=" mt-4 border-t border-gray-200 pt-6">
-            <SupplierResumeTable
-              contracts={contractData}
-              isLoading={isContractLoading}
-            />
-          </div>
-          <div className=" mt-4 border-t border-gray-200 pt-6">
-            <NoteSection
-              pemasokId={selectedPemasokId}
-              pembangkitId={selectedPembangkitId}
-            />
-          </div>
+          {chartMode !== "transportir" && (
+            <>
+              <div className=" mt-4 border-t border-gray-200 pt-6">
+                <SupplierResumeTable
+                  contracts={contractData}
+                  isLoading={isContractLoading}
+                />
+              </div>
+              <div className=" mt-4 border-t border-gray-200 pt-6">
+                <NoteSection
+                  pemasokId={selectedPemasokId}
+                  pembangkitId={selectedPembangkitId}
+                />
+              </div>
+            </>
+          )}
         </div>
       ) : (
         <div className="lg:col-span-9 lg:pr-6">
@@ -1236,17 +1518,19 @@ export default function RealtimeChart({
             Filter Grafik
           </p>
           <div className="flex flex-col gap-3">
-            <FilterAutocomplete
-              label="Filter Berdasar"
-              options={filterTypeOptions}
-              value={filterType}
-              onChange={(val) => {
-                setFilterType(val);
-                onFilterByChange?.(val as FilterBy | null);
-              }}
-              placeholder="Pilih Filter"
-            />
-            {filterType == "Pemasok" && (
+            {chartMode !== "transportir" && (
+              <FilterAutocomplete
+                label="Filter Berdasar"
+                options={filterTypeOptions}
+                value={filterType}
+                onChange={(val) => {
+                  setFilterType(val);
+                  onFilterByChange?.(val as FilterBy | null);
+                }}
+                placeholder="Pilih Filter"
+              />
+            )}
+            {(chartMode === "transportir" || filterType == "Pemasok") && (
               <FilterAutocomplete
                 multiple
                 label="Pemasok"
@@ -1295,7 +1579,7 @@ export default function RealtimeChart({
                 placeholder="Pilih Pemasok"
               />
             )}
-            {(filterType == "Pembangkit" || pemasok) && (
+            {(chartMode === "transportir" || filterType == "Pembangkit" || pemasok) && (
               <FilterAutocomplete
                 label="Pembangkit"
                 options={pembangkitOptions}
@@ -1313,7 +1597,7 @@ export default function RealtimeChart({
                 placeholder="Pilih Pembangkit"
               />
             )}
-            {pembangkit &&
+            {chartMode !== "transportir" && pembangkit &&
               (!pemasok ||
                 pemasok.length === 0 ||
                 filterType == "Pembangkit") && (
@@ -1367,9 +1651,11 @@ export default function RealtimeChart({
               )}
             <div className="mt-2">
               <div className="border border-gray-200 p-3 rounded-lg">
-                <p className="block text-sm font-medium text-gray-700 mb-2">
-                  Filter Periode
-                </p>
+                {chartMode !== "transportir" && (
+                  <>
+                    <p className="block text-sm font-medium text-gray-700 mb-2">
+                      Filter Periode
+                    </p>
                 <div className="grid grid-cols-2 gap-2 mb-4">
                   {[
                     {
@@ -1488,21 +1774,24 @@ export default function RealtimeChart({
                     );
                   })}
                 </div>
+                </>
+                )}
 
                 <DateRangeFilter
                   startDate={startDate}
                   endDate={endDate}
                   setStartDate={setStartDate}
                   setEndDate={setEndDate}
-                  isSingleDate={period === "1D"}
-                  mode={period === "3Y" ? "Tahun" : intervalMode}
+                  isSingleDate={chartMode === "transportir" ? false : period === "1D"}
+                  mode={chartMode === "transportir" ? "Hari" : (period === "3Y" ? "Tahun" : intervalMode)}
                 />
               </div>
             </div>
-            <div>
-              <p className="block text-sm font-medium text-gray-700 mb-2 mt-2">
-                Tampilkan Garis
-              </p>
+            {chartMode !== "transportir" && (
+              <div>
+                <p className="block text-sm font-medium text-gray-700 mb-2 mt-2">
+                  Tampilkan Garis
+                </p>
               <div className="border border-gray-200 p-3 rounded-lg">
                 <div className="text-gray-700 flex justify-between items-center">
                   <p>Rata-rata</p>
@@ -1560,6 +1849,7 @@ export default function RealtimeChart({
                 </div>
               </div>
             </div>
+            )}
           </div>
         </div>
       </div>

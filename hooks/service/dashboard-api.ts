@@ -596,3 +596,52 @@ export function useSummary(
     ...options,
   });
 }
+
+// ==========================================
+// Transportir Chart Data
+// ==========================================
+
+export interface TransportirChartHulu {
+  upstreamName: string;
+  value: string;
+}
+
+export interface TransportirChartHilir {
+  upstreamName: string;
+  downstreamName: string;
+  value: string;
+}
+
+export interface TransportirChartResponse {
+  hulu: TransportirChartHulu[];
+  hilir: TransportirChartHilir[];
+}
+
+export function useTransportirChart(startDate: string, endDate: string) {
+  return useQuery({
+    queryKey: ["transportir_chart", startDate, endDate],
+    queryFn: async () => {
+      const queryParams = new URLSearchParams({
+        startDate,
+        endDate,
+      });
+
+      const url = `${DASHBOARD_API_HOST}/dashboard/chart/transportir?${queryParams.toString()}`;
+      const accessToken = getAccessToken();
+
+      const res = await fetch(url, {
+        headers: {
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to fetch transportir chart data");
+      }
+
+      const body = await res.json();
+      return body.data as TransportirChartResponse;
+    },
+    enabled: !!startDate && !!endDate,
+  });
+}
