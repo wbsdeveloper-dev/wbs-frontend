@@ -50,6 +50,7 @@ export type Granularity =
   | "interval_month"
   | "interval_year";
 export type FilterBy = "supplier" | "plant";
+export type Periode = "1D" | "1W" | "1M" | "1Y" | "3Y";
 
 export interface RealtimeChartProps {
   chartFlowData?: ChartFlowResponse | null;
@@ -1743,8 +1744,8 @@ export default function RealtimeChart({
                   {(["Tahun", "Bulan", "Hari", "Jam"] as const).map((mode) => {
                     // Hide invalid intervals based on selected period
                     if (period === "1D" && mode !== "Jam") return null;
-                    if (period === "1W" && mode === "Tahun") return null;
-                    if (period === "1M" && mode === "Tahun") return null;
+                    if (period === "1W" && (mode === "Tahun" || mode === "Jam")) return null;
+                    if (period === "1M" && (mode === "Tahun" || mode === "Jam")) return null;
                     if (period === "1Y" && mode === "Jam") return null;
                     if (period === "3Y" && mode === "Jam") return null;
 
@@ -1782,6 +1783,7 @@ export default function RealtimeChart({
                   endDate={endDate}
                   setStartDate={setStartDate}
                   setEndDate={setEndDate}
+                  periode={period as Periode}
                   isSingleDate={chartMode === "transportir" ? false : period === "1D"}
                   mode={chartMode === "transportir" ? "Hari" : (period === "3Y" ? "Tahun" : intervalMode)}
                 />
