@@ -1125,10 +1125,10 @@ export default function InputBAValidasiModal({
                         ) : (
                           <>
                             <div className="font-semibold text-gray-700 text-center">
-                              FLOWRATE
+                              {formData.jenisBa === "Multi Pembangkit" ? "VOLUME" : "FLOWRATE"}
                             </div>
                             <div className="font-semibold text-gray-700 text-center">
-                              VOLUME
+                              {formData.jenisBa === "Multi Pembangkit" ? "ENERGI" : "VOLUME"}
                             </div>
                           </>
                         )}
@@ -1330,6 +1330,7 @@ export default function InputBAValidasiModal({
                           type="text"
                           readOnly
                           value={extractedRecords
+                            .filter(r => formData.jenisBa !== "Multi Pembangkit" || r.siteId === activeTabId)
                             .reduce(
                               (sum, r) => sum + (parseFloat(r.flowrate) || 0),
                               0,
@@ -1341,6 +1342,7 @@ export default function InputBAValidasiModal({
                           type="text"
                           readOnly
                           value={extractedRecords
+                            .filter(r => formData.jenisBa !== "Multi Pembangkit" || r.siteId === activeTabId)
                             .reduce(
                               (sum, r) => sum + (parseFloat(r.volume) || 0),
                               0,

@@ -452,6 +452,7 @@ export default function Map() {
             {/* SITE MARKERS */}
             {filteredSites.map((site) => {
               const icon = icons[site.siteType];
+              const summary = bbmSitesSummary?.find((s) => s.id === site.id);
               const connected = getConnectedSites(site.id);
 
               return (
@@ -472,6 +473,18 @@ export default function Map() {
                         {site.name}
                       </p>
                       <div className="mt-2 pt-2 border-t border-gray-200 space-y-1">
+                        {(site.siteType === "PEMASOK" || site.siteType === "PEMBANGKIT") && (
+                          <div className="flex justify-between text-xs">
+                            <span className="text-gray-500">
+                              {site.siteType === "PEMASOK" ? "Jumlah Pembangkit:" : "Jumlah TBBM:"}
+                            </span>
+                            <span className="font-medium text-gray-700">
+                              {site.siteType === "PEMASOK" 
+                                ? (summary?.pembangkitList?.length || 0) 
+                                : (summary?.pemasokList?.length || 0)}
+                            </span>
+                          </div>
+                        )}
                         <div className="flex justify-between text-xs">
                           <span className="text-gray-500">Region:</span>
                           <span className="font-medium text-gray-700">
@@ -503,9 +516,6 @@ export default function Map() {
                       </div>
 
                       {(() => {
-                        const summary = bbmSitesSummary?.find(
-                          (s) => s.id === site.id,
-                        );
                         if (!summary) return null;
 
                         return (
@@ -905,7 +915,7 @@ export default function Map() {
               return (
                 <>
                   {/* LEFT SECTION (List) */}
-                  <div className="flex-1 flex flex-col bg-white overflow-hidden border-r border-gray-200">
+                  <div className="w-full md:w-1/2 flex flex-col bg-white overflow-hidden md:border-r border-gray-200">
                     <div className="flex justify-between items-center p-4 border-b border-gray-200 shrink-0">
                       <div className="flex items-center gap-3">
                         <h3 className="text-lg font-bold text-gray-900">
@@ -1081,7 +1091,7 @@ export default function Map() {
                   </div>
 
                   {/* RIGHT SECTION (Summary) */}
-                  <div className="w-full md:w-[380px] bg-gray-50 flex flex-col shrink-0">
+                  <div className="w-full md:w-1/2 bg-gray-50 flex flex-col shrink-0 border-t md:border-t-0 border-gray-200">
                     <div className="flex justify-between items-center p-4 border-b border-gray-200 shrink-0">
                       <h3 className="text-lg font-bold text-gray-900">
                         Resume
