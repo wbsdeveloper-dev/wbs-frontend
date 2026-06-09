@@ -11,7 +11,7 @@ import { Modal } from "@/app/components/ui";
 interface DataItem {
   name: string;
   value: number;
-  [key: string]: string | number;
+  [key: string]: any;
 }
 
 interface PieChartDetailModalProps {
@@ -26,6 +26,10 @@ interface PieChartDetailModalProps {
   /** Called when the user picks a new date */
   onStartDateChange: (date: string) => void;
   onEndDateChange: (date: string) => void;
+  title?: string;
+  tabs?: string[];
+  descriptionPrefix?: string;
+  unit?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -42,6 +46,10 @@ export default function PieChartDetailModal({
   endDate,
   onStartDateChange,
   onEndDateChange,
+  title = "Konsumsi Gas",
+  tabs = ["Pemasok", "Pembangkit"],
+  descriptionPrefix = "Visualisasi konsumsi gas",
+  unit = "BBTU",
 }: PieChartDetailModalProps) {
   const total = data.reduce((sum, d) => sum + d.value, 0);
 
@@ -71,11 +79,11 @@ export default function PieChartDetailModal({
     <Modal isOpen={isOpen} onClose={onClose}>
       {/* Header area */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">Konsumsi Gas</h3>
+        <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
         <div className="flex items-center gap-3 flex-wrap">
           {/* Pemasok / Pembangkit tabs */}
           <div className="inline-flex bg-gray-100 rounded-lg p-0.5">
-            {["Pemasok", "Pembangkit"].map((type) => (
+            {tabs.map((type) => (
               <button
                 key={type}
                 className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer ${
@@ -158,7 +166,7 @@ export default function PieChartDetailModal({
             </PieChart>
           </ResponsiveContainer>
           <p className="text-xs text-gray-500 mt-4 pt-4 border-t border-gray-200">
-            Visualisasi konsumsi gas pada setiap{" "}
+            {descriptionPrefix} pada setiap{" "}
             {filterType?.toLowerCase() ?? "pembangkit"} PLN EPI per tanggal{" "}
             {formattedDate}
           </p>
@@ -176,24 +184,58 @@ export default function PieChartDetailModal({
               return (
                 <div
                   key={index}
-                  className="flex justify-between items-center py-2 px-2 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="flex flex-col py-2 px-2 rounded-lg hover:bg-gray-50 transition-colors"
                 >
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="w-3 h-3 rounded-full flex-shrink-0"
-                      style={{
-                        backgroundColor:
-                          CHART_COLORS[index % CHART_COLORS.length],
-                      }}
-                    />
-                    <p className="font-medium text-sm md:text-base">
-                      {item.name}
-                    </p>
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="w-3 h-3 rounded-full flex-shrink-0"
+                        style={{
+                          backgroundColor:
+                            CHART_COLORS[index % CHART_COLORS.length],
+                        }}
+                      />
+                      <p className="font-medium text-sm md:text-base">
+                        {item.name}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3 text-sm md:text-base">
+                      <span className="text-gray-500">({pct}%)</span>
+                      <span className="font-semibold">
+                        {item.value.toLocaleString("id-ID", {
+                          maximumFractionDigits: 2,
+                        })}{" "}
+                        {unit}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-3 text-sm md:text-base">
-                    <span className="text-gray-500">({pct}%)</span>
-                    <span className="font-semibold">{item.value} BBTU</span>
-                  </div>
+                  {item.modaRealisasi &&
+                    Object.keys(item.modaRealisasi).length > 0 && (
+                      <div className="mt-2 pl-5 border-l-2 border-blue-200 space-y-1 ml-1.5">
+                        {Object.entries(
+                          item.modaRealisasi as Record<string, number>,
+                        )
+                          .filter(([_, val]) => val > 0)
+                          .map(([moda, val]) => (
+                            <div
+                              key={moda}
+                              className="flex items-center justify-between text-xs gap-4"
+                            >
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-gray-500 capitalize">
+                                  {moda.toLowerCase()}
+                                </span>
+                              </div>
+                              <span className="font-medium text-gray-700">
+                                {val.toLocaleString("id-ID", {
+                                  maximumFractionDigits: 2,
+                                })}{" "}
+                                {unit}
+                              </span>
+                            </div>
+                          ))}
+                      </div>
+                    )}
                 </div>
               );
             })}

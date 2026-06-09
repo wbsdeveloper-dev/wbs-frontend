@@ -105,7 +105,7 @@ export default function NoteSection({ pemasokId, pembangkitId }: Props) {
         <h3 className="font-bold">Catatan Kejadian</h3>
       </div>
       <div>
-        <div className="border border-gray-200 p-5 rounded-lg mt-3 text-gray-800 overflow-auto h-[220px]">
+        <div className="border border-gray-200 p-5 rounded-lg mt-3 text-gray-800 overflow-auto h-[275px]">
           {notes.length > 0 ? (
             <div className="space-y-4">
               {notes.map((note) => {
@@ -120,9 +120,18 @@ export default function NoteSection({ pemasokId, pembangkitId }: Props) {
                       <div className="flex-1">
                         <div className="flex justify-between mb-1">
                           <p className="font-bold">{note.siteName}</p>
-                          <p className="font-bold text-sm">
-                            {note.title}
-                          </p>
+                          <div className="text-right">
+                            <p className="font-bold text-sm">
+                              {note.title}
+                            </p>
+                            <p className="text-xs text-gray-500 mt-0.5">
+                              {new Date(note.occurredAt).toLocaleDateString("id-ID", {
+                                day: "2-digit",
+                                month: "long",
+                                year: "numeric",
+                              })}
+                            </p>
+                          </div>
                         </div>
                         <p className="text-justify">{cleanDesc}</p>
                         <div className="flex justify-between items-start text-xs text-gray-500 mt-2">

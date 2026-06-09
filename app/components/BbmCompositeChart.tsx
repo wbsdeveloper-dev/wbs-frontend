@@ -267,8 +267,9 @@ export default function BbmCompositeChart({
             stackId="moda"
             fill={getModaColor(moda, index)}
             radius={
-              index === modaKeys.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]
+              index === modaKeys.length - 1 ? [10, 10, 0, 0] : [0, 0, 0, 0]
             }
+            maxBarSize={100}
           />
         ))}
 

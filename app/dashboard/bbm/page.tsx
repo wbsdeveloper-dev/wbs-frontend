@@ -23,6 +23,7 @@ import TopVolumeList from "@/app/components/TopVolumeList";
 import FilterAutocomplete from "@/app/components/FilterAutocomplete";
 import EditBbmDataTable from "@/app/components/EditBbmDataTable";
 import BbmCompositeChart from "@/app/components/BbmCompositeChart";
+import PieChartDetailModal from "@/app/components/PieChartDetailModal";
 
 // API services
 import {
@@ -64,77 +65,6 @@ function getCurrentYearStart() {
   const start = new Date(now.getFullYear(), 0, 1);
   return formatLocalISODate(start);
 }
-
-// ---------------------------------------------------------------------------
-// High-Fidelity Dummy Data
-// ---------------------------------------------------------------------------
-
-const DUMMY_DONUT_SUPPLIER = [
-  { name: "HSD (High Speed Diesel)", value: 450000 },
-  { name: "B35 Biodiesel", value: 320000 },
-  { name: "B30 Biodiesel", value: 180000 },
-  { name: "MFO (Marine Fuel Oil)", value: 120000 },
-  { name: "LSFO (Low Sulfur Fuel Oil)", value: 80000 },
-];
-
-const DUMMY_DONUT_PLANT = [
-  { name: "PLTD Bima", value: 380000 },
-  { name: "PLTD Lumok", value: 290000 },
-  { name: "PLTD Labuan", value: 240000 },
-  { name: "PLTD Riau", value: 190000 },
-  { name: "PLTD Balikpapan", value: 150000 },
-];
-
-const DUMMY_GRAPHIC_POOL = [
-  {
-    name: "PLTD RIAU (HSD)",
-    supplier: "TBBM Pertamina Tual",
-    plant: "PLTD Riau (HSD)",
-    nominasi: 120000,
-    realisasi: 104500,
-    pemakaian: 98200,
-  },
-  {
-    name: "PLTD RIAU (B40)",
-    supplier: "TBBM Pertamina Tual",
-    plant: "PLTD Riau (HSD)",
-    nominasi: 95000,
-    realisasi: 88000,
-    pemakaian: 81200,
-  },
-  {
-    name: "PLTD BALIKPAPAN (B40)",
-    supplier: "TBBM Pertamina Kalabahi",
-    plant: "PLTD Balikpapan (B40)",
-    nominasi: 78000,
-    realisasi: 72400,
-    pemakaian: 68500,
-  },
-  {
-    name: "PLTD BIMA",
-    supplier: "TBBM Pertamina Poso",
-    plant: "PLTD Bima",
-    nominasi: 110000,
-    realisasi: 98000,
-    pemakaian: 91000,
-  },
-  {
-    name: "PLTD LUMOK",
-    supplier: "TBBM Pertamina Tarakan",
-    plant: "PLTD Lumok",
-    nominasi: 85000,
-    realisasi: 79200,
-    pemakaian: 74100,
-  },
-  {
-    name: "PLTD LABUAN",
-    supplier: "TBBM Pertamina Kupang",
-    plant: "PLTD Labuan",
-    nominasi: 72000,
-    realisasi: 65100,
-    pemakaian: 60500,
-  },
-];
 
 // ---------------------------------------------------------------------------
 
@@ -271,7 +201,7 @@ function AccumulationTooltip({
 
 export default function Home() {
   const { isOpen, open, close } = useModal();
-  const [filterType, setFilterType] = useState<string | null>("Pemasok");
+  const [filterType, setFilterType] = useState<string | null>("TBBM");
 
   // Chart mode toggle
   const [chartMode, setChartMode] = useState<ChartMode>("akumulasi");
@@ -310,10 +240,7 @@ export default function Home() {
   const [graphicProduct, setGraphicProduct] = useState<string | null>(null);
   const [graphicModa, setGraphicModa] = useState<string | null>(null);
 
-  // 1. Card Volume BBM Donut Chart (Dummy Data)
-  const dataPieChart = useMemo(() => {
-    return filterType === "Pemasok" ? DUMMY_DONUT_SUPPLIER : DUMMY_DONUT_PLANT;
-  }, [filterType]);
+
 
   // 2. Fetch Top 5 TBBM Performer List
   const { data: topTbbmData = [] } = useTopTbbm({
@@ -348,6 +275,53 @@ export default function Home() {
   // Fetch reports data for bottom table
   const { data: bbmMonthlyData, isLoading: isBbmMonthlyLoading } =
     useBbmMonthly();
+
+  // 1. Card Volume BBM Donut Chart (Real Data)
+  const dataPieChart = useMemo(() => {
+    if (!bbmMonthlyData) return [];
+
+    const startMonth = distributionStartDate
+      ? distributionStartDate.substring(0, 7)
+      : null;
+    const endMonth = distributionEndDate
+      ? distributionEndDate.substring(0, 7)
+      : null;
+
+    const filtered = bbmMonthlyData.filter((record) => {
+      if (startMonth && record.reportDate < startMonth) return false;
+      if (endMonth && record.reportDate > endMonth) return false;
+      return true;
+    });
+
+    const groups: Record<string, { value: number; modaRealisasi: Record<string, number> }> = {};
+
+    filtered.forEach((record) => {
+      // Group by TBBM or Pembangkit based on filterType
+      const key =
+        filterType === "TBBM"
+          ? record.tbbm || "Unknown"
+          : record.pembangkit || "Unknown";
+
+      // Always use realization value
+      const value = record.realization || 0;
+      const moda = record.moda || "Lainnya";
+
+      if (!groups[key]) {
+        groups[key] = { value: 0, modaRealisasi: {} };
+      }
+      groups[key].value += value;
+      
+      if (!groups[key].modaRealisasi[moda]) {
+        groups[key].modaRealisasi[moda] = 0;
+      }
+      groups[key].modaRealisasi[moda] += value;
+    });
+
+    return Object.entries(groups)
+      .map(([name, data]) => ({ name, value: data.value, modaRealisasi: data.modaRealisasi }))
+      .filter((item) => item.value > 0)
+      .sort((a, b) => b.value - a.value); // Sort descending
+  }, [bbmMonthlyData, filterType, distributionStartDate, distributionEndDate]);
   const { data: tbbmData } = useSites({ type: "PEMASOK", commodity: "BBM" });
   const { data: pembangkitData } = useSites({
     type: "PEMBANGKIT",
@@ -563,6 +537,7 @@ export default function Home() {
               onEndDateChange={setDistributionEndDate}
               title="Volume BBM"
               descriptionPrefix="Visualisasi volume BBM"
+              tabs={["TBBM", "Pembangkit"]}
             />
 
             <TopVolumeList
@@ -627,14 +602,14 @@ export default function Home() {
                         : "text-gray-500 hover:text-gray-700"
                         }`}
                     >
-                      Realisasi Harian
+                      Penerimaan Harian
                     </button>
                   </div>
                 </div>
                 <p className="text-xs text-gray-500 mb-6">
                   {chartMode === "akumulasi"
-                    ? "Visualisasi perbandingan Rencana/Nominasi, Realisasi, dan Pemakaian per Unit Pembangkit"
-                    : "Visualisasi realisasi volume BBM per moda transportasi dengan akumulasi bulanan"}
+                    ? "Visualisasi perbandingan Rencana/Nominasi, Penerimaan, dan Pemakaian per Unit Pembangkit"
+                    : "Visualisasi Penerimaan volume BBM per moda transportasi dengan akumulasi bulanan"}
                 </p>
               </div>
               <div className="w-full flex-1 min-h-[320px] mt-4">
@@ -702,19 +677,22 @@ export default function Home() {
                           dataKey="nominasi"
                           name="Nominasi"
                           fill="#fb923c"
-                          radius={[4, 4, 0, 0]}
+                          radius={[10, 10, 0, 0]}
+                          maxBarSize={100}
                         />
                         <Bar
                           dataKey="realisasi"
                           name="Penerimaan"
                           fill="#60a5fa"
-                          radius={[4, 4, 0, 0]}
+                          radius={[10, 10, 0, 0]}
+                          maxBarSize={100}
                         />
                         <Bar
                           dataKey="pemakaian"
                           name="Pemakaian"
                           fill="#34d399"
-                          radius={[4, 4, 0, 0]}
+                          radius={[10, 10, 0, 0]}
+                          maxBarSize={100}
                         />
                       </BarChart>
                     </ResponsiveContainer>
@@ -850,6 +828,22 @@ export default function Home() {
           </div>
         </div>
       </main>
+
+      <PieChartDetailModal
+        isOpen={isOpen}
+        onClose={close}
+        data={dataPieChart}
+        filterType={filterType}
+        onFilterTypeChange={setFilterType}
+        startDate={distributionStartDate}
+        endDate={distributionEndDate}
+        onStartDateChange={setDistributionStartDate}
+        onEndDateChange={setDistributionEndDate}
+        title="Volume BBM"
+        tabs={["TBBM", "Pembangkit"]}
+        descriptionPrefix="Visualisasi volume BBM"
+        unit="KL"
+      />
     </div>
   );
 }

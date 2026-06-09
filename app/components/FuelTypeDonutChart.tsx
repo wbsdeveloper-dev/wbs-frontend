@@ -15,7 +15,7 @@ import { CHART_COLORS } from "@/app/_constants";
 interface DataPieChart {
   name: string;
   value: number;
-  [key: string]: string | number;
+  [key: string]: any;
 }
 
 type Props = {
@@ -32,6 +32,7 @@ type Props = {
   title?: string;
   descriptionPrefix?: string;
   descriptionFuelType?: string;
+  tabs?: string[];
 };
 
 export default function FuelTypeDonutChart({
@@ -46,6 +47,7 @@ export default function FuelTypeDonutChart({
   title = "Konsumsi Gas",
   descriptionPrefix = "Visualisasi konsumsi gas",
   descriptionFuelType = "gas",
+  tabs = ["Pemasok", "Pembangkit"],
 }: Props) {
   const [showDateFilter, setShowDateFilter] = useState(false);
   const [tempStartDate, setTempStartDate] = useState(startDate);
@@ -164,7 +166,7 @@ export default function FuelTypeDonutChart({
       {/* Pemasok / Pembangkit tabs */}
       <div className="flex items-center mt-4 mb-2 justify-center">
         <div className="inline-flex bg-gray-100 rounded-lg p-0.5">
-          {["Pemasok", "Pembangkit"].map((type) => (
+          {tabs.map((type) => (
             <button
               key={type}
               className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer ${
