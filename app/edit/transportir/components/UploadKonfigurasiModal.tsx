@@ -83,7 +83,7 @@ const DEFAULT_CONFIG: TransportirExcelConfig = {
       "own_use",
       "stock_transfer",
       "discrepancy",
-      "clossing_stock",
+      "closing_stock",
     ],
   },
 };

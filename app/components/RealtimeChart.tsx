@@ -395,9 +395,18 @@ const CustomXAxisTick = (props: any) => {
   const originalIndex = payload.index !== undefined ? payload.index : index;
   const item = chartData && chartData[originalIndex];
 
+  const shouldSlope = period === "1M" || (period === "3Y" && intervalMode === "Hari");
+
   if (!item || period !== "3Y" || intervalMode !== "Bulan" || !item.yearStr) {
     return (
-      <text x={x} y={y + 15} textAnchor="middle" fill="#666" fontSize={12}>
+      <text 
+        x={x} 
+        y={y + (shouldSlope ? 10 : 15)} 
+        textAnchor={shouldSlope ? "end" : "middle"} 
+        fill="#666" 
+        fontSize={12}
+        transform={shouldSlope ? `rotate(-45, ${x}, ${y + 10})` : undefined}
+      >
         {payload.value}
       </text>
     );
@@ -1233,7 +1242,12 @@ export default function RealtimeChart({
                 <ResponsiveContainer width="100%" height={chartHeight}>
                   <LineChart
                     data={chartData}
-                    margin={{ top: 10, right: 10, left: 5, bottom: 10 }}
+                    margin={{ 
+                      top: 10, 
+                      right: 10, 
+                      left: 5, 
+                      bottom: (period === "1M" || (period === "3Y" && intervalMode === "Hari")) ? 50 : 10 
+                    }}
                   >
                     <CartesianGrid stroke="#eee" strokeDasharray="5 5" />
                     <XAxis
@@ -1251,7 +1265,9 @@ export default function RealtimeChart({
                           : "preserveStartEnd"
                       }
                       height={
-                        period === "3Y" && intervalMode === "Bulan" ? 50 : 30
+                        (period === "1M" || (period === "3Y" && intervalMode === "Hari"))
+                          ? 60
+                          : period === "3Y" && intervalMode === "Bulan" ? 50 : 30
                       }
                     />
                     <YAxis

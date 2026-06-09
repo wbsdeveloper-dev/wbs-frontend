@@ -102,41 +102,40 @@ export default function TransportirTable({
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden flex flex-col">
       {/* Header section with title and search */}
-      <div className="p-4 md:p-6 border-b border-gray-200">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Menu className="w-5 h-5 text-primary" />
-            </div>
-            <div>
-              <h2 className="text-lg font-bold text-gray-900">
-                Data Transportir
-              </h2>
-              <p className="text-sm text-gray-500">
-                Total {pagination?.total || 0} record ditemukan
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 w-full md:w-auto">
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border transition-colors ${
-                showFilters
-                  ? "bg-primary text-white border-primary"
-                  : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-              }`}
-            >
-              <Filter size={16} />
-              Filter
-            </button>
-          </div>
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+        <div className="flex items-center gap-1.5">
+          <Menu size={20} className="text-gray-500" />
+          <span className="text-sm font-medium text-gray-700">
+            Data Transportir
+          </span>
+          <span className="text-xs text-gray-500 font-normal ml-2">
+            (Total {pagination?.total || 0} record ditemukan)
+          </span>
         </div>
 
-        {/* Filters section */}
-        {showFilters && (
-          <div className="mt-6 pt-6 border-t border-gray-100">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-all duration-200 ${
+              showFilters
+                ? "bg-primary text-white border-primary"
+                : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+            }`}
+          >
+            <Filter size={16} />
+            Filter
+            <ChevronDown
+              size={14}
+              className={`transition-transform duration-200 ml-1 ${showFilters ? "rotate-180" : ""}`}
+            />
+          </button>
+        </div>
+      </div>
+
+      {/* Filters section */}
+      {showFilters && (
+        <div className="px-4 py-4 border-b border-gray-200 bg-gray-50/50">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
                   Shipper
@@ -195,7 +194,6 @@ export default function TransportirTable({
             </div>
           </div>
         )}
-      </div>
 
       {/* Table */}
       <div className="overflow-x-auto relative min-h-[400px]">
