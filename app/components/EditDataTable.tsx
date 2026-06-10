@@ -303,11 +303,10 @@ export default function EditDataTable({
     align?: "left" | "center" | "right";
   }) => (
     <th
-      className={`px-4 py-3 text-${align} text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap ${
-        field
+      className={`px-4 py-3 text-${align} text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap ${field
           ? "cursor-pointer select-none hover:bg-gray-100 transition-colors"
           : ""
-      }`}
+        }`}
       onClick={field ? () => handleSort(field) : undefined}
     >
       <span className="inline-flex items-center justify-center">
@@ -446,21 +445,19 @@ export default function EditDataTable({
             <div className="flex bg-gray-100 p-0.5 rounded-lg border border-gray-200 ml-4">
               <button
                 onClick={() => setViewMode("short")}
-                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-200 ${
-                  viewMode === "short"
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-200 ${viewMode === "short"
                     ? "bg-white text-gray-900 shadow-sm"
                     : "text-gray-500 hover:text-gray-700"
-                }`}
+                  }`}
               >
                 Short
               </button>
               <button
                 onClick={() => setViewMode("detail")}
-                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-200 ${
-                  viewMode === "detail"
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-200 ${viewMode === "detail"
                     ? "bg-white text-gray-900 shadow-sm"
                     : "text-gray-500 hover:text-gray-700"
-                }`}
+                  }`}
               >
                 Detail
               </button>
@@ -470,11 +467,10 @@ export default function EditDataTable({
             {filtersEnabled && (
               <button
                 onClick={() => setShowFilters((v) => !v)}
-                className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-all duration-200 ${
-                  showFilters || activeFilterCount > 0
+                className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-all duration-200 ${showFilters || activeFilterCount > 0
                     ? "bg-primary text-white border-primary"
                     : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                }`}
+                  }`}
               >
                 <Filter size={16} />
                 Filter
@@ -707,7 +703,7 @@ export default function EditDataTable({
         {/* Status Legend */}
         <div className="px-4 py-3 bg-white border-b border-gray-200 flex flex-wrap items-center gap-x-6 gap-y-3">
           <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Hirarki Data:</span>
-          
+
           <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
             <span className="text-xs font-medium text-gray-600">Tier 1</span>
             <div className="w-px h-4 bg-gray-300 mx-1"></div>
@@ -747,7 +743,7 @@ export default function EditDataTable({
                 <Th label="Jam" field="periodValue" />
                 <Th label="MMSCFD" field="finalValueMmscfd" />
                 <Th label="BBTUD" field="finalValueBbtud" />
-                <Th label="Status" field="status" />
+                <Th label="Sumber Data" field="status" />
                 {viewMode === "detail" && (
                   <>
                     <Th label="WA MMSCFD" field="waValueMmscfd" />
@@ -949,11 +945,10 @@ export default function EditDataTable({
                       <button
                         key={p}
                         onClick={() => onPageChange(p as number, itemsPerPage)}
-                        className={`min-w-[2rem] h-8 rounded-lg text-sm font-medium transition-all duration-200 ${
-                          p === displayPage
+                        className={`min-w-[2rem] h-8 rounded-lg text-sm font-medium transition-all duration-200 ${p === displayPage
                             ? "bg-primary text-white shadow-sm"
                             : "text-gray-700 hover:bg-gray-100"
-                        }`}
+                          }`}
                       >
                         {p}
                       </button>

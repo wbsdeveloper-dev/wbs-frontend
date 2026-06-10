@@ -130,11 +130,8 @@ const CustomHuluBarLabel = (props: any) => {
 
   return (
     <g>
-      <text x={cx} y={cy - 8} textAnchor="middle" fill="#fff" fontSize={12} fontWeight="bold">
+      <text x={cx} y={cy} textAnchor="middle" fill="#fff" fontSize={12} fontWeight="bold">
         {name}
-      </text>
-      <text x={cx} y={cy + 8} textAnchor="middle" fill="#fff" fontSize={12} fontWeight="bold">
-        {value.toFixed(2)}
       </text>
     </g>
   );
@@ -148,14 +145,11 @@ const CustomHilirBarLabel = (props: any) => {
 
   return (
     <g>
-      <text x={cx} y={cy - 12} textAnchor="middle" fill="#ffffff" fontSize={11} fontWeight="bold">
+      <text x={cx} y={cy - 6} textAnchor="middle" fill="#ffffff" fontSize={11} fontWeight="bold">
         {name1}
       </text>
-      <text x={cx} y={cy} textAnchor="middle" fill="#ffffff" fontSize={11} fontWeight="bold">
+      <text x={cx} y={cy + 6} textAnchor="middle" fill="#ffffff" fontSize={11} fontWeight="bold">
         {name2}
-      </text>
-      <text x={cx} y={cy + 12} textAnchor="middle" fill="#ffffff" fontSize={11} fontWeight="bold">
-        {value.toFixed(2)}
       </text>
     </g>
   );

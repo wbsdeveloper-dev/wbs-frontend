@@ -391,7 +391,6 @@ export default function Map({ commodity }: { commodity?: string }) {
                       color: getPipeTypeColor(pipe.relationType),
                       weight: 3,
                       opacity: 0.8,
-                      dashArray: "1 5",
                     }}
                   >
                     <Tooltip sticky>
