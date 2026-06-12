@@ -157,6 +157,10 @@ export interface Contract {
     hgbt_unit: string | null;
     tjk_bbtud?: number | null;
     tjk_mmscfd?: number | null;
+    nilai_inisialisasi?: number | null;
+    tanggal_cutoff?: string | null;
+    akumulasi?: number | null;
+    realisasi?: number | null;
     created_by: string | null;
     created_at: string;
     updated_at: string;
@@ -186,6 +190,10 @@ export interface CreateContractPayload {
     hgbt_unit?: string;
     tjk_bbtud?: number;
     tjk_mmscfd?: number;
+    nilai_inisialisasi?: number;
+    tanggal_cutoff?: string;
+    akumulasi?: number;
+    realisasi?: number;
 }
 
 export interface UpdateContractPayload {
@@ -206,6 +214,10 @@ export interface UpdateContractPayload {
     hgbt_unit?: string;
     tjk_bbtud?: number;
     tjk_mmscfd?: number;
+    nilai_inisialisasi?: number;
+    tanggal_cutoff?: string;
+    akumulasi?: number;
+    realisasi?: number;
 }
 
 export interface ContractFilters {
