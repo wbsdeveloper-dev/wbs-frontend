@@ -85,9 +85,7 @@ function ContractCard({ contract }: { contract: Contract }) {
         <div className="grid grid-cols-1 md:grid-cols-[120px_1fr] border-b border-gray-300 mb-1 border-dashed">
           <div className="bg-white font-semibold px-2">Realisasi</div>
           <div className="bg-white px-2">
-            {contract.akumulasi != null && contract.tjk_bbtud != null && contract.tjk_bbtud > 0
-              ? `${(((Number(contract.akumulasi) + Number(contract.nilai_inisialisasi || 0)) / Number(contract.tjk_bbtud)) * 100).toFixed(2)}%`
-              : contract.realisasi != null ? `${contract.realisasi}%` : "-"}
+            {contract.realisasi != null ? `${Number(contract.realisasi).toFixed(2)}%` : "-"}
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-[120px_1fr] border-b border-gray-300 mb-1 border-dashed">
