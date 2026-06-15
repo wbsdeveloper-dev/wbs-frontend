@@ -130,7 +130,8 @@ export default function TemplateGrupPage() {
     "WA_GROUP" | "SPREADSHEET_SOURCE" | "EMAIL_INGEST"
   >("WA_GROUP");
   const [newTemplateDecimal, setNewTemplateDecimal] = useState<string>(",");
-  const [newTemplateCommodity, setNewTemplateCommodity] = useState<string>("GAS PIPA");
+  const [newTemplateCommodity, setNewTemplateCommodity] =
+    useState<string>("GAS PIPA");
 
   const [isTestModalOpen, setIsTestModalOpen] = useState(false);
   const [testGroupId, setTestGroupId] = useState("");
@@ -166,7 +167,8 @@ export default function TemplateGrupPage() {
   const { data: botGroups = [] } = useBotGroups(BOT_PRIMARY_API);
 
   // Fetch real spreadsheet sources from API
-  const { data: spreadsheetSourcesRaw = [] } = useSpreadsheetSources("GAS PIPA,LNG");
+  const { data: spreadsheetSourcesRaw = [] } =
+    useSpreadsheetSources("GAS PIPA,LNG");
   const spreadsheetSources = useMemo(() => {
     return spreadsheetSourcesRaw.filter(
       (s) => s.commodity === "GAS PIPA" || s.commodity === "LNG",
@@ -197,7 +199,7 @@ export default function TemplateGrupPage() {
   // Filter templates client-side to strictly show GAS PIPA and LNG templates
   const filteredTemplates = useMemo(() => {
     return templates.filter(
-      (t) => t.commodity === "GAS PIPA" || t.commodity === "LNG"
+      (t) => t.commodity === "GAS PIPA" || t.commodity === "LNG",
     );
   }, [templates]);
 
@@ -564,10 +566,7 @@ export default function TemplateGrupPage() {
         </div>
 
         {/* Right Panel - Template Editor (70%) or split with Email Panel */}
-        {scopeFilter === "EMAIL_INGEST" &&
-        selectedTemplate?.sourceLinks?.some(
-          (l) => l.sourceType === "EMAIL_INGEST",
-        ) ? (
+        {selectedTemplate?.scope === "EMAIL_INGEST" ? (
           <>
             {/* Editor (50%) */}
             <div className="lg:col-span-4">
@@ -598,10 +597,10 @@ export default function TemplateGrupPage() {
             {/* Email Source Panel (30%) */}
             <div className="lg:col-span-3">
               <EmailSourcePanel
-                sourceId={
-                  selectedTemplate.sourceLinks?.find(
-                    (l) => l.sourceType === "EMAIL_INGEST",
-                  )?.sourceId || ""
+                sourceIds={
+                  selectedTemplate.sourceLinks
+                    ?.filter((l) => l.sourceType === "EMAIL_INGEST")
+                    .map((l) => l.sourceId) || []
                 }
               />
             </div>

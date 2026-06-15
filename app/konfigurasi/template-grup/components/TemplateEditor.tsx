@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import {
   Save,
   Rocket,
-  Copy,
   ChevronDown,
   Plus,
   GripVertical,
@@ -57,6 +56,9 @@ const FIELD_KEY_LABELS: Record<string, string> = {
   supplier: "Pemasok",
   transportir: "Transportir",
   records: "Baris Data (JSON)",
+  attachment_filter: "Filter Lampiran (Nama File)",
+  mime_type_filter: "Filter Lampiran (Tipe MIME)",
+  row_match: "Filter Baris (Row Match)",
   notes: "Catatan",
   custom: "Field Kustom",
 };
@@ -519,12 +521,63 @@ export default function TemplateEditor({
             <div className="relative">
               <select
                 value={formData.scope}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    scope: e.target.value as Template["scope"],
-                  })
-                }
+                onChange={(e) => {
+                  const newScope = e.target.value as Template["scope"];
+                  const updated = { ...formData, scope: newScope };
+
+                  // Pre-populate default fields for EMAIL_INGEST scope
+                  if (newScope === "EMAIL_INGEST") {
+                    const existingKeys = new Set(
+                      updated.fields.map((f) => f.fieldKey),
+                    );
+                    const defaults: Partial<TemplateField>[] = [
+                      {
+                        fieldKey: "attachment_filter",
+                        sourceKind: "SHEET_CELL",
+                        sourceRef: "*.xlsx",
+                        isRequired: false,
+                        orderNo: updated.fields.length + 1,
+                      },
+                      {
+                        fieldKey: "mime_type_filter",
+                        sourceKind: "SHEET_CELL",
+                        sourceRef:
+                          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        isRequired: false,
+                        orderNo: updated.fields.length + 2,
+                      },
+                      {
+                        fieldKey: "row_match",
+                        sourceKind: "SHEET_CELL",
+                        sourceRef: '{"A": "DAILY TOTAL"}',
+                        isRequired: false,
+                        orderNo: updated.fields.length + 3,
+                      },
+                      {
+                        fieldKey: "report_date",
+                        sourceKind: "SHEET_COLUMN",
+                        sourceRef: "A",
+                        isRequired: true,
+                        orderNo: updated.fields.length + 4,
+                      },
+                      {
+                        fieldKey: "records",
+                        sourceKind: "SHEET_CELL",
+                        sourceRef:
+                          '[{"pembangkit":"","pemasok":"","FLOWRATE_MMSCFD":"","ENERGY_BBTUD":""}]',
+                        isRequired: true,
+                        orderNo: updated.fields.length + 5,
+                      },
+                    ];
+                    for (const def of defaults) {
+                      if (!existingKeys.has(def.fieldKey!)) {
+                        updated.fields.push(def as TemplateField);
+                      }
+                    }
+                  }
+
+                  setFormData(updated);
+                }}
                 className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white cursor-pointer pr-10"
               >
                 <option value="WA_GROUP">WhatsApp Grup</option>
@@ -633,7 +686,7 @@ export default function TemplateEditor({
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             </div>
           </div>
-          
+
           {/* Is Transportir Checkbox */}
           <div className="flex items-end mb-1">
             <div className="flex items-center pb-2">
@@ -1565,7 +1618,7 @@ export default function TemplateEditor({
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
               Pilih Group <span className="text-red-500">*</span>
             </label>
-            <div className="max-h-[240px] overflow-y-auto border border-gray-200 rounded-lg divide-y divide-gray-100">
+            <div className="max-h-60 overflow-y-auto border border-gray-200 rounded-lg divide-y divide-gray-100">
               {(() => {
                 // Filter out groups already in groupConfigs (by matching groupId)
                 const existingGroupIds = new Set(

@@ -8,7 +8,6 @@ import {
   Mail,
   CheckCircle,
   Clock,
-  Play,
   Download,
   ToggleLeft,
   ToggleRight,
@@ -16,6 +15,9 @@ import {
   AlertCircle,
   X,
   Loader2,
+  StopCircle,
+  SkipForward,
+  RefreshCw,
 } from "lucide-react";
 import EmailTable from "./components/EmailTable";
 import DetailDrawer from "./components/DetailDrawer";
@@ -27,15 +29,21 @@ import {
   useCreateEmailSource,
   useUpdateEmailSource,
   useDeleteEmailSource,
-  useTriggerEmailPoll,
+  // useTriggerEmailPoll,
   useTestEmailParse,
   useGetEmailOAuthStatus,
   useGetEmailOAuthUrl,
   useExchangeEmailOAuthToken,
   useDisconnectEmailOAuth,
+  useEmailSourceJobs,
+  useStopJob,
+  useSkipJob,
+  useRetryJob,
+  useRecentEmailLogs,
   type EmailSource,
   type CreateEmailSourcePayload,
   type UpdateEmailSourcePayload,
+  type JobQueueItem,
 } from "@/hooks/service/config-api";
 import { usePrivilege } from "@/hooks/usePrivilege";
 
@@ -52,7 +60,7 @@ export default function EmailIngestPage() {
   const createMutation = useCreateEmailSource();
   const updateMutation = useUpdateEmailSource();
   const deleteMutation = useDeleteEmailSource();
-  const triggerPollMutation = useTriggerEmailPoll();
+  // const triggerPollMutation = useTriggerEmailPoll();
   const testParseMutation = useTestEmailParse();
   const getOAuthUrlMutation = useGetEmailOAuthUrl();
   const exchangeOAuthMutation = useExchangeEmailOAuthToken();
@@ -65,10 +73,27 @@ export default function EmailIngestPage() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
+  const [isDisconnectModalOpen, setIsDisconnectModalOpen] = useState(false);
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
-  const [notification, setNotification] = useState<{ type: "success" | "error" | "info"; message: string } | null>(null);
+  const [notification, setNotification] = useState<{
+    type: "success" | "error" | "info";
+    message: string;
+  } | null>(null);
 
-  const { data: oauthStatus, isLoading: isOauthLoading } = useGetEmailOAuthStatus();
+  const { data: oauthStatus, isLoading: isOauthLoading } =
+    useGetEmailOAuthStatus();
+
+  // Job queue hooks (depends on selectedEmail)
+  const { data: queueJobs = [], isLoading: isJobsLoading } = useEmailSourceJobs(
+    selectedEmail?.id ?? null,
+  );
+  const stopJobMutation = useStopJob();
+  const skipJobMutation = useSkipJob();
+  const retryJobMutation = useRetryJob();
+
+  // Recent logs for the Logs Modal
+  const { data: recentLogs = [], isLoading: isLogsLoading } =
+    useRecentEmailLogs();
 
   // Add form state
   const [addForm, setAddForm] = useState({
@@ -81,7 +106,10 @@ export default function EmailIngestPage() {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   // Show notification helper
-  const showNotification = (type: "success" | "error" | "info", message: string) => {
+  const showNotification = (
+    type: "success" | "error" | "info",
+    message: string,
+  ) => {
     setNotification({ type, message });
     setTimeout(() => setNotification(null), 3000);
   };
@@ -89,8 +117,9 @@ export default function EmailIngestPage() {
   // Filter emails
   const filteredEmails = useMemo(() => {
     return emailSources.filter((source) => {
-      const matchesSearch =
-        source.name.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesSearch = source.name
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase());
       const matchesStatus =
         statusFilter === "all" ||
         (statusFilter === "active" && source.isEnabled) ||
@@ -138,7 +167,10 @@ export default function EmailIngestPage() {
 
     createMutation.mutate(payload, {
       onSuccess: () => {
-        showNotification("success", `Rule ${addForm.name} berhasil ditambahkan`);
+        showNotification(
+          "success",
+          `Rule ${addForm.name} berhasil ditambahkan`,
+        );
         setIsAddModalOpen(false);
         setAddForm({
           name: "",
@@ -208,7 +240,13 @@ export default function EmailIngestPage() {
   };
 
   const handleExportCSV = () => {
-    const headers = ["name", "provider", "status", "cron_schedule", "last_polled_at"];
+    const headers = [
+      "name",
+      "provider",
+      "status",
+      "cron_schedule",
+      "last_polled_at",
+    ];
     const rows = emailSources.map((e) => [
       e.name,
       e.provider,
@@ -216,7 +254,10 @@ export default function EmailIngestPage() {
       e.cronSchedule || "",
       e.lastPolledAt || "",
     ]);
-    const csvContent = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+    const csvContent = [
+      headers.join(","),
+      ...rows.map((r) => r.join(",")),
+    ].join("\n");
     const blob = new Blob([csvContent], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -227,25 +268,38 @@ export default function EmailIngestPage() {
     showNotification("success", "File CSV berhasil diexport");
   };
 
-  const handleTriggerSync = () => {
-    // Trigger poll for all enabled sources
-    const enabledSources = emailSources.filter((s) => s.isEnabled);
-    if (enabledSources.length === 0) {
-      showNotification("info", "Tidak ada email source yang aktif");
-      return;
-    }
+  // const handleTriggerSync = () => {
+  //   // Trigger poll for all enabled sources
+  //   const enabledSources = emailSources.filter((s) => s.isEnabled);
+  //   if (enabledSources.length === 0) {
+  //     showNotification("info", "Tidak ada email source yang aktif");
+  //     return;
+  //   }
 
-    showNotification("info", "Memulai polling untuk semua email source aktif...");
-    const promises = enabledSources.map((s) => triggerPollMutation.mutateAsync(s.id));
-    Promise.all(promises)
-      .then(() => showNotification("success", `Polling berhasil di-trigger untuk ${enabledSources.length} source`))
-      .catch((err) => showNotification("error", err.message));
-  };
+  //   showNotification(
+  //     "info",
+  //     "Memulai polling untuk semua email source aktif...",
+  //   );
+  //   const promises = enabledSources.map((s) =>
+  //     triggerPollMutation.mutateAsync(s.id),
+  //   );
+  //   Promise.all(promises)
+  //     .then(() =>
+  //       showNotification(
+  //         "success",
+  //         `Polling berhasil di-trigger untuk ${enabledSources.length} source`,
+  //       ),
+  //     )
+  //     .catch((err) => showNotification("error", err.message));
+  // };
 
   const handleTestParse = (source: EmailSource) => {
     testParseMutation.mutate(source.id, {
       onSuccess: ({ jobId }) => {
-        showNotification("success", `Test parse di-trigger (Job: ${jobId.slice(0, 8)}...)`);
+        showNotification(
+          "success",
+          `Test parse di-trigger (Job: ${jobId.slice(0, 8)}...)`,
+        );
       },
       onError: (err) => showNotification("error", err.message),
     });
@@ -266,18 +320,27 @@ export default function EmailIngestPage() {
 
         const handleMessage = (event: MessageEvent) => {
           if (event.origin !== window.location.origin) return;
-          if (event.data?.source === "wbs-oauth" && event.data?.type === "oauth-success") {
+          if (
+            event.data?.source === "wbs-oauth" &&
+            event.data?.type === "oauth-success"
+          ) {
             const code = event.data.code as string;
             window.removeEventListener("message", handleMessage);
             exchangeOAuthMutation.mutate(
               { code },
               {
                 onSuccess: () => {
-                  showNotification("success", `Koneksi OAuth Global berhasil terhubung`);
+                  showNotification(
+                    "success",
+                    `Koneksi OAuth Global berhasil terhubung`,
+                  );
                   if (popup && !popup.closed) popup.close();
                 },
                 onError: (err) => {
-                  showNotification("error", `Gagal menukar token: ${err.message}`);
+                  showNotification(
+                    "error",
+                    `Gagal menukar token: ${err.message}`,
+                  );
                 },
               },
             );
@@ -292,14 +355,11 @@ export default function EmailIngestPage() {
   };
 
   const handleDisconnectAuthGlobal = () => {
-    const txt = prompt(
-      `Ketik "CONFIRM" untuk mencabut akses OAuth global.`,
-      "",
-    );
-    if (txt !== "CONFIRM") {
-      if (txt !== null) showNotification("info", "Pembatalan dibatalkan — teks konfirmasi tidak cocok.");
-      return;
-    }
+    setIsDisconnectModalOpen(true);
+  };
+
+  const handleConfirmDisconnect = () => {
+    setIsDisconnectModalOpen(false);
     disconnectOAuthMutation.mutate(undefined, {
       onSuccess: () => {
         showNotification("success", `Autentikasi global telah dicabut.`);
@@ -310,24 +370,73 @@ export default function EmailIngestPage() {
     });
   };
 
+  // Job queue handlers
+  const handleStopJob = (jobId: string) => {
+    stopJobMutation.mutate(jobId, {
+      onSuccess: () => showNotification("success", "Job dihentikan"),
+      onError: (err) => showNotification("error", err.message),
+    });
+  };
+
+  const handleSkipJob = (jobId: string) => {
+    skipJobMutation.mutate(jobId, {
+      onSuccess: () => showNotification("success", "Job dilewati"),
+      onError: (err) => showNotification("error", err.message),
+    });
+  };
+
+  const handleRetryJob = (jobId: string) => {
+    retryJobMutation.mutate(jobId, {
+      onSuccess: () => showNotification("success", "Job dijadwalkan ulang"),
+      onError: (err) => showNotification("error", err.message),
+    });
+  };
+
+  const getJobStatusBadge = (status: string) => {
+    const map: Record<string, { label: string; className: string }> = {
+      PENDING: { label: "Pending", className: "bg-blue-100 text-blue-700" },
+      RUNNING: { label: "Running", className: "bg-yellow-100 text-yellow-700" },
+      RETRY_WAIT: {
+        label: "Retrying",
+        className: "bg-orange-100 text-orange-700",
+      },
+      FAILED: { label: "Failed", className: "bg-red-100 text-red-700" },
+      DONE: { label: "Done", className: "bg-green-100 text-green-700" },
+    };
+    const b = map[status] || {
+      label: status,
+      className: "bg-gray-100 text-gray-600",
+    };
+    return (
+      <span
+        className={`text-xs font-medium px-2 py-0.5 rounded-full ${b.className}`}
+      >
+        {b.label}
+      </span>
+    );
+  };
+
   return (
     <div className="min-h-screen p-4 md:p-6 lg:p-8">
       {/* Notification Toast */}
       {notification && (
         <div
-          className={`fixed top-4 right-4 z-[100] flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg animate-slideIn ${
+          className={`fixed top-4 right-4 z-100 flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg animate-slideIn ${
             notification.type === "success"
               ? "bg-green-50 text-green-800 border border-green-200"
               : notification.type === "error"
-              ? "bg-red-50 text-red-800 border border-red-200"
-              : "bg-blue-50 text-blue-800 border border-blue-200"
+                ? "bg-red-50 text-red-800 border border-red-200"
+                : "bg-blue-50 text-blue-800 border border-blue-200"
           }`}
         >
           {notification.type === "success" && <CheckCircle size={18} />}
           {notification.type === "error" && <AlertCircle size={18} />}
           {notification.type === "info" && <Clock size={18} />}
           <span className="text-sm font-medium">{notification.message}</span>
-          <button onClick={() => setNotification(null)} className="ml-2 hover:opacity-70">
+          <button
+            onClick={() => setNotification(null)}
+            className="ml-2 hover:opacity-70"
+          >
             <X size={16} />
           </button>
         </div>
@@ -342,9 +451,12 @@ export default function EmailIngestPage() {
           <span className="text-gray-400">/</span>
           <span className="text-[#115d72] font-medium">Email Ingest</span>
         </div>
-        <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Email Ingest</h1>
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+          Email Ingest
+        </h1>
         <p className="text-gray-600 mt-1 text-sm md:text-base">
-          Kelola satu akun email utama beserta berbagai rule filter ingestion untuk membaca laporan PLN.
+          Kelola satu akun email utama beserta berbagai rule filter ingestion
+          untuk membaca laporan PLN.
         </p>
       </div>
 
@@ -352,19 +464,44 @@ export default function EmailIngestPage() {
       <Card className="mb-6 animate-fadeIn" style={{ animationDelay: "50ms" }}>
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center p-2 gap-4">
           <div className="flex items-center gap-4">
-            <div className={`w-12 h-12 rounded-full flex items-center justify-center ${oauthStatus?.connected ? 'bg-green-100' : 'bg-gray-100'}`}>
-              <Mail className={`w-6 h-6 ${oauthStatus?.connected ? 'text-green-600' : 'text-gray-400'}`} />
+            <div
+              className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                oauthStatus?.connected
+                  ? "bg-green-100"
+                  : oauthStatus?.reason === "token_revoked"
+                    ? "bg-amber-100"
+                    : "bg-gray-100"
+              }`}
+            >
+              <Mail
+                className={`w-6 h-6 ${
+                  oauthStatus?.connected
+                    ? "text-green-600"
+                    : oauthStatus?.reason === "token_revoked"
+                      ? "text-amber-600"
+                      : "text-gray-400"
+                }`}
+              />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-gray-900">Koneksi Email Global</h2>
+              <h2 className="text-lg font-bold text-gray-900">
+                Koneksi Email Global
+              </h2>
               <p className="text-sm text-gray-500">
-                {isOauthLoading ? "Mengecek status..." : oauthStatus?.connected ? `Terhubung: ${oauthStatus.emailAddress}` : "Belum ada email yang dihubungkan"}
+                {isOauthLoading
+                  ? "Mengecek status..."
+                  : oauthStatus?.connected
+                    ? `Terhubung: ${oauthStatus.emailAddress}`
+                    : oauthStatus?.reason === "token_revoked"
+                      ? `Token kedaluwarsa — perlu hubungkan ulang`
+                      : "Belum ada email yang dihubungkan"}
               </p>
             </div>
           </div>
           <div>
-            {!isOauthLoading && canUpdate && (
-              oauthStatus?.connected ? (
+            {!isOauthLoading &&
+              canUpdate &&
+              (oauthStatus?.connected ? (
                 <button
                   onClick={handleDisconnectAuthGlobal}
                   disabled={disconnectOAuthMutation.isPending}
@@ -376,15 +513,50 @@ export default function EmailIngestPage() {
                 <button
                   onClick={handleConnectOAuthGlobal}
                   disabled={getOAuthUrlMutation.isPending}
-                  className="px-4 py-2 bg-[#115d72] text-white hover:bg-[#0d4a5c] rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                  className={`px-4 py-2 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 ${
+                    oauthStatus?.reason === "token_revoked"
+                      ? "bg-amber-600 hover:bg-amber-700"
+                      : "bg-[#115d72] hover:bg-[#0d4a5c]"
+                  }`}
                 >
-                  Hubungkan dengan Google
+                  {oauthStatus?.reason === "token_revoked"
+                    ? "Hubungkan Ulang"
+                    : "Hubungkan dengan Google"}
                 </button>
-              )
-            )}
+              ))}
           </div>
         </div>
       </Card>
+
+      {/* OAuth Reconnection Warning */}
+      {!isOauthLoading &&
+        oauthStatus &&
+        !oauthStatus.connected &&
+        oauthStatus.reason === "token_revoked" && (
+          <div className="mb-6 animate-fadeIn p-4 bg-amber-50 border border-amber-200 rounded-xl flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center shrink-0">
+              <AlertCircle className="w-5 h-5 text-amber-600" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-amber-800">
+                Koneksi email telah kedaluwarsa
+              </p>
+              <p className="text-xs text-amber-600 mt-0.5">
+                Token akses Google tidak valid. Silakan hubungkan ulang untuk
+                melanjutkan polling email otomatis.
+              </p>
+            </div>
+            {canUpdate && (
+              <button
+                onClick={handleConnectOAuthGlobal}
+                disabled={getOAuthUrlMutation.isPending}
+                className="px-4 py-2 bg-amber-600 text-white hover:bg-amber-700 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 shrink-0"
+              >
+                Hubungkan Ulang
+              </button>
+            )}
+          </div>
+        )}
 
       {/* Action Bar */}
       <Card className="mb-6 animate-fadeIn" style={{ animationDelay: "100ms" }}>
@@ -454,7 +626,10 @@ export default function EmailIngestPage() {
       {/* Main Content - Two Columns */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - Email Table (2/3) */}
-        <div className="lg:col-span-2 animate-fadeIn" style={{ animationDelay: "200ms" }}>
+        <div
+          className="lg:col-span-2 animate-fadeIn"
+          style={{ animationDelay: "200ms" }}
+        >
           {isLoading ? (
             <Card className="flex items-center justify-center py-16">
               <div className="text-center text-gray-500">
@@ -493,18 +668,24 @@ export default function EmailIngestPage() {
                 <Mail className="w-5 h-5 text-[#115d72]" />
               </div>
               <div>
-                <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
+                <div className="text-2xl font-bold text-gray-900">
+                  {stats.total}
+                </div>
                 <div className="text-xs text-gray-500">Total email source</div>
               </div>
             </div>
             <div className="space-y-3">
               <div className="flex justify-between items-center py-2 border-t border-gray-100">
                 <span className="text-sm text-gray-600">Aktif</span>
-                <span className="text-sm font-semibold text-green-600">{stats.active}</span>
+                <span className="text-sm font-semibold text-green-600">
+                  {stats.active}
+                </span>
               </div>
               <div className="flex justify-between items-center py-2 border-t border-gray-100">
                 <span className="text-sm text-gray-600">Nonaktif</span>
-                <span className="text-sm font-semibold text-gray-500">{stats.total - stats.active}</span>
+                <span className="text-sm font-semibold text-gray-500">
+                  {stats.total - stats.active}
+                </span>
               </div>
             </div>
             <button
@@ -516,14 +697,9 @@ export default function EmailIngestPage() {
             </button>
           </Card>
 
-
-
           {/* Quick Actions */}
           <Card className="animate-fadeIn" style={{ animationDelay: "500ms" }}>
-            <CardHeader
-              title="Quick Actions"
-              description="Aksi cepat"
-            />
+            <CardHeader title="Quick Actions" description="Aksi cepat" />
             <div className="space-y-2">
               <button
                 onClick={handleExportCSV}
@@ -545,6 +721,93 @@ export default function EmailIngestPage() {
               </button>
             </div>
           </Card>
+
+          {/* Job Queue Card */}
+          {selectedEmail && (
+            <Card
+              className="animate-fadeIn"
+              style={{ animationDelay: "600ms" }}
+            >
+              <CardHeader
+                title="Antrian Job"
+                description={`${selectedEmail.name}`}
+              />
+              {isJobsLoading ? (
+                <div className="flex items-center justify-center py-4">
+                  <Loader2 className="w-5 h-5 animate-spin text-[#14a2bb]" />
+                </div>
+              ) : queueJobs.length === 0 ? (
+                <p className="text-sm text-gray-400 text-center py-4">
+                  Tidak ada job dalam antrian
+                </p>
+              ) : (
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {queueJobs.map((job: JobQueueItem) => (
+                    <div
+                      key={job.id}
+                      className="p-3 bg-gray-50 border border-gray-200 rounded-lg text-xs"
+                    >
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="font-mono text-gray-500">
+                          {job.id.slice(0, 8)}...
+                        </span>
+                        {getJobStatusBadge(job.status)}
+                      </div>
+                      <div className="text-gray-600 mb-1">
+                        {job.job_type} &middot; attempt {job.attempt_count}
+                      </div>
+                      {job.last_error && (
+                        <p className="text-red-500 text-xs mb-2 line-clamp-2">
+                          {job.last_error}
+                        </p>
+                      )}
+                      {job.next_retry_at && (
+                        <p className="text-gray-400 text-xs mb-2">
+                          Next retry:{" "}
+                          {new Date(job.next_retry_at).toLocaleTimeString()}
+                        </p>
+                      )}
+                      <div className="flex gap-1.5">
+                        {(job.status === "PENDING" ||
+                          job.status === "RETRY_WAIT" ||
+                          job.status === "RUNNING") && (
+                          <button
+                            onClick={() => handleStopJob(job.id)}
+                            disabled={stopJobMutation.isPending}
+                            className="flex items-center gap-1 px-2 py-1 bg-red-50 text-red-600 border border-red-200 rounded hover:bg-red-100 transition-colors disabled:opacity-50"
+                          >
+                            <StopCircle size={12} />
+                            Stop
+                          </button>
+                        )}
+                        {(job.status === "FAILED" ||
+                          job.status === "RETRY_WAIT") && (
+                          <>
+                            <button
+                              onClick={() => handleSkipJob(job.id)}
+                              disabled={skipJobMutation.isPending}
+                              className="flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-600 border border-gray-200 rounded hover:bg-gray-200 transition-colors disabled:opacity-50"
+                            >
+                              <SkipForward size={12} />
+                              Skip
+                            </button>
+                            <button
+                              onClick={() => handleRetryJob(job.id)}
+                              disabled={retryJobMutation.isPending}
+                              className="flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-600 border border-blue-200 rounded hover:bg-blue-100 transition-colors disabled:opacity-50"
+                            >
+                              <RefreshCw size={12} />
+                              Retry
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+          )}
         </div>
       </div>
 
@@ -566,45 +829,132 @@ export default function EmailIngestPage() {
         title="Log Sinkronisasi Email"
         maxWidth="max-w-3xl"
       >
-        <div className="bg-gray-900 border border-gray-700 rounded-lg p-6 font-mono text-sm shadow-inner flex flex-col min-h-[300px]">
+        <div className="bg-gray-900 border border-gray-700 rounded-lg p-6 font-mono text-sm shadow-inner flex flex-col min-h-[300px] max-h-[500px]">
           <div className="flex items-center gap-2 mb-4 text-gray-400 border-b border-gray-700 pb-3">
             <div className="w-3 h-3 rounded-full bg-red-500"></div>
             <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
             <div className="w-3 h-3 rounded-full bg-green-500"></div>
-            <span className="ml-2 text-xs">worker.log</span>
+            <span className="ml-2 text-xs">job-execution.log</span>
+            <span className="ml-auto text-xs text-gray-500">
+              {recentLogs.length} entries
+            </span>
           </div>
-          
+
           <div className="flex-1 space-y-2 text-gray-300 overflow-y-auto">
-            {emailSources.map((source, i) => (
-              source.lastPolledAt && (
-                <div key={`log-${i}`} className="flex gap-3">
-                  <span className="text-gray-500 shrink-0">[{new Date(source.lastPolledAt).toISOString().replace('T', ' ').substring(0, 19)}]</span>
-                  <span className="text-[#14a2bb] shrink-0">[INFO]</span>
-                  <span>Polling successful for rule <span className="text-white">"{source.name}"</span>. Status: Ok.</span>
-                </div>
-              )
-            ))}
-            
-            <div className="flex gap-3 mt-4 pt-4 border-t border-gray-800/50">
-              <span className="text-gray-500 shrink-0">[{new Date().toISOString().replace('T', ' ').substring(0, 19)}]</span>
-              <span className="text-green-400 shrink-0">[SYSTEM]</span>
-              <span>Email polling worker is active and awaiting next cron schedule...</span>
-            </div>
-            
-            {emailSources.every(s => !s.lastPolledAt) && (
-              <div className="flex flex-col items-center justify-center py-8 text-gray-500">
-                <AlertCircle className="w-8 h-8 mb-2" />
-                <p>Belum ada aktivitas sinkronisasi hari ini.</p>
+            {isLogsLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-6 h-6 animate-spin text-[#14a2bb]" />
               </div>
+            ) : recentLogs.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-gray-500">
+                <AlertCircle className="w-8 h-8 mb-2" />
+                <p>Belum ada aktivitas job terekam.</p>
+              </div>
+            ) : (
+              recentLogs.map((log: JobQueueItem) => {
+                const ts = new Date(log.created_at)
+                  .toISOString()
+                  .replace("T", " ")
+                  .substring(0, 19);
+                const isError = log.status === "FAILED";
+                const isDone = log.status === "DONE";
+                const isRunning = log.status === "RUNNING";
+                const isRetrying = log.status === "RETRY_WAIT";
+                const level = isError
+                  ? "ERROR"
+                  : isDone
+                    ? "OK"
+                    : isRunning
+                      ? "INFO"
+                      : isRetrying
+                        ? "WARN"
+                        : "INFO";
+                const levelColor = isError
+                  ? "text-red-400"
+                  : isDone
+                    ? "text-green-400"
+                    : isRetrying
+                      ? "text-yellow-400"
+                      : "text-[#14a2bb]";
+
+                return (
+                  <div key={log.id} className="flex gap-3 items-start group">
+                    <span className="text-gray-500 shrink-0">[{ts}]</span>
+                    <span className={`${levelColor} shrink-0 font-semibold`}>
+                      [{level}]
+                    </span>
+                    <span className="text-gray-400 shrink-0">
+                      [{log.job_type}]
+                    </span>
+                    <span className="flex-1">
+                      {log.job_type === "EMAIL_POLL" ? (
+                        <>Polling email source — </>
+                      ) : (
+                        <>Email ingest — </>
+                      )}
+                      {isError ? (
+                        <span className="text-red-400">
+                          FAILED: {log.last_error}
+                        </span>
+                      ) : isDone ? (
+                        <span className="text-green-400">Completed</span>
+                      ) : isRetrying ? (
+                        <span className="text-yellow-400">
+                          Retry #{log.attempt_count}
+                          {log.next_retry_at &&
+                            ` — next at ${new Date(log.next_retry_at).toLocaleTimeString()}`}
+                        </span>
+                      ) : isRunning ? (
+                        <span className="text-blue-400">
+                          Running (attempt {log.attempt_count})
+                        </span>
+                      ) : (
+                        <span className="text-gray-400">Pending</span>
+                      )}
+                    </span>
+                    {(isError || isRetrying) && (
+                      <span className="flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => handleRetryJob(log.id)}
+                          disabled={retryJobMutation.isPending}
+                          className="px-2 py-0.5 text-xs bg-blue-600/20 text-blue-400 border border-blue-500/30 rounded hover:bg-blue-600/40 transition-colors"
+                          title="Jadwalkan ulang job"
+                        >
+                          <RefreshCw size={12} />
+                        </button>
+                        <button
+                          onClick={() => handleSkipJob(log.id)}
+                          disabled={skipJobMutation.isPending}
+                          className="px-2 py-0.5 text-xs bg-gray-600/20 text-gray-400 border border-gray-500/30 rounded hover:bg-gray-600/40 transition-colors"
+                          title="Lewati job"
+                        >
+                          <SkipForward size={12} />
+                        </button>
+                      </span>
+                    )}
+                  </div>
+                );
+              })
             )}
-            
-            {oauthStatus?.connected ? (
-                 <div className="flex gap-3">
-                  <span className="text-gray-500 shrink-0">[{new Date().toISOString().replace('T', ' ').substring(0, 19)}]</span>
+
+            {!isLogsLoading &&
+              oauthStatus?.connected &&
+              recentLogs.length > 0 && (
+                <div className="flex gap-3 mt-4 pt-4 border-t border-gray-800/50">
+                  <span className="text-gray-500 shrink-0">
+                    [
+                    {new Date()
+                      .toISOString()
+                      .replace("T", " ")
+                      .substring(0, 19)}
+                    ]
+                  </span>
                   <span className="text-green-400 shrink-0">[OAUTH]</span>
-                  <span>Connection to {oauthStatus.emailAddress} is healthy.</span>
+                  <span>
+                    Connection to {oauthStatus.emailAddress} is healthy.
+                  </span>
                 </div>
-            ) : null}
+              )}
           </div>
         </div>
         <div className="mt-4 flex justify-end">
@@ -614,6 +964,52 @@ export default function EmailIngestPage() {
           >
             Tutup
           </button>
+        </div>
+      </Modal>
+
+      {/* Disconnect Confirmation Modal */}
+      <Modal
+        isOpen={isDisconnectModalOpen}
+        onClose={() => setIsDisconnectModalOpen(false)}
+        title="Putuskan Koneksi OAuth"
+        maxWidth="max-w-md"
+      >
+        <div className="space-y-4">
+          <div className="flex items-start gap-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-red-800">
+                Apakah Anda yakin?
+              </p>
+              <p className="text-xs text-red-600 mt-1">
+                Mencabut akses OAuth akan menghentikan semua polling email
+                otomatis. Anda harus menghubungkan ulang akun Google untuk
+                mengaktifkannya kembali.
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-3 pt-2">
+            <button
+              onClick={() => setIsDisconnectModalOpen(false)}
+              className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200"
+            >
+              Batal
+            </button>
+            <button
+              onClick={handleConfirmDisconnect}
+              disabled={disconnectOAuthMutation.isPending}
+              className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-all duration-200 disabled:opacity-50"
+            >
+              {disconnectOAuthMutation.isPending ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Loader2 size={14} className="animate-spin" />
+                  Memutuskan...
+                </span>
+              ) : (
+                "Ya, Putuskan"
+              )}
+            </button>
+          </div>
         </div>
       </Modal>
 
@@ -649,8 +1045,6 @@ export default function EmailIngestPage() {
             )}
           </div>
 
-
-
           <CronScheduleSelector
             value={addForm.cronSchedule}
             onChange={(v) => setAddForm({ ...addForm, cronSchedule: v })}
@@ -663,7 +1057,9 @@ export default function EmailIngestPage() {
             <input
               type="text"
               value={addForm.subjectFilter}
-              onChange={(e) => setAddForm({ ...addForm, subjectFilter: e.target.value })}
+              onChange={(e) =>
+                setAddForm({ ...addForm, subjectFilter: e.target.value })
+              }
               className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent"
               placeholder="Contoh: Laporan Harian, Report Gas"
             />
@@ -679,7 +1075,9 @@ export default function EmailIngestPage() {
             <input
               type="text"
               value={addForm.senderFilter}
-              onChange={(e) => setAddForm({ ...addForm, senderFilter: e.target.value })}
+              onChange={(e) =>
+                setAddForm({ ...addForm, senderFilter: e.target.value })
+              }
               className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent"
               placeholder="Contoh: noreply@pln.co.id"
             />
@@ -692,7 +1090,9 @@ export default function EmailIngestPage() {
             <input
               type="text"
               value={addForm.labelFilter}
-              onChange={(e) => setAddForm({ ...addForm, labelFilter: e.target.value })}
+              onChange={(e) =>
+                setAddForm({ ...addForm, labelFilter: e.target.value })
+              }
               className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent"
               placeholder="INBOX"
             />
@@ -738,7 +1138,7 @@ export default function EmailIngestPage() {
             transform: translateY(0);
           }
         }
-        
+
         @keyframes slideIn {
           from {
             opacity: 0;
@@ -749,11 +1149,11 @@ export default function EmailIngestPage() {
             transform: translateX(0);
           }
         }
-        
+
         .animate-fadeIn {
           animation: fadeIn 0.4s ease-out forwards;
         }
-        
+
         .animate-slideIn {
           animation: slideIn 0.3s ease-out forwards;
         }

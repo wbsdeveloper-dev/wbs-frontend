@@ -618,6 +618,7 @@ export function useDeleteTemplate(
   return useMutation({
     mutationFn: (id: string) => deleteTemplate(id),
     onSuccess: (...args) => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const [_data, id] = args;
       // Remove detail cache immediately so it doesn't trigger a 404 refetch
       qc.removeQueries({ queryKey: configKeys.template(id) });
@@ -661,7 +662,9 @@ export function useAiModels(options?: Partial<UseQueryOptions<AiModel[]>>) {
 
 export function getSpreadsheetSources(commodity?: string) {
   const query = commodity ? `?commodity=${encodeURIComponent(commodity)}` : "";
-  return configFetch<SpreadsheetSource[]>(`/config/spreadsheet-sources${query}`);
+  return configFetch<SpreadsheetSource[]>(
+    `/config/spreadsheet-sources${query}`,
+  );
 }
 
 export function getSpreadsheetSource(id: string) {
@@ -788,7 +791,6 @@ export interface EmailSource {
 
 export interface CreateEmailSourcePayload {
   name: string;
-  emailAddress?: string;
   cronSchedule?: string;
   subjectFilter?: string;
   senderFilter?: string;
@@ -937,15 +939,21 @@ export const emailOAuthKeys = {
 
 export function useGetEmailOAuthStatus(
   options?: Partial<
-    UseQueryOptions<{ connected: boolean; emailAddress?: string }>
+    UseQueryOptions<{
+      connected: boolean;
+      emailAddress?: string;
+      reason?: string;
+    }>
   >,
 ) {
   return useQuery({
     queryKey: emailOAuthKeys.status,
     queryFn: () =>
-      configFetch<{ connected: boolean; emailAddress?: string }>(
-        "/config/email-oauth/status",
-      ),
+      configFetch<{
+        connected: boolean;
+        emailAddress?: string;
+        reason?: string;
+      }>("/config/email-oauth/status"),
     ...options,
   });
 }
@@ -1009,6 +1017,114 @@ export function useTestEmailParse(
 ) {
   return useMutation({
     mutationFn: (id: string) => testEmailParseApi(id),
+    ...options,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Job Queue Management
+// ---------------------------------------------------------------------------
+
+export interface JobQueueItem {
+  id: string;
+  job_type: string;
+  dedup_key: string;
+  status: string;
+  attempt_count: number;
+  last_error: string | null;
+  next_retry_at: string | null;
+  created_at: string;
+  pln_report_id: string | null;
+  payload: unknown;
+}
+
+export function getEmailSourceJobsApi(emailSourceId: string) {
+  return configFetch<JobQueueItem[]>(
+    `/config/email-sources/${emailSourceId}/jobs`,
+  );
+}
+
+export function stopJobApi(jobId: string) {
+  return configFetch<{ id: string; action: string }>(
+    `/config/jobs/${jobId}/stop`,
+    { method: "POST" },
+  );
+}
+
+export function skipJobApi(jobId: string) {
+  return configFetch<{ id: string; action: string }>(
+    `/config/jobs/${jobId}/skip`,
+    { method: "POST" },
+  );
+}
+
+export function retryJobApi(jobId: string) {
+  return configFetch<{ id: string; action: string }>(
+    `/config/jobs/${jobId}/retry`,
+    { method: "POST" },
+  );
+}
+
+// React Query hooks
+
+export function useEmailSourceJobs(
+  emailSourceId: string | null,
+  options?: Partial<UseQueryOptions<JobQueueItem[]>>,
+) {
+  return useQuery({
+    queryKey: [...configKeys.emailSources(), "jobs", emailSourceId],
+    queryFn: () => getEmailSourceJobsApi(emailSourceId!),
+    enabled: !!emailSourceId,
+    refetchInterval: 10000, // Auto-refresh every 10s
+    ...options,
+  });
+}
+
+export function useStopJob(
+  options?: Partial<
+    UseMutationOptions<{ id: string; action: string }, Error, string>
+  >,
+) {
+  return useMutation({
+    mutationFn: (jobId: string) => stopJobApi(jobId),
+    ...options,
+  });
+}
+
+export function useSkipJob(
+  options?: Partial<
+    UseMutationOptions<{ id: string; action: string }, Error, string>
+  >,
+) {
+  return useMutation({
+    mutationFn: (jobId: string) => skipJobApi(jobId),
+    ...options,
+  });
+}
+
+export function useRetryJob(
+  options?: Partial<
+    UseMutationOptions<{ id: string; action: string }, Error, string>
+  >,
+) {
+  return useMutation({
+    mutationFn: (jobId: string) => retryJobApi(jobId),
+    ...options,
+  });
+}
+
+// Recent email logs (across all sources)
+export function getRecentEmailLogsApi() {
+  return configFetch<JobQueueItem[]>("/config/email-logs/recent");
+}
+
+export function useRecentEmailLogs(
+  options?: Partial<UseQueryOptions<JobQueueItem[]>>,
+) {
+  return useQuery({
+    queryKey: [...configKeys.emailSources(), "logs", "recent"],
+    queryFn: () => getRecentEmailLogsApi(),
+    refetchInterval: 15000,
     ...options,
   });
 }
