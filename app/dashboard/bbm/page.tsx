@@ -102,6 +102,7 @@ interface AccumulationTooltipPayloadEntry {
     plant: string;
     nominasi: number;
     realisasi: number;
+    penerimaan: number;
     pemakaian: number;
     modaRealisasi?: Record<string, number>;
   };
@@ -457,6 +458,7 @@ export default function Home() {
         product: string;
         nominasi: number;
         realisasi: number;
+        penerimaan: number;
         pemakaian: number;
         modaRealisasi: Record<string, number>;
       }
@@ -475,6 +477,7 @@ export default function Home() {
           product: record.product,
           nominasi: record.nomination || 0,
           realisasi: record.realization || 0,
+          penerimaan: record.receipt || 0,
           pemakaian: record.usage || 0,
           modaRealisasi: { [moda]: realization },
         };
@@ -487,6 +490,10 @@ export default function Home() {
           record.nomination || 0,
         );
         monthlyGroups[groupKey].realisasi += record.realization || 0;
+        monthlyGroups[groupKey].penerimaan = Math.max(
+          monthlyGroups[groupKey].penerimaan,
+          record.receipt || 0,
+        );
         monthlyGroups[groupKey].pemakaian = Math.max(
           monthlyGroups[groupKey].pemakaian,
           record.usage || 0,
@@ -506,6 +513,7 @@ export default function Home() {
         plant: string;
         nominasi: number;
         realisasi: number;
+        penerimaan: number;
         pemakaian: number;
         modaRealisasi: Record<string, number>;
       }
@@ -521,6 +529,7 @@ export default function Home() {
           plant: record.pembangkit,
           nominasi: 0,
           realisasi: 0,
+          penerimaan: 0,
           pemakaian: 0,
           modaRealisasi: {},
         };
@@ -528,6 +537,7 @@ export default function Home() {
 
       chartGroups[name].nominasi += record.nominasi;
       chartGroups[name].realisasi += record.realisasi;
+      chartGroups[name].penerimaan += record.penerimaan;
       chartGroups[name].pemakaian += record.pemakaian;
 
       Object.entries(record.modaRealisasi).forEach(([moda, val]) => {
@@ -797,6 +807,12 @@ export default function Home() {
                                 </span>
                               </div>
                               <div className="flex items-center gap-2">
+                                <span className="w-2.5 h-2.5 rounded-full bg-[#818cf8]" />
+                                <span className="text-xs font-medium text-gray-600">
+                                  Penerimaan
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2">
                                 <span className="w-2.5 h-2.5 rounded-full bg-[#34d399]" />
                                 <span className="text-xs font-medium text-gray-600">
                                   Pemakaian
@@ -816,6 +832,13 @@ export default function Home() {
                           dataKey="realisasi"
                           name="Penyaluran"
                           fill="#60a5fa"
+                          radius={[10, 10, 0, 0]}
+                          maxBarSize={100}
+                        />
+                        <Bar
+                          dataKey="penerimaan"
+                          name="Penerimaan"
+                          fill="#818cf8"
                           radius={[10, 10, 0, 0]}
                           maxBarSize={100}
                         />

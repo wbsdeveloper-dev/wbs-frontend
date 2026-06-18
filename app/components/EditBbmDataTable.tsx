@@ -92,7 +92,7 @@ export default function EditBbmDataTable({
   const canUpdate = hasPrivilege("data_management", "UPDATE");
   const canDelete = hasPrivilege("data_management", "DELETE");
   const hasAction = !hideActions && (canUpdate || canDelete);
-  
+
   const deleteMutation = useDeleteBbmMonthly();
 
   type SortField = keyof BbmRecord;
@@ -230,10 +230,16 @@ export default function EditBbmDataTable({
     const spans = paginatedRecords.map((record) => ({
       nominationSpan: 1,
       usageSpan: 1,
+      receiptSpan: 1,
+      renominationSpan: 1,
       showNomination: true,
       showUsage: true,
+      showReceipt: true,
+      showRenomination: true,
       nominationValue: record.nomination,
       usageValue: record.usage,
+      receiptValue: record.receipt,
+      renominationValue: record.renomination,
     }));
 
     let i = 0;
@@ -269,18 +275,44 @@ export default function EditBbmDataTable({
         }
       }
 
+      let receiptVal = paginatedRecords[i].receipt;
+      for (let k = i; k < j; k++) {
+        const val = paginatedRecords[k].receipt;
+        if (val != null && val !== 0) {
+          receiptVal = val;
+          break;
+        }
+      }
+
+      let renominationVal = paginatedRecords[i].renomination;
+      for (let k = i; k < j; k++) {
+        const val = paginatedRecords[k].renomination;
+        if (val != null && val !== 0) {
+          renominationVal = val;
+          break;
+        }
+      }
+
       const count = j - i;
       spans[i].nominationSpan = count;
       spans[i].usageSpan = count;
+      spans[i].receiptSpan = count;
+      spans[i].renominationSpan = count;
       spans[i].nominationValue = nominationVal;
       spans[i].usageValue = usageVal;
+      spans[i].receiptValue = receiptVal;
+      spans[i].renominationValue = renominationVal;
 
       if (count > 1) {
         for (let k = i + 1; k < j; k++) {
           spans[k].showNomination = false;
           spans[k].showUsage = false;
+          spans[k].showReceipt = false;
+          spans[k].showRenomination = false;
           spans[k].nominationSpan = 0;
           spans[k].usageSpan = 0;
+          spans[k].receiptSpan = 0;
+          spans[k].renominationSpan = 0;
         }
       }
       i = j;
@@ -310,10 +342,11 @@ export default function EditBbmDataTable({
     align?: "left" | "center" | "right";
   }) => (
     <th
-      className={`px-4 py-3 text-${align} text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap ${field
-        ? "cursor-pointer select-none hover:bg-gray-100 transition-colors"
-        : ""
-        }`}
+      className={`px-4 py-3 text-${align} text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap ${
+        field
+          ? "cursor-pointer select-none hover:bg-gray-100 transition-colors"
+          : ""
+      }`}
       onClick={field ? () => handleSort(field) : undefined}
     >
       <span className="inline-flex items-center justify-center">
@@ -351,10 +384,11 @@ export default function EditBbmDataTable({
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowFilters((v) => !v)}
-            className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-all duration-200 ${showFilters || activeFilterCount > 0
+            className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-all duration-200 ${
+              showFilters || activeFilterCount > 0
                 ? "bg-primary text-white border-primary"
                 : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-              }`}
+            }`}
           >
             <Filter size={16} />
             Filter
@@ -559,7 +593,9 @@ export default function EditBbmDataTable({
               <Th label="Produk" field="product" />
               <Th label="Moda" field="moda" />
               <Th label="Nominasi" field="nomination" />
-              <Th label="Penerimaan" field="realization" />
+              <Th label="Penyaluran" field="realization" />
+              <Th label="Penerimaan" field="receipt" />
+              <Th label="Renominasi" field="renomination" />
               <Th label="Pemakaian" field="usage" />
               {hasAction && <Th label="Aksi" />}
             </tr>
@@ -600,8 +636,9 @@ export default function EditBbmDataTable({
                     key={rowId}
                     onMouseEnter={() => setHoveredGroupId(groupKey)}
                     onMouseLeave={() => setHoveredGroupId(null)}
-                    className={`transition-colors ${hoveredGroupId === groupKey ? "bg-gray-50" : ""
-                      }`}
+                    className={`transition-colors ${
+                      hoveredGroupId === groupKey ? "bg-gray-50" : ""
+                    }`}
                   >
                     <td className="px-4 py-3 text-center text-gray-700">
                       {startIndex + index + 1}
@@ -630,6 +667,22 @@ export default function EditBbmDataTable({
                     <td className="px-4 py-3 text-center text-gray-700 font-mono font-medium">
                       {fmt(record.realization)}
                     </td>
+                    {rowSpans[index]?.showReceipt && (
+                      <td
+                        rowSpan={rowSpans[index]?.receiptSpan}
+                        className="px-4 py-3 text-center text-gray-700 font-mono align-middle"
+                      >
+                        {fmt(rowSpans[index]?.receiptValue)}
+                      </td>
+                    )}
+                    {rowSpans[index]?.showRenomination && (
+                      <td
+                        rowSpan={rowSpans[index]?.renominationSpan}
+                        className="px-4 py-3 text-center text-gray-700 font-mono align-middle"
+                      >
+                        {fmt(rowSpans[index]?.renominationValue)}
+                      </td>
+                    )}
                     {rowSpans[index]?.showUsage && (
                       <td
                         rowSpan={rowSpans[index]?.usageSpan}

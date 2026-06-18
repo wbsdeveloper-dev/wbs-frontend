@@ -33,6 +33,8 @@ interface ParsedBbmRow {
   moda: string;
   nomination: number | null;
   usage: number | null;
+  receipt: number | null;
+  renomination: number | null;
 }
 
 export default function BulkUploadBbmModal({ setOpenModal, onSuccess }: Props) {
@@ -354,7 +356,12 @@ export default function BulkUploadBbmModal({ setOpenModal, onSuccess }: Props) {
                 .trim();
             const columnsByMonth: Record<
               string,
-              { nominationCol: number; usageCol: number }
+              {
+                nominationCol: number;
+                usageCol: number;
+                receiptCol: number;
+                renominationCol: number;
+              }
             > = {};
 
             // Map the columns by month dynamically
@@ -386,7 +393,12 @@ export default function BulkUploadBbmModal({ setOpenModal, onSuccess }: Props) {
               }
 
               if (!columnsByMonth[monthDate]) {
-                columnsByMonth[monthDate] = { nominationCol: -1, usageCol: -1 };
+                columnsByMonth[monthDate] = {
+                  nominationCol: -1,
+                  usageCol: -1,
+                  receiptCol: -1,
+                  renominationCol: -1,
+                };
               }
 
               if (
@@ -400,6 +412,25 @@ export default function BulkUploadBbmModal({ setOpenModal, onSuccess }: Props) {
                 subheader.includes("PEMAKAIAN")
               ) {
                 columnsByMonth[monthDate].usageCol = colIdx;
+              } else if (
+                (parentHeader.includes("TERIMA") ||
+                  subheader.includes("TERIMA")) &&
+                !parentHeader.includes("DEVIASI") &&
+                !subheader.includes("DEVIASI") &&
+                !parentHeader.includes("SELISIH") &&
+                !subheader.includes("SELISIH")
+              ) {
+                if (columnsByMonth[monthDate].receiptCol === -1) {
+                  columnsByMonth[monthDate].receiptCol = colIdx;
+                }
+              } else if (
+                (parentHeader.includes("RENOMINASI") ||
+                  parentHeader.includes("KONFIRMASI")) &&
+                subheader.includes("PESAN")
+              ) {
+                if (columnsByMonth[monthDate].renominationCol === -1) {
+                  columnsByMonth[monthDate].renominationCol = colIdx;
+                }
               }
             }
 
@@ -436,8 +467,21 @@ export default function BulkUploadBbmModal({ setOpenModal, onSuccess }: Props) {
                   cols.usageCol !== -1
                     ? parseExcelNumber(row[cols.usageCol])
                     : null;
+                const receiptVal =
+                  cols.receiptCol !== -1
+                    ? parseExcelNumber(row[cols.receiptCol])
+                    : null;
+                const renominationVal =
+                  cols.renominationCol !== -1
+                    ? parseExcelNumber(row[cols.renominationCol])
+                    : null;
 
-                if (nominationVal === null && usageVal === null) {
+                if (
+                  nominationVal === null &&
+                  usageVal === null &&
+                  receiptVal === null &&
+                  renominationVal === null
+                ) {
                   return;
                 }
 
@@ -479,6 +523,8 @@ export default function BulkUploadBbmModal({ setOpenModal, onSuccess }: Props) {
                   moda: rawModa,
                   nomination: nominationVal,
                   usage: usageVal,
+                  receipt: receiptVal,
+                  renomination: renominationVal,
                 });
               });
             }
@@ -549,10 +595,12 @@ export default function BulkUploadBbmModal({ setOpenModal, onSuccess }: Props) {
         siteId: row.siteId,
         supplierId: row.supplierId,
         product: row.product,
-        moda: row.moda,
+        moda: undefined,
         unit: "KILOLITER",
         nomination: row.nomination ?? undefined,
         usage: row.usage ?? undefined,
+        receipt: row.receipt ?? undefined,
+        renomination: row.renomination ?? undefined,
       }));
 
       await bulkSave.mutateAsync(payload);
@@ -614,7 +662,7 @@ export default function BulkUploadBbmModal({ setOpenModal, onSuccess }: Props) {
             </div>
             <div>
               <h3 className="text-xl font-bold text-gray-900">
-                Input Nominasi & Pemakaian BBM
+                Input Nominasi, Penerimaan, Pemakaian BBM
               </h3>
               <p className="text-xs text-gray-500 mt-0.5">
                 Unggah kertas kerja rakor BBM, petakan secara instan, dan simpan
@@ -654,14 +702,14 @@ export default function BulkUploadBbmModal({ setOpenModal, onSuccess }: Props) {
               <div className="bg-gray-50 p-5 rounded-2xl border border-gray-200/60 flex items-center justify-between">
                 <div className="text-xs text-gray-600 space-y-1 leading-relaxed">
                   <p className="font-semibold text-gray-800 text-sm">
-                    Petunjuk Ingestion Otomatis:
+                    Petunjuk Input Data Otomatis:
                   </p>
                   <p>
                     • Sistem akan mem-parse semua bulan dengan data tidak kosong
                     secara otomatis.
                   </p>
                   <p>
-                    • <strong>PESAN (kL)</strong> →{" "}
+                    • <strong>NOMINASI (kL)</strong> →{" "}
                     <span className="font-semibold text-emerald-700">
                       VOLUME_NOMINATION
                     </span>
@@ -670,6 +718,18 @@ export default function BulkUploadBbmModal({ setOpenModal, onSuccess }: Props) {
                     • <strong>PEMAKAIAN (kL)</strong> →{" "}
                     <span className="font-semibold text-sky-700">
                       VOLUME_USAGE
+                    </span>
+                  </p>
+                  <p>
+                    • <strong>TERIMA (kL)</strong> →{" "}
+                    <span className="font-semibold text-blue-700">
+                      VOLUME_RECEIPT
+                    </span>
+                  </p>
+                  <p>
+                    • <strong>RENOMINASI (kL)</strong> →{" "}
+                    <span className="font-semibold text-purple-700">
+                      VOLUME_RENOMINATION
                     </span>
                   </p>
                 </div>
@@ -787,7 +847,8 @@ export default function BulkUploadBbmModal({ setOpenModal, onSuccess }: Props) {
                 {unmatchedCount > 0 && (
                   <div className="flex items-center gap-1.5 text-xs text-amber-700 font-semibold bg-amber-50 px-3 py-1 rounded-full border border-amber-100">
                     <AlertTriangle size={14} />
-                    Pilih Site/Supplier manual untuk baris berlabel kuning
+                    Pilih pembangkit dan pemasok manual untuk baris berlabel
+                    kuning
                   </div>
                 )}
               </div>
@@ -807,19 +868,25 @@ export default function BulkUploadBbmModal({ setOpenModal, onSuccess }: Props) {
                         Bulan
                       </th>
                       <th className="px-4 py-3 text-gray-500 font-bold uppercase tracking-wider w-[280px]">
-                        Excel Pembangkit & Site Sistem
+                        Pembangkit
                       </th>
                       <th className="px-4 py-3 text-gray-500 font-bold uppercase tracking-wider w-[280px]">
-                        Excel TBBM & Supplier Sistem
+                        TBBM
                       </th>
                       <th className="px-4 py-3 text-gray-500 font-bold uppercase tracking-wider w-[90px]">
                         Produk
                       </th>
                       <th className="px-4 py-3 text-gray-500 font-bold uppercase tracking-wider w-[140px]">
-                        Nomination (Pesan)
+                        Nominasi
                       </th>
                       <th className="px-4 py-3 text-gray-500 font-bold uppercase tracking-wider w-[140px]">
-                        Usage (Pakai)
+                        Pemakaian
+                      </th>
+                      <th className="px-4 py-3 text-gray-500 font-bold uppercase tracking-wider w-[140px]">
+                        Penerimaan
+                      </th>
+                      <th className="px-4 py-3 text-gray-500 font-bold uppercase tracking-wider w-[140px]">
+                        Renominasi
                       </th>
                       <th className="px-4 py-3 text-center text-gray-500 font-bold uppercase tracking-wider w-[60px]">
                         Aksi
@@ -1003,6 +1070,68 @@ export default function BulkUploadBbmModal({ setOpenModal, onSuccess }: Props) {
                             </div>
                           </td>
 
+                          {/* Penerimaan */}
+                          <td className="px-4 py-3">
+                            <div className="relative">
+                              <input
+                                type="number"
+                                step="any"
+                                placeholder="-"
+                                value={row.receipt === null ? "" : row.receipt}
+                                onChange={(e) => {
+                                  const val =
+                                    e.target.value === ""
+                                      ? null
+                                      : Number(e.target.value);
+                                  handleRowFieldChange(
+                                    row.id,
+                                    "receipt",
+                                    val === null
+                                      ? null
+                                      : Math.round(val * 10000) / 10000,
+                                  );
+                                }}
+                                className="w-full text-xs pl-2 pr-6 py-1 border border-gray-200 rounded-lg text-right font-mono text-gray-900 focus:outline-none focus:ring-1 focus:ring-primary"
+                              />
+                              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-gray-400 font-semibold select-none">
+                                kL
+                              </span>
+                            </div>
+                          </td>
+
+                          {/* Renominasi */}
+                          <td className="px-4 py-3">
+                            <div className="relative">
+                              <input
+                                type="number"
+                                step="any"
+                                placeholder="-"
+                                value={
+                                  row.renomination === null
+                                    ? ""
+                                    : row.renomination
+                                }
+                                onChange={(e) => {
+                                  const val =
+                                    e.target.value === ""
+                                      ? null
+                                      : Number(e.target.value);
+                                  handleRowFieldChange(
+                                    row.id,
+                                    "renomination",
+                                    val === null
+                                      ? null
+                                      : Math.round(val * 10000) / 10000,
+                                  );
+                                }}
+                                className="w-full text-xs pl-2 pr-6 py-1 border border-gray-200 rounded-lg text-right font-mono text-gray-900 focus:outline-none focus:ring-1 focus:ring-primary"
+                              />
+                              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-gray-400 font-semibold select-none">
+                                kL
+                              </span>
+                            </div>
+                          </td>
+
                           {/* Action */}
                           <td className="px-4 py-3 text-center">
                             <button
@@ -1024,17 +1153,9 @@ export default function BulkUploadBbmModal({ setOpenModal, onSuccess }: Props) {
         </div>
 
         {/* Footer Actions */}
-        <div className="flex justify-between items-center pt-4 border-t border-gray-100 mt-2">
+        <div className="flex justify-end items-center pt-4 border-t border-gray-100 mt-2">
           {step === "upload" ? (
             <>
-              <button
-                type="button"
-                disabled={isSaving || isParsing}
-                onClick={() => setOpenModal(false)}
-                className="px-5 py-2.5 border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl text-sm font-semibold transition-colors cursor-pointer"
-              >
-                Batal
-              </button>
               <button
                 type="button"
                 onClick={handleParse}
@@ -1056,17 +1177,9 @@ export default function BulkUploadBbmModal({ setOpenModal, onSuccess }: Props) {
             <>
               <button
                 type="button"
-                disabled={isSaving}
-                onClick={() => setStep("upload")}
-                className="px-5 py-2.5 border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-xl text-sm font-semibold flex items-center gap-2 transition-colors cursor-pointer"
-              >
-                <ArrowLeft size={16} /> Kembali
-              </button>
-              <button
-                type="button"
                 onClick={handleSaveToDatabase}
                 disabled={isSaving || parsedRows.length === 0}
-                className="px-6 py-2.5 bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl text-sm font-bold flex items-center gap-2 transition-all cursor-pointer shadow-md shadow-green-600/10"
+                className="px-6 py-2.5 bg-primary text-white hover:brightness-95 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl text-sm font-bold flex items-center gap-2 transition-all cursor-pointer shadow-md shadow-primary/20"
               >
                 {isSaving ? (
                   <>

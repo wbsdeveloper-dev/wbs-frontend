@@ -17,6 +17,8 @@ export interface BbmRecord {
   nomination: number;
   usage: number;
   realization: number;
+  receipt?: number;
+  renomination?: number;
   moda?: string;
   unit?: string;
 }
@@ -31,6 +33,8 @@ export interface CreateBbmPayload {
   nomination?: number;
   realization?: number;
   usage?: number;
+  receipt?: number;
+  renomination?: number;
 }
 
 export const bbmKeys = {
