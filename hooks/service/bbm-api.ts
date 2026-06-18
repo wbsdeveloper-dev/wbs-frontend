@@ -288,6 +288,7 @@ export interface BbmTopFilters {
   moda?: string;
   tbbm?: string;
   pembangkit?: string;
+  interval?: "day" | "month" | "year";
 }
 
 async function fetchTopVolume(
@@ -372,6 +373,7 @@ export async function getRealizationByModa(
   if (filters?.moda) params.append("moda", filters.moda);
   if (filters?.tbbm) params.append("tbbm", filters.tbbm);
   if (filters?.pembangkit) params.append("pembangkit", filters.pembangkit);
+  if (filters?.interval) params.append("interval", filters.interval);
 
   const qs = params.toString() ? `?${params.toString()}` : "";
   const url = `${DASHBOARD_API_HOST}/bbm-monthly/realization-by-moda${qs}`;

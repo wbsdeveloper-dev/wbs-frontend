@@ -24,6 +24,9 @@ import FilterAutocomplete from "@/app/components/FilterAutocomplete";
 import EditBbmDataTable from "@/app/components/EditBbmDataTable";
 import BbmCompositeChart from "@/app/components/BbmCompositeChart";
 import PieChartDetailModal from "@/app/components/PieChartDetailModal";
+import DateRangeFilter from "@/app/components/DateRangeFilter";
+import NominationAchievementChart from "@/app/components/NominationAchievementChart";
+import type { Periode } from "@/app/components/RealtimeChart";
 
 // API services
 import {
@@ -130,9 +133,9 @@ function AccumulationTooltip({
 
   const getModaColor = (moda: string) => {
     const colors: Record<string, string> = {
-      TRUCK: "#f97316",   // orange
-      KAPAL: "#3b82f6",   // blue
-      PIPA: "#10b981",    // emerald
+      TRUCK: "#f97316", // orange
+      KAPAL: "#3b82f6", // blue
+      PIPA: "#10b981", // emerald
       LAINNYA: "#8b5cf6", // purple
     };
     return colors[moda.toUpperCase()] || "#6b7280";
@@ -145,7 +148,7 @@ function AccumulationTooltip({
       </p>
       <div className="space-y-2">
         {payload.map((entry, idx) => {
-          const isPenerimaan = entry.dataKey === "realisasi";
+          const isPenyaluran = entry.dataKey === "realisasi";
 
           return (
             <div key={idx} className="flex flex-col">
@@ -165,19 +168,24 @@ function AccumulationTooltip({
                 </span>
               </div>
 
-              {/* If this is Penerimaan (realisasi), show detail per moda */}
-              {isPenerimaan && Object.keys(modaRealisasi).length > 0 && (
+              {/* If this is Penyaluran (realisasi), show detail per moda */}
+              {isPenyaluran && Object.keys(modaRealisasi).length > 0 && (
                 <div className="mt-1.5 pl-3 border-l-2 border-blue-200 space-y-1 ml-1">
                   {Object.entries(modaRealisasi)
                     .filter(([_, val]) => val > 0) // only show modes with positive realization
                     .map(([moda, val]) => (
-                      <div key={moda} className="flex items-center justify-between text-xs gap-4">
+                      <div
+                        key={moda}
+                        className="flex items-center justify-between text-xs gap-4"
+                      >
                         <div className="flex items-center gap-1.5">
                           <span
                             className="w-1.5 h-1.5 rounded-full"
                             style={{ backgroundColor: getModaColor(moda) }}
                           />
-                          <span className="text-gray-500">{getModaLabel(moda)}</span>
+                          <span className="text-gray-500">
+                            {getModaLabel(moda)}
+                          </span>
                         </div>
                         <span className="font-medium text-gray-700">
                           {val.toLocaleString("id-ID", {
@@ -230,9 +238,7 @@ export default function Home() {
   const [topPlantsModa, setTopPlantsModa] = useState<string | null>(null);
 
   // Filter Grafik states
-  const [graphicFilterBy, setGraphicFilterBy] = useState<"supplier" | "plant">(
-    "supplier",
-  );
+  const [graphicRegion, setGraphicRegion] = useState<string | null>(null);
   const [graphicSupplier, setGraphicSupplier] = useState<string | null>(null);
   const [graphicPlant, setGraphicPlant] = useState<string | null>(null);
   const [graphicStart, setGraphicStart] = useState<string>(initialStart);
@@ -240,7 +246,11 @@ export default function Home() {
   const [graphicProduct, setGraphicProduct] = useState<string | null>(null);
   const [graphicModa, setGraphicModa] = useState<string | null>(null);
 
-
+  // Interval and Period for Realisasi per Moda
+  const [graphicPeriod, setGraphicPeriod] = useState<Periode>("1M");
+  const [graphicIntervalMode, setGraphicIntervalMode] = useState<
+    "Hari" | "Bulan" | "Tahun"
+  >("Hari");
 
   // 2. Fetch Top 5 TBBM Performer List
   const { data: topTbbmData = [] } = useTopTbbm({
@@ -293,7 +303,10 @@ export default function Home() {
       return true;
     });
 
-    const groups: Record<string, { value: number; modaRealisasi: Record<string, number> }> = {};
+    const groups: Record<
+      string,
+      { value: number; modaRealisasi: Record<string, number> }
+    > = {};
 
     filtered.forEach((record) => {
       // Group by TBBM or Pembangkit based on filterType
@@ -310,7 +323,7 @@ export default function Home() {
         groups[key] = { value: 0, modaRealisasi: {} };
       }
       groups[key].value += value;
-      
+
       if (!groups[key].modaRealisasi[moda]) {
         groups[key].modaRealisasi[moda] = 0;
       }
@@ -318,25 +331,84 @@ export default function Home() {
     });
 
     return Object.entries(groups)
-      .map(([name, data]) => ({ name, value: data.value, modaRealisasi: data.modaRealisasi }))
+      .map(([name, data]) => ({
+        name,
+        value: data.value,
+        modaRealisasi: data.modaRealisasi,
+      }))
       .filter((item) => item.value > 0)
       .sort((a, b) => b.value - a.value); // Sort descending
   }, [bbmMonthlyData, filterType, distributionStartDate, distributionEndDate]);
+
+  // Data for Pencapaian Nominasi
+  const nominationData = useMemo(() => {
+    if (!bbmMonthlyData) return { nominasi: 0, realisasi: 0, pemakaian: 0 };
+
+    const startMonth = distributionStartDate
+      ? distributionStartDate.substring(0, 7)
+      : null;
+    const endMonth = distributionEndDate
+      ? distributionEndDate.substring(0, 7)
+      : null;
+
+    let nominasi = 0;
+    let realisasi = 0;
+    let pemakaian = 0;
+
+    const filtered = bbmMonthlyData.filter((record) => {
+      if (startMonth && record.reportDate < startMonth) return false;
+      if (endMonth && record.reportDate > endMonth) return false;
+      return true;
+    });
+
+    filtered.forEach((record) => {
+      nominasi += record.nomination || 0;
+      realisasi += record.realization || 0;
+      pemakaian += record.usage || 0;
+    });
+
+    return { nominasi, realisasi, pemakaian };
+  }, [bbmMonthlyData, distributionStartDate, distributionEndDate]);
+
   const { data: tbbmData } = useSites({ type: "PEMASOK", commodity: "BBM" });
   const { data: pembangkitData } = useSites({
     type: "PEMBANGKIT",
     commodity: "BBM",
   });
 
+  const filterRegionOptions = useMemo(() => {
+    const regions = new Set<string>();
+    if (pembangkitData)
+      pembangkitData.forEach((p) => {
+        if (p.region) regions.add(p.region);
+      });
+    return Array.from(regions).sort();
+  }, [pembangkitData]);
+
   const filterSupplierOptions = useMemo(() => {
-    if (!tbbmData) return [];
-    return Array.from(new Set(tbbmData.map((t) => t.name))).sort();
-  }, [tbbmData]);
+    if (!tbbmData || !bbmMonthlyData) return [];
+
+    let validTbbms = new Set<string>();
+
+    if (graphicPlant) {
+      bbmMonthlyData.forEach((record) => {
+        if (record.pembangkit === graphicPlant && record.tbbm) {
+          validTbbms.add(record.tbbm);
+        }
+      });
+    } else {
+      tbbmData.forEach((t) => validTbbms.add(t.name));
+    }
+
+    return Array.from(validTbbms).sort();
+  }, [tbbmData, bbmMonthlyData, graphicPlant]);
 
   const filterPlantOptions = useMemo(() => {
     if (!pembangkitData) return [];
-    return Array.from(new Set(pembangkitData.map((p) => p.name))).sort();
-  }, [pembangkitData]);
+    let data = pembangkitData;
+    if (graphicRegion) data = data.filter((p) => p.region === graphicRegion);
+    return Array.from(new Set(data.map((p) => p.name))).sort();
+  }, [pembangkitData, graphicRegion]);
 
   const filterProductOptions = useMemo(() => {
     if (!bbmMonthlyData) return [];
@@ -357,6 +429,11 @@ export default function Home() {
     if (!bbmMonthlyData) return [];
 
     const filtered = bbmMonthlyData.filter((record) => {
+      if (graphicRegion) {
+        const isSupplierInRegion = filterSupplierOptions.includes(record.tbbm);
+        const isPlantInRegion = filterPlantOptions.includes(record.pembangkit);
+        if (!isSupplierInRegion && !isPlantInRegion) return false;
+      }
       if (graphicSupplier && record.tbbm !== graphicSupplier) return false;
       if (graphicPlant && record.pembangkit !== graphicPlant) return false;
       if (graphicProduct && record.product !== graphicProduct) return false;
@@ -435,10 +512,7 @@ export default function Home() {
     > = {};
 
     Object.values(monthlyGroups).forEach((record) => {
-      const name =
-        graphicFilterBy === "supplier"
-          ? `${record.pembangkit || "Unknown"} (${record.product || "Unknown"})`
-          : `${record.tbbm || "Unknown"} (${record.product || "Unknown"})`;
+      const name = record.pembangkit || record.tbbm || "Unknown";
 
       if (!chartGroups[name]) {
         chartGroups[name] = {
@@ -471,7 +545,7 @@ export default function Home() {
     graphicPlant,
     graphicStart,
     graphicEnd,
-    graphicFilterBy,
+    graphicRegion,
     graphicProduct,
     graphicModa,
   ]);
@@ -485,17 +559,23 @@ export default function Home() {
         product: graphicProduct || undefined,
         moda: graphicModa || undefined,
         tbbm:
-          chartMode === "realisasi-moda" || graphicFilterBy === "supplier"
-            ? graphicSupplier || undefined
-            : undefined,
+          graphicSupplier ||
+          (graphicRegion ? filterSupplierOptions.join(",") : undefined),
         pembangkit:
-          chartMode === "realisasi-moda" || graphicFilterBy === "plant"
-            ? graphicPlant || undefined
-            : undefined,
+          graphicPlant ||
+          (graphicRegion ? filterPlantOptions.join(",") : undefined),
+        interval:
+          graphicIntervalMode === "Hari"
+            ? "day"
+            : graphicIntervalMode === "Bulan"
+              ? "month"
+              : "year",
       },
       {
         enabled:
-          graphicFilterBy === "supplier" ? !!graphicSupplier : !!graphicPlant,
+          chartMode === "realisasi-moda"
+            ? true
+            : !!graphicSupplier || !!graphicPlant,
       },
     );
 
@@ -525,7 +605,7 @@ export default function Home() {
           </div>
 
           {/* Section: Donut Chart & Top Performers */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <FuelTypeDonutChart
               openModalFunction={open}
               data={dataPieChart}
@@ -540,11 +620,17 @@ export default function Home() {
               tabs={["TBBM", "Pembangkit"]}
             />
 
+            <NominationAchievementChart
+              nominasi={nominationData.nominasi}
+              realisasi={nominationData.realisasi}
+              pemakaian={nominationData.pemakaian}
+            />
+
             <TopVolumeList
               title="Top 5 TBBM"
               list={topSuppliersList}
               unit="KL"
-              description="List top 5 performa TBBM dengan volume tertinggi"
+              description="List top 5 performa TBBM dengan volume tertinggi dalam periode tertentu"
               startDate={topSuppliersStart}
               endDate={topSuppliersEnd}
               onStartDateChange={setTopSuppliersStart}
@@ -588,38 +674,78 @@ export default function Home() {
                   <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
                     <button
                       onClick={() => setChartMode("akumulasi")}
-                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${chartMode === "akumulasi"
-                        ? "bg-white text-gray-900 shadow-sm"
-                        : "text-gray-500 hover:text-gray-700"
-                        }`}
+                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
+                        chartMode === "akumulasi"
+                          ? "bg-white text-gray-900 shadow-sm"
+                          : "text-gray-500 hover:text-gray-700"
+                      }`}
                     >
                       Grafik Akumulasi
                     </button>
                     <button
                       onClick={() => setChartMode("realisasi-moda")}
-                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${chartMode === "realisasi-moda"
-                        ? "bg-white text-gray-900 shadow-sm"
-                        : "text-gray-500 hover:text-gray-700"
-                        }`}
+                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
+                        chartMode === "realisasi-moda"
+                          ? "bg-white text-gray-900 shadow-sm"
+                          : "text-gray-500 hover:text-gray-700"
+                      }`}
                     >
-                      Penerimaan Harian
+                      Penyaluran Harian
                     </button>
                   </div>
                 </div>
-                <p className="text-xs text-gray-500 mb-6">
+                <p
+                  className={`text-xs text-gray-500 ${graphicStart || graphicEnd || graphicRegion || graphicPlant || graphicSupplier || graphicProduct || graphicModa ? "mb-3" : "mb-6"}`}
+                >
                   {chartMode === "akumulasi"
-                    ? "Visualisasi perbandingan Rencana/Nominasi, Penerimaan, dan Pemakaian per Unit Pembangkit"
-                    : "Visualisasi Penerimaan volume BBM per moda transportasi dengan akumulasi bulanan"}
+                    ? "Visualisasi perbandingan Rencana/Nominasi, Penyaluran, dan Pemakaian per Unit Pembangkit"
+                    : "Visualisasi Penyaluran volume BBM per moda transportasi"}
                 </p>
+                {(graphicStart ||
+                  graphicEnd ||
+                  graphicRegion ||
+                  graphicPlant ||
+                  graphicSupplier ||
+                  graphicProduct ||
+                  graphicModa) && (
+                  <div className="flex flex-wrap gap-1.5 mb-6 max-w-xl">
+                    {graphicStart && graphicEnd && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-700 border border-blue-100">
+                        Periode: {graphicStart} s/d {graphicEnd}
+                      </span>
+                    )}
+                    {graphicRegion && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
+                        Region: {graphicRegion}
+                      </span>
+                    )}
+                    {graphicSupplier && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-100">
+                        Pemasok: {graphicSupplier}
+                      </span>
+                    )}
+                    {graphicPlant && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-orange-50 text-orange-700 border border-orange-100">
+                        Pembangkit: {graphicPlant}
+                      </span>
+                    )}
+                    {graphicProduct && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-purple-50 text-purple-700 border border-purple-100">
+                        Produk: {graphicProduct}
+                      </span>
+                    )}
+                    {graphicModa && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-rose-50 text-rose-700 border border-rose-100">
+                        Moda: {graphicModa}
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
               <div className="w-full flex-1 min-h-[320px] mt-4">
                 {chartMode === "akumulasi" ? (
                   /* ── Existing: Grafik Akumulasi ─────────────── */
-                  graphicFilterBy === "supplier" && !graphicSupplier ? (
-                    <EmptyChartState type="supplier" />
-                  ) : graphicFilterBy === "plant" && !graphicPlant ? (
-                    <EmptyChartState type="plant" />
-                  ) : isBbmMonthlyLoading ? (
+                  isBbmMonthlyLoading ? (
                     <div className="flex items-center justify-center h-full text-gray-400 text-sm">
                       <Loader2 className="animate-spin mr-2" size={20} />
                       Memuat data grafik...
@@ -660,15 +786,21 @@ export default function Home() {
                             <div className="flex justify-center items-center gap-6 mb-4">
                               <div className="flex items-center gap-2">
                                 <span className="w-2.5 h-2.5 rounded-full bg-[#fb923c]" />
-                                <span className="text-xs font-medium text-gray-600">Nominasi</span>
+                                <span className="text-xs font-medium text-gray-600">
+                                  Nominasi
+                                </span>
                               </div>
                               <div className="flex items-center gap-2">
                                 <span className="w-2.5 h-2.5 rounded-full bg-[#60a5fa]" />
-                                <span className="text-xs font-medium text-gray-600">Penerimaan</span>
+                                <span className="text-xs font-medium text-gray-600">
+                                  Penyaluran
+                                </span>
                               </div>
                               <div className="flex items-center gap-2">
                                 <span className="w-2.5 h-2.5 rounded-full bg-[#34d399]" />
-                                <span className="text-xs font-medium text-gray-600">Pemakaian</span>
+                                <span className="text-xs font-medium text-gray-600">
+                                  Pemakaian
+                                </span>
                               </div>
                             </div>
                           )}
@@ -682,7 +814,7 @@ export default function Home() {
                         />
                         <Bar
                           dataKey="realisasi"
-                          name="Penerimaan"
+                          name="Penyaluran"
                           fill="#60a5fa"
                           radius={[10, 10, 0, 0]}
                           maxBarSize={100}
@@ -697,17 +829,15 @@ export default function Home() {
                       </BarChart>
                     </ResponsiveContainer>
                   )
-                ) : /* ── New: Realisasi per Moda ────────────────── */
-                  graphicFilterBy === "supplier" && !graphicSupplier ? (
-                    <EmptyChartState type="supplier" />
-                  ) : graphicFilterBy === "plant" && !graphicPlant ? (
-                    <EmptyChartState type="plant" />
-                  ) : (
-                    <BbmCompositeChart
-                      data={realizationByModaData}
-                      isLoading={isRealizationByModaLoading}
-                    />
-                  )}
+                ) : (
+                  /* ── New: Realisasi per Moda ────────────────── */
+                  <BbmCompositeChart
+                    data={realizationByModaData}
+                    isLoading={isRealizationByModaLoading}
+                    intervalMode={graphicIntervalMode}
+                    period={graphicPeriod}
+                  />
+                )}
               </div>
             </div>
 
@@ -719,52 +849,36 @@ export default function Home() {
                 </h3>
 
                 <div className="space-y-4">
-                  {/* Filter Berdasar */}
-                  {chartMode === "akumulasi" && (
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                        Filter Berdasar
-                      </label>
-                      <select
-                        value={graphicFilterBy}
-                        onChange={(e) => {
-                          setGraphicFilterBy(
-                            e.target.value as "supplier" | "plant",
-                          );
-                          setGraphicSupplier(null);
-                          setGraphicPlant(null);
-                        }}
-                        className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-secondary/40 focus:border-secondary transition-all"
-                      >
-                        <option value="supplier">Pemasok (TBBM)</option>
-                        <option value="plant">Pembangkit</option>
-                      </select>
-                    </div>
-                  )}
-
-                  {/* TBBM/Pemasok Select */}
-                  {(chartMode === "realisasi-moda" ||
-                    graphicFilterBy === "supplier") && (
-                      <FilterAutocomplete
-                        label="TBBM / Pemasok"
-                        options={filterSupplierOptions}
-                        value={graphicSupplier}
-                        onChange={setGraphicSupplier}
-                        placeholder="Semua Pemasok"
-                      />
-                    )}
+                  {/* Region Select */}
+                  <FilterAutocomplete
+                    label="Region"
+                    options={filterRegionOptions}
+                    value={graphicRegion}
+                    onChange={(val) => {
+                      setGraphicRegion(val);
+                      setGraphicPlant(null);
+                      setGraphicSupplier(null);
+                    }}
+                    placeholder="Semua Region"
+                  />
 
                   {/* Pembangkit Select */}
-                  {(chartMode === "realisasi-moda" ||
-                    graphicFilterBy === "plant") && (
-                      <FilterAutocomplete
-                        label="Pembangkit"
-                        options={filterPlantOptions}
-                        value={graphicPlant}
-                        onChange={setGraphicPlant}
-                        placeholder="Semua Pembangkit"
-                      />
-                    )}
+                  <FilterAutocomplete
+                    label="Pembangkit"
+                    options={filterPlantOptions}
+                    value={graphicPlant}
+                    onChange={setGraphicPlant}
+                    placeholder="Semua Pembangkit"
+                  />
+
+                  {/* TBBM/Pemasok Select */}
+                  <FilterAutocomplete
+                    label="TBBM / Pemasok"
+                    options={filterSupplierOptions}
+                    value={graphicSupplier}
+                    onChange={setGraphicSupplier}
+                    placeholder="Semua Pemasok"
+                  />
 
                   {/* Produk Select */}
                   <FilterAutocomplete
@@ -784,32 +898,144 @@ export default function Home() {
                     placeholder="Semua Moda Transportasi"
                   />
 
-                  {/* Tanggal Awal */}
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                      Tanggal Awal
-                    </label>
-                    <input
-                      type="date"
-                      value={graphicStart}
-                      onChange={(e) => setGraphicStart(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-secondary/40 focus:border-secondary transition-all"
-                    />
-                  </div>
+                  {/* Tanggal Filter */}
+                  {chartMode === "realisasi-moda" ? (
+                    <>
+                      {/* Period Selectors */}
+                      <p className="block text-sm font-medium text-gray-700 mt-2 mb-2">
+                        Periode
+                      </p>
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        {[
+                          { label: "1 Minggu", val: "1W", interval: "Hari" },
+                          { label: "1 Bulan", val: "1M", interval: "Hari" },
+                          { label: "1 Tahun", val: "1Y", interval: "Bulan" },
+                          { label: "3 Tahun", val: "3Y", interval: "Tahun" },
+                        ].map((item) => (
+                          <button
+                            key={item.label}
+                            className={`px-3 py-2 text-sm font-medium rounded-md transition-colors text-center ${
+                              graphicPeriod === item.val
+                                ? "bg-primary text-white shadow-sm"
+                                : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+                            }`}
+                            onClick={() => {
+                              setGraphicPeriod(item.val as Periode);
+                              setGraphicIntervalMode(item.interval as any);
 
-                  {/* Tanggal Akhir */}
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                      Tanggal Akhir
-                    </label>
-                    <input
-                      type="date"
-                      value={graphicEnd}
-                      min={graphicStart}
-                      onChange={(e) => setGraphicEnd(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-secondary/40 focus:border-secondary transition-all"
-                    />
-                  </div>
+                              const now = new Date();
+                              let newStart = "";
+                              let newEnd = "";
+
+                              if (item.val === "1W") {
+                                const start = new Date(now);
+                                start.setDate(now.getDate() - 7);
+                                newStart = formatLocalISODate(start);
+                                newEnd = formatLocalISODate(now);
+                              } else if (item.val === "1M") {
+                                const start = new Date(now);
+                                start.setDate(now.getDate() - 31);
+                                newStart = formatLocalISODate(start);
+                                newEnd = formatLocalISODate(now);
+                              } else if (item.val === "1Y") {
+                                const start = new Date(now.getFullYear(), 0, 1);
+                                const end = new Date(now.getFullYear(), 11, 31);
+                                newStart = formatLocalISODate(start);
+                                newEnd = formatLocalISODate(end);
+                              } else if (item.val === "3Y") {
+                                const start = new Date(
+                                  now.getFullYear() - 2,
+                                  0,
+                                  1,
+                                );
+                                const end = new Date(now.getFullYear(), 11, 31);
+                                newStart = formatLocalISODate(start);
+                                newEnd = formatLocalISODate(end);
+                              }
+
+                              if (newStart && newEnd) {
+                                setGraphicStart(newStart);
+                                setGraphicEnd(newEnd);
+                              }
+                            }}
+                          >
+                            {item.label}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Interval Selectors */}
+                      <p className="block text-sm font-medium text-gray-700 mb-2">
+                        Interval
+                      </p>
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        {(["Tahun", "Bulan", "Hari"] as const).map((mode) => {
+                          if (
+                            graphicPeriod === "1W" &&
+                            (mode === "Tahun" || mode === "Bulan")
+                          )
+                            return null;
+                          if (graphicPeriod === "1M" && mode === "Tahun")
+                            return null;
+
+                          return (
+                            <button
+                              key={mode}
+                              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                                graphicIntervalMode === mode
+                                  ? "bg-primary text-white shadow-sm"
+                                  : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+                              }`}
+                              onClick={() => setGraphicIntervalMode(mode)}
+                            >
+                              {mode}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      <DateRangeFilter
+                        startDate={graphicStart}
+                        endDate={graphicEnd}
+                        setStartDate={setGraphicStart}
+                        setEndDate={setGraphicEnd}
+                        periode={graphicPeriod}
+                        isSingleDate={false}
+                        mode={
+                          graphicPeriod === "3Y" ? "Tahun" : graphicIntervalMode
+                        }
+                      />
+                    </>
+                  ) : (
+                    <>
+                      {/* Tanggal Awal */}
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                          Tanggal Awal
+                        </label>
+                        <input
+                          type="date"
+                          value={graphicStart}
+                          onChange={(e) => setGraphicStart(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-secondary/40 focus:border-secondary transition-all"
+                        />
+                      </div>
+
+                      {/* Tanggal Akhir */}
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                          Tanggal Akhir
+                        </label>
+                        <input
+                          type="date"
+                          value={graphicEnd}
+                          min={graphicStart}
+                          onChange={(e) => setGraphicEnd(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-secondary/40 focus:border-secondary transition-all"
+                        />
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
