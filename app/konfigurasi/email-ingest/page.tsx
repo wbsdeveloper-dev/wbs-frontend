@@ -77,6 +77,7 @@ export default function EmailIngestPage() {
     subjectFilter: "",
     senderFilter: "",
     labelFilter: "INBOX",
+    attachmentFilenameFilter: "",
   });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
@@ -134,6 +135,7 @@ export default function EmailIngestPage() {
       subjectFilter: addForm.subjectFilter || undefined,
       senderFilter: addForm.senderFilter || undefined,
       labelFilter: addForm.labelFilter || undefined,
+      attachmentFilenameFilter: addForm.attachmentFilenameFilter || undefined,
     };
 
     createMutation.mutate(payload, {
@@ -146,6 +148,7 @@ export default function EmailIngestPage() {
           subjectFilter: "",
           senderFilter: "",
           labelFilter: "INBOX",
+          attachmentFilenameFilter: "",
         });
         setFormErrors({});
       },
@@ -161,6 +164,7 @@ export default function EmailIngestPage() {
       subjectFilter: source.subjectFilter,
       senderFilter: source.senderFilter,
       labelFilter: source.labelFilter,
+      attachmentFilenameFilter: source.attachmentFilenameFilter,
     };
 
     updateMutation.mutate(
@@ -340,7 +344,7 @@ export default function EmailIngestPage() {
           <span className="text-gray-400">/</span>
           <span>Konfigurasi Sistem</span>
           <span className="text-gray-400">/</span>
-          <span className="text-[#115d72] font-medium">Email Ingest</span>
+          <span className="text-primary font-medium">Email Ingest</span>
         </div>
         <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Email Ingest</h1>
         <p className="text-gray-600 mt-1 text-sm md:text-base">
@@ -376,7 +380,7 @@ export default function EmailIngestPage() {
                 <button
                   onClick={handleConnectOAuthGlobal}
                   disabled={getOAuthUrlMutation.isPending}
-                  className="px-4 py-2 bg-[#115d72] text-white hover:bg-[#0d4a5c] rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                  className="px-4 py-2 bg-primary text-white hover:bg-[#0d4a5c] rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
                 >
                   Hubungkan dengan Google
                 </button>
@@ -394,7 +398,7 @@ export default function EmailIngestPage() {
             {canCreate && (
               <button
                 onClick={() => setIsAddModalOpen(true)}
-                className="flex items-center gap-2 px-4 py-2.5 bg-[#115d72] text-white text-sm font-medium rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
+                className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white text-sm font-medium rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
               >
                 <Plus size={18} />
                 Tambah Rule Ingestion
@@ -432,14 +436,14 @@ export default function EmailIngestPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Cari email atau nama..."
-                className="w-full md:w-64 pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200"
+                className="w-full md:w-64 pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
               />
             </div>
             <div className="relative">
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="appearance-none pl-4 pr-10 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white cursor-pointer transition-all duration-200"
+                className="appearance-none pl-4 pr-10 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white cursor-pointer transition-all duration-200"
               >
                 <option value="all">Semua Status</option>
                 <option value="active">Aktif</option>
@@ -458,7 +462,7 @@ export default function EmailIngestPage() {
           {isLoading ? (
             <Card className="flex items-center justify-center py-16">
               <div className="text-center text-gray-500">
-                <Loader2 className="w-8 h-8 mx-auto mb-3 animate-spin text-[#14a2bb]" />
+                <Loader2 className="w-8 h-8 mx-auto mb-3 animate-spin text-secondary" />
                 <p className="text-sm">Memuat email sources...</p>
               </div>
             </Card>
@@ -489,8 +493,8 @@ export default function EmailIngestPage() {
               description="Ringkasan status email"
             />
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-[#115d72]/10 rounded-lg flex items-center justify-center">
-                <Mail className="w-5 h-5 text-[#115d72]" />
+              <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                <Mail className="w-5 h-5 text-primary" />
               </div>
               <div>
                 <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
@@ -509,7 +513,7 @@ export default function EmailIngestPage() {
             </div>
             <button
               onClick={() => setIsLogModalOpen(true)}
-              className="w-full mt-4 px-4 py-2.5 text-sm font-medium text-[#115d72] bg-[#115d72]/10 rounded-lg hover:bg-[#115d72]/20 transition-all duration-200 flex items-center justify-center gap-2"
+              className="w-full mt-4 px-4 py-2.5 text-sm font-medium text-primary bg-primary/10 rounded-lg hover:bg-primary/20 transition-all duration-200 flex items-center justify-center gap-2"
             >
               <FileText size={16} />
               Lihat Logs
@@ -579,7 +583,7 @@ export default function EmailIngestPage() {
               source.lastPolledAt && (
                 <div key={`log-${i}`} className="flex gap-3">
                   <span className="text-gray-500 shrink-0">[{new Date(source.lastPolledAt).toISOString().replace('T', ' ').substring(0, 19)}]</span>
-                  <span className="text-[#14a2bb] shrink-0">[INFO]</span>
+                  <span className="text-secondary shrink-0">[INFO]</span>
                   <span>Polling successful for rule <span className="text-white">"{source.name}"</span>. Status: Ok.</span>
                 </div>
               )
@@ -636,7 +640,7 @@ export default function EmailIngestPage() {
               type="text"
               value={addForm.name}
               onChange={(e) => setAddForm({ ...addForm, name: e.target.value })}
-              className={`w-full px-3 py-2.5 border rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent ${
+              className={`w-full px-3 py-2.5 border rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent ${
                 formErrors.name ? "border-red-300" : "border-gray-300"
               }`}
               placeholder="Contoh: PLN Laporan Harian"
@@ -664,7 +668,7 @@ export default function EmailIngestPage() {
               type="text"
               value={addForm.subjectFilter}
               onChange={(e) => setAddForm({ ...addForm, subjectFilter: e.target.value })}
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent"
+              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent"
               placeholder="Contoh: Laporan Harian, Report Gas"
             />
             <p className="text-xs text-gray-500 mt-1">
@@ -680,7 +684,7 @@ export default function EmailIngestPage() {
               type="text"
               value={addForm.senderFilter}
               onChange={(e) => setAddForm({ ...addForm, senderFilter: e.target.value })}
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent"
+              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent"
               placeholder="Contoh: noreply@pln.co.id"
             />
           </div>
@@ -693,10 +697,27 @@ export default function EmailIngestPage() {
               type="text"
               value={addForm.labelFilter}
               onChange={(e) => setAddForm({ ...addForm, labelFilter: e.target.value })}
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent"
+              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent"
               placeholder="INBOX"
             />
           </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Filter Nama Attachment
+            </label>
+            <input
+              type="text"
+              value={addForm.attachmentFilenameFilter}
+              onChange={(e) => setAddForm({ ...addForm, attachmentFilenameFilter: e.target.value })}
+              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent"
+              placeholder="Contoh: laporan,daily,metering"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Comma-separated keywords untuk filter nama file attachment. Hanya attachment dengan nama mengandung keyword ini yang akan diproses.
+            </p>
+          </div>
+
 
           <div className="flex gap-3 pt-4 border-t border-gray-200">
             <button
@@ -711,7 +732,7 @@ export default function EmailIngestPage() {
             <button
               onClick={handleAddEmail}
               disabled={createMutation.isPending}
-              className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95 disabled:opacity-50"
+              className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-primary rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95 disabled:opacity-50"
             >
               {createMutation.isPending ? (
                 <span className="flex items-center justify-center gap-2">

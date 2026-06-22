@@ -15,21 +15,40 @@ import {
 // ---------------------------------------------------------------------------
 
 export interface MonitoringRecord {
-  id: string;
+  id?: string;
+  idBbtud?: string | null;
+  idMmscfd?: string | null;
   reportDate: string;
   siteId: string;
   siteName: string;
+  supplierId?: string | null;
   supplierName: string | null;
-  metricType: string;
+  metricType?: string;
   periodType: string;
   periodValue: string;
-  waValue: number | null;
-  plnValue: number | null;
-  sheetValue: number | null;
-  finalValue: number | null;
-  finalSource: string | null;
+  
+  waValue?: number | null;
+  plnValue?: number | null;
+  sheetValue?: number | null;
+  finalValue?: number | null;
+  finalSource?: string | null;
+  delta?: number | null;
+
+  waValueBbtud?: number | null;
+  plnValueBbtud?: number | null;
+  sheetValueBbtud?: number | null;
+  finalValueBbtud?: number | null;
+  finalSourceBbtud?: string | null;
+  deltaBbtud?: number | null;
+
+  waValueMmscfd?: number | null;
+  plnValueMmscfd?: number | null;
+  sheetValueMmscfd?: number | null;
+  finalValueMmscfd?: number | null;
+  finalSourceMmscfd?: string | null;
+  deltaMmscfd?: number | null;
+
   resolution: string | null;
-  delta: number | null;
   status: string;
   reason: string | null;
   resolvedAt: string | null;
@@ -463,3 +482,202 @@ export async function downloadReconciliationTemplate(): Promise<void> {
   a.remove();
   window.URL.revokeObjectURL(downloadUrl);
 }
+
+// ---------------------------------------------------------------------------
+// API function — OCR Extract Page (POST)
+// ---------------------------------------------------------------------------
+
+export async function extractOcrPage(
+  formData: FormData,
+): Promise<any> {
+  const url = `${DASHBOARD_API_HOST}/ocr/extract-page`;
+  const accessToken = getAccessToken();
+  
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
+    body: formData,
+  });
+
+  if (!res.ok) {
+    throw new Error(`OCR API error: ${res.statusText}`);
+  }
+
+  const body = await res.json();
+
+  if (!body.success) {
+    throw new Error(body.message || "Unknown OCR API error");
+  }
+
+  return body;
+}
+
+export function useExtractOcrPage(
+  options?: Partial<
+    UseMutationOptions<
+      any,
+      Error,
+      FormData
+    >
+  >,
+) {
+  return useMutation({
+    mutationFn: (formData: FormData) => extractOcrPage(formData),
+    ...options,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// API function — OCR Extract Multi Page (POST)
+// ---------------------------------------------------------------------------
+
+export async function extractOcrMultiPage(
+  formData: FormData,
+): Promise<any> {
+  const url = `${DASHBOARD_API_HOST}/ocr/extract-multi-page`;
+  const accessToken = getAccessToken();
+  
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
+    body: formData,
+  });
+
+  if (!res.ok) {
+    throw new Error(`OCR API error: ${res.statusText}`);
+  }
+
+  const body = await res.json();
+
+  if (!body.success) {
+    throw new Error(body.message || "Unknown OCR API error");
+  }
+
+  return body;
+}
+
+export function useExtractOcrMultiPage(
+  options?: Partial<
+    UseMutationOptions<
+      any,
+      Error,
+      FormData
+    >
+  >,
+) {
+  return useMutation({
+    mutationFn: (formData: FormData) => extractOcrMultiPage(formData),
+    ...options,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// API function — OCR Batch Create (POST)
+// ---------------------------------------------------------------------------
+
+export async function batchCreateOcrReconciliationRecords(
+  formData: FormData,
+): Promise<any> {
+  const url = `${DASHBOARD_API_HOST}/reconciliation-input/ocr-batch`;
+  const accessToken = getAccessToken();
+  
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
+    body: formData,
+  });
+
+  if (!res.ok) {
+    throw new Error(`Batch create API error: ${res.statusText}`);
+  }
+
+  const body = await res.json();
+
+  if (!body.success) {
+    throw new Error(body.message || "Unknown Batch create API error");
+  }
+
+  return body;
+}
+
+export function useBatchCreateOcrReconciliationRecords(
+  options?: Partial<
+    UseMutationOptions<
+      any,
+      Error,
+      FormData
+    >
+  >,
+) {
+  return useMutation({
+    mutationFn: (formData: FormData) => batchCreateOcrReconciliationRecords(formData),
+    ...options,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// API function — GET BA Files
+// ---------------------------------------------------------------------------
+
+export interface BaFileRow {
+  supplier_id: string;
+  site_id: string;
+  report_month: string;
+  site_name: string | null;
+  supplier_name: string | null;
+  files: {
+    id: string;
+    filename: string;
+    stored_name: string;
+    file_path: string;
+    uploaded_by: string;
+    created_at: string;
+  }[];
+}
+
+export async function fetchBaFiles(params?: {
+  site_id?: string;
+  supplier_id?: string;
+  report_month?: string;
+}): Promise<BaFileRow[]> {
+  const queryParams = new URLSearchParams();
+  if (params?.site_id) queryParams.append("site_id", params.site_id);
+  if (params?.supplier_id) queryParams.append("supplier_id", params.supplier_id);
+  if (params?.report_month) queryParams.append("report_month", params.report_month);
+
+  const url = `${DASHBOARD_API_HOST}/reconciliation-input/ba-files?${queryParams.toString()}`;
+  const accessToken = getAccessToken();
+  const res = await fetch(url, {
+    headers: {
+      "Content-Type": "application/json",
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to fetch BA files: ${res.statusText}`);
+  }
+  const body = await res.json();
+  if (!body.success) {
+    throw new Error(body.message || "Unknown error");
+  }
+  return body.data.files;
+}
+
+export function useBaFiles(params?: {
+  site_id?: string;
+  supplier_id?: string;
+  report_month?: string;
+}) {
+  return useQuery({
+    queryKey: ["ba-files", params],
+    queryFn: () => fetchBaFiles(params),
+  });
+}
+

@@ -67,7 +67,7 @@ export default function SitePage() {
       <div className="flex items-center gap-2 text-sm text-gray-500 mb-2 animate-fadeIn">
         <span>Dashboard</span>
         <span className="text-gray-400">/</span>
-        <span className="text-[#115d72] font-medium">Pemasok & Pembangkit</span>
+        <span className="text-primary font-medium">Pemasok & Pembangkit</span>
       </div>
 
       {/* Header */}
@@ -95,14 +95,14 @@ export default function SitePage() {
                 key={idx}
                 onClick={() => setActiveTab(idx)}
                 className={`relative flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all duration-200 cursor-pointer ${isActive
-                  ? "text-[#115d72]"
+                  ? "text-primary"
                   : "text-gray-500 hover:text-gray-700"
                   }`}
               >
                 <Icon size={16} />
                 {tab.label}
                 {isActive && (
-                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#115d72] rounded-full" />
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
                 )}
               </button>
             );
@@ -113,7 +113,7 @@ export default function SitePage() {
           {activeTab !== 2 && canCreate && (
             <button
               onClick={handleAddButtonClick}
-              className="flex items-center gap-2 px-4 py-2.5 bg-[#115d72] text-white text-sm font-medium rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
+              className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white text-sm font-medium rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
             >
               <Plus size={18} />
               {activeTab === 0
@@ -130,6 +130,7 @@ export default function SitePage() {
       <div className="animate-fadeIn" style={{ animationDelay: "200ms" }}>
         {activeTab === 0 && (
           <DaftarSiteTable
+            commodity={["LNG", "GAS PIPA"]}
             onEdit={handleEditSite}
             onDelete={(id) => console.log("Delete site", id)}
           />
@@ -137,6 +138,7 @@ export default function SitePage() {
 
         {activeTab === 1 && (
           <RelasiOperasionalTable
+            commodity={["LNG", "GAS PIPA"]}
             onEdit={handleEditRelation}
             onDelete={(id) => console.log("Delete relasi", id)}
           />

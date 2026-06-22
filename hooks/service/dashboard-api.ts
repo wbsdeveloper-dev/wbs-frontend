@@ -171,9 +171,16 @@ export interface DashboardEvent {
   siteId: string;
   siteName: string;
   occurredAt: string;
+  created_at?: string;
+  createdAt?: string;
   title: string;
   description: string;
   severity: "INFO" | "WARNING" | "CRITICAL";
+  document?: string;
+  user?: {
+    fullName: string | null;
+    roles: string[];
+  } | null;
 }
 
 /** POST /dashboard/events */
@@ -184,6 +191,7 @@ export interface CreateEventPayload {
   title: string;
   description: string;
   severity?: "INFO" | "WARNING" | "CRITICAL";
+  document?: string;
 }
 
 export interface EventsPagination {
@@ -202,6 +210,7 @@ export interface EventsResponse {
 export interface FilterOption {
   id: string;
   name: string;
+  commodity?: string | null;
 }
 
 export interface DashboardFilters {
@@ -285,8 +294,8 @@ export async function dashboardFetch<T>(
 
 export const dashboardKeys = {
   all: ["dashboard"] as const,
-  mapLocations: (region?: string) =>
-    [...dashboardKeys.all, "map-locations", region] as const,
+  mapLocations: (region?: string, commodity?: string) =>
+    [...dashboardKeys.all, "map-locations", region, commodity] as const,
   distribution: (startDate: string, endDate: string, by: string) =>
     [...dashboardKeys.all, "distribution", startDate, endDate, by] as const,
   topSuppliers: (startDate: string, endDate: string, limit?: number) =>
@@ -338,9 +347,9 @@ function buildQuery(
   );
 }
 
-export async function getMapLocations(region?: string) {
+export async function getMapLocations(region?: string, commodity?: string) {
   return dashboardFetch<MapLocationsResponse>(
-    `/dashboard/map-locations${buildQuery({ region })}`,
+    `/dashboard/map-locations${buildQuery({ region, commodity })}`,
   );
 }
 
@@ -373,15 +382,7 @@ export async function getTopPlants(
 export async function getChartFlow(
   startDate: string,
   endDate: string,
-  granularity:
-    | "hour"
-    | "day"
-    | "month"
-    | "three_month"
-    | "six_month"
-    | "one_year"
-    | "three_year"
-    | "year",
+  granularity: "hour" | "day" | "month" | "year",
   by: "supplier" | "plant",
   pemasokId?: string,
   pembangkitId?: string,
@@ -421,6 +422,47 @@ export async function createEvent(payload: CreateEventPayload) {
   });
 }
 
+export async function uploadEventFile(file: File): Promise<{ filename: string }> {
+  const url = `${DASHBOARD_API_HOST}/dashboard/events/upload`;
+  const accessToken = getAccessToken();
+
+  const formData = new FormData();
+  formData.append("bukti", file);
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
+    body: formData,
+  });
+
+  if (!res.ok) {
+    let msg = res.statusText;
+    try {
+      const body = await res.json();
+      if (body.message) msg = body.message;
+      else if (body.error) msg = body.error;
+    } catch {
+      /* ignore */
+    }
+    throw new ApiError(res.status, msg);
+  }
+
+  const body = await res.json() as any;
+  if (!body.success) {
+    throw new ApiError(res.status, body.message || "Gagal mengunggah file");
+  }
+
+  return body.data;
+}
+
+export async function deleteEvent(id: string) {
+  return dashboardFetch<null>(`/dashboard/events/${id}`, {
+    method: "DELETE",
+  });
+}
+
 export async function getFilters(pemasokId?: string, pembangkitId?: string) {
   return dashboardFetch<DashboardFilters>(
     `/dashboard/filters${buildQuery({ pemasokId, pembangkitId })}`,
@@ -439,11 +481,12 @@ export async function getSummary(startDate: string, endDate: string) {
 
 export function useMapLocations(
   region?: string,
+  commodity?: string,
   options?: Partial<UseQueryOptions<MapLocationsResponse>>,
 ) {
   return useQuery({
-    queryKey: dashboardKeys.mapLocations(region),
-    queryFn: () => getMapLocations(region),
+    queryKey: dashboardKeys.mapLocations(region, commodity),
+    queryFn: () => getMapLocations(region, commodity),
     ...options,
   });
 }
@@ -490,15 +533,7 @@ export function useTopPlants(
 export function useChartFlow(
   startDate: string,
   endDate: string,
-  granularity:
-    | "hour"
-    | "day"
-    | "month"
-    | "three_month"
-    | "six_month"
-    | "one_year"
-    | "three_year"
-    | "year",
+  granularity: "hour" | "day" | "month" | "year",
   by: "supplier" | "plant",
   pemasokId?: string,
   pembangkitId?: string,
@@ -570,6 +605,19 @@ export function useCreateEvent(
   });
 }
 
+export function useDeleteEvent(
+  options?: Partial<UseMutationOptions<null, Error, string>>,
+) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteEvent(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: dashboardKeys.all });
+    },
+    ...options,
+  });
+}
+
 export function useFilters(
   pemasokId?: string,
   pembangkitId?: string,
@@ -592,5 +640,58 @@ export function useSummary(
     queryKey: dashboardKeys.summary(startDate, endDate),
     queryFn: () => getSummary(startDate, endDate),
     ...options,
+  });
+}
+
+// ==========================================
+// Transportir Chart Data
+// ==========================================
+
+export interface TransportirChartHulu {
+  upstreamName: string;
+  value: string;
+}
+
+export interface TransportirChartHilir {
+  upstreamName: string;
+  downstreamName: string;
+  value: string;
+}
+
+export interface TransportirChartResponse {
+  hulu: TransportirChartHulu[];
+  hilir: TransportirChartHilir[];
+  stock: {
+    openingStock: string;
+    closingStock: string;
+  };
+}
+
+export function useTransportirChart(startDate: string, endDate: string) {
+  return useQuery({
+    queryKey: ["transportir_chart", startDate, endDate],
+    queryFn: async () => {
+      const queryParams = new URLSearchParams({
+        startDate,
+        endDate,
+      });
+
+      const url = `${DASHBOARD_API_HOST}/dashboard/chart/transportir?${queryParams.toString()}`;
+      const accessToken = getAccessToken();
+
+      const res = await fetch(url, {
+        headers: {
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to fetch transportir chart data");
+      }
+
+      const body = await res.json();
+      return body.data as TransportirChartResponse;
+    },
+    enabled: !!startDate && !!endDate,
   });
 }

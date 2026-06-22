@@ -12,6 +12,9 @@ import {
   Tooltip,
   ReferenceLine,
   ReferenceDot,
+  BarChart,
+  Bar,
+  LabelList,
 } from "recharts";
 
 import FilterAutocomplete from "./FilterAutocomplete";
@@ -22,6 +25,7 @@ import ModalNote from "./ModalNote";
 import DateRangeFilter from "./DateRangeFilter";
 import {
   useEvents,
+  useTransportirChart,
   type ChartFlowResponse,
   type DashboardFilters,
   type FilterOption,
@@ -37,9 +41,16 @@ export type Granularity =
   | "month"
   | "three_month"
   | "six_month"
+  | "one_month"
   | "one_year"
-  | "three_year";
+  | "three_year"
+  | "year"
+  | "interval_hour"
+  | "interval_day"
+  | "interval_month"
+  | "interval_year";
 export type FilterBy = "supplier" | "plant";
+export type Periode = "1D" | "1W" | "1M" | "1Y" | "3Y";
 
 export interface RealtimeChartProps {
   chartFlowData?: ChartFlowResponse | null;
@@ -89,6 +100,98 @@ const COLORS: Record<string, string> = {
   "Mean Pembangkit 2": "#fb923c",
   "Mean Pembangkit 3": "#facc15",
   "Mean Pembangkit 4": "#60a5fa",
+};
+
+const UPSTREAM_COLORS = [
+  "#115d72",
+  "#14a2bb",
+  "#0284c7",
+  "#4f46e5",
+  "#059669",
+  "#475569",
+];
+const DOWNSTREAM_FILLS = [
+  "#ccfbf1",
+  "#e0f2fe",
+  "#e0e7ff",
+  "#d1fae5",
+  "#f1f5f9",
+  "#ffedd5",
+];
+
+const getUpstreamColor = (name: string) => {
+  if (!name) return UPSTREAM_COLORS[0];
+  if (name.includes("KEI")) return "#115d72";
+  if (name.includes("HCML MAC")) return "#14a2bb";
+  if (name.includes("HCML 2M")) return "#0284c7";
+  const index =
+    Array.from(name).reduce((acc, char) => acc + char.charCodeAt(0), 0) %
+    UPSTREAM_COLORS.length;
+  return UPSTREAM_COLORS[index];
+};
+
+const getDownstreamFillColor = (name: string) => {
+  if (!name) return DOWNSTREAM_FILLS[0];
+  if (name.includes("Grati")) return "#ccfbf1";
+  if (name.includes("Gresik")) return "#e0f2fe";
+  const index =
+    Array.from(name).reduce((acc, char) => acc + char.charCodeAt(0), 0) %
+    DOWNSTREAM_FILLS.length;
+  return DOWNSTREAM_FILLS[index];
+};
+
+const CustomHuluBarLabel = (props: any) => {
+  const { x, y, width, height, value, name } = props;
+  if (!value || height < 40) return null; // Hide label if bar is too small
+  const cx = x + width / 2;
+  const cy = y + height / 2;
+
+  return (
+    <g>
+      <text
+        x={cx}
+        y={cy}
+        textAnchor="middle"
+        fill="#fff"
+        fontSize={12}
+        fontWeight="bold"
+      >
+        {name}
+      </text>
+    </g>
+  );
+};
+
+const CustomHilirBarLabel = (props: any) => {
+  const { x, y, width, height, value, name1, name2 } = props;
+  if (!value || height < 50) return null; // Hide label if bar is too small
+  const cx = x + width / 2;
+  const cy = y + height / 2;
+
+  return (
+    <g>
+      <text
+        x={cx}
+        y={cy - 6}
+        textAnchor="middle"
+        fill="#ffffff"
+        fontSize={11}
+        fontWeight="bold"
+      >
+        {name1}
+      </text>
+      <text
+        x={cx}
+        y={cy + 6}
+        textAnchor="middle"
+        fill="#ffffff"
+        fontSize={11}
+        fontWeight="bold"
+      >
+        {name2}
+      </text>
+    </g>
+  );
 };
 
 const dataJamA: ChartItem[] = [
@@ -320,6 +423,156 @@ const DYNAMIC_COLORS = [
   "#f472b6",
 ];
 
+const CustomXAxisTick = (props: any) => {
+  const { x, y, payload, index, chartData, period, intervalMode } = props;
+  const originalIndex = payload.index !== undefined ? payload.index : index;
+  const item = chartData && chartData[originalIndex];
+
+  const shouldSlope =
+    period === "1M" || (period === "3Y" && intervalMode === "Hari");
+
+  if (!item || period !== "3Y" || intervalMode !== "Bulan" || !item.yearStr) {
+    return (
+      <text
+        x={x}
+        y={y + (shouldSlope ? 10 : 15)}
+        textAnchor={shouldSlope ? "end" : "middle"}
+        fill="#666"
+        fontSize={12}
+        transform={shouldSlope ? `rotate(-45, ${x}, ${y + 10})` : undefined}
+      >
+        {payload.value}
+      </text>
+    );
+  }
+
+  const isFirstMonth = item.monthStr === "Jan";
+  const isMidYear = item.monthStr === "Jul";
+
+  return (
+    <g>
+      <text x={x} y={y + 15} textAnchor="middle" fill="#666" fontSize={11}>
+        {payload.value}
+      </text>
+      {isMidYear && (
+        <text
+          x={x}
+          y={y + 35}
+          textAnchor="middle"
+          fill="#333"
+          fontSize={12}
+          fontWeight="bold"
+        >
+          {item.yearStr}
+        </text>
+      )}
+      {/* Horizontal line under month */}
+      <line
+        x1={x - 50}
+        y1={y + 22}
+        x2={x + 50}
+        y2={y + 22}
+        stroke="#e5e7eb"
+        strokeWidth={1}
+      />
+      {/* Vertical separator before Jan */}
+      {isFirstMonth && originalIndex !== 0 && (
+        <line
+          x1={x - 14}
+          y1={y}
+          x2={x - 14}
+          y2={y + 40}
+          stroke="#e5e7eb"
+          strokeWidth={1}
+        />
+      )}
+    </g>
+  );
+};
+
+const CustomTransportirTooltip = ({
+  active,
+  payload,
+  label,
+  unit,
+}: {
+  active?: boolean;
+  payload?: TooltipPayload[];
+  label?: string;
+  unit?: string;
+}) => {
+  if (!active || !payload || payload.length === 0) return null;
+
+  // Filter out zero values or undefined values
+  const validPayload = payload.filter((item) => Number(item.value) > 0);
+  if (validPayload.length === 0) return null;
+
+  const totalVolume = validPayload.reduce(
+    (sum, item) => sum + Number(item.value || 0),
+    0,
+  );
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-lg shadow-md p-3 text-sm text-gray-900 min-w-[280px] max-w-[600px] z-100">
+      <p className="font-semibold mb-3 border-b border-gray-100 pb-2">
+        {label}
+      </p>
+
+      <ul
+        className={`
+      grid gap-3 items-start
+      ${validPayload.length > 4 ? "grid-cols-2" : "grid-cols-1"}
+    `}
+      >
+        {validPayload.map((item, index) => {
+          return (
+            <div key={index} className="flex flex-col min-w-[220px]">
+              <div className="flex items-center gap-2 mb-1.5">
+                <div
+                  className="w-2 h-3 rounded-full"
+                  style={{ backgroundColor: item.color }}
+                />
+                <div className="font-medium text-gray-800">{item.name}</div>
+              </div>
+
+              <div className="grid grid-cols-1 text-xs gap-2 pl-4">
+                <div className="flex flex-col bg-gray-50 rounded p-1.5 border border-gray-100">
+                  <span className="text-gray-500 mb-0.5">Volume</span>
+                  <span className="font-semibold text-gray-900 border-t border-gray-100 pt-0.5">
+                    {Number(item.value).toLocaleString("id-ID", {
+                      maximumFractionDigits: 2,
+                    })}{" "}
+                    {unit || "BBTUD"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </ul>
+
+      {validPayload.length > 1 && (
+        <div className="border-t border-gray-100 pt-3 mt-3">
+          <div className="font-medium text-gray-800 mb-2">
+            Total Keseluruhan
+          </div>
+          <div className="grid grid-cols-1 text-xs gap-2">
+            <div className="flex flex-col bg-gray-100 rounded p-1.5 border border-gray-200">
+              <span className="text-gray-600 mb-0.5">Total Volume</span>
+              <span className="font-semibold text-gray-900 border-t border-gray-200 pt-0.5">
+                {totalVolume.toLocaleString("id-ID", {
+                  maximumFractionDigits: 2,
+                })}{" "}
+                {unit || "BBTUD"}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const CustomTooltip = ({
   active,
   payload,
@@ -344,17 +597,23 @@ const CustomTooltip = ({
   }, 0);
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg shadow-md p-3 text-sm text-gray-900 min-w-[300px] max-w-sm z-100">
+    <div className="bg-white border border-gray-200 rounded-lg shadow-md p-3 text-sm text-gray-900 min-w-[320px] max-w-[700px] z-100">
       <p className="font-semibold mb-3 border-b border-gray-100 pb-2">
         {label}
       </p>
 
-      <ul className="space-y-3">
+      <ul
+        className={`
+      grid gap-3 items-start
+      ${payload.length > 4 ? "grid-cols-2" : "grid-cols-1"}
+    `}
+      >
         {payload.map((item, index) => {
           const originalKey = item.dataKey?.replace("values.", "") || item.name;
           const flowrate = item.payload?.flowrates?.[originalKey] || 0;
+
           return (
-            <div key={index} className="flex flex-col">
+            <div key={index} className="flex flex-col min-w-[260px]">
               <div className="flex items-center gap-2 mb-1.5">
                 <div
                   className="w-2 h-3 rounded-full"
@@ -373,9 +632,11 @@ const CustomTooltip = ({
                     {unit || "BBTUD"}
                   </span>
                 </div>
-                <div className="flex flex-col bg-[#14a2bb]/5 rounded p-1.5 border border-[#14a2bb]/10">
-                  <span className="text-[#115d72]/70 mb-0.5">Flowrate</span>
-                  <span className="font-semibold text-[#115d72] border-t border-[#14a2bb]/10 pt-0.5">
+
+                <div className="flex flex-col bg-secondary/5 rounded p-1.5 border border-secondary/10">
+                  <span className="text-primary/70 mb-0.5">Flowrate</span>
+
+                  <span className="font-semibold text-primary border-t border-secondary/10 pt-0.5">
                     {Number(flowrate).toLocaleString("id-ID", {
                       maximumFractionDigits: 2,
                     })}{" "}
@@ -403,9 +664,9 @@ const CustomTooltip = ({
                 {unit || "BBTUD"}
               </span>
             </div>
-            <div className="flex flex-col bg-[#14a2bb]/10 rounded p-1.5 border border-[#14a2bb]/20">
-              <span className="text-[#115d72]/80 mb-0.5">Total Flowrate</span>
-              <span className="font-semibold text-[#115d72] border-t border-[#14a2bb]/20 pt-0.5">
+            <div className="flex flex-col bg-secondary/10 rounded p-1.5 border border-secondary/20">
+              <span className="text-primary/80 mb-0.5">Total Flowrate</span>
+              <span className="font-semibold text-primary border-t border-secondary/20 pt-0.5">
                 {totalFlowrate.toLocaleString("id-ID", {
                   maximumFractionDigits: 2,
                 })}{" "}
@@ -434,8 +695,24 @@ export default function RealtimeChart({
   const [intervalMode, setIntervalMode] = useState<
     "Jam" | "Hari" | "Bulan" | "Tahun"
   >("Jam");
+  const [chartMode, setChartMode] = useState<"non-transportir" | "transportir">(
+    "non-transportir",
+  );
   const [period, setPeriod] = useState("1D");
   const [filterType, setFilterType] = useState<string | null>("Pemasok");
+
+  useEffect(() => {
+    if (chartMode === "transportir") {
+      const now = new Date();
+      const tzOffset = now.getTimezoneOffset() * 60000;
+      const currentIso = new Date(now.getTime() - tzOffset)
+        .toISOString()
+        .split("T")[0];
+
+      setStartDate(currentIso);
+      setEndDate(currentIso);
+    }
+  }, [chartMode]);
   const [pemasok, setPemasok] = useState<string[]>(["Semua Pemasok"]);
   const [pembangkit, setPembangkit] = useState<string | null>(null);
   const [transportir, setTransportir] = useState<string | null>(null);
@@ -487,14 +764,61 @@ export default function RealtimeChart({
   }, [chartFlowData]);
 
   // Fetch events for the chart range — do NOT pass siteId to avoid 400 error with multiple IDs
-  const { data: eventsData } = useEvents(
+  const chartStartDateStr =
     startDate ||
-      new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-        .toISOString()
-        .split("T")[0],
-    endDate || new Date().toISOString().split("T")[0],
+    chartFlowData?.period?.start ||
+    new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+  const chartEndDateStr =
+    endDate ||
+    chartFlowData?.period?.end ||
+    new Date().toISOString().split("T")[0];
+
+  const { data: eventsData } = useEvents(
+    chartStartDateStr,
+    chartEndDateStr,
     100,
   );
+
+  // Fetch real transportir data
+  const { data: transportirData, isLoading: transportirLoading } =
+    useTransportirChart(chartStartDateStr, chartEndDateStr);
+
+  const realTransportirData = useMemo(() => {
+    if (!transportirData) return [];
+
+    const huluObj: any = { category: "Hulu" };
+    const hilirObj: any = { category: "Hilir" };
+
+    transportirData.hulu.forEach((h) => {
+      huluObj[h.upstreamName] = Number(h.value);
+    });
+
+    transportirData.hilir.forEach((h) => {
+      hilirObj[`${h.downstreamName}_${h.upstreamName}`] = Number(h.value);
+    });
+
+    return [huluObj, hilirObj];
+  }, [transportirData]);
+
+  const transportirKeys = useMemo(() => {
+    if (!transportirData) return { huluKeys: [], hilirKeys: [] };
+    const huluKeys = transportirData.hulu
+      .filter((h) => Number(h.value) > 0)
+      .map((h) => h.upstreamName);
+    const hilirKeys = transportirData.hilir
+      .filter((h) => Number(h.value) > 0)
+      .map((h) => ({
+        key: `${h.downstreamName}_${h.upstreamName}`,
+        downstreamName: h.downstreamName,
+        upstreamName: h.upstreamName,
+      }))
+      .sort((a, b) => {
+        const indexA = huluKeys.indexOf(a.upstreamName);
+        const indexB = huluKeys.indexOf(b.upstreamName);
+        return indexA - indexB;
+      });
+    return { huluKeys, hilirKeys };
+  }, [transportirData]);
 
   // Map events to timestamps for quick lookup, filtering by relevant site IDs
   const pointsWithNotes = useMemo(() => {
@@ -568,14 +892,26 @@ export default function RealtimeChart({
   const pemasokOptions = useMemo(() => {
     let opts = ["Pemasok A", "Pemasok B"];
     if (filtersData?.pemasok) {
-      opts = filtersData.pemasok.map((p: FilterOption) => p.name);
+      opts = filtersData.pemasok
+        .filter(
+          (p: FilterOption) =>
+            p.commodity?.toUpperCase() === "LNG" ||
+            p.commodity?.toUpperCase() === "GAS PIPA",
+        )
+        .map((p: FilterOption) => p.name);
     }
     return ["Semua Pemasok", ...opts];
   }, [filtersData]);
 
   const pembangkitOptions = useMemo(() => {
     if (filtersData?.pembangkit)
-      return filtersData.pembangkit.map((p: FilterOption) => p.name);
+      return filtersData.pembangkit
+        .filter(
+          (p: FilterOption) =>
+            p.commodity?.toUpperCase() === "LNG" ||
+            p.commodity?.toUpperCase() === "GAS PIPA",
+        )
+        .map((p: FilterOption) => p.name);
     return ["Pembangkit 1", "Pembangkit 2"];
   }, [filtersData]);
 
@@ -600,6 +936,7 @@ export default function RealtimeChart({
         return d.toLocaleDateString("id-ID", {
           day: "2-digit",
           month: "short",
+          year: "numeric",
         });
       }
       if (chartFlowData.granularity === "year") {
@@ -636,7 +973,20 @@ export default function RealtimeChart({
     });
 
     return sortedTimestamps.map((rawTs) => {
-      const label = formatTimestamp(rawTs);
+      let label = formatTimestamp(rawTs);
+      let monthStr = "";
+      let yearStr = "";
+
+      const d = new Date(rawTs + (rawTs.length === 7 ? "-01" : ""));
+      if (!isNaN(d.getTime())) {
+        monthStr = d.toLocaleDateString("id-ID", { month: "short" });
+        yearStr = d.getFullYear().toString();
+        // If it's month granularity, we might want to just show the month name as label
+        if (chartFlowData.granularity === "month") {
+          label = monthStr;
+        }
+      }
+
       const values: Record<string, number> = {};
       const flowrates: Record<string, number> = {};
       seriesLookups.forEach(({ name, lookup }) => {
@@ -646,7 +996,14 @@ export default function RealtimeChart({
           flowrates[name] = data.flowrate;
         }
       });
-      return { label, values, flowrates, rawTimestamp: rawTs };
+      return {
+        label,
+        values,
+        flowrates,
+        rawTimestamp: rawTs,
+        monthStr,
+        yearStr,
+      };
     });
   }, [chartFlowData]);
 
@@ -801,7 +1158,7 @@ export default function RealtimeChart({
     return (
       <div className="bg-white rounded-xl border border-gray-200 p-6 flex items-center justify-center min-h-[400px]">
         <div className="flex flex-col items-center gap-3">
-          <Loader2 className="animate-spin text-[#14a2bb]" size={40} />
+          <Loader2 className="animate-spin text-secondary" size={40} />
           <p className="text-gray-500">Memuat data grafik...</p>
         </div>
       </div>
@@ -813,25 +1170,32 @@ export default function RealtimeChart({
       {pemasok || pembangkit ? (
         <div className="lg:col-span-9 lg:pr-6">
           <div>
-            <div className="flex justify-between mb-6">
-              <h3 className="text-lg font-semibold text-gray-900">
-                Grafik Penyaluran Gas -{" "}
-                {filterType === "Pembangkit" ? (
-                  <>
-                    {pembangkit ?? ""}
-                    {pemasok && pemasok.length > 0 && (
-                      <> Dari {Array.isArray(pemasok) ? pemasok.join(", ") : pemasok}</>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    {Array.isArray(pemasok) ? pemasok.join(", ") : pemasok}
-                    {pembangkit && <> Ke {pembangkit}</>}
-                  </>
-                )}
-              </h3>
-              <div>
-                <p className="text-gray-700 font-bold">
+            <div className="flex justify-between items-start mb-6">
+              <div className="flex flex-col gap-1">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Grafik Penyaluran Gas -{" "}
+                  {filterType === "Pembangkit" ? (
+                    <>
+                      {pembangkit ?? ""}
+                      {pemasok && pemasok.length > 0 && (
+                        <>
+                          {" "}
+                          Dari{" "}
+                          {Array.isArray(pemasok)
+                            ? pemasok.join(", ")
+                            : pemasok}
+                        </>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      {Array.isArray(pemasok) ? pemasok.join(", ") : pemasok}
+                      {pembangkit && <> Ke {pembangkit}</>}
+                    </>
+                  )}
+                </h3>
+
+                <p className="text-gray-500 font-medium text-sm mt-1">
                   {formattedStartDate}{" "}
                   {formattedEndDate
                     ? formattedEndDate == formattedStartDate
@@ -840,19 +1204,181 @@ export default function RealtimeChart({
                     : ""}
                 </p>
               </div>
+
+              {/* Toggle Switch */}
+              <div className="flex items-center bg-gray-100 rounded-lg p-0.5 h-fit shrink-0">
+                <button
+                  onClick={() => setChartMode("non-transportir")}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
+                    chartMode === "non-transportir"
+                      ? "bg-white text-gray-900 shadow-sm"
+                      : "text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  Non-Transportir
+                </button>
+                <button
+                  onClick={() => setChartMode("transportir")}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
+                    chartMode === "transportir"
+                      ? "bg-white text-gray-900 shadow-sm"
+                      : "text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  Transportir
+                </button>
+              </div>
             </div>
-            {chartData.length > 0 ? (
+            {chartMode === "transportir" ? (
+              <div className="mt-4 mb-8">
+                {transportirLoading ? (
+                  <div className="flex justify-center items-center w-full h-[500px]">
+                    <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+                  </div>
+                ) : transportirKeys.huluKeys.length === 0 && transportirKeys.hilirKeys.length === 0 ? (
+                  <div className="flex justify-center items-center w-full h-[500px] text-gray-500 text-xl font-semibold">
+                    Data untuk periode ini tidak tersedia
+                  </div>
+                ) : (
+                  <>
+                    <ResponsiveContainer width="100%" height={500}>
+                      <BarChart
+                      data={realTransportirData}
+                      margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                      maxBarSize={100}
+                    >
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        vertical={false}
+                        stroke="#eee"
+                      />
+                      <XAxis
+                        dataKey="category"
+                        tick={{
+                          fontSize: 14,
+                          fontWeight: "600",
+                          fill: "#4b5563",
+                        }}
+                        axisLine={{ stroke: "#e5e7eb" }}
+                        tickLine={false}
+                        dy={10}
+                      />
+                      <YAxis
+                        tick={{ fontSize: 12, fill: "#6b7280" }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <Tooltip
+                        content={
+                          <CustomTransportirTooltip
+                            unit={chartFlowData?.unit}
+                          />
+                        }
+                        cursor={{ fill: "transparent" }}
+                      />
+
+                      {/* Data Hulu Bars */}
+                      {transportirKeys.huluKeys.map((key, index) => (
+                        <Bar
+                          key={key}
+                          dataKey={key}
+                          stackId="a"
+                          fill={getUpstreamColor(key)}
+                          radius={
+                            index === transportirKeys.huluKeys.length - 1
+                              ? [8, 8, 0, 0]
+                              : [0, 0, 0, 0]
+                          }
+                          isAnimationActive={false}
+                        >
+                          <LabelList
+                            content={<CustomHuluBarLabel name={key} />}
+                          />
+                        </Bar>
+                      ))}
+
+                      {/* Data Hilir Bars */}
+                      {transportirKeys.hilirKeys.map((h, index) => (
+                        <Bar
+                          key={h.key}
+                          dataKey={h.key}
+                          stackId="a"
+                          fill={getUpstreamColor(h.upstreamName)}
+                          stroke="#ffffff"
+                          strokeWidth={1}
+                          radius={
+                            index === transportirKeys.hilirKeys.length - 1
+                              ? [8, 8, 0, 0]
+                              : [0, 0, 0, 0]
+                          }
+                          isAnimationActive={false}
+                        >
+                          <LabelList
+                            content={
+                              <CustomHilirBarLabel
+                                name1={h.downstreamName}
+                                name2={`(${h.upstreamName})`}
+                              />
+                            }
+                          />
+                        </Bar>
+                      ))}
+                    </BarChart>
+                    </ResponsiveContainer>
+                
+                    {/* Information Legend for Opening and Closing Stock */}
+                    <div className="mt-4 flex justify-center items-center gap-8 border-t border-gray-100 pt-5">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-sm bg-primary/20 border border-primary/40 shadow-sm" />
+                        <span className="text-sm font-medium text-gray-600">Opening Stock: {Number(transportirData?.stock?.openingStock || 0).toLocaleString('id-ID')} BBTUD</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-sm bg-secondary/20 border border-secondary/40 shadow-sm" />
+                        <span className="text-sm font-medium text-gray-600">Closing Stock: {Number(transportirData?.stock?.closingStock || 0).toLocaleString('id-ID')} BBTUD</span>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            ) : chartData.length > 0 ? (
               <>
                 <ResponsiveContainer width="100%" height={chartHeight}>
                   <LineChart
                     data={chartData}
-                    margin={{ top: 10, right: 10, left: 5, bottom: 10 }}
+                    margin={{
+                      top: 10,
+                      right: 10,
+                      left: 5,
+                      bottom:
+                        period === "1M" ||
+                        (period === "3Y" && intervalMode === "Hari")
+                          ? 50
+                          : 10,
+                    }}
                   >
                     <CartesianGrid stroke="#eee" strokeDasharray="5 5" />
                     <XAxis
                       dataKey="label"
-                      tick={{ fontSize: 12 }}
-                      interval="preserveStartEnd"
+                      tick={
+                        <CustomXAxisTick
+                          chartData={chartData}
+                          period={period}
+                          intervalMode={intervalMode}
+                        />
+                      }
+                      interval={
+                        period === "3Y" && intervalMode === "Bulan"
+                          ? 0
+                          : "preserveStartEnd"
+                      }
+                      height={
+                        period === "1M" ||
+                        (period === "3Y" && intervalMode === "Hari")
+                          ? 60
+                          : period === "3Y" && intervalMode === "Bulan"
+                            ? 50
+                            : 30
+                      }
                     />
                     <YAxis
                       domain={yDomain}
@@ -1022,27 +1548,31 @@ export default function RealtimeChart({
             24 jam
           </p> */}
           </div>
-          <div className=" mt-4 border-t border-gray-200 pt-6">
-            <SupplierResumeTable
-              contracts={contractData}
-              isLoading={isContractLoading}
-            />
-          </div>
-          <div className=" mt-4 border-t border-gray-200 pt-6">
-            <NoteSection
-              pemasokId={selectedPemasokId}
-              pembangkitId={selectedPembangkitId}
-            />
-          </div>
+          {chartMode !== "transportir" && (
+            <>
+              <div className=" mt-4 border-t border-gray-200 pt-6">
+                <SupplierResumeTable
+                  contracts={contractData}
+                  isLoading={isContractLoading}
+                />
+              </div>
+              <div className=" mt-4 border-t border-gray-200 pt-6">
+                <NoteSection
+                  pemasokId={selectedPemasokId}
+                  pembangkitId={selectedPembangkitId}
+                />
+              </div>
+            </>
+          )}
         </div>
       ) : (
         <div className="lg:col-span-9 lg:pr-6">
           <div className="flex flex-col justify-center items-center text-center h-[400px] gap-4">
             {/* Decorative icon with subtle background */}
             <div className="relative">
-              <div className="absolute inset-0 bg-[#14a2bb]/10 rounded-full blur-xl scale-150" />
-              <div className="relative w-20 h-20 bg-gradient-to-br from-[#14a2bb]/20 to-[#115d72]/10 rounded-2xl flex items-center justify-center border border-[#14a2bb]/20">
-                <Info className="w-10 h-10 text-[#14a2bb]" />
+              <div className="absolute inset-0 bg-secondary/10 rounded-full blur-xl scale-150" />
+              <div className="relative w-20 h-20 bg-gradient-to-br from-secondary/20 to-primary/10 rounded-2xl flex items-center justify-center border border-secondary/20">
+                <Info className="w-10 h-10 text-secondary" />
               </div>
             </div>
 
@@ -1053,7 +1583,7 @@ export default function RealtimeChart({
               </h3>
               <p className="text-sm text-gray-500 leading-relaxed">
                 Silakan pilih{" "}
-                <span className="font-medium text-[#115d72]">
+                <span className="font-medium text-primary">
                   {filterType === "Pemasok" ? "Pemasok" : "Pembangkit"}
                 </span>{" "}
                 pada panel filter di samping kanan untuk menampilkan grafik
@@ -1083,7 +1613,7 @@ export default function RealtimeChart({
       {/* Mobile Filter Button */}
       <button
         onClick={() => setFilterOpen(!filterOpen)}
-        className="lg:hidden fixed bottom-4 right-4 z-50 bg-gradient-to-r from-[#115d72] to-[#14a1bb] text-white p-3 rounded-full shadow-lg hover:shadow-xl transition-all"
+        className="lg:hidden fixed bottom-4 right-4 z-50 bg-gradient-to-r from-primary to-secondary text-white p-3 rounded-full shadow-lg hover:shadow-xl transition-all"
       >
         {filterOpen ? <X size={22} /> : <Filter size={22} />}
       </button>
@@ -1115,17 +1645,19 @@ export default function RealtimeChart({
             Filter Grafik
           </p>
           <div className="flex flex-col gap-3">
-            <FilterAutocomplete
-              label="Filter Berdasar"
-              options={filterTypeOptions}
-              value={filterType}
-              onChange={(val) => {
-                setFilterType(val);
-                onFilterByChange?.(val as FilterBy | null);
-              }}
-              placeholder="Pilih Filter"
-            />
-            {filterType == "Pemasok" && (
+            {chartMode !== "transportir" && (
+              <FilterAutocomplete
+                label="Filter Berdasar"
+                options={filterTypeOptions}
+                value={filterType}
+                onChange={(val) => {
+                  setFilterType(val);
+                  onFilterByChange?.(val as FilterBy | null);
+                }}
+                placeholder="Pilih Filter"
+              />
+            )}
+            {(chartMode === "transportir" || filterType == "Pemasok") && (
               <FilterAutocomplete
                 multiple
                 label="Pemasok"
@@ -1174,7 +1706,9 @@ export default function RealtimeChart({
                 placeholder="Pilih Pemasok"
               />
             )}
-            {(filterType == "Pembangkit" || pemasok) && (
+            {(chartMode === "transportir" ||
+              filterType == "Pembangkit" ||
+              pemasok) && (
               <FilterAutocomplete
                 label="Pembangkit"
                 options={pembangkitOptions}
@@ -1192,7 +1726,8 @@ export default function RealtimeChart({
                 placeholder="Pilih Pembangkit"
               />
             )}
-            {pembangkit &&
+            {chartMode !== "transportir" &&
+              pembangkit &&
               (!pemasok ||
                 pemasok.length === 0 ||
                 filterType == "Pembangkit") && (
@@ -1244,274 +1779,227 @@ export default function RealtimeChart({
                   placeholder="Pilih Pemasok"
                 />
               )}
-            <FilterAutocomplete
-              label="Transportir"
-              options={transportirOptions}
-              value={transportir}
-              onChange={setTransportir}
-              placeholder="Pilih Transportir"
-            />
             <div className="mt-2">
               <div className="border border-gray-200 p-3 rounded-lg">
-                <p className="block text-sm font-medium text-gray-700 mb-2">
-                  Interval
-                </p>
-                <div className="flex gap-2 mb-3">
-                  {(["Jam", "Hari", "Bulan", "Tahun"] as const).map((mode) => (
-                    <button
-                      key={mode}
-                      className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                        intervalMode === mode
-                          ? "bg-[#115d72] text-white shadow-sm"
-                          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                      }`}
-                      onClick={() => {
-                        setIntervalMode(mode);
-                        if (mode === "Jam") {
-                          setPeriod("1D");
-                          if (onPeriodChange) onPeriodChange("hour");
-                        } else if (mode === "Hari") {
-                          setPeriod("1W");
-                          if (onPeriodChange) onPeriodChange("day");
-                        } else if (mode === "Bulan") {
-                          setPeriod("3M");
-                          if (onPeriodChange) onPeriodChange("three_month");
-                        } else if (mode === "Tahun") {
-                          setPeriod("3Y");
-                          if (onPeriodChange) onPeriodChange("three_year");
-                        }
-                      }}
-                    >
-                      {mode}
-                    </button>
-                  ))}
-                </div>
+                {chartMode !== "transportir" && (
+                  <>
+                    <p className="block text-sm font-medium text-gray-700 mb-2">
+                      Filter Periode
+                    </p>
+                    <div className="grid grid-cols-2 gap-2 mb-4">
+                      {[
+                        {
+                          label: "1 Hari",
+                          val: "1D",
+                          apiPeriod: "hour",
+                          interval: "Jam",
+                        },
+                        {
+                          label: "1 Minggu",
+                          val: "1W",
+                          apiPeriod: "day",
+                          interval: "Hari",
+                        },
+                        {
+                          label: "1 Bulan",
+                          val: "1M",
+                          apiPeriod: "one_month",
+                          interval: "Hari",
+                        },
+                        {
+                          label: "1 Tahun",
+                          val: "1Y",
+                          apiPeriod: "one_year",
+                          interval: "Bulan",
+                        },
+                        {
+                          label: "3 Tahun",
+                          val: "3Y",
+                          apiPeriod: "three_year",
+                          interval: "Tahun",
+                        },
+                      ].map((item) => (
+                        <button
+                          key={item.label}
+                          className={`px-3 py-2 text-sm font-medium rounded-md transition-colors text-center ${
+                            period === item.val
+                              ? "bg-primary text-white shadow-sm"
+                              : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+                          }`}
+                          onClick={() => {
+                            setPeriod(item.val);
+                            // Sensible default interval based on period
+                            setIntervalMode(item.interval as any);
 
-                <p className="block text-sm font-medium text-gray-700 mb-2">
-                  Filter Periode
-                </p>
-                <div className="overflow-x-auto">
-                  <div className="flex gap-4 mb-3 min-w-max px-1">
-                    {intervalMode === "Jam" && (
-                      <button
-                        className={`text-[#115d72] font-medium text-sm transition-all ${
-                          period === "1D"
-                            ? "bg-[#14a2bb92] px-2 py-1 rounded-md"
-                            : ""
-                        } cursor-pointer hover:text-[#14a2bb]`}
-                        onClick={() => {
-                          setPeriod("1D");
-                          if (startDate) setEndDate(startDate);
-                          if (onPeriodChange) onPeriodChange("hour");
-                          else {
-                            if (pemasok?.includes("Pemasok A"))
-                              setFallbackChartData(dataJamA);
-                            if (pemasok?.includes("Pemasok B"))
-                              setFallbackChartData(dataJamB);
-                          }
-                        }}
-                      >
-                        24 Jam
-                      </button>
-                    )}
+                            if (onPeriodChange)
+                              onPeriodChange(item.apiPeriod as Granularity);
+                            else {
+                              if (pemasok?.includes("Pemasok A"))
+                                setFallbackChartData(
+                                  item.val === "1D"
+                                    ? dataJamA
+                                    : item.val === "1W"
+                                      ? data1MingguA
+                                      : item.val === "1M"
+                                        ? data3BulanA
+                                        : item.val === "1Y"
+                                          ? data1TahunA
+                                          : data3TahunA,
+                                );
+                              if (pemasok?.includes("Pemasok B"))
+                                setFallbackChartData(
+                                  item.val === "1D"
+                                    ? dataJamB
+                                    : item.val === "1W"
+                                      ? data1MingguB
+                                      : item.val === "1M"
+                                        ? data3BulanB
+                                        : item.val === "1Y"
+                                          ? data1TahunB
+                                          : data3TahunB,
+                                );
+                            }
+                          }}
+                        >
+                          {item.label}
+                        </button>
+                      ))}
+                    </div>
 
-                    {intervalMode === "Hari" && (
-                      <>
-                        <button
-                          className={`text-[#115d72] font-medium text-sm transition-all ${
-                            period === "1W"
-                              ? "bg-[#14a2bb92] px-2 py-1 rounded-md"
-                              : ""
-                          } cursor-pointer hover:text-[#14a2bb]`}
-                          onClick={() => {
-                            setPeriod("1W");
-                            if (onPeriodChange) onPeriodChange("day");
-                            else {
-                              if (pemasok?.includes("Pemasok A"))
-                                setFallbackChartData(data1MingguA);
-                              if (pemasok?.includes("Pemasok B"))
-                                setFallbackChartData(data1MingguB);
-                            }
-                          }}
-                        >
-                          7 Hari
-                        </button>
-                        <button
-                          className={`text-[#115d72] font-medium text-sm transition-all ${
-                            period === "30D"
-                              ? "bg-[#14a2bb92] px-2 py-1 rounded-md"
-                              : ""
-                          } cursor-pointer hover:text-[#14a2bb]`}
-                          onClick={() => {
-                            setPeriod("30D");
-                            if (onPeriodChange) onPeriodChange("day");
-                          }}
-                        >
-                          30 Hari
-                        </button>
-                      </>
-                    )}
+                    <p className="block text-sm font-medium text-gray-700 mb-2">
+                      Interval
+                    </p>
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {(["Tahun", "Bulan", "Hari", "Jam"] as const).map(
+                        (mode) => {
+                          // Hide invalid intervals based on selected period
+                          if (period === "1D" && mode !== "Jam") return null;
+                          if (
+                            period === "1W" &&
+                            (mode === "Tahun" || mode === "Jam")
+                          )
+                            return null;
+                          if (
+                            period === "1M" &&
+                            (mode === "Tahun" || mode === "Jam")
+                          )
+                            return null;
+                          if (period === "1Y" && mode === "Jam") return null;
+                          if (period === "3Y" && mode === "Jam") return null;
 
-                    {intervalMode === "Bulan" && (
-                      <>
-                        <button
-                          className={`text-[#115d72] font-medium text-sm transition-all ${
-                            period === "3M"
-                              ? "bg-[#14a2bb92] px-2 py-1 rounded-md"
-                              : ""
-                          } cursor-pointer hover:text-[#14a2bb]`}
-                          onClick={() => {
-                            setPeriod("3M");
-                            if (onPeriodChange) onPeriodChange("three_month");
-                            else {
-                              if (pemasok?.includes("Pemasok A"))
-                                setFallbackChartData(data3BulanA);
-                              if (pemasok?.includes("Pemasok B"))
-                                setFallbackChartData(data3BulanB);
-                            }
-                          }}
-                        >
-                          3 Bulan
-                        </button>
-                        <button
-                          className={`text-[#115d72] font-medium text-sm transition-all ${
-                            period === "6M"
-                              ? "bg-[#14a2bb92] px-2 py-1 rounded-md"
-                              : ""
-                          } cursor-pointer hover:text-[#14a2bb]`}
-                          onClick={() => {
-                            setPeriod("6M");
-                            if (onPeriodChange) onPeriodChange("six_month");
-                            else {
-                              if (pemasok?.includes("Pemasok A"))
-                                setFallbackChartData(data6BulanA);
-                              if (pemasok?.includes("Pemasok B"))
-                                setFallbackChartData(data6BulanB);
-                            }
-                          }}
-                        >
-                          6 Bulan
-                        </button>
-                        <button
-                          className={`text-[#115d72] font-medium text-sm transition-all ${
-                            period === "12M"
-                              ? "bg-[#14a2bb92] px-2 py-1 rounded-md"
-                              : ""
-                          } cursor-pointer hover:text-[#14a2bb]`}
-                          onClick={() => {
-                            setPeriod("12M");
-                            if (onPeriodChange) onPeriodChange("one_year");
-                            else {
-                              if (pemasok?.includes("Pemasok A"))
-                                setFallbackChartData(data1TahunA);
-                              if (pemasok?.includes("Pemasok B"))
-                                setFallbackChartData(data1TahunB);
-                            }
-                          }}
-                        >
-                          12 Bulan
-                        </button>
-                      </>
-                    )}
-
-                    {intervalMode === "Tahun" && (
-                      <>
-                        <button
-                          className={`text-[#115d72] font-medium text-sm transition-all ${
-                            period === "3Y"
-                              ? "bg-[#14a2bb92] px-2 py-1 rounded-md"
-                              : ""
-                          } cursor-pointer hover:text-[#14a2bb]`}
-                          onClick={() => {
-                            setPeriod("3Y");
-                            if (onPeriodChange) onPeriodChange("three_year");
-                            else {
-                              if (pemasok?.includes("Pemasok A"))
-                                setFallbackChartData(data3TahunA);
-                              if (pemasok?.includes("Pemasok B"))
-                                setFallbackChartData(data3TahunB);
-                            }
-                          }}
-                        >
-                          3 Tahun
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-                {intervalMode !== "Bulan" && intervalMode !== "Tahun" && (
-                  <DateRangeFilter
-                    startDate={startDate}
-                    endDate={endDate}
-                    setStartDate={setStartDate}
-                    setEndDate={setEndDate}
-                    isSingleDate={period === "1D"}
-                    mode={intervalMode}
-                  />
+                          return (
+                            <button
+                              key={mode}
+                              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                                intervalMode === mode
+                                  ? "bg-[#7ec9d4] text-primary shadow-sm"
+                                  : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+                              }`}
+                              onClick={() => {
+                                setIntervalMode(mode);
+                                if (onPeriodChange) {
+                                  if (mode === "Jam")
+                                    onPeriodChange("interval_hour");
+                                  else if (mode === "Hari")
+                                    onPeriodChange("interval_day");
+                                  else if (mode === "Bulan")
+                                    onPeriodChange("interval_month");
+                                  else if (mode === "Tahun")
+                                    onPeriodChange("interval_year");
+                                }
+                              }}
+                            >
+                              {mode}
+                            </button>
+                          );
+                        },
+                      )}
+                    </div>
+                  </>
                 )}
+
+                <DateRangeFilter
+                  startDate={startDate}
+                  endDate={endDate}
+                  setStartDate={setStartDate}
+                  setEndDate={setEndDate}
+                  periode={chartMode === "transportir" ? "1W" : period as Periode}
+                  isSingleDate={
+                    chartMode === "transportir" ? false : period === "1D"
+                  }
+                  mode={
+                    chartMode === "transportir"
+                      ? "Hari"
+                      : period === "3Y"
+                        ? "Tahun"
+                        : intervalMode
+                  }
+                />
               </div>
             </div>
-            <div>
-              <p className="block text-sm font-medium text-gray-700 mb-2 mt-2">
-                Tampilkan Garis
-              </p>
-              <div className="border border-gray-200 p-3 rounded-lg">
-                <div className="text-gray-700 flex justify-between items-center">
-                  <p>Rata-rata</p>
-                  <div>
-                    <Switch
-                      checked={meanLineActive}
-                      onChange={(e) => setMeanLineActive(e.target.checked)}
-                      sx={{
-                        "& .MuiSwitch-switchBase.Mui-checked": {
-                          color: "#14a1bb",
-                        },
-                        "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
-                          {
-                            backgroundColor: "#14a1bb",
+            {chartMode !== "transportir" && (
+              <div>
+                <p className="block text-sm font-medium text-gray-700 mb-2 mt-2">
+                  Tampilkan Garis
+                </p>
+                <div className="border border-gray-200 p-3 rounded-lg">
+                  <div className="text-gray-700 flex justify-between items-center">
+                    <p>Rata-rata</p>
+                    <div>
+                      <Switch
+                        checked={meanLineActive}
+                        onChange={(e) => setMeanLineActive(e.target.checked)}
+                        sx={{
+                          "& .MuiSwitch-switchBase.Mui-checked": {
+                            color: "var(--theme-secondary)",
                           },
-                      }}
-                    />
+                          "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
+                            {
+                              backgroundColor: "var(--theme-secondary)",
+                            },
+                        }}
+                      />
+                    </div>
                   </div>
-                </div>
-                <div className="text-gray-700 flex justify-between items-center">
-                  <p>TOP</p>
-                  <div>
-                    <Switch
-                      checked={topLineActive}
-                      onChange={(e) => setTopLineActive(e.target.checked)}
-                      sx={{
-                        "& .MuiSwitch-switchBase.Mui-checked": {
-                          color: "#14a1bb",
-                        },
-                        "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
-                          {
-                            backgroundColor: "#14a1bb",
+                  <div className="text-gray-700 flex justify-between items-center">
+                    <p>TOP</p>
+                    <div>
+                      <Switch
+                        checked={topLineActive}
+                        onChange={(e) => setTopLineActive(e.target.checked)}
+                        sx={{
+                          "& .MuiSwitch-switchBase.Mui-checked": {
+                            color: "var(--theme-secondary)",
                           },
-                      }}
-                    />
+                          "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
+                            {
+                              backgroundColor: "var(--theme-secondary)",
+                            },
+                        }}
+                      />
+                    </div>
                   </div>
-                </div>
-                <div className="text-gray-700 flex justify-between items-center">
-                  <p>JPH</p>
-                  <div>
-                    <Switch
-                      checked={jphLineActive}
-                      onChange={(e) => setJphLineActive(e.target.checked)}
-                      sx={{
-                        "& .MuiSwitch-switchBase.Mui-checked": {
-                          color: "#14a1bb",
-                        },
-                        "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
-                          {
-                            backgroundColor: "#14a1bb",
+                  <div className="text-gray-700 flex justify-between items-center">
+                    <p>JPH</p>
+                    <div>
+                      <Switch
+                        checked={jphLineActive}
+                        onChange={(e) => setJphLineActive(e.target.checked)}
+                        sx={{
+                          "& .MuiSwitch-switchBase.Mui-checked": {
+                            color: "var(--theme-secondary)",
                           },
-                      }}
-                    />
+                          "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
+                            {
+                              backgroundColor: "var(--theme-secondary)",
+                            },
+                        }}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>

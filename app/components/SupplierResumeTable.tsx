@@ -52,9 +52,13 @@ function ContractCard({ contract }: { contract: Contract }) {
               : "-"}
           </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-[120px_1fr]">
+        <div className="grid grid-cols-1 md:grid-cols-[120px_1fr] border-b border-gray-300 mb-1 border-dashed">
           <div className="bg-white font-semibold px-2">Pemasok</div>
           <div className="bg-white px-2">{contract.pemasok_name || "-"}</div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-[120px_1fr]">
+          <div className="bg-white font-semibold px-2">Pembangkit</div>
+          <div className="bg-white px-2">{contract.pembangkit_name || "-"}</div>
         </div>
       </div>
       <div>
@@ -73,8 +77,16 @@ function ContractCard({ contract }: { contract: Contract }) {
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-[120px_1fr] border-b border-gray-300 mb-1 border-dashed">
-          <div className="bg-white font-semibold px-2">Pembangkit</div>
-          <div className="bg-white px-2">{contract.pembangkit_name || "-"}</div>
+          <div className="bg-white font-semibold px-2">Akumulasi</div>
+          <div className="bg-white px-2">
+            {contract.akumulasi != null ? `${Number(contract.akumulasi).toLocaleString("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} BBTUD` : "-"}
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-[120px_1fr] border-b border-gray-300 mb-1 border-dashed">
+          <div className="bg-white font-semibold px-2">Realisasi</div>
+          <div className="bg-white px-2">
+            {contract.realisasi != null ? `${Number(contract.realisasi).toFixed(2)}%` : "-"}
+          </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-[120px_1fr] border-b border-gray-300 mb-1 border-dashed">
           <div className="bg-white font-semibold px-2">Harga PJBG</div>
@@ -100,7 +112,7 @@ export default function SupplierResumeTable({
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-8">
-        <Loader2 className="animate-spin text-[#14a2bb]" size={32} />
+        <Loader2 className="animate-spin text-secondary" size={32} />
       </div>
     );
   }
@@ -124,7 +136,7 @@ export default function SupplierResumeTable({
           className="min-w-[300px] w-full flex-shrink-0 snap-start"
         >
           {contracts.length > 1 && (
-            <p className="text-xs font-semibold text-[#115d72] mb-2 uppercase tracking-wide">
+            <p className="text-xs font-semibold text-primary mb-2 uppercase tracking-wide">
               {contract.pembangkit_name ? `${contract.pembangkit_name}` : ""}
             </p>
           )}

@@ -65,6 +65,7 @@ import {
 import { useSites } from "@/hooks/service/site-api";
 import * as XLSX from "xlsx";
 import { usePrivilege } from "@/hooks/usePrivilege";
+import TjkTable, { TjkTableRef } from "./TjkTable";
 
 // ---------------------------------------------------------------------------
 // Row shape for the DataGrid (flattened from API response)
@@ -175,9 +176,11 @@ function findAnnualTotal(
     return items.find((a) => a.year === year);
 }
 
-function numStr(v: number | null | undefined): string {
-    return v != null ? String(v) : "";
-}
+const numStr = (val?: number | string | null) => {
+    if (val == null) return "";
+    const num = typeof val === "string" ? parseFloat(val) : val;
+    return isNaN(num) ? "" : num.toFixed(4);
+};
 
 function mapContractToRow(
     contract: Contract,
@@ -208,10 +211,8 @@ function mapContractToRow(
         akhirPerjanjian: formatDate(contract.akhir_perjanjian),
         hargaPJBG: contract.price_value || "",
         hgbt: contract.hgbt_value != null ? String(contract.hgbt_value) : "",
-        TJK: contract.tjk_bbtud != null ? String(contract.tjk_bbtud) : "",
-        volumeJPMH: contract.volume_jpmh_bbtud != null
-            ? String(contract.volume_jpmh_bbtud)
-            : "",
+        TJK: numStr(contract.tjk_bbtud),
+        volumeJPMH: numStr(contract.volume_jpmh_bbtud),
         unitSwitch: "BBTUD",
         _contractId: contract.id,
         _contractPartyId: contract.contract_party_id,
@@ -220,9 +221,9 @@ function mapContractToRow(
         _awalPerjanjianYear: awalYear,
         _akhirPerjanjianYear: akhirYear,
         // Hidden unit-specific base values
-        _bbtud_volumeJPMH: contract.volume_jpmh_bbtud != null ? String(contract.volume_jpmh_bbtud) : "",
+        _bbtud_volumeJPMH: numStr(contract.volume_jpmh_bbtud),
         _mmscfd_volumeJPMH: contract.volume_jpmh_mmscfd != null ? String(contract.volume_jpmh_mmscfd) : "",
-        _bbtud_TJK: contract.tjk_bbtud != null ? String(contract.tjk_bbtud) : "",
+        _bbtud_TJK: numStr(contract.tjk_bbtud),
         _mmscfd_TJK: contract.tjk_mmscfd != null ? String(contract.tjk_mmscfd) : "",
 
         document,
@@ -573,15 +574,6 @@ function buildColumns(
             editable: isEditMode,
             renderCell,
         },
-        {
-            field: "TJK",
-            headerName: "TJK",
-            width: 100,
-            headerAlign: "center",
-            align: "center",
-            editable: isEditMode,
-            renderCell,
-        },
     ];
 
     // Add dynamic volume year group columns (JPH, TOP, %TOP, Jumlah Kontrak Tahunan, Volume Kepmen)
@@ -661,6 +653,8 @@ function buildColumnGroupingModel(years: number[]): GridColumnGroupingModel {
 // ---------------------------------------------------------------------------
 
 export default function ContractTable() {
+    const tjkTableRef = useRef<TjkTableRef>(null);
+    const [activeTab, setActiveTab] = useState<"Info Kontrak" | "TJK">("Info Kontrak");
     const apiRef = useGridApiRef();
     const { hasPrivilege } = usePrivilege();
     const canCreate = hasPrivilege("contracts", "CREATE");
@@ -691,8 +685,8 @@ export default function ContractTable() {
     }>({ open: false, message: "", severity: "success" });
 
     // ---- API hooks ----
-    const { data: supplierSitesData } = useSites({ type: "PEMASOK" });
-    const { data: powerplantSitesData } = useSites({ type: "PEMBANGKIT" });
+    const { data: supplierSitesData } = useSites({ type: "PEMASOK", commodity: "GAS PIPA" });
+    const { data: powerplantSitesData } = useSites({ type: "PEMBANGKIT", commodity: "GAS PIPA" });
 
     const supplierSites = useMemo(() => supplierSitesData || [], [supplierSitesData]);
     const powerplantSites = useMemo(() => powerplantSitesData || [], [powerplantSitesData]);
@@ -1069,6 +1063,20 @@ export default function ContractTable() {
         if (isSaving) return;
         setIsSaving(true);
 
+        if (activeTab === "TJK") {
+            try {
+                await tjkTableRef.current?.save();
+                setIsEditMode(false);
+                setSnackbar({ open: true, message: "Data berhasil disimpan", severity: "success" });
+            } catch (error) {
+                console.error(error);
+                setSnackbar({ open: true, message: "Gagal menyimpan data", severity: "error" });
+            } finally {
+                setIsSaving(false);
+            }
+            return;
+        }
+
         // Commit any pending cell edits before saving
         try {
             const editRows = apiRef.current?.state?.editRows;
@@ -1261,13 +1269,17 @@ export default function ContractTable() {
         } finally {
             setIsSaving(false);
         }
-    }, [contracts, createMutation, updateMutation, deleteMutation, apiRef, isSaving, pendingDeletes, saveSubResources, powerplantSites, supplierSites]);
+    }, [contracts, createMutation, updateMutation, deleteMutation, apiRef, isSaving, pendingDeletes, saveSubResources, powerplantSites, supplierSites, activeTab]);
 
     const handleCancel = useCallback(() => {
+        setIsEditMode(false);
+        if (activeTab === "TJK") {
+            tjkTableRef.current?.cancel();
+            return;
+        }
         setRows(enrichedRows);
         setPendingDeletes([]);
-        setIsEditMode(false);
-    }, [enrichedRows]);
+    }, [enrichedRows, activeTab]);
 
     const handleUnitToggle = useCallback(
         (id: string, newValue: string | null) => {
@@ -1390,7 +1402,7 @@ export default function ContractTable() {
                         borderRadius: "8px !important",
                         color: "#9ca3af",
                         "&.Mui-selected": {
-                            backgroundColor: "#115d72",
+                            backgroundColor: "var(--theme-primary)",
                             color: "#fff",
                             border: "1px solid #115d72",
                             "&:hover": {
@@ -1440,8 +1452,8 @@ export default function ContractTable() {
                         <IconButton
                             size="small"
                             sx={{
-                                color: document ? "#115d72" : "#f59e0b", // Green if has document, amber if not
-                                "&:hover": { color: document ? "#115d72" : "#d97706" },
+                                color: document ? "var(--theme-primary)" : "#f59e0b", // Green if has document, amber if not
+                                "&:hover": { color: document ? "var(--theme-primary)" : "#d97706" },
                             }}
                             onClick={() => setDocumentModalRowId(params.row.id as string)}
                             title="Kelola Dokumen"
@@ -1470,59 +1482,6 @@ export default function ContractTable() {
 
 
 
-    // ---- Loading state ----
-    if (isLoading) {
-        return (
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
-                    <div className="flex items-center gap-2">
-                        <FileText size={18} className="text-[#115d72]" />
-                        <h3 className="text-sm font-semibold text-gray-800">
-                            Tabel Kontrak Gas Pipa
-                        </h3>
-                    </div>
-                </div>
-                <div className="flex items-center justify-center py-20">
-                    <CircularProgress size={40} sx={{ color: "#115d72" }} />
-                    <span className="ml-3 text-sm text-gray-500">
-                        Memuat data kontrak...
-                    </span>
-                </div>
-            </div>
-        );
-    }
-
-    // ---- Error state ----
-    if (isError) {
-        return (
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
-                    <div className="flex items-center gap-2">
-                        <FileText size={18} className="text-[#115d72]" />
-                        <h3 className="text-sm font-semibold text-gray-800">
-                            Tabel Kontrak Gas Pipa
-                        </h3>
-                    </div>
-                </div>
-                <div className="flex flex-col items-center justify-center py-16 gap-4">
-                    <div className="text-red-500 text-sm font-medium">
-                        Gagal memuat data kontrak
-                    </div>
-                    <div className="text-gray-400 text-xs">
-                        {error?.message || "Terjadi kesalahan"}
-                    </div>
-                    <button
-                        onClick={() => refetch()}
-                        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-all duration-200"
-                    >
-                        <RefreshCw size={14} />
-                        Coba Lagi
-                    </button>
-                </div>
-            </div>
-        );
-    }
-
     // ---- Main render ----
     return (
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
@@ -1536,14 +1495,14 @@ export default function ContractTable() {
             {/* Card Header with Actions */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
                 <div className="flex items-center gap-2">
-                    <FileText size={18} className="text-[#115d72]" />
+                    <FileText size={18} className="text-primary" />
                     <h3 className="text-sm font-semibold text-gray-800">
                         Tabel Kontrak Gas Pipa
                     </h3>
                 </div>
                 <div className="flex items-center gap-3">
                     {/* Export button */}
-                    <button onClick={handleExport} className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-[#115d72] bg-[#115d72]/5 border border-[#115d72]/20 rounded-lg hover:bg-[#115d72]/10 transition-all duration-200">
+                    <button onClick={handleExport} className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-primary bg-primary/5 border border-primary/20 rounded-lg hover:bg-primary/10 transition-all duration-200">
                         <FileText size={16} />
                         Ekspor
                     </button>
@@ -1552,7 +1511,7 @@ export default function ContractTable() {
                     {isEditMode && canCreate && (
                         <button
                             onClick={handleAddRow}
-                            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
+                            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
                         >
                             <Plus size={16} />
                             Tambah Baris
@@ -1590,7 +1549,7 @@ export default function ContractTable() {
                         canUpdate && (
                             <button
                                 onClick={() => setIsEditMode(true)}
-                                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
+                                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
                             >
                                 <Pencil size={16} />
                                 Edit Data
@@ -1600,135 +1559,189 @@ export default function ContractTable() {
                 </div>
             </div>
 
-            {/* Mode indicator */}
-            {isEditMode && (
-                <div className="px-5 py-2 bg-amber-50 border-b border-amber-200 flex items-center gap-2">
-                    <Pencil size={14} className="text-amber-600" />
-                    <span className="text-xs font-medium text-amber-700">
-                        Mode Edit — Klik sel untuk mengedit, lalu tekan Simpan
-                        untuk menyimpan perubahan
-                    </span>
-                </div>
-            )}
+            {/* Tabs */}
+            <div className="flex border-b border-gray-200 px-5 pt-2">
+                <button
+                    onClick={() => setActiveTab("Info Kontrak")}
+                    className={`pb-3 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === "Info Kontrak" ? "border-primary text-primary" : "border-transparent text-gray-500 hover:text-gray-700"}`}
+                >
+                    Info Kontrak
+                </button>
+                <button
+                    onClick={() => setActiveTab("TJK")}
+                    className={`pb-3 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === "TJK" ? "border-primary text-primary" : "border-transparent text-gray-500 hover:text-gray-700"}`}
+                >
+                    TJK
+                </button>
+            </div>
 
-            {/* Data Table */}
-            <div className="w-full">
-                <Box sx={{ px: 2, pb: 2, pt: 1 }}>
-                    <DataGrid
-                        apiRef={apiRef}
-                        rows={rows}
-                        columns={allColumns}
-                        columnGroupingModel={buildColumnGroupingModel(yearRange)}
-                        processRowUpdate={processRowUpdate}
-                        isCellEditable={(params) => {
-                            if (!isEditMode) return false;
-                            const field = params.field;
-                            // Match dynamic year-based fields: volume{year}JPH, volume{year}TOP, volume{year}PercentTOP, jumlahKontrakTahunan{year}, volumeKepmen{year}
-                            const yearMatch = field.match(/^(?:volume(\d{4})(?:JPH|TOP|PercentTOP)|jumlahKontrakTahunan(\d{4})|volumeKepmen(\d{4}))$/);
-                            if (yearMatch) {
-                                const year = parseInt(yearMatch[1] || yearMatch[2] || yearMatch[3]);
-                                const row = params.row;
-                                if (row._akhirPerjanjianYear !== null && row._akhirPerjanjianYear !== undefined && year > row._akhirPerjanjianYear) {
-                                    return false;
-                                }
-                            }
-                            return params.colDef.editable !== false;
-                        }}
-                        initialState={{
-                            pagination: {
-                                paginationModel: { page: 0, pageSize: 10 },
-                            },
-                        }}
-                        rowHeight={56}
-                        pageSizeOptions={[5, 10, 25, 50]}
-                        columnHeaderHeight={56}
-                        disableRowSelectionOnClick
-                        onCellClick={(params) => {
-                            if (isEditMode && params.isEditable) {
-                                const state = apiRef.current?.state;
-                                const isEditing = state?.editRows?.[params.id]?.[params.field];
-                                if (!isEditing) {
-                                    apiRef.current?.startCellEditMode({
-                                        id: params.id,
-                                        field: params.field,
-                                    });
-                                }
-                            }
-                        }}
-                        sx={{
-                            border: "1px solid #e5e7eb",
-                            borderRadius: "12px",
-                            fontSize: "12px",
-                            fontFamily: "inherit",
-                            "& .MuiDataGrid-cell": {
-                                borderBottom: "1px solid #e5e7eb",
-                                borderRight: "1px solid #e5e7eb",
-                                py: 1,
-                                px: 1,
-                                display: "flex",
-                                alignItems: "center",
-                            },
-                            "& .MuiDataGrid-columnHeaders": {
-                                backgroundColor: "#f8fafc !important",
-                                borderBottom: "1px solid #e5e7eb",
-                                fontSize: "14px",
-                                fontWeight: 600,
-                            },
-                            "& .MuiDataGrid-columnHeader": {
-                                backgroundColor: "#f8fafc !important",
-                                borderRight:
-                                    "1px solid #e5e7eb !important",
-                            },
-                            "& .MuiDataGrid-filler": {
-                                backgroundColor: "#f8fafc !important",
-                            },
-                            "& .MuiDataGrid-columnHeaderTitle": {
-                                fontWeight: 600,
-                                fontSize: "14px",
-                                whiteSpace: "normal",
-                                lineHeight: "1.2",
-                                textAlign: "center",
-                                overflow: "visible",
-                                textOverflow: "clip",
-                            },
-                            "& .MuiDataGrid-columnHeader--filledGroup .MuiDataGrid-columnHeaderTitleContainer":
-                            {
-                                borderBottom: "1px solid #e5e7eb",
-                            },
-                            "& .MuiDataGrid-row": {
-                                "&:hover": {
-                                    backgroundColor: isEditMode
-                                        ? "#fefce8"
-                                        : "#f8fafc",
-                                },
-                            },
-                            "& .MuiDataGrid-cell:focus": {
-                                outline: "none",
-                            },
-                            "& .MuiDataGrid-cell:focus-within": {
-                                outline: "none",
-                            },
-                            "& .MuiSelect-select": {
-                                "&:focus": {
-                                    backgroundColor: "transparent",
-                                },
-                            },
-                            "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                                border: "none",
-                                outline: "none",
-                            },
-                            "& .MuiDataGrid-editInputCell": {
-                                "&:focus, &:focus-visible": {
-                                    outline: "none",
-                                    border: "none",
-                                },
-                            },
-                            "& .MuiDataGrid-footerContainer": {
-                                borderTop: "1px solid #e5e7eb",
-                            },
-                        }}
-                    />
-                </Box>
+            {/* Content Container */}
+            <div className="relative">
+                {activeTab === "Info Kontrak" && (
+                    <>
+                        {isLoading ? (
+                            <div className="flex items-center justify-center py-20">
+                                <CircularProgress size={40} sx={{ color: "var(--theme-primary)" }} />
+                                <span className="ml-3 text-sm text-gray-500">
+                                    Memuat data kontrak...
+                                </span>
+                            </div>
+                        ) : isError ? (
+                            <div className="flex flex-col items-center justify-center py-16 gap-4">
+                                <div className="text-red-500 text-sm font-medium">
+                                    Gagal memuat data kontrak
+                                </div>
+                                <div className="text-gray-400 text-xs">
+                                    {error?.message || "Terjadi kesalahan"}
+                                </div>
+                                <button
+                                    onClick={() => refetch()}
+                                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-[#0d4a5c] transition-all duration-200"
+                                >
+                                    <RefreshCw size={14} />
+                                    Coba Lagi
+                                </button>
+                            </div>
+                        ) : (
+                            <>
+                                {/* Mode indicator */}
+                                {isEditMode && (
+                                    <div className="px-5 py-2 bg-amber-50 border-b border-amber-200 flex items-center gap-2">
+                                        <Pencil size={14} className="text-amber-600" />
+                                        <span className="text-xs font-medium text-amber-700">
+                                            Mode Edit — Klik sel untuk mengedit, lalu tekan Simpan
+                                            untuk menyimpan perubahan
+                                        </span>
+                                    </div>
+                                )}
+
+                                {/* Data Table */}
+                                <div className="w-full">
+                                    <Box sx={{ px: 2, pb: 2, pt: 1 }}>
+                                        <DataGrid
+                                            apiRef={apiRef}
+                                            rows={rows}
+                                            columns={allColumns}
+                                            columnGroupingModel={buildColumnGroupingModel(yearRange)}
+                                            processRowUpdate={processRowUpdate}
+                                            isCellEditable={(params) => {
+                                                if (!isEditMode) return false;
+                                                const field = params.field;
+                                                // Match dynamic year-based fields: volume{year}JPH, volume{year}TOP, volume{year}PercentTOP, jumlahKontrakTahunan{year}, volumeKepmen{year}
+                                                const yearMatch = field.match(/^(?:volume(\d{4})(?:JPH|TOP|PercentTOP)|jumlahKontrakTahunan(\d{4})|volumeKepmen(\d{4}))$/);
+                                                if (yearMatch) {
+                                                    const year = parseInt(yearMatch[1] || yearMatch[2] || yearMatch[3]);
+                                                    const row = params.row;
+                                                    if (row._akhirPerjanjianYear !== null && row._akhirPerjanjianYear !== undefined && year > row._akhirPerjanjianYear) {
+                                                        return false;
+                                                    }
+                                                }
+                                                return params.colDef.editable !== false;
+                                            }}
+                                            initialState={{
+                                                pagination: {
+                                                    paginationModel: { page: 0, pageSize: 10 },
+                                                },
+                                            }}
+                                            rowHeight={56}
+                                            pageSizeOptions={[5, 10, 25, 50]}
+                                            columnHeaderHeight={56}
+                                            disableRowSelectionOnClick
+                                            onCellClick={(params) => {
+                                                if (isEditMode && params.isEditable) {
+                                                    const state = apiRef.current?.state;
+                                                    const isEditing = state?.editRows?.[params.id]?.[params.field];
+                                                    if (!isEditing) {
+                                                        apiRef.current?.startCellEditMode({
+                                                            id: params.id,
+                                                            field: params.field,
+                                                        });
+                                                    }
+                                                }
+                                            }}
+                                            sx={{
+                                                border: "1px solid #e5e7eb",
+                                                borderRadius: "12px",
+                                                fontSize: "12px",
+                                                fontFamily: "inherit",
+                                                "& .MuiDataGrid-cell": {
+                                                    borderBottom: "1px solid #e5e7eb",
+                                                    borderRight: "1px solid #e5e7eb",
+                                                    py: 1,
+                                                    px: 1,
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                },
+                                                "& .MuiDataGrid-columnHeaders": {
+                                                    backgroundColor: "#f8fafc !important",
+                                                    borderBottom: "1px solid #e5e7eb",
+                                                    fontSize: "14px",
+                                                    fontWeight: 600,
+                                                },
+                                                "& .MuiDataGrid-columnHeader": {
+                                                    backgroundColor: "#f8fafc !important",
+                                                    borderRight:
+                                                        "1px solid #e5e7eb !important",
+                                                },
+                                                "& .MuiDataGrid-filler": {
+                                                    backgroundColor: "#f8fafc !important",
+                                                },
+                                                "& .MuiDataGrid-columnHeaderTitle": {
+                                                    fontWeight: 600,
+                                                    fontSize: "14px",
+                                                    whiteSpace: "normal",
+                                                    lineHeight: "1.2",
+                                                    textAlign: "center",
+                                                    overflow: "visible",
+                                                    textOverflow: "clip",
+                                                },
+                                                "& .MuiDataGrid-columnHeader--filledGroup .MuiDataGrid-columnHeaderTitleContainer":
+                                                {
+                                                    borderBottom: "1px solid #e5e7eb",
+                                                },
+                                                "& .MuiDataGrid-row": {
+                                                    "&:hover": {
+                                                        backgroundColor: isEditMode
+                                                            ? "#fefce8"
+                                                            : "#f8fafc",
+                                                    },
+                                                },
+                                                "& .MuiDataGrid-cell:focus": {
+                                                    outline: "none",
+                                                },
+                                                "& .MuiDataGrid-cell:focus-within": {
+                                                    outline: "none",
+                                                },
+                                                "& .MuiSelect-select": {
+                                                    "&:focus": {
+                                                        backgroundColor: "transparent",
+                                                    },
+                                                },
+                                                "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                                                    border: "none",
+                                                    outline: "none",
+                                                },
+                                                "& .MuiDataGrid-editInputCell": {
+                                                    "&:focus, &:focus-visible": {
+                                                        outline: "none",
+                                                        border: "none",
+                                                    },
+                                                },
+                                                "& .MuiDataGrid-footerContainer": {
+                                                    borderTop: "1px solid #e5e7eb",
+                                                },
+                                            }}
+                                        />
+                                    </Box>
+                                </div>
+                            </>
+                        )}
+                    </>
+                )}
+
+                {activeTab === "TJK" && (
+                    <TjkTable ref={tjkTableRef} isEditMode={isEditMode} />
+                )}
             </div>
 
             {/* Delete confirmation dialog */}
@@ -1836,7 +1849,7 @@ export default function ContractTable() {
                                     {doc ? (
                                         <div className="flex items-center justify-between bg-white border border-gray-200 rounded-md p-3">
                                             <div className="flex items-center gap-2 overflow-hidden">
-                                                <FileText size={18} className="text-[#115d72] shrink-0" />
+                                                <FileText size={18} className="text-primary shrink-0" />
                                                 <Typography variant="body2" sx={{ color: "#4b5563", fontWeight: 500 }} noWrap>
                                                     {doc.original_name}
                                                 </Typography>
@@ -1844,7 +1857,7 @@ export default function ContractTable() {
                                             <div className="flex items-center gap-1 shrink-0 ml-2">
                                                 <IconButton
                                                     size="small"
-                                                    sx={{ color: "#115d72", "&:hover": { color: "#0d4a5c", backgroundColor: "#eff6ff" } }}
+                                                    sx={{ color: "var(--theme-primary)", "&:hover": { color: "#0d4a5c", backgroundColor: "#eff6ff" } }}
                                                     title="Pratinjau Dokumen"
                                                     onClick={async () => {
                                                         try {
@@ -1858,7 +1871,7 @@ export default function ContractTable() {
                                                 </IconButton>
                                                 <IconButton
                                                     size="small"
-                                                    sx={{ color: "#115d72", "&:hover": { color: "#0d4a5c", backgroundColor: "#eff6ff" } }}
+                                                    sx={{ color: "var(--theme-primary)", "&:hover": { color: "#0d4a5c", backgroundColor: "#eff6ff" } }}
                                                     title="Unduh Dokumen"
                                                     onClick={async () => {
                                                         try {
@@ -1913,8 +1926,8 @@ export default function ContractTable() {
                                             textTransform: "none",
                                             fontWeight: 500,
                                             borderRadius: "8px",
-                                            color: "#115d72",
-                                            borderColor: "#115d72",
+                                            color: "var(--theme-primary)",
+                                            borderColor: "var(--theme-primary)",
                                             "&:hover": {
                                                 borderColor: "#0d4a5c",
                                                 backgroundColor: "#f8fafc"
@@ -1991,7 +2004,7 @@ export default function ContractTable() {
                             color: "#ffffffff",
                             fontWeight: 500,
                             borderRadius: "8px",
-                            backgroundColor: "#115d72",
+                            backgroundColor: "var(--theme-primary)",
                             "&:hover": { backgroundColor: "#0d4a5c" },
                             "&.Mui-disabled": { backgroundColor: "#0d4a5c", color: "#ffffff" }
                         }}

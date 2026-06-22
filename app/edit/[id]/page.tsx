@@ -119,7 +119,7 @@ export default function EditRecordPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full min-h-[60vh]">
-        <Loader2 className="animate-spin text-[#14a2bb]" size={36} />
+        <Loader2 className="animate-spin text-secondary" size={36} />
       </div>
     );
   }
@@ -150,7 +150,7 @@ export default function EditRecordPage() {
         <span className="text-gray-400">/</span>
         <span>Manajemen Data</span>
         <span className="text-gray-400">/</span>
-        <span className="text-[#115d72] font-medium">Edit Record</span>
+        <span className="text-primary font-medium">Edit Record</span>
       </div>
 
       {/* Header */}
@@ -286,7 +286,7 @@ export default function EditRecordPage() {
           <button
             type="submit"
             disabled={updateMutation.isPending}
-            className="flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-primary rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {updateMutation.isPending ? (
               <Loader2 size={16} className="animate-spin" />
@@ -360,7 +360,7 @@ function NumberField({
         step="any"
         value={value ?? ""}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200"
+        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
         placeholder={`Masukkan ${label.toLowerCase()}`}
       />
     </div>
@@ -385,7 +385,7 @@ function TextField({
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200"
+        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
         placeholder={`Masukkan ${label.toLowerCase()}`}
       />
     </div>
@@ -410,7 +410,7 @@ function TextAreaField({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         rows={3}
-        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200 resize-none"
+        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200 resize-none"
         placeholder={`Masukkan ${label.toLowerCase()}`}
       />
     </div>
@@ -436,7 +436,7 @@ function SelectField({
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200 bg-white"
+        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200 bg-white"
       >
         {options.map((opt) => (
           <option key={opt.value} value={opt.value}>

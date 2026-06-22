@@ -73,6 +73,10 @@ const SOURCE_KIND_OPTIONS: {
     label: "Kolom Spreadsheet",
   },
   {
+    value: "SHEET_CELL",
+    label: "Sel Spreadsheet (Baris & Kolom)",
+  },
+  {
     value: "WA_REGEX",
     label: "Regular Expression",
     getLabel: (scope) =>
@@ -494,7 +498,7 @@ export default function TemplateEditor({
             type="text"
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent"
+            className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent"
           />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -521,7 +525,7 @@ export default function TemplateEditor({
                     scope: e.target.value as Template["scope"],
                   })
                 }
-                className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white cursor-pointer pr-10"
+                className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white cursor-pointer pr-10"
               >
                 <option value="WA_GROUP">WhatsApp Grup</option>
                 <option value="SPREADSHEET_SOURCE">Sumber Spreadsheet</option>
@@ -554,7 +558,7 @@ export default function TemplateEditor({
                     parserMode: e.target.value as Template["parserMode"],
                   })
                 }
-                className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white cursor-pointer pr-10"
+                className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white cursor-pointer pr-10"
               >
                 <option value="RULE_BASED">
                   Berdasarkan Aturan (Rule Based)
@@ -588,12 +592,76 @@ export default function TemplateEditor({
                     decimalSeparator: e.target.value,
                   })
                 }
-                className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white cursor-pointer pr-10"
+                className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white cursor-pointer pr-10"
               >
                 <option value=",">Koma (,)</option>
                 <option value=".">Titik (.)</option>
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            </div>
+          </div>
+
+          {/* Commodity Dropdown */}
+          <div>
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <label className="block text-sm font-medium text-gray-700">
+                Komoditas
+              </label>
+              <Tooltip
+                title="Komoditas yang terkait dengan template grup ini (GAS PIPA, LNG, atau BBM)."
+                arrow
+                placement="top"
+              >
+                <Info className="w-4 h-4 text-gray-400 cursor-help" />
+              </Tooltip>
+            </div>
+            <div className="relative">
+              <select
+                value={formData.commodity || "GAS PIPA"}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    commodity: e.target.value,
+                  })
+                }
+                className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white cursor-pointer pr-10"
+              >
+                <option value="GAS PIPA">GAS PIPA</option>
+                <option value="LNG">LNG</option>
+                <option value="BBM">BBM</option>
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            </div>
+          </div>
+          
+          {/* Is Transportir Checkbox */}
+          <div className="flex items-end mb-1">
+            <div className="flex items-center pb-2">
+              <input
+                id={`is-transportir-${formData.id}`}
+                type="checkbox"
+                checked={formData.isTransportir || false}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    isTransportir: e.target.checked,
+                  })
+                }
+                className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-secondary"
+              />
+              <label
+                htmlFor={`is-transportir-${formData.id}`}
+                className="ml-2 block text-sm font-medium text-gray-700 cursor-pointer"
+              >
+                Template Transportir
+              </label>
+              <Tooltip
+                title="Jika dicentang, template ini akan diperlakukan sebagai template Transportir."
+                arrow
+                placement="top"
+              >
+                <Info className="w-4 h-4 ml-1.5 text-gray-400 cursor-help" />
+              </Tooltip>
             </div>
           </div>
 
@@ -615,7 +683,7 @@ export default function TemplateEditor({
                   <button
                     type="button"
                     onClick={() => setIsAddingGroup(true)}
-                    className="ml-auto flex items-center gap-1 px-2 py-1 text-xs font-medium text-white bg-[#115d72] rounded hover:bg-[#0d4a5c] transition-all duration-200"
+                    className="ml-auto flex items-center gap-1 px-2 py-1 text-xs font-medium text-white bg-primary rounded hover:bg-[#0d4a5c] transition-all duration-200"
                   >
                     <Plus size={14} /> Tambah Baru
                   </button>
@@ -637,14 +705,14 @@ export default function TemplateEditor({
                       <label
                         key={gc.id}
                         className={`flex items-center gap-3 p-2 rounded-md cursor-pointer transition-colors ${
-                          isSelected ? "bg-[#14a2bb]/10" : "hover:bg-gray-50"
+                          isSelected ? "bg-secondary/10" : "hover:bg-gray-50"
                         } ${!gc.isEnabled && !isSelected ? "opacity-60" : ""}`}
                       >
                         <input
                           type="checkbox"
                           checked={isSelected}
                           onChange={() => toggleSourceLink(gc.id, "WA_GROUP")}
-                          className="w-4 h-4 text-[#115d72] border-gray-300 rounded focus:ring-[#14a2bb]"
+                          className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-secondary"
                         />
                         <div className="flex flex-col">
                           <span className="text-sm font-medium text-gray-900">
@@ -693,7 +761,7 @@ export default function TemplateEditor({
                       <label
                         key={ss.id}
                         className={`flex items-center gap-3 p-2 rounded-md cursor-pointer transition-colors ${
-                          isSelected ? "bg-[#14a2bb]/10" : "hover:bg-gray-50"
+                          isSelected ? "bg-secondary/10" : "hover:bg-gray-50"
                         }`}
                       >
                         <input
@@ -702,7 +770,7 @@ export default function TemplateEditor({
                           onChange={() =>
                             toggleSourceLink(ss.id, "SPREADSHEET_SOURCE")
                           }
-                          className="w-4 h-4 text-[#115d72] border-gray-300 rounded focus:ring-[#14a2bb]"
+                          className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-secondary"
                         />
                         <span className="text-sm font-medium text-gray-900">
                           {ss.name}
@@ -746,7 +814,7 @@ export default function TemplateEditor({
                       <label
                         key={es.id}
                         className={`flex items-center gap-3 p-2 rounded-md cursor-pointer transition-colors ${
-                          isSelected ? "bg-[#14a2bb]/10" : "hover:bg-gray-50"
+                          isSelected ? "bg-secondary/10" : "hover:bg-gray-50"
                         }`}
                       >
                         <input
@@ -755,7 +823,7 @@ export default function TemplateEditor({
                           onChange={() =>
                             toggleSourceLink(es.id, "EMAIL_INGEST")
                           }
-                          className="w-4 h-4 text-[#115d72] border-gray-300 rounded focus:ring-[#14a2bb]"
+                          className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-secondary"
                         />
                         <div className="flex flex-col">
                           <span className="text-sm font-medium text-gray-900">
@@ -782,7 +850,7 @@ export default function TemplateEditor({
                 onChange={(e) =>
                   setFormData({ ...formData, isDefault: e.target.checked })
                 }
-                className="w-4 h-4 text-[#115d72] border-gray-300 rounded focus:ring-[#14a2bb]"
+                className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-secondary"
               />
               <span className="text-sm text-gray-700 font-medium">
                 Tetapkan sebagai Utama (Default)
@@ -799,91 +867,111 @@ export default function TemplateEditor({
         </div>
 
         {/* Hints Section */}
-        {formData.scope !== "EMAIL_INGEST" && (
-          <div className="mt-4 pt-4 border-t border-gray-200">
-            <h4 className="text-sm font-medium text-gray-700 mb-3">
-              Petunjuk & Konfigurasi (Hints)
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {formData.scope === "WA_GROUP" && (
-                <>
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">
-                      Kata Kunci WA (Hint)
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.waKeywordHint || ""}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          waKeywordHint: e.target.value,
-                        })
-                      }
-                      placeholder="e.g., LAPORAN HARIAN"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">
-                      Pengirim WA (Hint)
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.waSenderHint || ""}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          waSenderHint: e.target.value,
-                        })
-                      }
-                      placeholder="e.g., PLN"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]"
-                    />
-                  </div>
-                </>
-              )}
-              {formData.scope === "SPREADSHEET_SOURCE" && (
-                <>
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">
-                      Tab Sheet (Hint)
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.sheetTabHint || ""}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          sheetTabHint: e.target.value,
-                        })
-                      }
-                      placeholder="e.g., Gas Pipa"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">
-                      Baris Header Sheet
-                    </label>
-                    <input
-                      type="number"
-                      value={formData.sheetHeaderRow || ""}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          sheetHeaderRow: parseInt(e.target.value) || null,
-                        })
-                      }
-                      placeholder="1"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]"
-                    />
-                  </div>
-                </>
-              )}
-            </div>
+        <div className="mt-4 pt-4 border-t border-gray-200">
+          <h4 className="text-sm font-medium text-gray-700 mb-3">
+            Petunjuk & Konfigurasi (Hints)
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {formData.scope === "WA_GROUP" && (
+              <>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">
+                    Kata Kunci WA (Hint)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.waKeywordHint || ""}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        waKeywordHint: e.target.value,
+                      })
+                    }
+                    placeholder="e.g., LAPORAN HARIAN"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">
+                    Pengirim WA (Hint)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.waSenderHint || ""}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        waSenderHint: e.target.value,
+                      })
+                    }
+                    placeholder="e.g., PLN"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary"
+                  />
+                </div>
+              </>
+            )}
+            {formData.scope === "SPREADSHEET_SOURCE" && (
+              <>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">
+                    Tab Sheet (Hint)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.sheetTabHint || ""}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        sheetTabHint: e.target.value,
+                      })
+                    }
+                    placeholder="e.g., Gas Pipa"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">
+                    Baris Header Sheet
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.sheetHeaderRow || ""}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        sheetHeaderRow: parseInt(e.target.value) || null,
+                      })
+                    }
+                    placeholder="1"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary"
+                  />
+                </div>
+              </>
+            )}
+            {formData.scope === "EMAIL_INGEST" && (
+              <>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">
+                    Tab Excel (Hint)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.sheetTabHint || ""}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        sheetTabHint: e.target.value,
+                      })
+                    }
+                    placeholder="e.g., Sheet1, Laporan"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">Nama tab di file Excel yang akan diproses</p>
+                </div>
+              </>
+            )}
           </div>
-        )}
+        </div>
 
         {/* AI Settings */}
         {formData.parserMode === "AI_ASSISTED" && (
@@ -911,7 +999,7 @@ export default function TemplateEditor({
                     onChange={(e) =>
                       setFormData({ ...formData, aiModel: e.target.value })
                     }
-                    className="w-full appearance-none px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white cursor-pointer pr-10"
+                    className="w-full appearance-none px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white cursor-pointer pr-10"
                   >
                     <option value="">Pilih Model</option>
                     {isLoadingModels ? (
@@ -949,10 +1037,21 @@ export default function TemplateEditor({
                       aiPromptTemplate: e.target.value,
                     })
                   }
-                  rows={4}
-                  placeholder="Use {{message}} as placeholder..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] resize-none font-mono"
+                  rows={5}
+                  placeholder={
+                    formData.scope === "EMAIL_INGEST"
+                      ? "Contoh: Kamu adalah asisten ekstraksi data. Dari data tabel Excel berikut, ekstrak semua record dengan field: siteName, metricType, periodType, periodValue, value, unit.\n\nGunakan {{DATA}} sebagai placeholder untuk data file Excel."
+                      : "Use {{DATA}} as placeholder for the data content..."
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary resize-none font-mono"
                 />
+                {formData.scope === "EMAIL_INGEST" && (
+                  <p className="text-xs text-gray-500 mt-1 flex items-start gap-1">
+                    <span className="text-cyan-600 font-medium">💡 Email Ingest:</span>
+                    Gunakan <code className="bg-gray-100 px-1 rounded">{"{{DATA}}"}</code> sebagai placeholder di mana data dari file Excel/PDF attachment akan disisipkan ke dalam prompt.
+                  </p>
+                )}
+
               </div>
               <div>
                 <div className="flex items-center gap-1.5 mb-1">
@@ -992,7 +1091,7 @@ export default function TemplateEditor({
                   }}
                   rows={3}
                   placeholder='{"type": "object", "properties": {...}}'
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] resize-none font-mono"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary resize-none font-mono"
                 />
               </div>
             </div>
@@ -1031,7 +1130,7 @@ export default function TemplateEditor({
                     resetFieldForm();
                     setIsFieldModalOpen(true);
                   }}
-                  className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-all duration-200"
+                  className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-[#0d4a5c] transition-all duration-200"
                 >
                   <Plus size={16} />
                   Tambah Bidang
@@ -1124,7 +1223,7 @@ export default function TemplateEditor({
                         {canUpdate && (
                           <button
                             onClick={() => handleEditField(field)}
-                            className="p-1.5 text-gray-400 hover:text-[#115d72] hover:bg-[#115d72]/10 rounded transition-colors"
+                            className="p-1.5 text-gray-400 hover:text-primary hover:bg-primary/10 rounded transition-colors"
                           >
                             <Pencil size={14} />
                           </button>
@@ -1169,12 +1268,12 @@ export default function TemplateEditor({
                   ? "Paste sample WA message here..."
                   : '{"A": "value1", "B": "value2", ...}'
               }
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] resize-none"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary resize-none"
             />
           </div>
           <button
             onClick={handleTestParse}
-            className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-all duration-200"
+            className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-primary rounded-lg hover:bg-[#0d4a5c] transition-all duration-200"
           >
             <Play size={16} />
             Run Test
@@ -1245,7 +1344,7 @@ export default function TemplateEditor({
                         : fieldForm.sourceKind,
                   });
                 }}
-                className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] bg-white cursor-pointer pr-10"
+                className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary bg-white cursor-pointer pr-10"
               >
                 <option value="">Pilih Target Property</option>
                 {FIELD_KEY_OPTIONS.map((key) => (
@@ -1270,7 +1369,7 @@ export default function TemplateEditor({
                   setFieldForm({ ...fieldForm, customFieldKey: e.target.value })
                 }
                 placeholder="e.g., custom_field"
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb]"
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary"
               />
             </div>
           )}
@@ -1297,7 +1396,7 @@ export default function TemplateEditor({
                     sourceKind: e.target.value as TemplateField["sourceKind"],
                   })
                 }
-                className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] bg-white cursor-pointer pr-10"
+                className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary bg-white cursor-pointer pr-10"
               >
                 {SOURCE_KIND_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>
@@ -1338,7 +1437,7 @@ export default function TemplateEditor({
                       alert("Format JSON tidak valid");
                     }
                   }}
-                  className="px-2 py-0.5 text-[10px] font-semibold text-[#115d72] bg-[#115d72]/5 rounded hover:bg-[#115d72]/10 transition-colors border border-[#115d72]/20"
+                  className="px-2 py-0.5 text-[10px] font-semibold text-primary bg-primary/5 rounded hover:bg-primary/10 transition-colors border border-primary/20"
                 >
                   Rapikan JSON (Tidy)
                 </button>
@@ -1352,7 +1451,7 @@ export default function TemplateEditor({
                 placeholder={
                   '[\n  {"metric_type": "FLOWRATE", "regex": "Flow:\\s*([\\d.]+)"}\n]'
                 }
-                className="w-full px-3 py-3 border border-gray-300 rounded-lg text-[13px] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] font-mono resize-none bg-gray-50/80 shadow-inner leading-relaxed"
+                className="w-full px-3 py-3 border border-gray-300 rounded-lg text-[13px] text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary font-mono resize-none bg-gray-50/80 shadow-inner leading-relaxed"
               />
             </div>
           ) : (
@@ -1384,7 +1483,7 @@ export default function TemplateEditor({
                         ? "e.g., $.site_name"
                         : "Fixed value"
                 }
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] font-mono"
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary font-mono"
               />
             </div>
           )}
@@ -1408,7 +1507,7 @@ export default function TemplateEditor({
                 onChange={(e) =>
                   setFieldForm({ ...fieldForm, transform: e.target.value })
                 }
-                className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] bg-white cursor-pointer pr-10"
+                className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary bg-white cursor-pointer pr-10"
               >
                 <option value="">None</option>
                 <option value="date">Date (→ YYYY-MM-DD)</option>
@@ -1430,7 +1529,7 @@ export default function TemplateEditor({
                 onChange={(e) =>
                   setFieldForm({ ...fieldForm, isRequired: e.target.checked })
                 }
-                className="w-4 h-4 text-[#115d72] border-gray-300 rounded focus:ring-[#14a2bb]"
+                className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-secondary"
               />
               <div className="flex items-center gap-1.5">
                 <span className="text-sm text-gray-700 font-medium">
@@ -1456,7 +1555,7 @@ export default function TemplateEditor({
             </button>
             <button
               onClick={handleAddField}
-              className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-all duration-200"
+              className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-primary rounded-lg hover:bg-[#0d4a5c] transition-all duration-200"
             >
               {editingField ? "Simpan Perubahan" : "Tambah Bidang"}
             </button>
@@ -1486,7 +1585,7 @@ export default function TemplateEditor({
               type="text"
               value={botGroupSearch}
               onChange={(e) => setBotGroupSearch(e.target.value)}
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent"
+              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent"
               placeholder="Ketik untuk filter group..."
               autoFocus
             />
@@ -1536,7 +1635,7 @@ export default function TemplateEditor({
                     key={bg.id}
                     className={`flex items-center gap-3 px-3 py-2.5 cursor-pointer transition-colors ${
                       selectedBotGroupId === bg.id
-                        ? "bg-[#14a2bb]/10"
+                        ? "bg-secondary/10"
                         : "hover:bg-gray-50"
                     }`}
                   >
@@ -1570,9 +1669,9 @@ export default function TemplateEditor({
 
           {/* Selected group preview */}
           {selectedBotGroupId && (
-            <div className="px-3 py-2 bg-[#14a2bb]/5 border border-[#14a2bb]/20 rounded-lg">
+            <div className="px-3 py-2 bg-secondary/5 border border-secondary/20 rounded-lg">
               <p className="text-xs text-gray-500">Group yang dipilih:</p>
-              <p className="text-sm font-medium text-[#115d72]">
+              <p className="text-sm font-medium text-primary">
                 {newGroupName}
               </p>
               <p className="text-xs text-gray-400 font-mono mt-0.5">
@@ -1607,7 +1706,7 @@ export default function TemplateEditor({
                 }
               }}
               disabled={!selectedBotGroupId}
-              className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-primary rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Tambah Group
             </button>

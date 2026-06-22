@@ -1,0 +1,13 @@
+--- /Users/sbuhmpm/development/WBS_PLN_EPI/wbs-frontend-nextjs/app/components/RealtimeChart.tsx
++++ /Users/sbuhmpm/development/WBS_PLN_EPI/wbs-frontend-nextjs/app/components/RealtimeChart.tsx
+@@ -717,8 +717,8 @@
+   const realTransportirData = useMemo(() => {
+     if (!transportirData) return [];
+     
+-    const huluObj: any = { category: "Data Hulu" };
+-    const hilirObj: any = { category: "Data Hilir" };
++    const huluObj: any = { category: "Hulu" };
++    const hilirObj: any = { category: "Hilir" };
+ 
+     transportirData.hulu.forEach(h => {
+       huluObj[h.upstreamName] = Number(h.value);

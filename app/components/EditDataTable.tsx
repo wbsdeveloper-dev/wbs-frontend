@@ -48,10 +48,11 @@ interface EditDataTableProps {
 
 const STATUS_OPTIONS = [
   { value: "", label: "Semua Status" },
-  { value: "MATCHED", label: "Matched" },
-  { value: "MISMATCH", label: "Mismatch" },
-  { value: "NEED_REVIEW", label: "Need Review" },
-  { value: "RESOLVED", label: "Resolved" },
+  { value: "BA_VALIDATION", label: "Tervalidasi BA" },
+  { value: "MANUAL", label: "Manual" },
+  { value: "EMAIL", label: "Email" },
+  { value: "SPREADSHEET", label: "Spreadsheet" },
+  { value: "WHATSAPP", label: "Whatsapp" },
 ];
 
 const PERIOD_OPTIONS = [
@@ -133,6 +134,8 @@ const formatNormalizeText = (text: string) => {
   if (!text) return "-";
   if (text.toUpperCase() === "FLOWRATE_MMSCFD") return "Flowrate (MMSCFD)";
   if (text.toUpperCase() === "ENERGY_BBTUD") return "Energy (BBTUD)";
+  if (text.toUpperCase() === "OWN_USE_BBTUD") return "Own Use (BBTUD)";
+  if (text.toUpperCase() === "DISCREPANCY_BBTUD") return "Discrepancy (BBTUD)";
 
   return text
     .toLowerCase()
@@ -146,15 +149,16 @@ const formatNormalizeText = (text: string) => {
 // ---------------------------------------------------------------------------
 
 const StatusBadge = ({ status }: { status: string }) => {
-  const config: Record<string, { bg: string; text: string; dot: string }> = {
-    MATCHED: { bg: "bg-green-50", text: "text-green-700", dot: "bg-green-500" },
-    MISMATCH: { bg: "bg-red-50", text: "text-red-700", dot: "bg-red-500" },
-    NEED_REVIEW: {
-      bg: "bg-amber-50",
-      text: "text-amber-700",
-      dot: "bg-amber-500",
-    },
-    RESOLVED: { bg: "bg-blue-50", text: "text-blue-700", dot: "bg-blue-500" },
+  const config: Record<string, { bg: string; text: string; dot: string; label?: string }> = {
+    BA_VALIDATION: { bg: "bg-purple-50", text: "text-purple-700", dot: "bg-purple-500", label: "Tervalidasi BA" },
+    MANUAL: { bg: "bg-green-50", text: "text-green-700", dot: "bg-green-500", label: "Manual" },
+    EMAIL: { bg: "bg-blue-50", text: "text-blue-700", dot: "bg-blue-500", label: "Email" },
+    SPREADSHEET: { bg: "bg-indigo-50", text: "text-indigo-700", dot: "bg-indigo-500", label: "Spreadsheet" },
+    WHATSAPP: { bg: "bg-teal-50", text: "text-teal-700", dot: "bg-teal-500", label: "Whatsapp" },
+    MATCHED: { bg: "bg-emerald-50", text: "text-emerald-700", dot: "bg-emerald-500", label: "Matched" },
+    MISMATCH: { bg: "bg-red-50", text: "text-red-700", dot: "bg-red-500", label: "Mismatch" },
+    NEED_REVIEW: { bg: "bg-amber-50", text: "text-amber-700", dot: "bg-amber-500", label: "Need Review" },
+    RESOLVED: { bg: "bg-blue-50", text: "text-blue-700", dot: "bg-blue-500", label: "Resolved" },
   };
   const c = config[status] ?? {
     bg: "bg-gray-100",
@@ -162,7 +166,7 @@ const StatusBadge = ({ status }: { status: string }) => {
     dot: "bg-gray-400",
   };
 
-  const label = config[status] ? status : formatNormalizeText(status);
+  const label = config[status]?.label ?? formatNormalizeText(status);
 
   return (
     <span
@@ -195,7 +199,7 @@ const ActionButtons = ({
     {canUpdate && (
       <button
         onClick={() => onEdit(id)}
-        className="p-1.5 text-[#115d72] hover:bg-[#115d72]/10 rounded-lg transition-colors"
+        className="p-1.5 text-primary hover:bg-primary/10 rounded-lg transition-colors"
         title="Edit"
       >
         <Pencil size={16} />
@@ -242,6 +246,8 @@ export default function EditDataTable({
   const endIndex = startIndex + itemsPerPage;
   const paginatedRecords = records;
 
+  const [viewMode, setViewMode] = useState<"short" | "detail">("short");
+
   // Sort state
   type SortField = keyof MonitoringRecord;
   const [sortField, setSortField] = useState<SortField | null>(null);
@@ -280,9 +286,9 @@ export default function EditDataTable({
     if (sortField !== field)
       return <ChevronsUpDown size={12} className="ml-1 opacity-40" />;
     return sortDir === "asc" ? (
-      <ArrowUp size={12} className="ml-1 text-[#115d72]" />
+      <ArrowUp size={12} className="ml-1 text-primary" />
     ) : (
-      <ArrowDown size={12} className="ml-1 text-[#115d72]" />
+      <ArrowDown size={12} className="ml-1 text-primary" />
     );
   };
 
@@ -297,11 +303,10 @@ export default function EditDataTable({
     align?: "left" | "center" | "right";
   }) => (
     <th
-      className={`px-4 py-3 text-${align} text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap ${
-        field
+      className={`px-4 py-3 text-${align} text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap ${field
           ? "cursor-pointer select-none hover:bg-gray-100 transition-colors"
           : ""
-      }`}
+        }`}
       onClick={field ? () => handleSort(field) : undefined}
     >
       <span className="inline-flex items-center justify-center">
@@ -437,16 +442,35 @@ export default function EditDataTable({
             <span className="text-sm font-medium text-gray-700">
               Tabel Monitoring Data
             </span>
+            <div className="flex bg-gray-100 p-0.5 rounded-lg border border-gray-200 ml-4">
+              <button
+                onClick={() => setViewMode("short")}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-200 ${viewMode === "short"
+                    ? "bg-white text-gray-900 shadow-sm"
+                    : "text-gray-500 hover:text-gray-700"
+                  }`}
+              >
+                Short
+              </button>
+              <button
+                onClick={() => setViewMode("detail")}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-200 ${viewMode === "detail"
+                    ? "bg-white text-gray-900 shadow-sm"
+                    : "text-gray-500 hover:text-gray-700"
+                  }`}
+              >
+                Detail
+              </button>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             {filtersEnabled && (
               <button
                 onClick={() => setShowFilters((v) => !v)}
-                className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-all duration-200 ${
-                  showFilters || activeFilterCount > 0
-                    ? "bg-[#115d72] text-white border-[#115d72]"
+                className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-all duration-200 ${showFilters || activeFilterCount > 0
+                    ? "bg-primary text-white border-primary"
                     : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                }`}
+                  }`}
               >
                 <Filter size={16} />
                 Filter
@@ -480,7 +504,7 @@ export default function EditDataTable({
                     value={localId}
                     onChange={(e) => setLocalId(e.target.value)}
                     placeholder="Cari berdasarkan ID..."
-                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200"
+                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
                   />
                 </div>
               </div>
@@ -497,7 +521,7 @@ export default function EditDataTable({
                     value={localSupplierName}
                     onChange={(e) => setLocalSupplierName(e.target.value)}
                     placeholder="Cari pemasok..."
-                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200"
+                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
                   />
                 </div>
               </div>
@@ -514,7 +538,7 @@ export default function EditDataTable({
                     value={localSiteName}
                     onChange={(e) => setLocalSiteName(e.target.value)}
                     placeholder="Cari pembangkit..."
-                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200"
+                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
                   />
                 </div>
               </div>
@@ -527,7 +551,7 @@ export default function EditDataTable({
                 <select
                   value={localStatus}
                   onChange={(e) => setLocalStatus(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200 bg-white"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200 bg-white"
                 >
                   {STATUS_OPTIONS.map((opt) => (
                     <option key={opt.value} value={opt.value}>
@@ -546,7 +570,7 @@ export default function EditDataTable({
                   type="date"
                   value={localStartDate}
                   onChange={(e) => setLocalStartDate(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
                 />
               </div>
 
@@ -559,7 +583,7 @@ export default function EditDataTable({
                   type="date"
                   value={localEndDate}
                   onChange={(e) => setLocalEndDate(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
                 />
               </div>
 
@@ -571,7 +595,7 @@ export default function EditDataTable({
                 <select
                   value={localPeriodType}
                   onChange={(e) => setLocalPeriodType(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200 bg-white"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200 bg-white"
                 >
                   {PERIOD_OPTIONS.map((opt) => (
                     <option key={opt.value} value={opt.value}>
@@ -593,7 +617,7 @@ export default function EditDataTable({
               </button>
               <button
                 onClick={handleApplyFilters}
-                className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
+                className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
               >
                 <Search size={14} />
                 Terapkan Filter
@@ -676,6 +700,36 @@ export default function EditDataTable({
           </div>
         )}
 
+        {/* Status Legend */}
+        <div className="px-4 py-3 bg-white border-b border-gray-200 flex flex-wrap items-center gap-x-6 gap-y-3">
+          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Hirarki Data:</span>
+
+          <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
+            <span className="text-xs font-medium text-gray-600">Tier 1</span>
+            <div className="w-px h-4 bg-gray-300 mx-1"></div>
+            <StatusBadge status="BA_VALIDATION" />
+            <StatusBadge status="MANUAL" />
+          </div>
+
+          <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
+            <span className="text-xs font-medium text-gray-600">Tier 2</span>
+            <div className="w-px h-4 bg-gray-300 mx-1"></div>
+            <StatusBadge status="EMAIL" />
+          </div>
+
+          <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
+            <span className="text-xs font-medium text-gray-600">Tier 3</span>
+            <div className="w-px h-4 bg-gray-300 mx-1"></div>
+            <StatusBadge status="SPREADSHEET" />
+          </div>
+
+          <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
+            <span className="text-xs font-medium text-gray-600">Tier 4</span>
+            <div className="w-px h-4 bg-gray-300 mx-1"></div>
+            <StatusBadge status="WHATSAPP" />
+          </div>
+        </div>
+
         {/* Table Body */}
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -685,15 +739,23 @@ export default function EditDataTable({
                 <Th label="Tanggal" field="reportDate" />
                 <Th label="Pemasok" field="supplierName" align="left" />
                 <Th label="Pembangkit" field="siteName" align="left" />
-                <Th label="Metrik" field="metricType" />
                 <Th label="Periode" field="periodType" />
                 <Th label="Jam" field="periodValue" />
-                <Th label="Nilai Dari WA" field="waValue" />
-                <Th label="Nilai Dari Email" field="plnValue" />
-                <Th label="Nilai Final" field="finalValue" />
-                <Th label="Delta" field="delta" />
-                <Th label="Status" field="status" />
-                <Th label="ID" />
+                <Th label="MMSCFD" field="finalValueMmscfd" />
+                <Th label="BBTUD" field="finalValueBbtud" />
+                <Th label="Sumber Data" field="status" />
+                {viewMode === "detail" && (
+                  <>
+                    <Th label="WA MMSCFD" field="waValueMmscfd" />
+                    <Th label="WA BBTUD" field="waValueBbtud" />
+                    <Th label="EMAIL MMSCFD" field="plnValueMmscfd" />
+                    <Th label="EMAIL BBTUD" field="plnValueBbtud" />
+                    <Th label="SHEET MMSCFD" field="sheetValueMmscfd" />
+                    <Th label="SHEET BBTUD" field="sheetValueBbtud" />
+                    <Th label="ID BBTUD" />
+                    <Th label="ID MMSCFD" />
+                  </>
+                )}
                 <Th label="Aksi" />
               </tr>
             </thead>
@@ -701,12 +763,12 @@ export default function EditDataTable({
               {isLoading ? (
                 <tr>
                   <td
-                    colSpan={hasAction ? 14 : 13}
+                    colSpan={hasAction ? (viewMode === "detail" ? 18 : 10) : (viewMode === "detail" ? 17 : 9)}
                     className="px-4 py-8 text-center text-gray-500"
                   >
                     <div className="flex items-center justify-center gap-2">
                       <Loader2
-                        className="animate-spin text-[#14a2bb]"
+                        className="animate-spin text-secondary"
                         size={20}
                       />
                       <span>Memuat data...</span>
@@ -716,7 +778,7 @@ export default function EditDataTable({
               ) : records.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={hasAction ? 14 : 13}
+                    colSpan={hasAction ? (viewMode === "detail" ? 18 : 10) : (viewMode === "detail" ? 17 : 9)}
                     className="px-4 py-8 text-center text-gray-500"
                   >
                     Tidak ada data monitoring
@@ -725,7 +787,7 @@ export default function EditDataTable({
               ) : (
                 sortedRecords.map((record, index) => (
                   <tr
-                    key={record.id}
+                    key={record.idBbtud || record.idMmscfd || index}
                     className="hover:bg-gray-50 transition-colors"
                   >
                     <td className="px-4 py-3 text-center text-gray-700">
@@ -740,37 +802,53 @@ export default function EditDataTable({
                     <td className="px-4 py-3 text-gray-900">
                       {record.siteName}
                     </td>
-                    <td className="px-4 py-3 text-center text-gray-700 whitespace-nowrap">
-                      {formatNormalizeText(record.metricType)}
-                    </td>
                     <td className="px-4 py-3 text-center text-gray-700">
                       {formatNormalizeText(record.periodType)}
                     </td>
                     <td className="px-4 py-3 text-center text-gray-700 font-mono text-xs">
                       {record.periodValue || "-"}
                     </td>
-                    <td className="px-4 py-3 text-center text-gray-700 font-mono">
-                      {fmt4(record.waValue)}
-                    </td>
-                    <td className="px-4 py-3 text-center text-gray-700 font-mono">
-                      {fmt4(record.plnValue)}
+                    <td className="px-4 py-3 text-center text-gray-700 font-mono font-medium">
+                      {fmt4(record.finalValueMmscfd)}
                     </td>
                     <td className="px-4 py-3 text-center text-gray-700 font-mono font-medium">
-                      {fmt4(record.finalValue)}
-                    </td>
-                    <td className="px-4 py-3 text-center text-gray-700 font-mono">
-                      {fmt4(record.delta)}
+                      {fmt4(record.finalValueBbtud)}
                     </td>
                     <td className="px-4 py-3 text-center">
                       <StatusBadge status={record.status} />
                     </td>
-                    <td className="px-4 py-3 text-center text-gray-900 font-medium">
-                      {record.id}
-                    </td>
+                    {viewMode === "detail" && (
+                      <>
+                        <td className="px-4 py-3 text-center text-gray-700 font-mono">
+                          {fmt4(record.waValueMmscfd)}
+                        </td>
+                        <td className="px-4 py-3 text-center text-gray-700 font-mono">
+                          {fmt4(record.waValueBbtud)}
+                        </td>
+                        <td className="px-4 py-3 text-center text-gray-700 font-mono">
+                          {fmt4(record.plnValueMmscfd)}
+                        </td>
+                        <td className="px-4 py-3 text-center text-gray-700 font-mono">
+                          {fmt4(record.plnValueBbtud)}
+                        </td>
+                        <td className="px-4 py-3 text-center text-gray-700 font-mono">
+                          {fmt4(record.sheetValueMmscfd)}
+                        </td>
+                        <td className="px-4 py-3 text-center text-gray-700 font-mono">
+                          {fmt4(record.sheetValueBbtud)}
+                        </td>
+                        <td className="px-4 py-3 text-center text-gray-500 font-mono text-xs truncate max-w-[100px]" title={record.idBbtud || ""}>
+                          {record.idBbtud || "-"}
+                        </td>
+                        <td className="px-4 py-3 text-center text-gray-500 font-mono text-xs truncate max-w-[100px]" title={record.idMmscfd || ""}>
+                          {record.idMmscfd || "-"}
+                        </td>
+                      </>
+                    )}
                     {hasAction && (
                       <td className="px-4 py-3 text-center">
                         <ActionButtons
-                          id={record.id}
+                          id={record.idBbtud || record.idMmscfd || ""}
                           onEdit={(id) => router.push(`/edit/${id}`)}
                           onDelete={(id) =>
                             handleDeleteClick(
@@ -817,7 +895,7 @@ export default function EditDataTable({
                   onChange={(e) => {
                     onPageChange(1, Number(e.target.value));
                   }}
-                  className="px-2 py-1 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/40 focus:border-[#14a2bb] transition-all duration-200"
+                  className="px-2 py-1 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-secondary/40 focus:border-secondary transition-all duration-200"
                 >
                   {[5, 10, 25, 50].map((size) => (
                     <option key={size} value={size}>
@@ -867,11 +945,10 @@ export default function EditDataTable({
                       <button
                         key={p}
                         onClick={() => onPageChange(p as number, itemsPerPage)}
-                        className={`min-w-[2rem] h-8 rounded-lg text-sm font-medium transition-all duration-200 ${
-                          p === displayPage
-                            ? "bg-[#115d72] text-white shadow-sm"
+                        className={`min-w-[2rem] h-8 rounded-lg text-sm font-medium transition-all duration-200 ${p === displayPage
+                            ? "bg-primary text-white shadow-sm"
                             : "text-gray-700 hover:bg-gray-100"
-                        }`}
+                          }`}
                       >
                         {p}
                       </button>
@@ -917,11 +994,11 @@ function FilterTag({
   onRemove: () => void;
 }) {
   return (
-    <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#115d72]/10 text-[#115d72] rounded-full text-xs font-medium">
+    <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium">
       {label}
       <button
         onClick={onRemove}
-        className="hover:bg-[#115d72]/20 rounded-full p-0.5 transition-colors"
+        className="hover:bg-primary/20 rounded-full p-0.5 transition-colors"
       >
         <X size={12} />
       </button>

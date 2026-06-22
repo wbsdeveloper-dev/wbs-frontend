@@ -93,8 +93,8 @@ function GroupedSpreadsheetCard({
       {/* Group header */}
       <div className="flex items-center justify-between gap-4 mb-3">
         <div className="flex items-center gap-3 flex-1 min-w-0">
-          <div className="flex-shrink-0 w-9 h-9 bg-[#14a2bb]/10 rounded-lg flex items-center justify-center">
-            <Layers size={18} className="text-[#14a2bb]" />
+          <div className="flex-shrink-0 w-9 h-9 bg-secondary/10 rounded-lg flex items-center justify-center">
+            <Layers size={18} className="text-secondary" />
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
@@ -106,7 +106,7 @@ function GroupedSpreadsheetCard({
                 href={buildSheetUrl(spreadsheetId)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[#14a2bb] hover:text-[#115d72]"
+                className="text-secondary hover:text-primary"
                 title="Buka di Google Sheets"
               >
                 <ExternalLink size={12} />
@@ -124,7 +124,7 @@ function GroupedSpreadsheetCard({
         <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={() => onAddSheet(spreadsheetId)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[#115d72] bg-[#115d72]/10 rounded-lg hover:bg-[#115d72]/20 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary bg-primary/10 rounded-lg hover:bg-primary/20 transition-colors"
             title="Tambah sheet baru ke spreadsheet ini"
           >
             <Plus size={13} />
@@ -149,7 +149,7 @@ function GroupedSpreadsheetCard({
               className="flex items-center gap-3 px-3 py-2.5 bg-gray-50/70 rounded-lg border border-gray-100 hover:bg-gray-100/60 transition-colors"
             >
               {/* Sheet info */}
-              <FileSpreadsheet size={16} className="text-[#14a2bb] shrink-0" />
+              <FileSpreadsheet size={16} className="text-secondary shrink-0" />
               <div className="flex-1 min-w-0 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-0.5 text-xs">
                 {/* Name */}
                 <div className="sm:col-span-2 lg:col-span-1">
@@ -266,7 +266,7 @@ export default function SpreadsheetSourcePage() {
   const canUpdate = hasPrivilege("spreadsheet_source", "UPDATE");
   const canDelete = hasPrivilege("spreadsheet_source", "DELETE");
 
-  const { data: sources = [], isLoading, isError } = useSpreadsheetSources();
+  const { data: sources = [], isLoading, isError } = useSpreadsheetSources("GAS PIPA,LNG");
   const createMutation = useCreateSpreadsheetSource();
   const updateMutation = useUpdateSpreadsheetSource();
   const deleteMutation = useDeleteSpreadsheetSource();
@@ -285,10 +285,15 @@ export default function SpreadsheetSourcePage() {
     message: string;
   } | null>(null);
 
+  // Filter sources client-side to strictly show GAS PIPA and LNG sources
+  const filteredSources = useMemo(() => {
+    return sources.filter((s) => s.commodity === "GAS PIPA" || s.commodity === "LNG");
+  }, [sources]);
+
   // Group sources by spreadsheetId
   const groups = useMemo<SpreadsheetGroup[]>(() => {
     const map = new Map<string, SpreadsheetSource[]>();
-    for (const source of sources) {
+    for (const source of filteredSources) {
       const existing = map.get(source.spreadsheetId) ?? [];
       map.set(source.spreadsheetId, [...existing, source]);
     }
@@ -296,7 +301,7 @@ export default function SpreadsheetSourcePage() {
       spreadsheetId,
       sheets,
     }));
-  }, [sources]);
+  }, [filteredSources]);
 
   const showNotification = (type: "success" | "error", message: string) => {
     setNotification({ type, message });
@@ -357,6 +362,7 @@ export default function SpreadsheetSourcePage() {
         sheetName: formData.sheetName,
         cronSchedule: formData.cronSchedule || undefined,
         dataStartRow: formData.dataStartRow,
+        commodity: editingSource.commodity || "GAS PIPA",
       };
       updateMutation.mutate(
         { id: editingSource.id, payload },
@@ -378,6 +384,7 @@ export default function SpreadsheetSourcePage() {
         sheetName: formData.sheetName,
         cronSchedule: formData.cronSchedule || undefined,
         dataStartRow: formData.dataStartRow,
+        commodity: "GAS PIPA",
       };
       createMutation.mutate(payload, {
         onSuccess: () => {
@@ -450,7 +457,7 @@ export default function SpreadsheetSourcePage() {
           <span className="text-gray-400">/</span>
           <span>Konfigurasi Sistem</span>
           <span className="text-gray-400">/</span>
-          <span className="text-[#115d72] font-medium">Spreadsheet Source</span>
+          <span className="text-primary font-medium">Spreadsheet Source</span>
         </div>
         <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
           Spreadsheet Source
@@ -470,7 +477,7 @@ export default function SpreadsheetSourcePage() {
           {canCreate && (
             <button
               onClick={() => openCreateModal()}
-              className="flex items-center gap-2 px-4 py-2.5 bg-[#115d72] text-white text-sm font-medium rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
+              className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white text-sm font-medium rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
             >
               <Plus size={18} />
               Tambah Source
@@ -487,7 +494,7 @@ export default function SpreadsheetSourcePage() {
         {isLoading ? (
           <Card className="flex items-center justify-center py-16">
             <div className="text-center text-gray-500">
-              <Loader2 className="w-8 h-8 mx-auto mb-3 animate-spin text-[#14a2bb]" />
+              <Loader2 className="w-8 h-8 mx-auto mb-3 animate-spin text-secondary" />
               <p className="text-sm">Memuat spreadsheet sources...</p>
             </div>
           </Card>
@@ -546,7 +553,7 @@ export default function SpreadsheetSourcePage() {
               onChange={(e) =>
                 setFormData({ ...formData, name: e.target.value })
               }
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent"
+              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent"
               placeholder="Contoh: SERAPAN GAS 2026 JANUARI"
             />
           </div>
@@ -555,7 +562,7 @@ export default function SpreadsheetSourcePage() {
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
               Google Sheets URL <span className="text-red-500">*</span>
               {lockedSpreadsheetId && (
-                <span className="ml-2 text-xs text-[#14a2bb] font-normal">
+                <span className="ml-2 text-xs text-secondary font-normal">
                   (dikunci — sheet baru untuk spreadsheet yang sama)
                 </span>
               )}
@@ -568,7 +575,7 @@ export default function SpreadsheetSourcePage() {
                 setFormData({ ...formData, spreadsheetUrl: e.target.value })
               }
               readOnly={!!lockedSpreadsheetId}
-              className={`w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent ${
+              className={`w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent ${
                 lockedSpreadsheetId
                   ? "bg-gray-50 cursor-not-allowed opacity-70"
                   : ""
@@ -597,7 +604,7 @@ export default function SpreadsheetSourcePage() {
                 onChange={(e) =>
                   setFormData({ ...formData, sheetName: e.target.value })
                 }
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent"
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent"
                 placeholder="Contoh: Januari atau 1"
               />
             </div>
@@ -615,7 +622,7 @@ export default function SpreadsheetSourcePage() {
                     dataStartRow: parseInt(e.target.value) || 1,
                   })
                 }
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent"
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent"
                 placeholder="10"
               />
             </div>
@@ -636,7 +643,7 @@ export default function SpreadsheetSourcePage() {
             <button
               onClick={handleSubmit}
               disabled={createMutation.isPending || updateMutation.isPending}
-              className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-primary rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {createMutation.isPending || updateMutation.isPending ? (
                 <span className="flex items-center justify-center gap-2">

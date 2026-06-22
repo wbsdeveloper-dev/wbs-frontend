@@ -62,7 +62,7 @@ const ActionButtons = ({
       {canUpdate && (
         <button
           onClick={() => onEdit(id)}
-          className="p-1.5 text-[#115d72] hover:bg-[#115d72]/10 rounded-lg transition-colors"
+          className="p-1.5 text-primary hover:bg-primary/10 rounded-lg transition-colors"
           title="Edit"
         >
           <Pencil size={16} />
@@ -232,9 +232,10 @@ function DeleteWarningModal({
 interface SiteTableProps {
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
+  commodity?: string[];
 }
 
-export function DaftarSiteTable({ onEdit, onDelete }: SiteTableProps) {
+export function DaftarSiteTable({ onEdit, onDelete, commodity }: SiteTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(0);
@@ -245,7 +246,7 @@ export function DaftarSiteTable({ onEdit, onDelete }: SiteTableProps) {
   const [pendingDeleteName, setPendingDeleteName] = useState<string>("");
   const [warnedSites, setWarnedSites] = useState<string[]>([]);
 
-  const { data: sites, isLoading } = useSites({ search: debouncedSearch });
+  const { data: sites, isLoading } = useSites({ search: debouncedSearch, commodity });
   const deleteSiteMutation = useDeleteSite({
     onSuccess: (data: DeleteSiteResponse) => {
       // Note: broad siteKeys.all invalidation is handled by useDeleteSite hook itself
@@ -339,7 +340,7 @@ export function DaftarSiteTable({ onEdit, onDelete }: SiteTableProps) {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Cari Pemasok / Pembangkit..."
-              className="w-48 md:w-56 pl-8 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200"
+              className="w-48 md:w-56 pl-8 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
             />
           </div>
         </div>
@@ -362,6 +363,9 @@ export function DaftarSiteTable({ onEdit, onDelete }: SiteTableProps) {
                   Kapasitas
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  Komoditas
+                </th>
+                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   Status
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
@@ -373,7 +377,7 @@ export function DaftarSiteTable({ onEdit, onDelete }: SiteTableProps) {
               {isLoading ? (
                 <tr>
                   <td
-                    colSpan={5}
+                    colSpan={6}
                     className="px-4 py-8 text-center text-gray-500"
                   >
                     Memuat data...
@@ -382,7 +386,7 @@ export function DaftarSiteTable({ onEdit, onDelete }: SiteTableProps) {
               ) : paginatedSites.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={5}
+                    colSpan={6}
                     className="px-4 py-8 text-center text-gray-500"
                   >
                     {searchTerm
@@ -409,6 +413,9 @@ export function DaftarSiteTable({ onEdit, onDelete }: SiteTableProps) {
                     </td>
                     <td className="px-4 py-3 text-center text-gray-700">
                       {site.capacity ? site.capacity + " MW" : "-"}
+                    </td>
+                    <td className="px-4 py-3 text-center text-gray-700">
+                      {site.commodity || "-"}
                     </td>
                     <td className="px-4 py-3 text-center">
                       <StatusBadge
@@ -481,7 +488,7 @@ export function DaftarSiteTable({ onEdit, onDelete }: SiteTableProps) {
 }
 
 // Relations Table Component
-export function RelasiOperasionalTable({ onEdit, onDelete }: SiteTableProps) {
+export function RelasiOperasionalTable({ onEdit, onDelete, commodity }: SiteTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(0);
@@ -528,13 +535,18 @@ export function RelasiOperasionalTable({ onEdit, onDelete }: SiteTableProps) {
   // Filter relations based on search term
   const filteredRelations =
     relations?.filter((relation) => {
+      if (commodity && commodity.length > 0) {
+        if (!commodity.includes(relation.commodity)) {
+          return false;
+        }
+      }
       if (!debouncedSearch) return true;
       const searchLower = debouncedSearch.toLowerCase();
       return (
-        relation.source_site_name.toLowerCase().includes(searchLower) ||
-        relation.target_site_name.toLowerCase().includes(searchLower) ||
-        relation.relation_type.toLowerCase().includes(searchLower) ||
-        relation.commodity.toLowerCase().includes(searchLower)
+        relation.source_site_name?.toLowerCase().includes(searchLower) ||
+        relation.target_site_name?.toLowerCase().includes(searchLower) ||
+        relation.relation_type?.toLowerCase().includes(searchLower) ||
+        relation.commodity?.toLowerCase().includes(searchLower)
       );
     }) || [];
 
@@ -600,7 +612,7 @@ export function RelasiOperasionalTable({ onEdit, onDelete }: SiteTableProps) {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Cari relasi..."
-              className="w-48 md:w-56 pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200"
+              className="w-48 md:w-56 pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
             />
           </div>
         </div>

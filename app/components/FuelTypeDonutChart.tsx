@@ -15,7 +15,7 @@ import { CHART_COLORS } from "@/app/_constants";
 interface DataPieChart {
   name: string;
   value: number;
-  [key: string]: string | number;
+  [key: string]: any;
 }
 
 type Props = {
@@ -29,6 +29,10 @@ type Props = {
   /** Called when the user picks a new date */
   onStartDateChange: (date: string) => void;
   onEndDateChange: (date: string) => void;
+  title?: string;
+  descriptionPrefix?: string;
+  descriptionFuelType?: string;
+  tabs?: string[];
 };
 
 export default function FuelTypeDonutChart({
@@ -40,6 +44,10 @@ export default function FuelTypeDonutChart({
   endDate,
   onStartDateChange,
   onEndDateChange,
+  title = "Konsumsi Gas",
+  descriptionPrefix = "Visualisasi konsumsi gas",
+  descriptionFuelType = "gas",
+  tabs = ["Pemasok", "Pembangkit"],
 }: Props) {
   const [showDateFilter, setShowDateFilter] = useState(false);
   const [tempStartDate, setTempStartDate] = useState(startDate);
@@ -76,17 +84,17 @@ export default function FuelTypeDonutChart({
   })();
 
   return (
-    <div className="bg-white rounded-xl p-6 border border-gray-200 flex flex-col">
+    <div className="bg-white rounded-xl p-6 border border-gray-200 flex flex-col h-full">
       {/* Header row */}
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold text-gray-900">Konsumsi Gas</h3>
+        <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
         <div className="flex items-center gap-1">
           {/* Date filter toggle */}
           <button
             onClick={() => setShowDateFilter(!showDateFilter)}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer ${
               showDateFilter
-                ? "bg-[#14a2bb]/10 text-[#115d72] border border-[#14a2bb]/30"
+                ? "bg-secondary/10 text-primary border border-secondary/30"
                 : "text-gray-500 hover:bg-gray-100 border border-transparent"
             }`}
           >
@@ -124,7 +132,7 @@ export default function FuelTypeDonutChart({
                 onChange={(e) => setTempStartDate(e.target.value)}
                 className="w-full px-3 py-2 rounded-lg text-sm border border-gray-300
                          bg-white text-gray-700
-                         focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/40 focus:border-[#14a2bb]
+                         focus:outline-none focus:ring-2 focus:ring-secondary/40 focus:border-secondary
                          transition-all duration-200"
               />
             </div>
@@ -139,7 +147,7 @@ export default function FuelTypeDonutChart({
                 onChange={(e) => setTempEndDate(e.target.value)}
                 className="w-full px-3 py-2 rounded-lg text-sm border border-gray-300
                          bg-white text-gray-700
-                         focus:outline-none focus:ring-2 focus:ring-[#14a2bb]/40 focus:border-[#14a2bb]
+                         focus:outline-none focus:ring-2 focus:ring-secondary/40 focus:border-secondary
                          transition-all duration-200"
               />
             </div>
@@ -147,7 +155,7 @@ export default function FuelTypeDonutChart({
           <div className="flex justify-end mt-3">
             <button
               onClick={handleApply}
-              className="px-4 py-1.5 bg-[#115d72] text-white text-sm font-medium rounded-md hover:bg-[#0d4a5c] transition-colors"
+              className="px-4 py-1.5 bg-primary text-white text-sm font-medium rounded-md hover:bg-[#0d4a5c] transition-colors"
             >
               Terapkan
             </button>
@@ -158,12 +166,12 @@ export default function FuelTypeDonutChart({
       {/* Pemasok / Pembangkit tabs */}
       <div className="flex items-center mt-4 mb-2 justify-center">
         <div className="inline-flex bg-gray-100 rounded-lg p-0.5">
-          {["Pemasok", "Pembangkit"].map((type) => (
+          {tabs.map((type) => (
             <button
               key={type}
               className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer ${
                 filterType === type
-                  ? "bg-[#14a2bb] text-white shadow-sm"
+                  ? "bg-secondary text-white shadow-sm"
                   : "text-gray-600 hover:text-gray-900"
               }`}
               onClick={() => changeFilterType(type)}
@@ -234,8 +242,8 @@ export default function FuelTypeDonutChart({
       </ResponsiveContainer>
 
       {/* Dynamic footer */}
-      <p className="text-xs text-gray-500 mt-4 pt-4 border-t border-gray-200">
-        Visualisasi konsumsi gas pada setiap{" "}
+      <p className="text-xs text-gray-500 mt-auto pt-4 border-t border-gray-200 min-h-[32px]">
+        {descriptionPrefix} pada setiap{" "}
         {filterType?.toLowerCase() ?? "pembangkit"} PLN EPI per tanggal{" "}
         {formattedDate}
       </p>

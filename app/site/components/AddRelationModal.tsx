@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { X, ArrowRightLeft, Search } from "lucide-react";
 import {
   useDropdowns,
+  useSites,
   useRelation,
   useCreateRelation,
   useUpdateRelation,
@@ -25,11 +26,15 @@ export function AddRelationModal({
   editingId,
 }: AddRelationModalProps) {
   const { data: dropdowns, isLoading: isLoadingDropdowns } = useDropdowns();
+  const { data: sites, isLoading: isLoadingSites } = useSites();
   const createRelationMutation = useCreateRelation({
     onSuccess: () => {
       onSuccess();
       onClose();
       resetForm();
+    },
+    onError: (error: any) => {
+      setApiError(error.message || "Gagal menambahkan relasi");
     },
   });
 
@@ -39,13 +44,18 @@ export function AddRelationModal({
       onClose();
       resetForm();
     },
+    onError: (error: any) => {
+      setApiError(error.message || "Gagal mengubah relasi");
+    },
   });
 
   const [formData, setFormData] = useState<Omit<CreateRelationPayload, "target_site_ids" | "source_site_ids">>({
-    relation_type: "",
+    relation_type: "PEMASOK - PEMBANGKIT",
     commodity: "",
     priority: 1,
   });
+
+  const [apiError, setApiError] = useState<string | null>(null);
 
   const [selectedSourceSites, setSelectedSourceSites] = useState<string[]>([]);
   const [selectedTargetSites, setSelectedTargetSites] = useState<string[]>([]);
@@ -54,24 +64,11 @@ export function AddRelationModal({
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Load relation data for editing
-  const { data: editingRelation } = useRelation(editingId || "");
-
-  // Populate form when editing
-  useEffect(() => {
-    if (editingId && editingRelation) {
-      setFormData({
-        relation_type: editingRelation.relation_type,
-        commodity: editingRelation.commodity,
-        priority: editingRelation.priority,
-      });
-      setSelectedSourceSites([editingRelation.source_site_id]);
-      setSelectedTargetSites([editingRelation.target_site_id]);
-    }
-  }, [editingId, editingRelation]);
+  const { data: editingRelation, isLoading: isLoadingRelation } = useRelation(editingId || "");
 
   const resetForm = () => {
     setFormData({
-      relation_type: "",
+      relation_type: "PEMASOK - PEMBANGKIT",
       commodity: "",
       priority: 1,
     });
@@ -80,7 +77,29 @@ export function AddRelationModal({
     setSourceSearch("");
     setTargetSearch("");
     setErrors({});
+    setApiError(null);
   };
+
+  // Manage form state based on open/edit status
+  useEffect(() => {
+    if (open) {
+      if (editingId) {
+        if (editingRelation) {
+          setFormData({
+            relation_type: editingRelation.relation_type,
+            commodity: editingRelation.commodity,
+            priority: editingRelation.priority,
+          });
+          setSelectedSourceSites([editingRelation.source_site_id]);
+          setSelectedTargetSites([editingRelation.target_site_id]);
+        }
+      } else {
+        resetForm();
+      }
+    } else {
+      resetForm();
+    }
+  }, [open, editingId, editingRelation]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -91,9 +110,12 @@ export function AddRelationModal({
     if (selectedTargetSites.length === 0) {
       newErrors.target_site_ids = "Tujuan wajib dipilih";
     }
-    if (selectedTargetSites.some((targetId) => selectedSourceSites.includes(targetId))) {
-      newErrors.target_site_ids =
-        "Tujuan tidak boleh sama dengan Sumber";
+    if (
+      selectedTargetSites.some((targetId) =>
+        selectedSourceSites.includes(targetId),
+      )
+    ) {
+      newErrors.target_site_ids = "Tujuan tidak boleh sama dengan Sumber";
     }
     if (!formData.commodity.trim()) {
       newErrors.commodity = "Komoditas wajib diisi";
@@ -113,7 +135,7 @@ export function AddRelationModal({
     const payload: CreateRelationPayload = {
       source_site_ids: selectedSourceSites,
       target_site_ids: selectedTargetSites,
-      relation_type: "PEMASOK - PEMBANGKIT",
+      relation_type: formData.relation_type || "PEMASOK - PEMBANGKIT",
       commodity: formData.commodity,
       priority: formData.priority,
     };
@@ -124,10 +146,10 @@ export function AddRelationModal({
         payload: {
           source_site_id: selectedSourceSites[0],
           target_site_id: selectedTargetSites[0],
-          relation_type: "PEMASOK - PEMBANGKIT",
+          relation_type: formData.relation_type || "PEMASOK - PEMBANGKIT",
           commodity: formData.commodity,
           priority: formData.priority,
-        }
+        },
       });
     } else {
       createRelationMutation.mutate(payload);
@@ -136,23 +158,31 @@ export function AddRelationModal({
 
   const commodities = ["Gas"];
 
-  const filteredSuppliers = dropdowns?.suppliers.filter(site =>
-    site.name.toLowerCase().includes(sourceSearch.toLowerCase())
-  ) || [];
+  const selectedCommodities = formData.commodity ? [formData.commodity] : ["GAS PIPA", "LNG"];
 
-  const filteredPlants = dropdowns?.plants.filter(site =>
-    site.name.toLowerCase().includes(targetSearch.toLowerCase())
-  ) || [];
+  const filteredSuppliers =
+    sites?.filter((site) =>
+      site.site_type === "PEMASOK" &&
+      selectedCommodities.includes(site.commodity || "") &&
+      site.name.toLowerCase().includes(sourceSearch.toLowerCase()),
+    ) || [];
+
+  const filteredPlants =
+    sites?.filter((site) =>
+      site.site_type === "PEMBANGKIT" &&
+      selectedCommodities.includes(site.commodity || "") &&
+      site.name.toLowerCase().includes(targetSearch.toLowerCase()),
+    ) || [];
 
   if (!open) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md animate-fadeIn">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col animate-fadeIn">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
           <div className="flex items-center gap-2">
-            <ArrowRightLeft className="w-6 h-6 text-[#115d72]" />
+            <ArrowRightLeft className="w-6 h-6 text-primary" />
             <h2 className="text-lg font-semibold text-gray-900">
               {editingId ? "Edit Relasi" : "Tambah Relasi Pemasok - Pembangkit"}
             </h2>
@@ -166,7 +196,7 @@ export function AddRelationModal({
         </div>
 
         {/* Content */}
-        <form onSubmit={handleSubmit} className="p-6 pt-2 space-y-4">
+        <form onSubmit={handleSubmit} className="p-6 pt-2 space-y-4 overflow-y-auto flex-1 min-h-0">
           {/* Source Site */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-4">
@@ -179,7 +209,7 @@ export function AddRelationModal({
                 placeholder="Cari sumber..."
                 value={sourceSearch}
                 onChange={(e) => setSourceSearch(e.target.value)}
-                className="w-full pl-9 pr-3 py-1.5 text-xs text-gray-400 border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-[#14a2bb] focus:border-transparent transition-all"
+                className="w-full pl-9 pr-3 py-1.5 text-xs text-gray-400 border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-secondary focus:border-transparent transition-all"
               />
             </div>
             <div className="w-full max-h-48 overflow-y-auto border border-gray-300 rounded-lg bg-white p-2 space-y-1">
@@ -187,8 +217,8 @@ export function AddRelationModal({
                 <label
                   key={site.id}
                   className={`flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors ${selectedSourceSites.includes(site.id)
-                    ? "bg-[#14a2bb]/10 text-[#115d72]"
-                    : "hover:bg-gray-50 text-gray-700"
+                      ? "bg-secondary/10 text-primary"
+                      : "hover:bg-gray-50 text-gray-700"
                     }`}
                 >
                   <input
@@ -210,15 +240,17 @@ export function AddRelationModal({
                       }
                       setErrors({ ...errors, source_site_ids: "" });
                     }}
-                    disabled={isLoadingDropdowns}
-                    className="mr-3 w-4 h-4 text-[#14a2bb] focus:ring-[#14a2bb] border-gray-300 rounded cursor-pointer"
+                    disabled={isLoadingSites}
+                    className="mr-3 w-4 h-4 text-secondary focus:ring-secondary border-gray-300 rounded cursor-pointer"
                   />
                   <span className="text-sm">{site.name}</span>
                 </label>
               ))}
               {filteredSuppliers.length === 0 && (
                 <p className="text-sm text-gray-500 text-center py-2">
-                  {sourceSearch ? "Tidak ada hasil pencarian" : "Tidak ada sumber"}
+                  {sourceSearch
+                    ? "Tidak ada hasil pencarian"
+                    : "Tidak ada sumber"}
                 </p>
               )}
             </div>
@@ -241,7 +273,7 @@ export function AddRelationModal({
                 placeholder="Cari tujuan..."
                 value={targetSearch}
                 onChange={(e) => setTargetSearch(e.target.value)}
-                className="w-full pl-9 pr-3 py-1.5 text-xs text-gray-400 border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-[#14a2bb] focus:border-transparent transition-all"
+                className="w-full pl-9 pr-3 py-1.5 text-xs text-gray-400 border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-secondary focus:border-transparent transition-all"
               />
             </div>
             <div className="w-full max-h-48 overflow-y-auto border border-gray-300 rounded-lg bg-white p-2 space-y-1">
@@ -249,8 +281,8 @@ export function AddRelationModal({
                 <label
                   key={site.id}
                   className={`flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors ${selectedTargetSites.includes(site.id)
-                    ? "bg-[#14a2bb]/10 text-[#115d72]"
-                    : "hover:bg-gray-50 text-gray-700"
+                      ? "bg-secondary/10 text-primary"
+                      : "hover:bg-gray-50 text-gray-700"
                     }`}
                 >
                   <input
@@ -272,15 +304,17 @@ export function AddRelationModal({
                       }
                       setErrors({ ...errors, target_site_ids: "" });
                     }}
-                    disabled={isLoadingDropdowns}
-                    className="mr-3 w-4 h-4 text-[#14a2bb] focus:ring-[#14a2bb] border-gray-300 rounded cursor-pointer"
+                    disabled={isLoadingSites}
+                    className="mr-3 w-4 h-4 text-secondary focus:ring-secondary border-gray-300 rounded cursor-pointer"
                   />
                   <span className="text-sm">{site.name}</span>
                 </label>
               ))}
               {filteredPlants.length === 0 && (
                 <p className="text-sm text-gray-500 text-center py-2">
-                  {targetSearch ? "Tidak ada hasil pencarian" : "Tidak ada tujuan"}
+                  {targetSearch
+                    ? "Tidak ada hasil pencarian"
+                    : "Tidak ada tujuan"}
                 </p>
               )}
             </div>
@@ -302,19 +336,22 @@ export function AddRelationModal({
                 setFormData({ ...formData, commodity: e.target.value });
                 setErrors({ ...errors, commodity: "" });
               }}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent bg-white transition-all duration-200"
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white transition-all duration-200"
             >
               <option value="">Pilih komoditas...</option>
-              {commodities.map((commodity) => (
-                <option key={commodity} value={commodity}>
-                  {commodity}
-                </option>
-              ))}
+              <option value="GAS PIPA">GAS PIPA</option>
+              <option value="LNG">LNG</option>
             </select>
             {errors.commodity && (
               <p className="text-xs text-red-600 mt-1">{errors.commodity}</p>
             )}
           </div>
+
+          {apiError && (
+            <div className="p-3 mt-4 text-sm text-red-700 bg-red-50 rounded-lg border border-red-200">
+              {apiError}
+            </div>
+          )}
         </form>
 
         {/* Footer */}
@@ -330,14 +367,17 @@ export function AddRelationModal({
             onClick={handleSubmit}
             disabled={
               createRelationMutation.isPending ||
-              updateRelationMutation.isPending
+              updateRelationMutation.isPending ||
+              (!!editingId && isLoadingRelation)
             }
-            className="px-4 py-2.5 text-sm font-medium text-white bg-[#115d72] rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            className="px-4 py-2.5 text-sm font-medium text-white bg-primary rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95 disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
             {createRelationMutation.isPending ||
               updateRelationMutation.isPending
               ? "Menyimpan..."
-              : "Simpan"}
+              : !!editingId && isLoadingRelation
+                ? "Memuat..."
+                : "Simpan"}
           </button>
         </div>
       </div>

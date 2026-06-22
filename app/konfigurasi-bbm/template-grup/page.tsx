@@ -1,0 +1,905 @@
+"use client";
+
+import React, { useState, useMemo } from "react";
+import {
+  Search,
+  Plus,
+  ChevronDown,
+  FileText,
+  CheckCircle,
+  Clock,
+  AlertCircle,
+  X,
+  Loader2,
+  MessageSquare,
+  FileSpreadsheet,
+  Mail,
+} from "lucide-react";
+import Card from "@/app/components/ui/Card";
+import { Modal } from "@/app/components/ui";
+import TemplateList from "./components/TemplateList";
+import TemplateEditor from "./components/TemplateEditor";
+import EmailSourcePanel from "./components/EmailSourcePanel";
+import {
+  useTemplates,
+  useTemplate,
+  useGroups,
+  useCreateTemplate,
+  useUpdateTemplate,
+  useDuplicateTemplate,
+  useDeprecateTemplate,
+  useCreateGroup,
+  useActivateTemplate,
+  useTestRouting,
+  useDeleteTemplate,
+  useSpreadsheetSources,
+  type Template,
+  type TemplateField,
+  type TemplateListFilters,
+  type RoutingTestTemplatePreview,
+} from "@/hooks/service/config-api";
+import { usePrivilege } from "@/hooks/usePrivilege";
+import { useBotGroups } from "@/hooks/use-bot-groups";
+import { BOT_PRIMARY_API } from "@/hooks/service/bot-api";
+import type { GroupItem } from "@/hooks/service/bot-api";
+
+// Wrapper component to fetch full details
+function TemplateEditorWrapper({
+  templateId,
+  onUpdate,
+  onActivate,
+  onDelete,
+  onAddGroup,
+  groupConfigs,
+  botGroups,
+  spreadsheetSources,
+}: {
+  templateId: string;
+  onUpdate: (t: Template) => void;
+  onActivate: (t: Template) => void;
+  onDelete: (id: string) => void;
+  onAddGroup: (payload: { groupId: string; name: string }) => void;
+  groupConfigs: {
+    id: string;
+    groupId: string;
+    name: string;
+    isEnabled: boolean;
+  }[];
+  botGroups: GroupItem[];
+  spreadsheetSources: { id: string; name: string }[];
+}) {
+  const { data: fullTemplate, isLoading, isError } = useTemplate(templateId);
+
+  if (isLoading) {
+    return (
+      <Card className="h-full min-h-[400px] flex items-center justify-center">
+        <div className="text-center text-gray-500">
+          <Loader2 className="w-8 h-8 mx-auto mb-3 animate-spin text-secondary" />
+          <p className="text-sm">Memuat detail template...</p>
+        </div>
+      </Card>
+    );
+  }
+
+  if (isError || !fullTemplate) {
+    return (
+      <Card className="h-full min-h-[400px] flex items-center justify-center">
+        <div className="text-center text-red-500">
+          <AlertCircle className="w-8 h-8 mx-auto mb-3" />
+          <p className="text-sm">Gagal memuat detail template</p>
+        </div>
+      </Card>
+    );
+  }
+
+  return (
+    <TemplateEditor
+      key={fullTemplate.id}
+      template={fullTemplate}
+      onUpdate={onUpdate}
+      onActivate={onActivate}
+      onDelete={onDelete}
+      onAddGroup={onAddGroup}
+      groupConfigs={groupConfigs}
+      botGroups={botGroups}
+      spreadsheetSources={spreadsheetSources}
+    />
+  );
+}
+
+// Re-export types so downstream components can import from page.tsx if needed
+export type { Template, TemplateField };
+
+export default function TemplateGrupPage() {
+  const { hasPrivilege } = usePrivilege();
+  const canCreate = hasPrivilege("template_group", "CREATE");
+
+  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(
+    null,
+  );
+  const [searchQuery, setSearchQuery] = useState("");
+  const [scopeFilter, setScopeFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [notification, setNotification] = useState<{
+    type: "success" | "error" | "info";
+    message: string;
+  } | null>(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [newTemplateName, setNewTemplateName] = useState("");
+  const [newTemplateScope, setNewTemplateScope] = useState<
+    "WA_GROUP" | "SPREADSHEET_SOURCE" | "EMAIL_INGEST"
+  >("WA_GROUP");
+  const [newTemplateDecimal, setNewTemplateDecimal] = useState<string>(",");
+  const [newTemplateCommodity, setNewTemplateCommodity] =
+    useState<string>("BBM");
+
+  const [isTestModalOpen, setIsTestModalOpen] = useState(false);
+  const [testGroupId, setTestGroupId] = useState("");
+  const [testMessage, setTestMessage] = useState("");
+  const [testResult, setTestResult] = useState<{
+    allowed: boolean;
+    groupConfigId: string | null;
+    template: RoutingTestTemplatePreview | null;
+  } | null>(null);
+
+  // ---------------------------------------------------------------------------
+  // API queries
+  // ---------------------------------------------------------------------------
+  const filters: TemplateListFilters = useMemo(
+    () => ({
+      scope: scopeFilter !== "all" ? scopeFilter : undefined,
+      status: statusFilter !== "all" ? statusFilter : undefined,
+      search: searchQuery || undefined,
+      commodity: "BBM",
+    }),
+    [scopeFilter, statusFilter, searchQuery],
+  );
+
+  const {
+    data: templates = [],
+    isLoading: isLoadingTemplates,
+    isError: isErrorTemplates,
+  } = useTemplates(filters);
+
+  const { data: groupConfigs = [] } = useGroups();
+
+  // Fetch bot groups directly from bot API (same list as Manajemen Bot > Konfigurasi Group)
+  const { data: botGroups = [] } = useBotGroups(BOT_PRIMARY_API);
+
+  // Fetch real spreadsheet sources from API
+  const { data: spreadsheetSourcesRaw = [] } = useSpreadsheetSources("BBM");
+  const spreadsheetSources = useMemo(() => {
+    return spreadsheetSourcesRaw.filter((s) => s.commodity === "BBM");
+  }, [spreadsheetSourcesRaw]);
+
+  // ---------------------------------------------------------------------------
+  // API mutations
+  // ---------------------------------------------------------------------------
+  const createTemplateMutation = useCreateTemplate();
+  const updateTemplateMutation = useUpdateTemplate();
+  const duplicateTemplateMutation = useDuplicateTemplate();
+  const deprecateTemplateMutation = useDeprecateTemplate();
+  const activateTemplateMutation = useActivateTemplate();
+  const deleteTemplateMutation = useDeleteTemplate();
+  const createGroupMutation = useCreateGroup();
+  const testRoutingMutation = useTestRouting();
+
+  // Show notification helper
+  const showNotification = (
+    type: "success" | "error" | "info",
+    message: string,
+  ) => {
+    setNotification({ type, message });
+    setTimeout(() => setNotification(null), 3000);
+  };
+
+  // Filter templates client-side to strictly show BBM templates
+  const filteredTemplates = useMemo(() => {
+    return templates.filter((t) => t.commodity === "BBM");
+  }, [templates]);
+
+  const handleSelectTemplate = (template: Template) => {
+    setSelectedTemplate(template);
+  };
+
+  const handleUpdateTemplate = (updatedTemplate: Template) => {
+    updateTemplateMutation.mutate(
+      {
+        id: updatedTemplate.id,
+        payload: {
+          name: updatedTemplate.name,
+          scope: updatedTemplate.scope,
+          parserMode: updatedTemplate.parserMode,
+          isDefault: updatedTemplate.isDefault,
+          sourceLinks: updatedTemplate.sourceLinks,
+          waKeywordHint: updatedTemplate.waKeywordHint,
+          waSenderHint: updatedTemplate.waSenderHint,
+          sheetTabHint: updatedTemplate.sheetTabHint,
+          sheetHeaderRow: updatedTemplate.sheetHeaderRow,
+          aiModel: updatedTemplate.aiModel,
+          aiPromptTemplate: updatedTemplate.aiPromptTemplate,
+          aiOutputSchema: updatedTemplate.aiOutputSchema,
+          decimalSeparator: updatedTemplate.decimalSeparator,
+          commodity: updatedTemplate.commodity,
+          fields: updatedTemplate.fields.map((f, i) => ({
+            fieldKey: f.fieldKey,
+            sourceKind: f.sourceKind,
+            sourceRef: f.sourceRef,
+            transform: f.transform || null,
+            isRequired: f.isRequired,
+            orderNo: i + 1,
+          })),
+        },
+      },
+      {
+        onSuccess: (data) => {
+          setSelectedTemplate(data);
+          showNotification("success", "Template berhasil diperbarui");
+        },
+        onError: (err) => {
+          showNotification(
+            "error",
+            `Gagal memperbarui template: ${err.message}`,
+          );
+        },
+      },
+    );
+  };
+
+  const handleActivateTemplate = (template: Template) => {
+    activateTemplateMutation.mutate(template.id, {
+      onSuccess: (data) => {
+        setSelectedTemplate(data);
+        showNotification(
+          "success",
+          `Template "${template.name}" berhasil diaktifkan`,
+        );
+      },
+      onError: (err) => {
+        showNotification(
+          "error",
+          `Gagal mengaktifkan template: ${err.message}`,
+        );
+      },
+    });
+  };
+
+  const handleDuplicateTemplate = (template: Template) => {
+    duplicateTemplateMutation.mutate(template.id, {
+      onSuccess: (data) => {
+        setSelectedTemplate(data);
+        showNotification(
+          "success",
+          `Template "${template.name}" berhasil diduplikasi`,
+        );
+      },
+      onError: (err) => {
+        showNotification(
+          "error",
+          `Gagal menduplikasi template: ${err.message}`,
+        );
+      },
+    });
+  };
+
+  const handleArchiveTemplate = (template: Template) => {
+    deprecateTemplateMutation.mutate(template.id, {
+      onSuccess: (data) => {
+        if (selectedTemplate?.id === template.id) {
+          setSelectedTemplate(data);
+        }
+        showNotification(
+          "success",
+          `Template "${template.name}" berhasil diarsipkan`,
+        );
+      },
+      onError: (err) => {
+        showNotification(
+          "error",
+          `Gagal mengarsipkan template: ${err.message}`,
+        );
+      },
+    });
+  };
+
+  const handleDeleteTemplate = (id: string) => {
+    deleteTemplateMutation.mutate(id, {
+      onSuccess: () => {
+        showNotification("success", "Template berhasil dihapus");
+        setSelectedTemplate(null);
+      },
+      onError: (err) => {
+        showNotification("error", `Gagal menghapus template: ${err.message}`);
+      },
+    });
+  };
+
+  const handleCreateTemplate = () => {
+    if (!newTemplateName.trim()) {
+      showNotification("error", "Nama template wajib diisi");
+      return;
+    }
+
+    createTemplateMutation.mutate(
+      {
+        name: newTemplateName,
+        scope: newTemplateScope,
+        decimalSeparator: newTemplateDecimal,
+        commodity: newTemplateCommodity,
+      },
+      {
+        onSuccess: (data) => {
+          setSelectedTemplate(data);
+          setIsCreateModalOpen(false);
+          setNewTemplateName("");
+          setNewTemplateDecimal(",");
+          setNewTemplateCommodity("BBM");
+          showNotification(
+            "success",
+            `Template "${newTemplateName}" berhasil dibuat`,
+          );
+        },
+        onError: (err) => {
+          showNotification("error", `Gagal membuat template: ${err.message}`);
+        },
+      },
+    );
+  };
+
+  const handleAddGroup = (payload: { groupId: string; name: string }) => {
+    createGroupMutation.mutate(
+      { groupId: payload.groupId, name: payload.name },
+      {
+        onSuccess: () => {
+          showNotification(
+            "success",
+            `Group "${payload.name}" berhasil ditambahkan`,
+          );
+        },
+        onError: (err) => {
+          showNotification("error", `Gagal menambahkan group: ${err.message}`);
+        },
+      },
+    );
+  };
+
+  const handleTestRouting = () => {
+    if (!testGroupId.trim()) {
+      showNotification("error", "Wah Group ID kosong nih.");
+      return;
+    }
+
+    testRoutingMutation.mutate(
+      { groupId: testGroupId, textContent: testMessage },
+      {
+        onSuccess: (data) => {
+          setTestResult(data);
+        },
+        onError: (err) => {
+          showNotification("error", `Test failed: ${err.message}`);
+        },
+      },
+    );
+  };
+
+  // Map GroupConfig[] to the shape TemplateEditor expects
+  const groupConfigsForEditor = groupConfigs.map((g) => ({
+    id: g.id,
+    groupId: g.groupId || g.group_id || g.id,
+    name: g.name,
+    isEnabled: g.isEnabled ?? g.is_enabled ?? true,
+  }));
+
+  return (
+    <div className="min-h-screen p-4 md:p-6 lg:p-8">
+      {/* Notification Toast */}
+      {notification && (
+        <div
+          className={`fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg animate-slideIn ${
+            notification.type === "success"
+              ? "bg-green-50 text-green-800 border border-green-200"
+              : notification.type === "error"
+                ? "bg-red-50 text-red-800 border border-red-200"
+                : "bg-blue-50 text-blue-800 border border-blue-200"
+          }`}
+        >
+          {notification.type === "success" && <CheckCircle size={18} />}
+          {notification.type === "error" && <AlertCircle size={18} />}
+          {notification.type === "info" && <Clock size={18} />}
+          <span className="text-sm font-medium">{notification.message}</span>
+          <button
+            onClick={() => setNotification(null)}
+            className="ml-2 hover:opacity-70"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      )}
+
+      {/* Header */}
+      <div className="mb-6 md:mb-8 animate-fadeIn">
+        <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
+          <span>Dashboard</span>
+          <span className="text-gray-400">/</span>
+          <span>Konfigurasi Sistem</span>
+          <span className="text-gray-400">/</span>
+          <span className="text-primary font-medium">Template Grup</span>
+        </div>
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+          Template Grup
+        </h1>
+        <p className="text-gray-600 mt-1 text-sm md:text-base">
+          Buat dan kelola template parsing untuk WA group atau Spreadsheet
+          source.
+        </p>
+      </div>
+
+      {/* Action Bar */}
+      <Card className="mb-6 animate-fadeIn" style={{ animationDelay: "100ms" }}>
+        <div className="flex flex-col lg:flex-row gap-4 justify-between">
+          {/* Left side - Buttons */}
+          <div className="flex flex-wrap gap-3">
+            {canCreate && (
+              <button
+                onClick={() => setIsCreateModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white text-sm font-medium rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
+              >
+                <Plus size={18} />
+                Buat Template
+              </button>
+            )}
+            <button
+              onClick={() => {
+                setIsTestModalOpen(true);
+                setTestResult(null);
+                setTestGroupId("");
+                setTestMessage("");
+              }}
+              className="flex items-center gap-2 px-4 py-2.5 bg-indigo-50 text-indigo-700 border border-indigo-200 text-sm font-medium rounded-lg hover:bg-indigo-100 transition-all duration-200 hover:shadow-sm active:scale-95"
+            >
+              Test Routing
+            </button>
+          </div>
+
+          {/* Right side - Search & Filters */}
+          <div className="flex flex-wrap gap-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Cari template..."
+                className="w-full md:w-56 pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
+              />
+            </div>
+            <div className="relative">
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="appearance-none pl-4 pr-10 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white cursor-pointer transition-all duration-200"
+              >
+                <option value="all">Semua Status</option>
+                <option value="DRAFT">Draft (Rancangan)</option>
+                <option value="ACTIVE">Aktif (Active)</option>
+                <option value="DEPRECATED">Diarsipkan (Deprecated)</option>
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            </div>
+          </div>
+        </div>
+
+        {/* Tab Bar — Scope Filter */}
+        <div className="mt-4 pt-4 border-t border-gray-100 flex items-center gap-1 overflow-x-auto">
+          {[
+            { key: "all", label: "Semua", icon: null },
+            {
+              key: "WA_GROUP",
+              label: "WhatsApp Grup",
+              icon: <MessageSquare size={14} />,
+            },
+            {
+              key: "SPREADSHEET_SOURCE",
+              label: "Spreadsheet",
+              icon: <FileSpreadsheet size={14} />,
+            },
+            {
+              key: "EMAIL_INGEST",
+              label: "Email Ingest",
+              icon: <Mail size={14} />,
+            },
+          ].map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setScopeFilter(tab.key)}
+              className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap ${
+                scopeFilter === tab.key
+                  ? "bg-primary text-white shadow-sm"
+                  : "text-gray-600 hover:bg-gray-100"
+              }`}
+            >
+              {tab.icon}
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </Card>
+
+      {/* Main Content - Split Layout */}
+      <div
+        className="grid grid-cols-1 lg:grid-cols-10 gap-6 animate-fadeIn"
+        style={{ animationDelay: "200ms" }}
+      >
+        {/* Left Panel - Template List (30%) */}
+        <div className="lg:col-span-3">
+          {isLoadingTemplates ? (
+            <Card className="h-full min-h-[400px] flex items-center justify-center">
+              <div className="text-center text-gray-500">
+                <Loader2 className="w-8 h-8 mx-auto mb-3 animate-spin text-secondary" />
+                <p className="text-sm">Memuat template...</p>
+              </div>
+            </Card>
+          ) : isErrorTemplates ? (
+            <Card className="h-full min-h-[400px] flex items-center justify-center">
+              <div className="text-center text-red-500">
+                <AlertCircle className="w-8 h-8 mx-auto mb-3" />
+                <p className="text-sm">Gagal memuat template</p>
+                <p className="text-xs mt-1 text-gray-400">
+                  Periksa koneksi API Anda
+                </p>
+              </div>
+            </Card>
+          ) : (
+            <TemplateList
+              templates={filteredTemplates}
+              selectedTemplate={selectedTemplate}
+              onSelect={handleSelectTemplate}
+              onDuplicate={handleDuplicateTemplate}
+              onArchive={handleArchiveTemplate}
+            />
+          )}
+        </div>
+
+        {/* Right Panel - Template Editor (70%) or split with Email Panel */}
+        {scopeFilter === "EMAIL_INGEST" &&
+        selectedTemplate?.sourceLinks?.some(
+          (l) => l.sourceType === "EMAIL_INGEST",
+        ) ? (
+          <>
+            {/* Editor (50%) */}
+            <div className="lg:col-span-4">
+              {selectedTemplate ? (
+                <TemplateEditorWrapper
+                  templateId={selectedTemplate.id}
+                  onUpdate={handleUpdateTemplate}
+                  onActivate={handleActivateTemplate}
+                  onDelete={handleDeleteTemplate}
+                  onAddGroup={handleAddGroup}
+                  groupConfigs={groupConfigsForEditor}
+                  botGroups={botGroups}
+                  spreadsheetSources={spreadsheetSources.map((s) => ({
+                    id: s.id,
+                    name: s.name,
+                  }))}
+                />
+              ) : (
+                <Card className="h-full min-h-[400px] flex items-center justify-center">
+                  <div className="text-center text-gray-500">
+                    <Mail className="w-12 h-12 mx-auto mb-3 opacity-40" />
+                    <p className="text-sm">Pilih template Email Ingest</p>
+                    <p className="text-xs mt-1">atau buat template baru</p>
+                  </div>
+                </Card>
+              )}
+            </div>
+            {/* Email Source Panel (30%) */}
+            <div className="lg:col-span-3">
+              <EmailSourcePanel
+                sourceId={
+                  selectedTemplate.sourceLinks?.find(
+                    (l) => l.sourceType === "EMAIL_INGEST",
+                  )?.sourceId || ""
+                }
+              />
+            </div>
+          </>
+        ) : (
+          <div className="lg:col-span-7">
+            {selectedTemplate ? (
+              <TemplateEditorWrapper
+                templateId={selectedTemplate.id}
+                onUpdate={handleUpdateTemplate}
+                onActivate={handleActivateTemplate}
+                onDelete={handleDeleteTemplate}
+                onAddGroup={handleAddGroup}
+                groupConfigs={groupConfigsForEditor}
+                botGroups={botGroups}
+                spreadsheetSources={spreadsheetSources.map((s) => ({
+                  id: s.id,
+                  name: s.name,
+                }))}
+              />
+            ) : (
+              <Card className="h-full min-h-[400px] flex items-center justify-center">
+                <div className="text-center text-gray-500">
+                  <FileText className="w-12 h-12 mx-auto mb-3 opacity-40" />
+                  <p className="text-sm">
+                    Pilih template dari daftar untuk mengedit
+                  </p>
+                  <p className="text-xs mt-1">atau buat template baru</p>
+                </div>
+              </Card>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Create Template Modal */}
+      <Modal
+        isOpen={isCreateModalOpen}
+        onClose={() => {
+          setIsCreateModalOpen(false);
+          setNewTemplateName("");
+          setNewTemplateDecimal(",");
+          setNewTemplateCommodity("BBM");
+        }}
+        title="Buat Template Baru"
+        maxWidth="max-w-md"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Nama Template <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={newTemplateName}
+              onChange={(e) => setNewTemplateName(e.target.value)}
+              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent"
+              placeholder="Contoh: Template Report Harian"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Scope
+            </label>
+            <div className="relative">
+              <select
+                value={newTemplateScope}
+                onChange={(e) =>
+                  setNewTemplateScope(
+                    e.target.value as
+                      | "WA_GROUP"
+                      | "SPREADSHEET_SOURCE"
+                      | "EMAIL_INGEST",
+                  )
+                }
+                className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white cursor-pointer pr-10"
+              >
+                <option value="WA_GROUP">WhatsApp Grup</option>
+                <option value="SPREADSHEET_SOURCE">Sumber Spreadsheet</option>
+                <option value="EMAIL_INGEST">Email Ingest</option>
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Pemisah Desimal
+            </label>
+            <div className="relative">
+              <select
+                value={newTemplateDecimal}
+                onChange={(e) => setNewTemplateDecimal(e.target.value)}
+                className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white cursor-pointer pr-10"
+              >
+                <option value=",">Koma (,)</option>
+                <option value=".">Titik (.)</option>
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Komoditas
+            </label>
+            <div className="relative">
+              <select
+                value={newTemplateCommodity}
+                onChange={(e) => setNewTemplateCommodity(e.target.value)}
+                className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white cursor-pointer pr-10"
+              >
+                <option value="GAS PIPA">GAS PIPA</option>
+                <option value="LNG">LNG</option>
+                <option value="BBM">BBM</option>
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            </div>
+          </div>
+          <div className="flex gap-3 pt-4 border-t border-gray-200">
+            <button
+              onClick={() => {
+                setIsCreateModalOpen(false);
+                setNewTemplateName("");
+                setNewTemplateDecimal(",");
+                setNewTemplateCommodity("BBM");
+              }}
+              className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200"
+            >
+              Batal
+            </button>
+            <button
+              onClick={handleCreateTemplate}
+              disabled={createTemplateMutation.isPending}
+              className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-primary rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {createTemplateMutation.isPending ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Loader2 size={14} className="animate-spin" />
+                  Membuat...
+                </span>
+              ) : (
+                "Buat"
+              )}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Test Routing Modal */}
+      <Modal
+        isOpen={isTestModalOpen}
+        onClose={() => {
+          setIsTestModalOpen(false);
+          setTestResult(null);
+        }}
+        title="Uji Jalur Pesan (Test Routing)"
+        maxWidth="max-w-md"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              WhatsApp Group ID
+            </label>
+            <div className="relative">
+              <select
+                value={testGroupId}
+                onChange={(e) => setTestGroupId(e.target.value)}
+                className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white cursor-pointer pr-10"
+              >
+                <option value="" disabled>
+                  Pilih Group...
+                </option>
+                {groupConfigs.map((g) => {
+                  const safeGroupId = g.groupId || g.group_id || g.id;
+                  return (
+                    <option key={g.id} value={safeGroupId}>
+                      {g.name} ({safeGroupId})
+                    </option>
+                  );
+                })}
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              Test akan dilakukan seolah-olah pesan datang dari group ini.
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Isi Pesan (Message Content)
+            </label>
+            <textarea
+              value={testMessage}
+              onChange={(e) => setTestMessage(e.target.value)}
+              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent min-h-[100px] resize-y"
+              placeholder="Ketik isi pesan WhatsApp di sini..."
+            />
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button
+              onClick={handleTestRouting}
+              disabled={testRoutingMutation.isPending || !testGroupId}
+              className="w-full px-4 py-2.5 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-all duration-200 hover:shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {testRoutingMutation.isPending
+                ? "Sedang Menguji..."
+                : "Jalankan Tes"}
+            </button>
+          </div>
+
+          {testResult && (
+            <div className="mt-4 p-4 rounded-lg border bg-gray-50">
+              <h4 className="text-sm font-semibold text-gray-900 mb-2">
+                Hasil Pengujian (Test Result)
+              </h4>
+
+              {!testResult.allowed ? (
+                <div className="text-sm text-red-600 flex items-start gap-2">
+                  <AlertCircle size={16} className="mt-0.5 shrink-0" />
+                  <p>
+                    Akses ditolak. Group ini dinonaktifkan atau belum disync.
+                  </p>
+                </div>
+              ) : testResult.template ? (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium text-gray-500 w-24">
+                      Template:
+                    </span>
+                    <span className="text-sm font-medium text-primary">
+                      {testResult.template.name}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium text-gray-500 w-24">
+                      Parser Mode:
+                    </span>
+                    <span className="text-sm text-gray-700">
+                      {testResult.template.parserMode}
+                    </span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-xs font-medium text-gray-500 w-24 pt-0.5">
+                      Penjelasan:
+                    </span>
+                    <span className="text-sm text-gray-700 flex-1">
+                      {testResult.groupConfigId
+                        ? "Dipilih karena group ini secara eksplisit terhubung dengan template ini (Priority 1)."
+                        : testResult.template.waKeywordHint
+                          ? "Dipilih karena pesan mengandung keyword yang cocok dengan global template (Priority 2)."
+                          : "Dipilih sebagai template default fallback karena tidak ada match spesifik (Priority 3)."}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-sm text-amber-600 flex items-start gap-2">
+                  <span className="mt-0.5 shrink-0">⚠️</span>
+                  <p>
+                    Tidak ada template yang cocok ditemukan. Coba cek template
+                    default dan konfigurasi template Anda.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </Modal>
+
+      {/* CSS Animations */}
+      <style jsx global>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes slideIn {
+          from {
+            opacity: 0;
+            transform: translateX(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+
+        .animate-fadeIn {
+          animation: fadeIn 0.4s ease-out forwards;
+        }
+
+        .animate-slideIn {
+          animation: slideIn 0.3s ease-out forwards;
+        }
+      `}</style>
+    </div>
+  );
+}

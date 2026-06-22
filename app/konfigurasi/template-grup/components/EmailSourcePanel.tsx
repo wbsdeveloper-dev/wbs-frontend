@@ -20,9 +20,9 @@ import {
 } from "@/hooks/service/config-api";
 
 const SWITCH_SX = {
-  "& .MuiSwitch-switchBase.Mui-checked": { color: "#14a2bb" },
+  "& .MuiSwitch-switchBase.Mui-checked": { color: "var(--theme-secondary)" },
   "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
-    backgroundColor: "#14a2bb",
+    backgroundColor: "var(--theme-secondary)",
   },
 };
 
@@ -62,7 +62,7 @@ export default function EmailSourcePanel({ sourceId }: { sourceId?: string | nul
         action={
           <a
             href="/konfigurasi/email-ingest"
-            className="flex items-center gap-1 text-xs font-medium text-[#115d72] hover:underline"
+            className="flex items-center gap-1 text-xs font-medium text-primary hover:underline"
           >
             Kelengkapan Email
             <ExternalLink size={12} />
@@ -126,7 +126,7 @@ export default function EmailSourcePanel({ sourceId }: { sourceId?: string | nul
               <button
                 onClick={(e) => handleTriggerPoll(e, source.id)}
                 disabled={triggerPollMutation.isPending}
-                className="shrink-0 p-1.5 text-gray-400 hover:text-[#115d72] hover:bg-[#115d72]/10 rounded-lg transition-all duration-150 disabled:opacity-50"
+                className="shrink-0 p-1.5 text-gray-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-all duration-150 disabled:opacity-50"
                 title="Trigger poll sekarang"
               >
                 {triggerPollMutation.isPending ? (
@@ -146,7 +146,7 @@ export default function EmailSourcePanel({ sourceId }: { sourceId?: string | nul
             </div>
             
             <div className="text-xs text-gray-500 bg-blue-50/50 p-3 rounded-lg flex items-start gap-2">
-              <AlertCircle size={14} className="mt-0.5 text-[#115d72] shrink-0" />
+              <AlertCircle size={14} className="mt-0.5 text-primary shrink-0" />
               <p>
                 Template ini akan dieksekusi secara otomatis setiap kali email masuk ke <strong>{source.emailAddress}</strong> yang cocok dengan filter.
               </p>

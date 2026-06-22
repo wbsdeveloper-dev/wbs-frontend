@@ -5,14 +5,18 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { AuthProvider } from "@/components/providers/auth-provider";
 
+import ThemeProvider from "@/components/providers/ThemeProvider";
+
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <AuthProvider>
-      <QueryProvider>
-        <LocalizationProvider dateAdapter={AdapterDayjs}>
-          {children}
-        </LocalizationProvider>
-      </QueryProvider>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <QueryProvider>
+          <LocalizationProvider dateAdapter={AdapterDayjs}>
+            {children}
+          </LocalizationProvider>
+        </QueryProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

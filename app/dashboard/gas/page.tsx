@@ -17,7 +17,7 @@ import {
   useEvents,
 } from "@/hooks/service/dashboard-api";
 import { useContracts } from "@/hooks/service/contract-api";
-import type { Granularity } from "@/app/components/RealtimeChart";
+import type { Granularity, Periode } from "@/app/components/RealtimeChart";
 
 // Components
 import FuelTypeDonutChart from "@/app/components/FuelTypeDonutChart";
@@ -52,7 +52,7 @@ export default function GasDashboard() {
   const [endDateFilter, setEndDateFilter] = useState<string | null>(todayDate);
 
   // Chart flow state
-  const [granularity, setGranularity] = useState<Granularity>("hour");
+  const [granularity, setGranularity] = useState<"hour" | "day" | "month" | "year">("hour");
   const [chartBy, setChartBy] = useState<"supplier" | "plant">("supplier");
   const [selectedPemasokId, setSelectedPemasokId] = useState<
     string | undefined
@@ -88,7 +88,7 @@ export default function GasDashboard() {
   const { data: chartFlowData, isLoading: isChartLoading } = useChartFlow(
     startDateFilter || "",
     endDateFilter || "",
-    granularity,
+    granularity as any,
     chartBy,
     selectedPemasokId,
     selectedPembangkitId,
@@ -135,6 +135,14 @@ export default function GasDashboard() {
         setStartDateFilter(sevenDaysAgo.toISOString().split("T")[0]);
         setEndDateFilter(todayDate);
         setGranularity("day");
+      } else if (newGranularity === "interval_hour") {
+        setGranularity("hour");
+      } else if (newGranularity === "interval_day") {
+        setGranularity("day");
+      } else if (newGranularity === "interval_month") {
+        setGranularity("month");
+      } else if (newGranularity === "interval_year") {
+        setGranularity("year");
       } else {
         const getFirstDateOfMonth = (dateStr: string, monthsAgo: number) => {
           const d = new Date(dateStr);
@@ -142,26 +150,31 @@ export default function GasDashboard() {
           return d.toISOString().split("T")[0];
         };
 
-        if (newGranularity === "three_month") {
-          setStartDateFilter(getFirstDateOfMonth(startDate, 2));
-          setEndDateFilter(endDate);
+        if (newGranularity === "one_month") {
+          setStartDateFilter(getFirstDateOfMonth(todayDate, 1));
+          setEndDateFilter(todayDate);
+          setGranularity("day");
+        } else if (newGranularity === "three_month") {
+          setStartDateFilter(getFirstDateOfMonth(todayDate, 3));
+          setEndDateFilter(todayDate);
           setGranularity("month");
         } else if (newGranularity === "six_month") {
-          setStartDateFilter(getFirstDateOfMonth(startDate, 5));
-          setEndDateFilter(endDate);
+          setStartDateFilter(getFirstDateOfMonth(todayDate, 6));
+          setEndDateFilter(todayDate);
           setGranularity("month");
         } else if (newGranularity === "one_year") {
-          setStartDateFilter(getFirstDateOfMonth(startDate, 11));
-          setEndDateFilter(endDate);
+          setStartDateFilter(getFirstDateOfMonth(todayDate, 12));
+          setEndDateFilter(todayDate);
           setGranularity("month");
         } else if (newGranularity === "three_year") {
-          setStartDateFilter(getFirstDateOfMonth(startDate, 35));
-          setEndDateFilter(endDate);
-          setGranularity("month");
+          const currentYear = new Date(todayDate).getFullYear();
+          setStartDateFilter(`${currentYear - 2}-01-01`);
+          setEndDateFilter(`${currentYear}-12-31`);
+          setGranularity("year");
         }
       }
     },
-    [todayDate, startDate, endDate],
+    [todayDate],
   );
 
   const handlePemasokChange = useCallback((pemasokId: string | null) => {
@@ -176,11 +189,6 @@ export default function GasDashboard() {
     (startDate: string | null, endDate: string | null) => {
       setStartDateFilter(startDate);
       setEndDateFilter(endDate);
-      if (startDate && startDate === endDate) {
-        setGranularity("hour");
-      } else {
-        setGranularity("day");
-      }
     },
     [],
   );
@@ -206,13 +214,12 @@ export default function GasDashboard() {
     }));
   }, [distributionData]);
 
-  // Transform top data for list components
   const topPemasokList = useMemo(() => {
     if (!topSuppliersData?.items) return [];
     return topSuppliersData.items.map(
-      (item: { name: string; percentage: number }) => ({
+      (item: { name: string; value: number }) => ({
         name: item.name,
-        volume: `${item.percentage.toFixed(1)}`,
+        volume: `${item.value.toFixed(1)}`,
       }),
     );
   }, [topSuppliersData]);
@@ -250,14 +257,14 @@ export default function GasDashboard() {
             </div>
 
             <div className="mb-6 md:mb-8">
-              <Map />
+              <Map commodity="LNG,GAS PIPA" />
             </div>
 
             {/* Cards Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
               {isDistLoading ? (
                 <div className="bg-white rounded-xl p-6 flex items-center justify-center">
-                  <Loader2 className="animate-spin text-[#14a2bb]" size={32} />
+                  <Loader2 className="animate-spin text-secondary" size={32} />
                 </div>
               ) : (
                 <FuelTypeDonutChart
@@ -273,7 +280,7 @@ export default function GasDashboard() {
               )}
               {isSuppliersLoading ? (
                 <div className="bg-white rounded-xl p-6 flex items-center justify-center">
-                  <Loader2 className="animate-spin text-[#14a2bb]" size={32} />
+                  <Loader2 className="animate-spin text-secondary" size={32} />
                 </div>
               ) : (
                 <TopVolumeList
@@ -289,7 +296,7 @@ export default function GasDashboard() {
               )}
               {isPlantsLoading ? (
                 <div className="bg-white rounded-xl p-6 flex items-center justify-center">
-                  <Loader2 className="animate-spin text-[#14a2bb]" size={32} />
+                  <Loader2 className="animate-spin text-secondary" size={32} />
                 </div>
               ) : (
                 <TopVolumeList

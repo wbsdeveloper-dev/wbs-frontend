@@ -1,0 +1,16 @@
+--- /Users/sbuhmpm/development/WBS_PLN_EPI/wbs-frontend-nextjs/app/components/RealtimeChart.tsx
++++ /Users/sbuhmpm/development/WBS_PLN_EPI/wbs-frontend-nextjs/app/components/RealtimeChart.tsx
+@@ -642,8 +642,11 @@
+   const transportirKeys = useMemo(() => {
+     if (!transportirData) return { huluKeys: [], hilirKeys: [] };
+-    const huluKeys = transportirData.hulu.map(h => h.upstreamName);
+-    const hilirKeys = transportirData.hilir.map(h => ({
++    
++    const validHulu = transportirData.hulu.filter(h => Number(h.value) > 0);
++    const validHilir = transportirData.hilir.filter(h => Number(h.value) > 0);
++
++    const huluKeys = validHulu.map(h => h.upstreamName);
++    const hilirKeys = validHilir.map(h => ({
+       key: `${h.downstreamName}_${h.upstreamName}`,
+       downstreamName: h.downstreamName,
+       upstreamName: h.upstreamName

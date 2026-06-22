@@ -4,6 +4,7 @@ import React from "react";
 import {
   Copy,
   Archive,
+  Mail,
   MessageSquare,
   FileSpreadsheet,
   CheckCircle,
@@ -39,6 +40,14 @@ export default function TemplateList({
         <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-purple-100 text-purple-700 rounded-full">
           <MessageSquare size={10} />
           WA
+        </span>
+      );
+    }
+    if (scope === "EMAIL_INGEST") {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-cyan-100 text-cyan-700 rounded-full">
+          <Mail size={10} />
+          Email
         </span>
       );
     }
@@ -100,7 +109,7 @@ export default function TemplateList({
           key={template.id}
           className={`cursor-pointer transition-all duration-200 hover:shadow-md ${
             selectedTemplate?.id === template.id
-              ? "ring-2 ring-[#115d72] bg-[#115d72]/5"
+              ? "ring-2 ring-primary bg-primary/5"
               : "hover:border-gray-300"
           }`}
           padding="sm"
@@ -122,7 +131,7 @@ export default function TemplateList({
               {getScopeBadge(template.scope)}
               {getStatusBadge(template.status)}
               {template.isDefault && (
-                <span className="px-2 py-0.5 text-xs font-medium bg-[#115d72]/10 text-[#115d72] rounded-full">
+                <span className="px-2 py-0.5 text-xs font-medium bg-primary/10 text-primary rounded-full">
                   Default
                 </span>
               )}
@@ -150,7 +159,7 @@ export default function TemplateList({
                       e.stopPropagation();
                       onDuplicate(template);
                     }}
-                    className="p-1.5 text-gray-400 hover:text-[#115d72] hover:bg-gray-100 rounded transition-colors"
+                    className="p-1.5 text-gray-400 hover:text-primary hover:bg-gray-100 rounded transition-colors"
                     title="Duplikasi"
                   >
                     <Copy size={14} />

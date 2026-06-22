@@ -3,6 +3,16 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  
+  /* Default Theme (Gas Pipa) */
+  --theme-primary: #115d72;
+  --theme-secondary: #14a2bb;
+}
+
+body[data-theme="bbm"] {
+  /* BBM Theme (Orange) */
+  --theme-primary: #ea580c;
+  --theme-secondary: #fb923c;
 }
 
 @theme inline {
@@ -10,6 +20,9 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-reddit-sans);
   --font-mono: var(--font-geist-mono);
+  
+  --color-primary: var(--theme-primary);
+  --color-secondary: var(--theme-secondary);
 }
 
 @media (prefers-color-scheme: dark) {

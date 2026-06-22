@@ -105,13 +105,13 @@ export default function LoginPage() {
           <div className="w-full max-w-md">
             {/* Welcome Text */}
             <div className="mb-8 md:mb-10 text-center lg:text-left">
-              <h1 className="text-[#115d72] text-3xl md:text-4xl lg:text-5xl font-bold mb-3 leading-tight">
+              <h1 className="text-primary text-3xl md:text-4xl lg:text-5xl font-bold mb-3 leading-tight">
                 Selamat Datang!
               </h1>
               <p className="text-gray-600 text-sm md:text-base leading-relaxed">
                 Sistem monitoring{" "}
-                <span className="font-semibold text-[#115d72]">Gas Pipa</span>{" "}
-                dan <span className="font-semibold text-[#115d72]">BBM</span>{" "}
+                <span className="font-semibold text-primary">Gas Pipa</span>{" "}
+                dan <span className="font-semibold text-primary">BBM</span>{" "}
                 berbasis website
               </p>
             </div>
@@ -139,10 +139,10 @@ export default function LoginPage() {
                     placeholder="Masukkan email"
                     className="w-full px-4 py-3.5 rounded-xl bg-white text-gray-900 placeholder-gray-400
                       border-2 border-gray-200 
-                      focus:border-[#14a2bb] focus:ring-4 focus:ring-[#14a2bb]/10
+                      focus:border-secondary focus:ring-4 focus:ring-secondary/10
                       transition-all duration-200 outline-none"
                   />
-                  <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#14a2bb]/5 to-[#115d72]/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+                  <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-secondary/5 to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
                 </div>
               </div>
 
@@ -159,17 +159,17 @@ export default function LoginPage() {
                     placeholder="••••••••••••"
                     className="w-full px-4 py-3.5 pr-12 rounded-xl bg-white text-gray-900 placeholder-gray-400
                       border-2 border-gray-200 
-                      focus:border-[#14a2bb] focus:ring-4 focus:ring-[#14a2bb]/10
+                      focus:border-secondary focus:ring-4 focus:ring-secondary/10
                       transition-all duration-200 outline-none"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#115d72] transition-colors"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary transition-colors"
                   >
                     {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                   </button>
-                  <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#14a2bb]/5 to-[#115d72]/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+                  <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-secondary/5 to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
                 </div>
               </div>
 
@@ -180,7 +180,7 @@ export default function LoginPage() {
                     type="checkbox"
                     checked={rememberMe}
                     onChange={(e) => setRememberMe(e.target.checked)}
-                    className="w-4 h-4 rounded border-gray-300 text-[#14a2bb] focus:ring-[#14a2bb] cursor-pointer"
+                    className="w-4 h-4 rounded border-gray-300 text-secondary focus:ring-secondary cursor-pointer"
                   />
                   <span className="text-gray-600 group-hover:text-gray-800 transition-colors">
                     Ingat saya
@@ -188,7 +188,7 @@ export default function LoginPage() {
                 </label>
                 <button
                   type="button"
-                  className="text-[#115d72] hover:text-[#14a2bb] font-medium transition-colors"
+                  className="text-primary hover:text-secondary font-medium transition-colors"
                 >
                   Lupa password?
                 </button>
@@ -198,7 +198,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-gradient-to-r from-[#14a1bb] to-[#115d72] hover:from-[#115d72] hover:to-[#0e4d5f]
+                className="w-full bg-gradient-to-r from-secondary to-primary hover:from-primary hover:to-[#0e4d5f]
                   text-white font-semibold py-4 rounded-xl
                   transform hover:scale-[1.02] active:scale-[0.98]
                   transition-all duration-200 
@@ -238,13 +238,13 @@ export default function LoginPage() {
         }}
       >
         {/* Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#115d72]/90 via-[#115d72]/70 to-slate-900/50" />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/90 via-primary/70 to-slate-900/50" />
 
         {/* Animated Pattern Overlay */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-20 left-20 w-72 h-72 bg-white/20 rounded-full blur-3xl animate-pulse" />
           <div
-            className="absolute bottom-20 right-20 w-96 h-96 bg-[#14a2bb]/20 rounded-full blur-3xl animate-pulse"
+            className="absolute bottom-20 right-20 w-96 h-96 bg-secondary/20 rounded-full blur-3xl animate-pulse"
             style={{ animationDelay: "1s" }}
           />
         </div>
@@ -253,7 +253,7 @@ export default function LoginPage() {
         <div className="relative h-full flex flex-col items-start justify-center px-12 lg:px-16">
           <div className="max-w-lg">
             <div className="mb-6">
-              <div className="w-16 h-1 bg-gradient-to-r from-[#14a2bb] to-white/50 rounded-full mb-6" />
+              <div className="w-16 h-1 bg-gradient-to-r from-secondary to-white/50 rounded-full mb-6" />
               <h2 className="text-white text-3xl lg:text-4xl font-bold leading-tight mb-4">
                 Monitoring Real-time
                 <br />

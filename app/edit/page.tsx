@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { Plus, Upload } from "lucide-react";
+import { Plus, Upload, FileText } from "lucide-react";
 import EditDataTable from "../components/EditDataTable";
 import AddReconciliationModal from "../components/AddReconciliationModal";
 import BulkUploadReconciliationModal from "../components/BulkUploadReconciliationModal";
+import InputBAValidasiModal from "../components/InputBAValidasiModal";
 import {
   useMonitoringRecords,
   type MonitoringParams,
@@ -21,6 +22,7 @@ export default function Home() {
 
   const [openAddModal, setOpenAddModal] = useState(false);
   const [openBulkModal, setOpenBulkModal] = useState(false);
+  const [openBAModal, setOpenBAModal] = useState(false);
 
   const { data, isLoading } = useMonitoringRecords({
     page,
@@ -59,6 +61,12 @@ export default function Home() {
               {canCreate && (
                 <>
                   <button
+                    onClick={() => setOpenBAModal(true)}
+                    className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg flex items-center gap-2 hover:bg-gray-50 text-sm font-medium transition-colors cursor-pointer shadow-sm"
+                  >
+                    <FileText size={16} /> Input BA & Validasi
+                  </button>
+                  <button
                     onClick={() => setOpenAddModal(true)}
                     className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg flex items-center gap-2 hover:bg-gray-50 text-sm font-medium transition-colors cursor-pointer shadow-sm"
                   >
@@ -66,7 +74,7 @@ export default function Home() {
                   </button>
                   <button
                     onClick={() => setOpenBulkModal(true)}
-                    className="px-4 py-2 bg-[#115d72] text-white rounded-lg flex items-center gap-2 text-sm font-medium hover:bg-[#0d4a5c] transition-colors cursor-pointer shadow-sm"
+                    className="px-4 py-2 bg-primary text-white rounded-lg flex items-center gap-2 text-sm font-medium hover:bg-[#0d4a5c] transition-colors cursor-pointer shadow-sm"
                   >
                     <Upload size={16} /> Multi Input Data
                   </button>
@@ -102,6 +110,9 @@ export default function Home() {
       )}
       {openBulkModal && (
         <BulkUploadReconciliationModal setOpenModal={setOpenBulkModal} />
+      )}
+      {openBAModal && (
+        <InputBAValidasiModal setOpenModal={setOpenBAModal} />
       )}
     </div>
   );

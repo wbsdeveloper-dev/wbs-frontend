@@ -113,7 +113,7 @@ export default function CronScheduleSelector({
         <select
           value={selectedPreset}
           onChange={handlePresetChange}
-          className="w-full pl-9 pr-10 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent appearance-none cursor-pointer transition-all duration-200"
+          className="w-full pl-9 pr-10 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent appearance-none cursor-pointer transition-all duration-200"
         >
           {CRON_PRESETS.map((preset) => (
             <option key={preset.value} value={preset.value}>
@@ -134,7 +134,7 @@ export default function CronScheduleSelector({
             type="text"
             value={customValue}
             onChange={handleCustomChange}
-            className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm font-mono text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#14a2bb] focus:border-transparent transition-all duration-200"
+            className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm font-mono text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
             placeholder="Contoh: 0 11,23 * * *"
           />
           <p className="text-xs text-gray-500">
@@ -147,7 +147,7 @@ export default function CronScheduleSelector({
 
       {/* Friendly description for a preset value */}
       {presetLabel && (
-        <p className="text-xs text-[#115d72] flex items-center gap-1">
+        <p className="text-xs text-primary flex items-center gap-1">
           <Clock size={11} />
           {presetLabel}
         </p>

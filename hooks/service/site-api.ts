@@ -20,7 +20,7 @@ interface ApiResponse<T = unknown> {
   success: boolean;
   data: T;
   message?: string;
-  error?: string;
+  error?: any;
   meta?: { requestId: string; timestamp: string };
 }
 
@@ -54,12 +54,34 @@ async function siteFetch<T>(
     },
   });
 
+  const extractErrorMessage = (errorObj: any, fallback: string): string => {
+    if (!errorObj) return fallback;
+    if (typeof errorObj === "string") return errorObj;
+    if (typeof errorObj === "object") {
+      if (errorObj.message && typeof errorObj.message === "string") {
+        return errorObj.message;
+      }
+      if (errorObj.error && typeof errorObj.error === "string") {
+        return errorObj.error;
+      }
+      try {
+        return JSON.stringify(errorObj);
+      } catch {
+        return fallback;
+      }
+    }
+    return fallback;
+  };
+
   if (!res.ok) {
     let msg = res.statusText;
     try {
-      const body = (await res.json()) as ApiResponse;
-      if (body.error) msg = body.error;
-      else if (body.message) msg = body.message;
+      const body = (await res.json()) as any;
+      if (body.error) {
+        msg = extractErrorMessage(body.error, res.statusText);
+      } else if (body.message) {
+        msg = body.message;
+      }
     } catch {
       /* ignore parse errors */
     }
@@ -69,9 +91,10 @@ async function siteFetch<T>(
   const body = (await res.json()) as ApiResponse<T>;
 
   if (!body.success) {
+    const msg = extractErrorMessage(body.error, body.message || "Unknown API error");
     throw new SiteApiError(
       res.status,
-      body.error || body.message || "Unknown API error",
+      msg,
     );
   }
 
@@ -128,6 +151,7 @@ export interface Site {
   is_enabled: boolean;
   conversion_factor?: number;
   owner?: string;
+  commodity?: string;
   created_at: string;
   updated_at: string;
 }
@@ -143,6 +167,7 @@ export interface CreateSitePayload {
   long?: number | null;
   conversion_factor?: number | null;
   owner?: string | null;
+  commodity?: string | null;
 }
 
 export interface UpdateSitePayload {
@@ -157,6 +182,7 @@ export interface UpdateSitePayload {
   is_enabled?: boolean;
   conversion_factor?: number | null;
   owner?: string | null;
+  commodity?: string | null;
 }
 
 export interface DeleteSiteResponse {
@@ -279,12 +305,23 @@ export function getSites(filters?: {
   type?: string;
   region?: string;
   search?: string;
+  commodity?: string | string[];
 }) {
-  const query = buildQuery({
+  const queryParams: Record<string, any> = {
     type: filters?.type,
     region: filters?.region,
     search: filters?.search,
-  });
+  };
+  
+  if (filters?.commodity) {
+    if (Array.isArray(filters.commodity)) {
+      queryParams.commodity = filters.commodity.join(',');
+    } else {
+      queryParams.commodity = filters.commodity;
+    }
+  }
+
+  const query = buildQuery(queryParams);
   return siteFetch<Site[]>(`/sites${query}`);
 }
 
@@ -383,6 +420,7 @@ export function useSites(
     region?: string;
     search?: string;
     capacity?: string;
+    commodity?: string | string[];
   },
   options?: Partial<UseQueryOptions<Site[]>>,
 ) {
