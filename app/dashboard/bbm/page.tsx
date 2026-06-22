@@ -226,6 +226,9 @@ export default function Home() {
     useState(initialStart);
   const [distributionEndDate, setDistributionEndDate] = useState(initialEnd);
 
+  const [nominationStartDate, setNominationStartDate] = useState(initialStart);
+  const [nominationEndDate, setNominationEndDate] = useState(initialEnd);
+
   const [topSuppliersStart, setTopSuppliersStart] = useState(initialStart);
   const [topSuppliersEnd, setTopSuppliersEnd] = useState(initialEnd);
   const [topSuppliersProduct, setTopSuppliersProduct] = useState<string | null>(
@@ -345,11 +348,11 @@ export default function Home() {
   const nominationData = useMemo(() => {
     if (!bbmMonthlyData) return { nominasi: 0, realisasi: 0, pemakaian: 0 };
 
-    const startMonth = distributionStartDate
-      ? distributionStartDate.substring(0, 7)
+    const startMonth = nominationStartDate
+      ? nominationStartDate.substring(0, 7)
       : null;
-    const endMonth = distributionEndDate
-      ? distributionEndDate.substring(0, 7)
+    const endMonth = nominationEndDate
+      ? nominationEndDate.substring(0, 7)
       : null;
 
     let nominasi = 0;
@@ -369,7 +372,7 @@ export default function Home() {
     });
 
     return { nominasi, realisasi, pemakaian };
-  }, [bbmMonthlyData, distributionStartDate, distributionEndDate]);
+  }, [bbmMonthlyData, nominationStartDate, nominationEndDate]);
 
   const { data: tbbmData } = useSites({ type: "PEMASOK", commodity: "BBM" });
   const { data: pembangkitData } = useSites({
@@ -634,6 +637,10 @@ export default function Home() {
               nominasi={nominationData.nominasi}
               realisasi={nominationData.realisasi}
               pemakaian={nominationData.pemakaian}
+              startDate={nominationStartDate}
+              endDate={nominationEndDate}
+              onStartDateChange={setNominationStartDate}
+              onEndDateChange={setNominationEndDate}
             />
 
             <TopVolumeList
