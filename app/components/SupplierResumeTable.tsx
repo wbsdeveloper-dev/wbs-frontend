@@ -36,13 +36,7 @@ function ContractCard({ contract }: { contract: Contract }) {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-[120px_1fr] border-b border-gray-300 mb-1 border-dashed">
           <div className="bg-white font-semibold px-2">Nomor Kontrak</div>
-          <div className="bg-white px-2">
-            <ul className="list-disc list-inside">
-              <li>
-                {contract.no_kontrak_terbaru || contract.no_kontrak_awal || "-"}
-              </li>
-            </ul>
-          </div>
+          <div className="bg-white px-2">{contract.no_kontrak_terbaru || contract.no_kontrak_awal || "-"}</div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-[120px_1fr] border-b border-gray-300 mb-1 border-dashed">
           <div className="bg-white font-semibold px-2">Jangka Waktu</div>
@@ -73,7 +67,7 @@ function ContractCard({ contract }: { contract: Contract }) {
         <div className="grid grid-cols-1 md:grid-cols-[120px_1fr] border-b border-gray-300 mb-1 border-dashed">
           <div className="bg-white font-semibold px-2">TJK</div>
           <div className="bg-white px-2">
-            {contract.tjk_bbtud != null ? `${contract.tjk_bbtud} BBTUD` : "-"}
+            {contract.tjk_bbtud != null ? `${Number(contract.tjk_bbtud).toLocaleString("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} BBTUD` : "-"}
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-[120px_1fr] border-b border-gray-300 mb-1 border-dashed">

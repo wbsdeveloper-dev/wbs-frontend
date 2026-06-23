@@ -447,7 +447,7 @@ function buildColumns(
         {
             field: "region",
             headerName: "Region",
-            width: 160,
+            width: 180,
             headerAlign: "center",
             align: "center",
             editable: isEditMode,
@@ -456,7 +456,7 @@ function buildColumns(
         {
             field: "pemasok",
             headerName: "Pemasok",
-            width: 160,
+            width: 180,
             headerAlign: "center",
             align: "center",
             editable: isEditMode,
@@ -487,7 +487,7 @@ function buildColumns(
         {
             field: "jenisDokumen",
             headerName: "Jenis Dokumen",
-            width: 200,
+            width: 150,
             headerAlign: "center",
             align: "center",
             editable: isEditMode,
@@ -496,7 +496,7 @@ function buildColumns(
         {
             field: "noKontrakAwal",
             headerName: "No Kontrak Awal",
-            width: 180,
+            width: 250,
             headerAlign: "center",
             align: "center",
             editable: isEditMode,
@@ -505,7 +505,7 @@ function buildColumns(
         {
             field: "jenisDokumenTambahan",
             headerName: "Jenis Dokumen",
-            width: 210,
+            width: 150,
             headerAlign: "center",
             align: "center",
             editable: isEditMode,
@@ -514,7 +514,7 @@ function buildColumns(
         {
             field: "noKontrakTerbaru",
             headerName: "No Kontrak Terbaru",
-            width: 160,
+            width: 250,
             headerAlign: "center",
             align: "center",
             editable: isEditMode,
