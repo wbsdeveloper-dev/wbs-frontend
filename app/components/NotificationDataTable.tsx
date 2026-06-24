@@ -26,7 +26,7 @@ import type {
   MonitoringPagination,
   MonitoringParams,
 } from "@/hooks/service/monitoring-api";
-import { useDeleteMonitoringRecord } from "@/hooks/service/monitoring-api";
+import { useDeleteNotification } from "@/hooks/service/notification-api";
 import { usePrivilege } from "@/hooks/usePrivilege";
 
 export interface NotificationRecord {
@@ -359,7 +359,7 @@ export default function NotificationDataTable({
   const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  const deleteMutation = useDeleteMonitoringRecord();
+  const deleteMutation = useDeleteNotification();
 
   const handleDeleteClick = (id: string, name: string) => {
     setPendingDeleteId(id);
@@ -714,7 +714,7 @@ export default function NotificationDataTable({
                       <ActionButtons
                         id={record.id}
                         onEdit={(id) => {
-                          // onEdit(id)
+                          router.push(`/notification/edit/${id}`);
                         }}
                         onDelete={(id) => {
                           handleDeleteClick(

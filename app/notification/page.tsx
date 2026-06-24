@@ -1,35 +1,29 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
-import NotificationDataTable, { NotificationRecord } from "../components/NotificationDataTable";
+import { useState, useCallback } from "react";
+import NotificationDataTable from "../components/NotificationDataTable";
+import type { NotificationRecord as TableNotificationRecord } from "../components/NotificationDataTable";
+import { useNotifications } from "@/hooks/service/notification-api";
+import type { NotificationParams } from "@/hooks/service/notification-api";
 import type { MonitoringParams } from "@/hooks/service/monitoring-api";
-
-// Dummy data for problematic records
-const DUMMY_RECORDS: NotificationRecord[] = [
-  {
-    id: "NOTIF-001",
-    reportDate: "2024-03-15",
-    supplierName: "PT Pertamina",
-    siteName: "PLTGU Muara Karang",
-    metricType: "FLOWRATE_MMSCFD",
-    finalValue: 45.2,
-    status: "DI_BAWAH_TOP",
-  },
-  {
-    id: "NOTIF-002",
-    reportDate: "2024-03-15",
-    supplierName: "ConocoPhillips",
-    siteName: "PLTGU Muara Tawar",
-    metricType: "ENERGY_BBTUD",
-    finalValue: null,
-    status: "DATA_HILANG",
-  },
-];
 
 export default function NotificationPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [filters, setFilters] = useState<MonitoringParams>({});
+
+  // Build query params for the notification API
+  const queryParams: NotificationParams = {
+    page,
+    limit: pageSize,
+    ...(filters.status ? { status: filters.status } : {}),
+    ...(filters.supplierName ? { supplierName: filters.supplierName } : {}),
+    ...(filters.siteName ? { siteName: filters.siteName } : {}),
+    ...(filters.startDate ? { startDate: filters.startDate } : {}),
+    ...(filters.endDate ? { endDate: filters.endDate } : {}),
+  };
+
+  const { data, isLoading } = useNotifications(queryParams);
 
   const handlePageChange = useCallback(
     (newPage: number, newPageSize: number) => {
@@ -44,34 +38,23 @@ export default function NotificationPage() {
     setPage(1); // Reset to first page on filter change
   }, []);
 
-  // Simple client-side filtering for dummy data
-  const filteredRecords = useMemo(() => {
-    let result = [...DUMMY_RECORDS];
-    if (filters.id) {
-      result = result.filter(r => r.id.toLowerCase().includes(filters.id!.toLowerCase()));
-    }
-    if (filters.supplierName) {
-      result = result.filter(r => r.supplierName.toLowerCase().includes(filters.supplierName!.toLowerCase()));
-    }
-    if (filters.siteName) {
-      result = result.filter(r => r.siteName.toLowerCase().includes(filters.siteName!.toLowerCase()));
-    }
-    if (filters.status) {
-      result = result.filter(r => r.status === filters.status);
-    }
-    if (filters.startDate) {
-      result = result.filter(r => r.reportDate >= filters.startDate!);
-    }
-    if (filters.endDate) {
-      result = result.filter(r => r.reportDate <= filters.endDate!);
-    }
-    return result;
-  }, [filters]);
+  // Map API records to the table component's expected shape
+  const records: TableNotificationRecord[] = (data?.records ?? []).map((r) => ({
+    id: r.id,
+    reportDate: r.reportDate,
+    supplierName: r.supplierName ?? "-",
+    siteName: r.siteName,
+    metricType: r.metricType,
+    finalValue: r.finalValue,
+    status: r.status,
+  }));
 
-  const paginatedRecords = useMemo(() => {
-    const start = (page - 1) * pageSize;
-    return filteredRecords.slice(start, start + pageSize);
-  }, [filteredRecords, page, pageSize]);
+  const pagination = data?.pagination ?? {
+    page: 1,
+    limit: pageSize,
+    total: 0,
+    totalPages: 1,
+  };
 
   return (
     <div className="p-4 md:p-6 lg:p-8">
@@ -88,14 +71,9 @@ export default function NotificationPage() {
 
       <div className="mb-6 md:mb-8">
         <NotificationDataTable
-          records={paginatedRecords}
-          pagination={{
-            page,
-            limit: pageSize,
-            total: filteredRecords.length,
-            totalPages: Math.ceil(filteredRecords.length / pageSize),
-          }}
-          isLoading={false}
+          records={records}
+          pagination={pagination}
+          isLoading={isLoading}
           onPageChange={handlePageChange}
           filters={filters}
           onFilterChange={handleFilterChange}

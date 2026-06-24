@@ -30,12 +30,16 @@ import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/components/providers/auth-provider";
 import { usePrivilege, type Resource } from "@/hooks/usePrivilege";
+import { useNotifications } from "@/hooks/service/notification-api";
 
 export default function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const { hasPrivilege } = usePrivilege();
+
+  const { data: notificationsData } = useNotifications({ isRead: false, limit: 1 }, { refetchInterval: 30_000 });
+  const unreadCount = notificationsData?.pagination?.total || 0;
 
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -359,9 +363,11 @@ export default function Sidebar() {
                   title="Notifikasi"
                 >
                   <Bell size={18} />
-                  <span className="absolute top-1 right-1 flex h-3 w-3 items-center justify-center rounded-full bg-red-500 text-[8px] font-bold text-white ring-2 ring-white">
-                    2
-                  </span>
+                  {unreadCount > 0 && (
+                    <span className="absolute top-1 right-1 flex h-3 min-w-[12px] px-0.5 items-center justify-center rounded-full bg-red-500 text-[8px] font-bold text-white ring-2 ring-white">
+                      {unreadCount > 99 ? "99+" : unreadCount}
+                    </span>
+                  )}
                 </div>
               )}
             </div>
@@ -388,9 +394,11 @@ export default function Sidebar() {
                 className="relative w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center shrink-0 shadow-sm cursor-pointer hover:opacity-90 transition-opacity text-gray-600"
               >
                 <Bell size={16} />
-                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-gray-100">
-                  2
-                </span>
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 flex h-4 min-w-[16px] px-1 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-gray-100">
+                    {unreadCount > 99 ? "99+" : unreadCount}
+                  </span>
+                )}
               </div>
             )}
           </div>
