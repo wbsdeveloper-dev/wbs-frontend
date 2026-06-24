@@ -67,7 +67,7 @@ export default function TopVolumeList({
   const hasDateFilter = !!(onStartDateChange && onEndDateChange);
 
   return (
-    <div className="bg-white rounded-xl p-1 flex flex-col pb-4 border border-gray-200">
+    <div className="bg-white rounded-xl p-1 flex flex-col pb-6 border border-gray-200 h-full">
       {/* Header */}
       <div className="flex justify-between items-center pr-5">
         <h3 className="text-lg font-semibold text-gray-900 py-4 px-6">
@@ -200,7 +200,7 @@ export default function TopVolumeList({
           ))
         )}
       </div>
-      <p className="text-xs text-gray-500 mt-4 pt-4 border-t border-gray-200 mx-6">
+      <p className="text-xs text-gray-500 mt-auto pt-4 border-t border-gray-200 mx-6 min-h-[32px]">
         {description}
       </p>
     </div>

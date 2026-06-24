@@ -661,6 +661,10 @@ export interface TransportirChartHilir {
 export interface TransportirChartResponse {
   hulu: TransportirChartHulu[];
   hilir: TransportirChartHilir[];
+  stock: {
+    openingStock: string;
+    closingStock: string;
+  };
 }
 
 export function useTransportirChart(startDate: string, endDate: string) {

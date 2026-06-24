@@ -84,7 +84,7 @@ export default function FuelTypeDonutChart({
   })();
 
   return (
-    <div className="bg-white rounded-xl p-6 border border-gray-200 flex flex-col">
+    <div className="bg-white rounded-xl p-6 border border-gray-200 flex flex-col h-full">
       {/* Header row */}
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
@@ -242,7 +242,7 @@ export default function FuelTypeDonutChart({
       </ResponsiveContainer>
 
       {/* Dynamic footer */}
-      <p className="text-xs text-gray-500 mt-4 pt-4 border-t border-gray-200">
+      <p className="text-xs text-gray-500 mt-auto pt-4 border-t border-gray-200 min-h-[32px]">
         {descriptionPrefix} pada setiap{" "}
         {filterType?.toLowerCase() ?? "pembangkit"} PLN EPI per tanggal{" "}
         {formattedDate}

@@ -176,9 +176,11 @@ function findAnnualTotal(
     return items.find((a) => a.year === year);
 }
 
-function numStr(v: number | null | undefined): string {
-    return v != null ? String(v) : "";
-}
+const numStr = (val?: number | string | null) => {
+    if (val == null) return "";
+    const num = typeof val === "string" ? parseFloat(val) : val;
+    return isNaN(num) ? "" : num.toFixed(4);
+};
 
 function mapContractToRow(
     contract: Contract,
@@ -209,10 +211,8 @@ function mapContractToRow(
         akhirPerjanjian: formatDate(contract.akhir_perjanjian),
         hargaPJBG: contract.price_value || "",
         hgbt: contract.hgbt_value != null ? String(contract.hgbt_value) : "",
-        TJK: contract.tjk_bbtud != null ? String(contract.tjk_bbtud) : "",
-        volumeJPMH: contract.volume_jpmh_bbtud != null
-            ? String(contract.volume_jpmh_bbtud)
-            : "",
+        TJK: numStr(contract.tjk_bbtud),
+        volumeJPMH: numStr(contract.volume_jpmh_bbtud),
         unitSwitch: "BBTUD",
         _contractId: contract.id,
         _contractPartyId: contract.contract_party_id,
@@ -221,9 +221,9 @@ function mapContractToRow(
         _awalPerjanjianYear: awalYear,
         _akhirPerjanjianYear: akhirYear,
         // Hidden unit-specific base values
-        _bbtud_volumeJPMH: contract.volume_jpmh_bbtud != null ? String(contract.volume_jpmh_bbtud) : "",
+        _bbtud_volumeJPMH: numStr(contract.volume_jpmh_bbtud),
         _mmscfd_volumeJPMH: contract.volume_jpmh_mmscfd != null ? String(contract.volume_jpmh_mmscfd) : "",
-        _bbtud_TJK: contract.tjk_bbtud != null ? String(contract.tjk_bbtud) : "",
+        _bbtud_TJK: numStr(contract.tjk_bbtud),
         _mmscfd_TJK: contract.tjk_mmscfd != null ? String(contract.tjk_mmscfd) : "",
 
         document,

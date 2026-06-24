@@ -102,15 +102,31 @@ const COLORS: Record<string, string> = {
   "Mean Pembangkit 4": "#60a5fa",
 };
 
-const UPSTREAM_COLORS = ["#115d72", "#14a2bb", "#0284c7", "#4f46e5", "#059669", "#475569"];
-const DOWNSTREAM_FILLS = ["#ccfbf1", "#e0f2fe", "#e0e7ff", "#d1fae5", "#f1f5f9", "#ffedd5"];
+const UPSTREAM_COLORS = [
+  "#115d72",
+  "#14a2bb",
+  "#0284c7",
+  "#4f46e5",
+  "#059669",
+  "#475569",
+];
+const DOWNSTREAM_FILLS = [
+  "#ccfbf1",
+  "#e0f2fe",
+  "#e0e7ff",
+  "#d1fae5",
+  "#f1f5f9",
+  "#ffedd5",
+];
 
 const getUpstreamColor = (name: string) => {
   if (!name) return UPSTREAM_COLORS[0];
   if (name.includes("KEI")) return "#115d72";
   if (name.includes("HCML MAC")) return "#14a2bb";
   if (name.includes("HCML 2M")) return "#0284c7";
-  const index = Array.from(name).reduce((acc, char) => acc + char.charCodeAt(0), 0) % UPSTREAM_COLORS.length;
+  const index =
+    Array.from(name).reduce((acc, char) => acc + char.charCodeAt(0), 0) %
+    UPSTREAM_COLORS.length;
   return UPSTREAM_COLORS[index];
 };
 
@@ -118,7 +134,9 @@ const getDownstreamFillColor = (name: string) => {
   if (!name) return DOWNSTREAM_FILLS[0];
   if (name.includes("Grati")) return "#ccfbf1";
   if (name.includes("Gresik")) return "#e0f2fe";
-  const index = Array.from(name).reduce((acc, char) => acc + char.charCodeAt(0), 0) % DOWNSTREAM_FILLS.length;
+  const index =
+    Array.from(name).reduce((acc, char) => acc + char.charCodeAt(0), 0) %
+    DOWNSTREAM_FILLS.length;
   return DOWNSTREAM_FILLS[index];
 };
 
@@ -130,7 +148,14 @@ const CustomHuluBarLabel = (props: any) => {
 
   return (
     <g>
-      <text x={cx} y={cy} textAnchor="middle" fill="#fff" fontSize={12} fontWeight="bold">
+      <text
+        x={cx}
+        y={cy}
+        textAnchor="middle"
+        fill="#fff"
+        fontSize={12}
+        fontWeight="bold"
+      >
         {name}
       </text>
     </g>
@@ -145,10 +170,24 @@ const CustomHilirBarLabel = (props: any) => {
 
   return (
     <g>
-      <text x={cx} y={cy - 6} textAnchor="middle" fill="#ffffff" fontSize={11} fontWeight="bold">
+      <text
+        x={cx}
+        y={cy - 6}
+        textAnchor="middle"
+        fill="#ffffff"
+        fontSize={11}
+        fontWeight="bold"
+      >
         {name1}
       </text>
-      <text x={cx} y={cy + 6} textAnchor="middle" fill="#ffffff" fontSize={11} fontWeight="bold">
+      <text
+        x={cx}
+        y={cy + 6}
+        textAnchor="middle"
+        fill="#ffffff"
+        fontSize={11}
+        fontWeight="bold"
+      >
         {name2}
       </text>
     </g>
@@ -389,15 +428,16 @@ const CustomXAxisTick = (props: any) => {
   const originalIndex = payload.index !== undefined ? payload.index : index;
   const item = chartData && chartData[originalIndex];
 
-  const shouldSlope = period === "1M" || (period === "3Y" && intervalMode === "Hari");
+  const shouldSlope =
+    period === "1M" || (period === "3Y" && intervalMode === "Hari");
 
   if (!item || period !== "3Y" || intervalMode !== "Bulan" || !item.yearStr) {
     return (
-      <text 
-        x={x} 
-        y={y + (shouldSlope ? 10 : 15)} 
-        textAnchor={shouldSlope ? "end" : "middle"} 
-        fill="#666" 
+      <text
+        x={x}
+        y={y + (shouldSlope ? 10 : 15)}
+        textAnchor={shouldSlope ? "end" : "middle"}
+        fill="#666"
         fontSize={12}
         transform={shouldSlope ? `rotate(-45, ${x}, ${y + 10})` : undefined}
       >
@@ -655,22 +695,22 @@ export default function RealtimeChart({
   const [intervalMode, setIntervalMode] = useState<
     "Jam" | "Hari" | "Bulan" | "Tahun"
   >("Jam");
-  const [chartMode, setChartMode] = useState<"non-transportir" | "transportir">("non-transportir");
+  const [chartMode, setChartMode] = useState<"non-transportir" | "transportir">(
+    "non-transportir",
+  );
   const [period, setPeriod] = useState("1D");
   const [filterType, setFilterType] = useState<string | null>("Pemasok");
 
   useEffect(() => {
     if (chartMode === "transportir") {
       const now = new Date();
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0); // last day of month
-      
       const tzOffset = now.getTimezoneOffset() * 60000;
-      const startIso = new Date(startOfMonth.getTime() - tzOffset).toISOString().split('T')[0];
-      const endIso = new Date(endOfMonth.getTime() - tzOffset).toISOString().split('T')[0];
+      const currentIso = new Date(now.getTime() - tzOffset)
+        .toISOString()
+        .split("T")[0];
 
-      setStartDate(startIso);
-      setEndDate(endIso);
+      setStartDate(currentIso);
+      setEndDate(currentIso);
     }
   }, [chartMode]);
   const [pemasok, setPemasok] = useState<string[]>(["Semua Pemasok"]);
@@ -724,8 +764,14 @@ export default function RealtimeChart({
   }, [chartFlowData]);
 
   // Fetch events for the chart range — do NOT pass siteId to avoid 400 error with multiple IDs
-  const chartStartDateStr = startDate || chartFlowData?.period?.start || new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
-  const chartEndDateStr = endDate || chartFlowData?.period?.end || new Date().toISOString().split("T")[0];
+  const chartStartDateStr =
+    startDate ||
+    chartFlowData?.period?.start ||
+    new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+  const chartEndDateStr =
+    endDate ||
+    chartFlowData?.period?.end ||
+    new Date().toISOString().split("T")[0];
 
   const { data: eventsData } = useEvents(
     chartStartDateStr,
@@ -734,19 +780,20 @@ export default function RealtimeChart({
   );
 
   // Fetch real transportir data
-  const { data: transportirData, isLoading: transportirLoading } = useTransportirChart(chartStartDateStr, chartEndDateStr);
+  const { data: transportirData, isLoading: transportirLoading } =
+    useTransportirChart(chartStartDateStr, chartEndDateStr);
 
   const realTransportirData = useMemo(() => {
     if (!transportirData) return [];
-    
+
     const huluObj: any = { category: "Hulu" };
     const hilirObj: any = { category: "Hilir" };
 
-    transportirData.hulu.forEach(h => {
+    transportirData.hulu.forEach((h) => {
       huluObj[h.upstreamName] = Number(h.value);
     });
 
-    transportirData.hilir.forEach(h => {
+    transportirData.hilir.forEach((h) => {
       hilirObj[`${h.downstreamName}_${h.upstreamName}`] = Number(h.value);
     });
 
@@ -755,12 +802,21 @@ export default function RealtimeChart({
 
   const transportirKeys = useMemo(() => {
     if (!transportirData) return { huluKeys: [], hilirKeys: [] };
-    const huluKeys = transportirData.hulu.filter(h => Number(h.value) > 0).map(h => h.upstreamName);
-    const hilirKeys = transportirData.hilir.filter(h => Number(h.value) > 0).map(h => ({
-      key: `${h.downstreamName}_${h.upstreamName}`,
-      downstreamName: h.downstreamName,
-      upstreamName: h.upstreamName
-    }));
+    const huluKeys = transportirData.hulu
+      .filter((h) => Number(h.value) > 0)
+      .map((h) => h.upstreamName);
+    const hilirKeys = transportirData.hilir
+      .filter((h) => Number(h.value) > 0)
+      .map((h) => ({
+        key: `${h.downstreamName}_${h.upstreamName}`,
+        downstreamName: h.downstreamName,
+        upstreamName: h.upstreamName,
+      }))
+      .sort((a, b) => {
+        const indexA = huluKeys.indexOf(a.upstreamName);
+        const indexB = huluKeys.indexOf(b.upstreamName);
+        return indexA - indexB;
+      });
     return { huluKeys, hilirKeys };
   }, [transportirData]);
 
@@ -1125,7 +1181,9 @@ export default function RealtimeChart({
                         <>
                           {" "}
                           Dari{" "}
-                          {Array.isArray(pemasok) ? pemasok.join(", ") : pemasok}
+                          {Array.isArray(pemasok)
+                            ? pemasok.join(", ")
+                            : pemasok}
                         </>
                       )}
                     </>
@@ -1136,7 +1194,7 @@ export default function RealtimeChart({
                     </>
                   )}
                 </h3>
-                
+
                 <p className="text-gray-500 font-medium text-sm mt-1">
                   {formattedStartDate}{" "}
                   {formattedEndDate
@@ -1146,7 +1204,7 @@ export default function RealtimeChart({
                     : ""}
                 </p>
               </div>
-              
+
               {/* Toggle Switch */}
               <div className="flex items-center bg-gray-100 rounded-lg p-0.5 h-fit shrink-0">
                 <button
@@ -1173,74 +1231,129 @@ export default function RealtimeChart({
             </div>
             {chartMode === "transportir" ? (
               <div className="mt-4 mb-8">
-                <ResponsiveContainer width="100%" height={500}>
-                  {transportirLoading ? (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
-                    </div>
-                  ) : (
-                    <BarChart data={realTransportirData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }} maxBarSize={100}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
-                      <XAxis 
-                        dataKey="category" 
-                        tick={{ fontSize: 14, fontWeight: "600", fill: "#4b5563" }} 
+                {transportirLoading ? (
+                  <div className="flex justify-center items-center w-full h-[500px]">
+                    <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+                  </div>
+                ) : transportirKeys.huluKeys.length === 0 && transportirKeys.hilirKeys.length === 0 ? (
+                  <div className="flex justify-center items-center w-full h-[500px] text-gray-500 text-xl font-semibold">
+                    Data untuk periode ini tidak tersedia
+                  </div>
+                ) : (
+                  <>
+                    <ResponsiveContainer width="100%" height={500}>
+                      <BarChart
+                      data={realTransportirData}
+                      margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                      maxBarSize={100}
+                    >
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        vertical={false}
+                        stroke="#eee"
+                      />
+                      <XAxis
+                        dataKey="category"
+                        tick={{
+                          fontSize: 14,
+                          fontWeight: "600",
+                          fill: "#4b5563",
+                        }}
                         axisLine={{ stroke: "#e5e7eb" }}
                         tickLine={false}
                         dy={10}
                       />
-                      <YAxis 
-                        tick={{ fontSize: 12, fill: "#6b7280" }} 
+                      <YAxis
+                        tick={{ fontSize: 12, fill: "#6b7280" }}
                         axisLine={false}
                         tickLine={false}
                       />
-                      <Tooltip 
-                        content={<CustomTransportirTooltip unit={chartFlowData?.unit} />}
-                        cursor={{ fill: 'transparent' }}
+                      <Tooltip
+                        content={
+                          <CustomTransportirTooltip
+                            unit={chartFlowData?.unit}
+                          />
+                        }
+                        cursor={{ fill: "transparent" }}
                       />
-                      
+
                       {/* Data Hulu Bars */}
                       {transportirKeys.huluKeys.map((key, index) => (
-                        <Bar 
-                          key={key} 
-                          dataKey={key} 
-                          stackId="a" 
-                          fill={getUpstreamColor(key)} 
-                          radius={index === transportirKeys.huluKeys.length - 1 ? [8, 8, 0, 0] : [0, 0, 0, 0]}
+                        <Bar
+                          key={key}
+                          dataKey={key}
+                          stackId="a"
+                          fill={getUpstreamColor(key)}
+                          radius={
+                            index === transportirKeys.huluKeys.length - 1
+                              ? [8, 8, 0, 0]
+                              : [0, 0, 0, 0]
+                          }
                           isAnimationActive={false}
                         >
-                          <LabelList content={<CustomHuluBarLabel name={key} />} />
+                          <LabelList
+                            content={<CustomHuluBarLabel name={key} />}
+                          />
                         </Bar>
                       ))}
 
                       {/* Data Hilir Bars */}
                       {transportirKeys.hilirKeys.map((h, index) => (
-                        <Bar 
-                          key={h.key} 
-                          dataKey={h.key} 
-                          stackId="a" 
-                          fill={getUpstreamColor(h.upstreamName)} 
-                          stroke="#ffffff" 
-                          strokeWidth={1} 
-                          radius={index === transportirKeys.hilirKeys.length - 1 ? [8, 8, 0, 0] : [0, 0, 0, 0]}
+                        <Bar
+                          key={h.key}
+                          dataKey={h.key}
+                          stackId="a"
+                          fill={getUpstreamColor(h.upstreamName)}
+                          stroke="#ffffff"
+                          strokeWidth={1}
+                          radius={
+                            index === transportirKeys.hilirKeys.length - 1
+                              ? [8, 8, 0, 0]
+                              : [0, 0, 0, 0]
+                          }
                           isAnimationActive={false}
                         >
-                          <LabelList content={<CustomHilirBarLabel name1={h.downstreamName} name2={`(${h.upstreamName})`} />} />
+                          <LabelList
+                            content={
+                              <CustomHilirBarLabel
+                                name1={h.downstreamName}
+                                name2={`(${h.upstreamName})`}
+                              />
+                            }
+                          />
                         </Bar>
                       ))}
                     </BarChart>
-                  )}
-                </ResponsiveContainer>
+                    </ResponsiveContainer>
+                
+                    {/* Information Legend for Opening and Closing Stock */}
+                    <div className="mt-4 flex justify-center items-center gap-8 border-t border-gray-100 pt-5">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-sm bg-primary/20 border border-primary/40 shadow-sm" />
+                        <span className="text-sm font-medium text-gray-600">Opening Stock: {Number(transportirData?.stock?.openingStock || 0).toLocaleString('id-ID')} BBTUD</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-sm bg-secondary/20 border border-secondary/40 shadow-sm" />
+                        <span className="text-sm font-medium text-gray-600">Closing Stock: {Number(transportirData?.stock?.closingStock || 0).toLocaleString('id-ID')} BBTUD</span>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             ) : chartData.length > 0 ? (
               <>
                 <ResponsiveContainer width="100%" height={chartHeight}>
                   <LineChart
                     data={chartData}
-                    margin={{ 
-                      top: 10, 
-                      right: 10, 
-                      left: 5, 
-                      bottom: (period === "1M" || (period === "3Y" && intervalMode === "Hari")) ? 50 : 10 
+                    margin={{
+                      top: 10,
+                      right: 10,
+                      left: 5,
+                      bottom:
+                        period === "1M" ||
+                        (period === "3Y" && intervalMode === "Hari")
+                          ? 50
+                          : 10,
                     }}
                   >
                     <CartesianGrid stroke="#eee" strokeDasharray="5 5" />
@@ -1259,9 +1372,12 @@ export default function RealtimeChart({
                           : "preserveStartEnd"
                       }
                       height={
-                        (period === "1M" || (period === "3Y" && intervalMode === "Hari"))
+                        period === "1M" ||
+                        (period === "3Y" && intervalMode === "Hari")
                           ? 60
-                          : period === "3Y" && intervalMode === "Bulan" ? 50 : 30
+                          : period === "3Y" && intervalMode === "Bulan"
+                            ? 50
+                            : 30
                       }
                     />
                     <YAxis
@@ -1590,7 +1706,9 @@ export default function RealtimeChart({
                 placeholder="Pilih Pemasok"
               />
             )}
-            {(chartMode === "transportir" || filterType == "Pembangkit" || pemasok) && (
+            {(chartMode === "transportir" ||
+              filterType == "Pembangkit" ||
+              pemasok) && (
               <FilterAutocomplete
                 label="Pembangkit"
                 options={pembangkitOptions}
@@ -1608,7 +1726,8 @@ export default function RealtimeChart({
                 placeholder="Pilih Pembangkit"
               />
             )}
-            {chartMode !== "transportir" && pembangkit &&
+            {chartMode !== "transportir" &&
+              pembangkit &&
               (!pemasok ||
                 pemasok.length === 0 ||
                 filterType == "Pembangkit") && (
@@ -1667,125 +1786,136 @@ export default function RealtimeChart({
                     <p className="block text-sm font-medium text-gray-700 mb-2">
                       Filter Periode
                     </p>
-                <div className="grid grid-cols-2 gap-2 mb-4">
-                  {[
-                    {
-                      label: "1 Hari",
-                      val: "1D",
-                      apiPeriod: "hour",
-                      interval: "Jam",
-                    },
-                    {
-                      label: "1 Minggu",
-                      val: "1W",
-                      apiPeriod: "day",
-                      interval: "Hari",
-                    },
-                    {
-                      label: "1 Bulan",
-                      val: "1M",
-                      apiPeriod: "one_month",
-                      interval: "Hari",
-                    },
-                    {
-                      label: "1 Tahun",
-                      val: "1Y",
-                      apiPeriod: "one_year",
-                      interval: "Bulan",
-                    },
-                    {
-                      label: "3 Tahun",
-                      val: "3Y",
-                      apiPeriod: "three_year",
-                      interval: "Tahun",
-                    },
-                  ].map((item) => (
-                    <button
-                      key={item.label}
-                      className={`px-3 py-2 text-sm font-medium rounded-md transition-colors text-center ${
-                        period === item.val
-                          ? "bg-primary text-white shadow-sm"
-                          : "bg-gray-50 text-gray-600 hover:bg-gray-100"
-                      }`}
-                      onClick={() => {
-                        setPeriod(item.val);
-                        // Sensible default interval based on period
-                        setIntervalMode(item.interval as any);
+                    <div className="grid grid-cols-2 gap-2 mb-4">
+                      {[
+                        {
+                          label: "1 Hari",
+                          val: "1D",
+                          apiPeriod: "hour",
+                          interval: "Jam",
+                        },
+                        {
+                          label: "1 Minggu",
+                          val: "1W",
+                          apiPeriod: "day",
+                          interval: "Hari",
+                        },
+                        {
+                          label: "1 Bulan",
+                          val: "1M",
+                          apiPeriod: "one_month",
+                          interval: "Hari",
+                        },
+                        {
+                          label: "1 Tahun",
+                          val: "1Y",
+                          apiPeriod: "one_year",
+                          interval: "Bulan",
+                        },
+                        {
+                          label: "3 Tahun",
+                          val: "3Y",
+                          apiPeriod: "three_year",
+                          interval: "Tahun",
+                        },
+                      ].map((item) => (
+                        <button
+                          key={item.label}
+                          className={`px-3 py-2 text-sm font-medium rounded-md transition-colors text-center ${
+                            period === item.val
+                              ? "bg-primary text-white shadow-sm"
+                              : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+                          }`}
+                          onClick={() => {
+                            setPeriod(item.val);
+                            // Sensible default interval based on period
+                            setIntervalMode(item.interval as any);
 
-                        if (onPeriodChange)
-                          onPeriodChange(item.apiPeriod as Granularity);
-                        else {
-                          if (pemasok?.includes("Pemasok A"))
-                            setFallbackChartData(
-                              item.val === "1D"
-                                ? dataJamA
-                                : item.val === "1W"
-                                  ? data1MingguA
-                                  : item.val === "1M"
-                                    ? data3BulanA
-                                    : item.val === "1Y"
-                                      ? data1TahunA
-                                      : data3TahunA,
-                            );
-                          if (pemasok?.includes("Pemasok B"))
-                            setFallbackChartData(
-                              item.val === "1D"
-                                ? dataJamB
-                                : item.val === "1W"
-                                  ? data1MingguB
-                                  : item.val === "1M"
-                                    ? data3BulanB
-                                    : item.val === "1Y"
-                                      ? data1TahunB
-                                      : data3TahunB,
-                            );
-                        }
-                      }}
-                    >
-                      {item.label}
-                    </button>
-                  ))}
-                </div>
+                            if (onPeriodChange)
+                              onPeriodChange(item.apiPeriod as Granularity);
+                            else {
+                              if (pemasok?.includes("Pemasok A"))
+                                setFallbackChartData(
+                                  item.val === "1D"
+                                    ? dataJamA
+                                    : item.val === "1W"
+                                      ? data1MingguA
+                                      : item.val === "1M"
+                                        ? data3BulanA
+                                        : item.val === "1Y"
+                                          ? data1TahunA
+                                          : data3TahunA,
+                                );
+                              if (pemasok?.includes("Pemasok B"))
+                                setFallbackChartData(
+                                  item.val === "1D"
+                                    ? dataJamB
+                                    : item.val === "1W"
+                                      ? data1MingguB
+                                      : item.val === "1M"
+                                        ? data3BulanB
+                                        : item.val === "1Y"
+                                          ? data1TahunB
+                                          : data3TahunB,
+                                );
+                            }
+                          }}
+                        >
+                          {item.label}
+                        </button>
+                      ))}
+                    </div>
 
-                <p className="block text-sm font-medium text-gray-700 mb-2">
-                  Interval
-                </p>
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {(["Tahun", "Bulan", "Hari", "Jam"] as const).map((mode) => {
-                    // Hide invalid intervals based on selected period
-                    if (period === "1D" && mode !== "Jam") return null;
-                    if (period === "1W" && (mode === "Tahun" || mode === "Jam")) return null;
-                    if (period === "1M" && (mode === "Tahun" || mode === "Jam")) return null;
-                    if (period === "1Y" && mode === "Jam") return null;
-                    if (period === "3Y" && mode === "Jam") return null;
+                    <p className="block text-sm font-medium text-gray-700 mb-2">
+                      Interval
+                    </p>
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {(["Tahun", "Bulan", "Hari", "Jam"] as const).map(
+                        (mode) => {
+                          // Hide invalid intervals based on selected period
+                          if (period === "1D" && mode !== "Jam") return null;
+                          if (
+                            period === "1W" &&
+                            (mode === "Tahun" || mode === "Jam")
+                          )
+                            return null;
+                          if (
+                            period === "1M" &&
+                            (mode === "Tahun" || mode === "Jam")
+                          )
+                            return null;
+                          if (period === "1Y" && mode === "Jam") return null;
+                          if (period === "3Y" && mode === "Jam") return null;
 
-                    return (
-                      <button
-                        key={mode}
-                        className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                          intervalMode === mode
-                            ? "bg-[#7ec9d4] text-primary shadow-sm"
-                            : "bg-gray-50 text-gray-600 hover:bg-gray-100"
-                        }`}
-                        onClick={() => {
-                          setIntervalMode(mode);
-                          if (onPeriodChange) {
-                            if (mode === "Jam") onPeriodChange("interval_hour");
-                            else if (mode === "Hari")
-                              onPeriodChange("interval_day");
-                            else if (mode === "Bulan")
-                              onPeriodChange("interval_month");
-                            else if (mode === "Tahun")
-                              onPeriodChange("interval_year");
-                          }
-                        }}
-                      >
-                        {mode}
-                      </button>
-                    );
-                  })}
-                </div>
-                </>
+                          return (
+                            <button
+                              key={mode}
+                              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                                intervalMode === mode
+                                  ? "bg-[#7ec9d4] text-primary shadow-sm"
+                                  : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+                              }`}
+                              onClick={() => {
+                                setIntervalMode(mode);
+                                if (onPeriodChange) {
+                                  if (mode === "Jam")
+                                    onPeriodChange("interval_hour");
+                                  else if (mode === "Hari")
+                                    onPeriodChange("interval_day");
+                                  else if (mode === "Bulan")
+                                    onPeriodChange("interval_month");
+                                  else if (mode === "Tahun")
+                                    onPeriodChange("interval_year");
+                                }
+                              }}
+                            >
+                              {mode}
+                            </button>
+                          );
+                        },
+                      )}
+                    </div>
+                  </>
                 )}
 
                 <DateRangeFilter
@@ -1793,9 +1923,17 @@ export default function RealtimeChart({
                   endDate={endDate}
                   setStartDate={setStartDate}
                   setEndDate={setEndDate}
-                  periode={period as Periode}
-                  isSingleDate={chartMode === "transportir" ? false : period === "1D"}
-                  mode={chartMode === "transportir" ? "Hari" : (period === "3Y" ? "Tahun" : intervalMode)}
+                  periode={chartMode === "transportir" ? "1W" : period as Periode}
+                  isSingleDate={
+                    chartMode === "transportir" ? false : period === "1D"
+                  }
+                  mode={
+                    chartMode === "transportir"
+                      ? "Hari"
+                      : period === "3Y"
+                        ? "Tahun"
+                        : intervalMode
+                  }
                 />
               </div>
             </div>
@@ -1804,63 +1942,63 @@ export default function RealtimeChart({
                 <p className="block text-sm font-medium text-gray-700 mb-2 mt-2">
                   Tampilkan Garis
                 </p>
-              <div className="border border-gray-200 p-3 rounded-lg">
-                <div className="text-gray-700 flex justify-between items-center">
-                  <p>Rata-rata</p>
-                  <div>
-                    <Switch
-                      checked={meanLineActive}
-                      onChange={(e) => setMeanLineActive(e.target.checked)}
-                      sx={{
-                        "& .MuiSwitch-switchBase.Mui-checked": {
-                          color: "var(--theme-secondary)",
-                        },
-                        "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
-                          {
-                            backgroundColor: "var(--theme-secondary)",
+                <div className="border border-gray-200 p-3 rounded-lg">
+                  <div className="text-gray-700 flex justify-between items-center">
+                    <p>Rata-rata</p>
+                    <div>
+                      <Switch
+                        checked={meanLineActive}
+                        onChange={(e) => setMeanLineActive(e.target.checked)}
+                        sx={{
+                          "& .MuiSwitch-switchBase.Mui-checked": {
+                            color: "var(--theme-secondary)",
                           },
-                      }}
-                    />
+                          "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
+                            {
+                              backgroundColor: "var(--theme-secondary)",
+                            },
+                        }}
+                      />
+                    </div>
                   </div>
-                </div>
-                <div className="text-gray-700 flex justify-between items-center">
-                  <p>TOP</p>
-                  <div>
-                    <Switch
-                      checked={topLineActive}
-                      onChange={(e) => setTopLineActive(e.target.checked)}
-                      sx={{
-                        "& .MuiSwitch-switchBase.Mui-checked": {
-                          color: "var(--theme-secondary)",
-                        },
-                        "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
-                          {
-                            backgroundColor: "var(--theme-secondary)",
+                  <div className="text-gray-700 flex justify-between items-center">
+                    <p>TOP</p>
+                    <div>
+                      <Switch
+                        checked={topLineActive}
+                        onChange={(e) => setTopLineActive(e.target.checked)}
+                        sx={{
+                          "& .MuiSwitch-switchBase.Mui-checked": {
+                            color: "var(--theme-secondary)",
                           },
-                      }}
-                    />
+                          "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
+                            {
+                              backgroundColor: "var(--theme-secondary)",
+                            },
+                        }}
+                      />
+                    </div>
                   </div>
-                </div>
-                <div className="text-gray-700 flex justify-between items-center">
-                  <p>JPH</p>
-                  <div>
-                    <Switch
-                      checked={jphLineActive}
-                      onChange={(e) => setJphLineActive(e.target.checked)}
-                      sx={{
-                        "& .MuiSwitch-switchBase.Mui-checked": {
-                          color: "var(--theme-secondary)",
-                        },
-                        "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
-                          {
-                            backgroundColor: "var(--theme-secondary)",
+                  <div className="text-gray-700 flex justify-between items-center">
+                    <p>JPH</p>
+                    <div>
+                      <Switch
+                        checked={jphLineActive}
+                        onChange={(e) => setJphLineActive(e.target.checked)}
+                        sx={{
+                          "& .MuiSwitch-switchBase.Mui-checked": {
+                            color: "var(--theme-secondary)",
                           },
-                      }}
-                    />
+                          "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
+                            {
+                              backgroundColor: "var(--theme-secondary)",
+                            },
+                        }}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
             )}
           </div>
         </div>
