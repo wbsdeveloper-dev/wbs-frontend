@@ -386,8 +386,12 @@ export default function Home() {
       pembangkitData.forEach((p) => {
         if (p.region) regions.add(p.region);
       });
+    if (tbbmData)
+      tbbmData.forEach((t) => {
+        if (t.region) regions.add(t.region);
+      });
     return Array.from(regions).sort();
-  }, [pembangkitData]);
+  }, [pembangkitData, tbbmData]);
 
   const filterSupplierOptions = useMemo(() => {
     if (!tbbmData || !bbmMonthlyData) return [];
@@ -400,12 +404,18 @@ export default function Home() {
           validTbbms.add(record.tbbm);
         }
       });
+    } else if (graphicRegion) {
+      tbbmData.forEach((t) => {
+        if (t.region === graphicRegion) {
+          validTbbms.add(t.name);
+        }
+      });
     } else {
       tbbmData.forEach((t) => validTbbms.add(t.name));
     }
 
     return Array.from(validTbbms).sort();
-  }, [tbbmData, bbmMonthlyData, graphicPlant]);
+  }, [tbbmData, bbmMonthlyData, graphicPlant, graphicRegion]);
 
   const filterPlantOptions = useMemo(() => {
     if (!pembangkitData) return [];
