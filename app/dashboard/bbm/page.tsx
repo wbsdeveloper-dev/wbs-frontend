@@ -628,64 +628,72 @@ export default function Home() {
           </div>
 
           {/* Section: Donut Chart & Top Performers */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <FuelTypeDonutChart
-              openModalFunction={open}
-              data={dataPieChart}
-              changeFilterType={setFilterType}
-              filterType={filterType}
-              startDate={distributionStartDate}
-              endDate={distributionEndDate}
-              onStartDateChange={setDistributionStartDate}
-              onEndDateChange={setDistributionEndDate}
-              title="Volume BBM"
-              descriptionPrefix="Visualisasi volume BBM"
-              tabs={["TBBM", "Pembangkit"]}
-            />
+          <div className="flex overflow-x-auto gap-6 mb-8 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+            <div className="w-[360px] min-w-[360px] md:w-[420px] md:min-w-[420px] flex-shrink-0">
+              <FuelTypeDonutChart
+                openModalFunction={open}
+                data={dataPieChart}
+                changeFilterType={setFilterType}
+                filterType={filterType}
+                startDate={distributionStartDate}
+                endDate={distributionEndDate}
+                onStartDateChange={setDistributionStartDate}
+                onEndDateChange={setDistributionEndDate}
+                title="Volume BBM"
+                descriptionPrefix="Visualisasi volume BBM"
+                tabs={["TBBM", "Pembangkit"]}
+              />
+            </div>
 
-            <NominationAchievementChart
-              nominasi={nominationData.nominasi}
-              realisasi={nominationData.realisasi}
-              pemakaian={nominationData.pemakaian}
-              startDate={nominationStartDate}
-              endDate={nominationEndDate}
-              onStartDateChange={setNominationStartDate}
-              onEndDateChange={setNominationEndDate}
-            />
+            <div className="w-[360px] min-w-[360px] md:w-[420px] md:min-w-[420px] flex-shrink-0">
+              <NominationAchievementChart
+                nominasi={nominationData.nominasi}
+                realisasi={nominationData.realisasi}
+                pemakaian={nominationData.pemakaian}
+                startDate={nominationStartDate}
+                endDate={nominationEndDate}
+                onStartDateChange={setNominationStartDate}
+                onEndDateChange={setNominationEndDate}
+              />
+            </div>
 
-            <TopVolumeList
-              title="Top 5 TBBM"
-              list={topSuppliersList}
-              unit="KL"
-              description="List top 5 performa TBBM dengan volume tertinggi dalam periode tertentu"
-              startDate={topSuppliersStart}
-              endDate={topSuppliersEnd}
-              onStartDateChange={setTopSuppliersStart}
-              onEndDateChange={setTopSuppliersEnd}
-              product={topSuppliersProduct}
-              moda={topSuppliersModa}
-              onProductChange={setTopSuppliersProduct}
-              onModaChange={setTopSuppliersModa}
-              productOptions={filterProductOptions}
-              modaOptions={filterModaOptions}
-            />
+            <div className="w-[360px] min-w-[360px] md:w-[420px] md:min-w-[420px] flex-shrink-0">
+              <TopVolumeList
+                title="Top 5 Pembangkit"
+                list={topPembangkitList}
+                unit="KL"
+                description="List top 5 performa pembangkit BBM dengan volume tertinggi"
+                startDate={topPlantsStart}
+                endDate={topPlantsEnd}
+                onStartDateChange={setTopPlantsStart}
+                onEndDateChange={setTopPlantsEnd}
+                product={topPlantsProduct}
+                moda={topPlantsModa}
+                onProductChange={setTopPlantsProduct}
+                onModaChange={setTopPlantsModa}
+                productOptions={filterProductOptions}
+                modaOptions={filterModaOptions}
+              />
+            </div>
 
-            <TopVolumeList
-              title="Top 5 Pembangkit"
-              list={topPembangkitList}
-              unit="KL"
-              description="List top 5 performa pembangkit BBM dengan volume tertinggi"
-              startDate={topPlantsStart}
-              endDate={topPlantsEnd}
-              onStartDateChange={setTopPlantsStart}
-              onEndDateChange={setTopPlantsEnd}
-              product={topPlantsProduct}
-              moda={topPlantsModa}
-              onProductChange={setTopPlantsProduct}
-              onModaChange={setTopPlantsModa}
-              productOptions={filterProductOptions}
-              modaOptions={filterModaOptions}
-            />
+            <div className="w-[360px] min-w-[360px] md:w-[420px] md:min-w-[420px] flex-shrink-0">
+              <TopVolumeList
+                title="Top 5 TBBM"
+                list={topSuppliersList}
+                unit="KL"
+                description="List top 5 performa TBBM dengan volume tertinggi dalam periode tertentu"
+                startDate={topSuppliersStart}
+                endDate={topSuppliersEnd}
+                onStartDateChange={setTopSuppliersStart}
+                onEndDateChange={setTopSuppliersEnd}
+                product={topSuppliersProduct}
+                moda={topSuppliersModa}
+                onProductChange={setTopSuppliersProduct}
+                onModaChange={setTopSuppliersModa}
+                productOptions={filterProductOptions}
+                modaOptions={filterModaOptions}
+              />
+            </div>
           </div>
 
           {/* Section: Custom Bar Chart & Graphic Filter Panel */}
@@ -701,21 +709,19 @@ export default function Home() {
                   <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
                     <button
                       onClick={() => setChartMode("akumulasi")}
-                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
-                        chartMode === "akumulasi"
-                          ? "bg-white text-gray-900 shadow-sm"
-                          : "text-gray-500 hover:text-gray-700"
-                      }`}
+                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${chartMode === "akumulasi"
+                        ? "bg-white text-gray-900 shadow-sm"
+                        : "text-gray-500 hover:text-gray-700"
+                        }`}
                     >
                       Grafik Akumulasi
                     </button>
                     <button
                       onClick={() => setChartMode("realisasi-moda")}
-                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
-                        chartMode === "realisasi-moda"
-                          ? "bg-white text-gray-900 shadow-sm"
-                          : "text-gray-500 hover:text-gray-700"
-                      }`}
+                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${chartMode === "realisasi-moda"
+                        ? "bg-white text-gray-900 shadow-sm"
+                        : "text-gray-500 hover:text-gray-700"
+                        }`}
                     >
                       Penyaluran Harian
                     </button>
@@ -735,39 +741,39 @@ export default function Home() {
                   graphicSupplier ||
                   graphicProduct ||
                   graphicModa) && (
-                  <div className="flex flex-wrap gap-1.5 mb-6 max-w-xl">
-                    {graphicStart && graphicEnd && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-700 border border-blue-100">
-                        Periode: {graphicStart} s/d {graphicEnd}
-                      </span>
-                    )}
-                    {graphicRegion && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
-                        Region: {graphicRegion}
-                      </span>
-                    )}
-                    {graphicSupplier && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-100">
-                        Pemasok: {graphicSupplier}
-                      </span>
-                    )}
-                    {graphicPlant && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-orange-50 text-orange-700 border border-orange-100">
-                        Pembangkit: {graphicPlant}
-                      </span>
-                    )}
-                    {graphicProduct && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-purple-50 text-purple-700 border border-purple-100">
-                        Produk: {graphicProduct}
-                      </span>
-                    )}
-                    {graphicModa && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-rose-50 text-rose-700 border border-rose-100">
-                        Moda: {graphicModa}
-                      </span>
-                    )}
-                  </div>
-                )}
+                    <div className="flex flex-wrap gap-1.5 mb-6 max-w-xl">
+                      {graphicStart && graphicEnd && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-700 border border-blue-100">
+                          Periode: {graphicStart} s/d {graphicEnd}
+                        </span>
+                      )}
+                      {graphicRegion && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
+                          Region: {graphicRegion}
+                        </span>
+                      )}
+                      {graphicSupplier && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-100">
+                          Pemasok: {graphicSupplier}
+                        </span>
+                      )}
+                      {graphicPlant && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-orange-50 text-orange-700 border border-orange-100">
+                          Pembangkit: {graphicPlant}
+                        </span>
+                      )}
+                      {graphicProduct && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-purple-50 text-purple-700 border border-purple-100">
+                          Produk: {graphicProduct}
+                        </span>
+                      )}
+                      {graphicModa && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-rose-50 text-rose-700 border border-rose-100">
+                          Moda: {graphicModa}
+                        </span>
+                      )}
+                    </div>
+                  )}
               </div>
               <div className="w-full flex-1 min-h-[320px] mt-4">
                 {chartMode === "akumulasi" ? (
@@ -954,11 +960,10 @@ export default function Home() {
                         ].map((item) => (
                           <button
                             key={item.label}
-                            className={`px-3 py-2 text-sm font-medium rounded-md transition-colors text-center ${
-                              graphicPeriod === item.val
-                                ? "bg-primary text-white shadow-sm"
-                                : "bg-gray-50 text-gray-600 hover:bg-gray-100"
-                            }`}
+                            className={`px-3 py-2 text-sm font-medium rounded-md transition-colors text-center ${graphicPeriod === item.val
+                              ? "bg-primary text-white shadow-sm"
+                              : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+                              }`}
                             onClick={() => {
                               setGraphicPeriod(item.val as Periode);
                               setGraphicIntervalMode(item.interval as any);
@@ -1021,11 +1026,10 @@ export default function Home() {
                           return (
                             <button
                               key={mode}
-                              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                                graphicIntervalMode === mode
-                                  ? "bg-primary text-white shadow-sm"
-                                  : "bg-gray-50 text-gray-600 hover:bg-gray-100"
-                              }`}
+                              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${graphicIntervalMode === mode
+                                ? "bg-primary text-white shadow-sm"
+                                : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+                                }`}
                               onClick={() => setGraphicIntervalMode(mode)}
                             >
                               {mode}
