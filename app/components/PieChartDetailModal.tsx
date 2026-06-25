@@ -88,7 +88,7 @@ export default function PieChartDetailModal({
                 key={type}
                 className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer ${
                   filterType === type
-                    ? "bg-secondary text-white shadow-sm"
+                    ? "bg-primary text-white shadow-sm"
                     : "text-gray-600 hover:text-gray-900"
                 }`}
                 onClick={() => onFilterTypeChange(type)}

@@ -297,13 +297,19 @@ export default function EditDataTable({
     label,
     field,
     align = "center",
+    rowSpan,
+    colSpan,
   }: {
     label: string;
     field?: SortField;
     align?: "left" | "center" | "right";
+    rowSpan?: number;
+    colSpan?: number;
   }) => (
     <th
-      className={`px-4 py-3 text-${align} text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap ${field
+      rowSpan={rowSpan}
+      colSpan={colSpan}
+      className={`px-4 py-3 text-${align} text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap border-b border-gray-200 ${field
           ? "cursor-pointer select-none hover:bg-gray-100 transition-colors"
           : ""
         }`}
@@ -734,30 +740,49 @@ export default function EditDataTable({
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-gray-50">
-              <tr>
-                <Th label="No" />
-                <Th label="Tanggal" field="reportDate" />
-                <Th label="Pemasok" field="supplierName" align="left" />
-                <Th label="Pembangkit" field="siteName" align="left" />
-                <Th label="Periode" field="periodType" />
-                <Th label="Jam" field="periodValue" />
-                <Th label="MMSCFD" field="finalValueMmscfd" />
-                <Th label="BBTUD" field="finalValueBbtud" />
-                <Th label="Sumber Data" field="status" />
-                {viewMode === "detail" && (
-                  <>
-                    <Th label="WA MMSCFD" field="waValueMmscfd" />
-                    <Th label="WA BBTUD" field="waValueBbtud" />
-                    <Th label="EMAIL MMSCFD" field="plnValueMmscfd" />
-                    <Th label="EMAIL BBTUD" field="plnValueBbtud" />
-                    <Th label="SHEET MMSCFD" field="sheetValueMmscfd" />
-                    <Th label="SHEET BBTUD" field="sheetValueBbtud" />
-                    <Th label="ID BBTUD" />
-                    <Th label="ID MMSCFD" />
-                  </>
-                )}
-                <Th label="Aksi" />
-              </tr>
+              {viewMode === "detail" ? (
+                <>
+                  <tr>
+                    <Th label="No" rowSpan={2} />
+                    <Th label="Tanggal" field="reportDate" rowSpan={2} />
+                    <Th label="Pemasok" field="supplierName" align="left" rowSpan={2} />
+                    <Th label="Pembangkit" field="siteName" align="left" rowSpan={2} />
+                    <Th label="Periode" field="periodType" rowSpan={2} />
+                    <Th label="Jam" field="periodValue" rowSpan={2} />
+                    <Th label="MMSCFD" field="finalValueMmscfd" rowSpan={2} />
+                    <Th label="BBTUD" field="finalValueBbtud" rowSpan={2} />
+                    <Th label="Sumber Data" field="status" rowSpan={2} />
+                    <Th label="WA" colSpan={2} />
+                    <Th label="EMAIL" colSpan={2} />
+                    <Th label="SHEET" colSpan={2} />
+                    <Th label="ID" colSpan={2} />
+                    <Th label="Aksi" rowSpan={2} />
+                  </tr>
+                  <tr>
+                    <Th label="MMSCFD" field="waValueMmscfd" />
+                    <Th label="BBTUD" field="waValueBbtud" />
+                    <Th label="MMSCFD" field="plnValueMmscfd" />
+                    <Th label="BBTUD" field="plnValueBbtud" />
+                    <Th label="MMSCFD" field="sheetValueMmscfd" />
+                    <Th label="BBTUD" field="sheetValueBbtud" />
+                    <Th label="BBTUD" />
+                    <Th label="MMSCFD" />
+                  </tr>
+                </>
+              ) : (
+                <tr>
+                  <Th label="No" />
+                  <Th label="Tanggal" field="reportDate" />
+                  <Th label="Pemasok" field="supplierName" align="left" />
+                  <Th label="Pembangkit" field="siteName" align="left" />
+                  <Th label="Periode" field="periodType" />
+                  <Th label="Jam" field="periodValue" />
+                  <Th label="MMSCFD" field="finalValueMmscfd" />
+                  <Th label="BBTUD" field="finalValueBbtud" />
+                  <Th label="Sumber Data" field="status" />
+                  <Th label="Aksi" />
+                </tr>
+              )}
             </thead>
             <tbody className="divide-y divide-gray-100">
               {isLoading ? (
