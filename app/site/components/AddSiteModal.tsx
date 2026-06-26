@@ -110,10 +110,12 @@ export function AddSiteModal({
 
     if (!formData.name.trim()) {
       newErrors.name = "Nama site wajib diisi";
-    } else if (!editingId) {
+    } else {
       const isDuplicate = sites?.some(
         (site) =>
-          site.name.toLowerCase() === formData.name.trim().toLowerCase(),
+          site.id !== editingId &&
+          site.name.toLowerCase() === formData.name.trim().toLowerCase() &&
+          site.commodity === formData.commodity,
       );
       if (isDuplicate) {
         newErrors.name = "Nama site sudah terdaftar, silakan gunakan nama lain";
