@@ -47,6 +47,7 @@ export default function NotificationPage() {
     metricType: r.metricType,
     finalValue: r.finalValue,
     status: r.status,
+    isRead: r.isRead,
   }));
 
   const pagination = data?.pagination ?? {

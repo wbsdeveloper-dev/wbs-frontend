@@ -14,6 +14,7 @@ import {
   useUpdateNotification,
   type UpdateNotificationPayload,
 } from "@/hooks/service/notification-api";
+import { useCreateEvent } from "@/hooks/service/dashboard-api";
 
 // ---------------------------------------------------------------------------
 // Status options
@@ -70,6 +71,7 @@ export default function EditNotificationPage() {
 
   const { data: record, isLoading, isError } = useNotification(recordId);
   const updateMutation = useUpdateNotification();
+  const createEventMutation = useCreateEvent();
 
   // Form state
   const [form, setForm] = useState<UpdateNotificationPayload>({});
@@ -106,6 +108,23 @@ export default function EditNotificationPage() {
     e.preventDefault();
     try {
       await updateMutation.mutateAsync({ id: recordId, payload: form });
+
+      const currentStatus = form.status || record?.status;
+      if (currentStatus === "DI_BAWAH_TOP" && form.notes?.trim()) {
+        try {
+          await createEventMutation.mutateAsync({
+            siteId: record?.siteId || undefined,
+            siteName: record?.siteName || record?.supplierName || "Unknown",
+            occurredAt: record?.reportDate ? new Date(record.reportDate).toISOString() : new Date().toISOString(),
+            title: `Catatan Notifikasi - Di Bawah TOP`,
+            description: form.notes.trim(),
+            severity: "INFO",
+          });
+        } catch (err) {
+          console.error("Gagal menyimpan catatan kejadian:", err);
+        }
+      }
+
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000);
     } catch {

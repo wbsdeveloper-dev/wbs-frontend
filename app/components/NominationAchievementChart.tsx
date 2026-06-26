@@ -42,7 +42,7 @@ export default function NominationAchievementChart({
   };
 
   const value = tab === "Penyaluran" ? realisasi : pemakaian;
-  
+
   let percentage = 0;
   if (nominasi > 0) {
     percentage = Math.round((value / nominasi) * 100);
@@ -75,11 +75,10 @@ export default function NominationAchievementChart({
           <div className="flex items-center gap-1">
             <button
               onClick={() => setShowDateFilter(!showDateFilter)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer ${
-                showDateFilter
-                  ? "bg-secondary/10 text-primary border border-secondary/30"
-                  : "text-gray-500 hover:bg-gray-100 border border-transparent"
-              }`}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer ${showDateFilter
+                ? "bg-secondary/10 text-primary border border-secondary/30"
+                : "text-gray-500 hover:bg-gray-100 border border-transparent"
+                }`}
             >
               <Calendar className="w-4 h-4" />
               <span className="hidden sm:inline">Tanggal</span>
@@ -137,25 +136,23 @@ export default function NominationAchievementChart({
         </div>
       )}
 
-      <div className="flex items-center justify-center mt-4 mb-5">
+      <div className="flex items-center justify-center mt-4">
         <div className="inline-flex bg-gray-100 rounded-lg p-0.5 border border-transparent">
           <button
             onClick={() => setTab("Penyaluran")}
-            className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer ${
-              tab === "Penyaluran"
-                ? "bg-secondary text-white shadow-sm"
-                : "text-gray-600 hover:text-gray-900"
-            }`}
+            className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer ${tab === "Penyaluran"
+              ? "bg-secondary text-white shadow-sm"
+              : "text-gray-600 hover:text-gray-900"
+              }`}
           >
             Penyaluran
           </button>
           <button
             onClick={() => setTab("Pemakaian")}
-            className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer ${
-              tab === "Pemakaian"
-                ? "bg-secondary text-white shadow-sm"
-                : "text-gray-600 hover:text-gray-900"
-            }`}
+            className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer ${tab === "Pemakaian"
+              ? "bg-secondary text-white shadow-sm"
+              : "text-gray-600 hover:text-gray-900"
+              }`}
           >
             Pemakaian
           </button>
@@ -163,7 +160,7 @@ export default function NominationAchievementChart({
       </div>
 
       <div className="flex-1 flex flex-col items-center justify-center relative mt-4">
-        <div className="h-44 w-full relative">
+        <div className="h-56 w-full relative">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
@@ -171,7 +168,7 @@ export default function NominationAchievementChart({
                 cx="50%"
                 cy="50%"
                 innerRadius="70%"
-                outerRadius="85%"
+                outerRadius="90%"
                 startAngle={90}
                 endAngle={-270}
                 dataKey="value"
@@ -195,7 +192,7 @@ export default function NominationAchievementChart({
         </div>
       </div>
 
-      <div className="mt-4 pt-5 border-t border-gray-50 space-y-4 mb-3">
+      <div className="border-t border-gray-50 space-y-4 mb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="w-2.5 h-2.5 rounded-full bg-secondary" />

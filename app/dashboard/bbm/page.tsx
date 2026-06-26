@@ -94,12 +94,12 @@ const EmptyChartState = ({ type }: { type: "supplier" | "plant" }) => (
 
 const CustomRoundedTopBar = (props: any) => {
   const { x, y, width, height, fill, payload, dataKey, productOptions } = props;
-  
+
   if (!height || height === 0) return null;
 
-  const metric = dataKey.split('_')[1];
+  const metric = dataKey.split("_")[1];
   let isTop = false;
-  
+
   for (let i = productOptions.length - 1; i >= 0; i--) {
     const prod = productOptions[i];
     const val = payload[`${prod}_${metric}`];
@@ -111,9 +111,20 @@ const CustomRoundedTopBar = (props: any) => {
     }
   }
 
-  const radius: [number, number, number, number] = isTop ? [6, 6, 0, 0] : [0, 0, 0, 0];
-  
-  return <Rectangle x={x} y={y} width={width} height={height} fill={fill} radius={radius} />;
+  const radius: [number, number, number, number] = isTop
+    ? [6, 6, 0, 0]
+    : [0, 0, 0, 0];
+
+  return (
+    <Rectangle
+      x={x}
+      y={y}
+      width={width}
+      height={height}
+      fill={fill}
+      radius={radius}
+    />
+  );
 };
 
 const CustomXAxisTick = ({ x, y, payload }: any) => {
@@ -122,7 +133,14 @@ const CustomXAxisTick = ({ x, y, payload }: any) => {
       <text x={0} y={15} fontSize={9} textAnchor="middle" fill="#9ca3af">
         Nominasi | Penyaluran | Penerimaan | Pemakaian
       </text>
-      <text x={0} y={32} fontSize={11} textAnchor="middle" fill="#6b7280" className="font-medium">
+      <text
+        x={0}
+        y={32}
+        fontSize={11}
+        textAnchor="middle"
+        fill="#6b7280"
+        className="font-medium"
+      >
         {payload.value}
       </text>
     </g>
@@ -174,21 +192,38 @@ function AccumulationTooltip({
         <div>
           <p className="text-xs font-bold text-gray-500 mb-1">Nominasi</p>
           <div className="space-y-1">
-            {Object.keys(data).filter(k => k.endsWith('_nominasi') && data[k] > 0).map(k => {
-              const product = k.replace('_nominasi', '');
-              return (
-                <div key={k} className="flex items-center justify-between gap-3 text-xs">
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: getProductColor(product) }} />
-                    <span className="text-gray-600">{product}</span>
+            {Object.keys(data)
+              .filter((k) => k.endsWith("_nominasi") && data[k] > 0)
+              .map((k) => {
+                const product = k.replace("_nominasi", "");
+                return (
+                  <div
+                    key={k}
+                    className="flex items-center justify-between gap-3 text-xs"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        className="w-2 h-2 rounded-full"
+                        style={{ backgroundColor: getProductColor(product) }}
+                      />
+                      <span className="text-gray-600">{product}</span>
+                    </div>
+                    <span className="font-semibold text-gray-900">
+                      {data[k].toLocaleString("id-ID", {
+                        maximumFractionDigits: 2,
+                      })}
+                    </span>
                   </div>
-                  <span className="font-semibold text-gray-900">{data[k].toLocaleString('id-ID', { maximumFractionDigits: 2 })}</span>
-                </div>
-              );
-            })}
+                );
+              })}
             <div className="pt-1 mt-1 border-t border-gray-100 flex justify-between text-xs font-bold text-gray-800">
               <span>Total</span>
-              <span>{data.nominasi.toLocaleString('id-ID', { maximumFractionDigits: 2 })} KL</span>
+              <span>
+                {data.nominasi.toLocaleString("id-ID", {
+                  maximumFractionDigits: 2,
+                })}{" "}
+                KL
+              </span>
             </div>
           </div>
         </div>
@@ -197,21 +232,38 @@ function AccumulationTooltip({
         <div>
           <p className="text-xs font-bold text-gray-500 mb-1">Penyaluran</p>
           <div className="space-y-1">
-            {Object.keys(data).filter(k => k.endsWith('_realisasi') && data[k] > 0).map(k => {
-              const product = k.replace('_realisasi', '');
-              return (
-                <div key={k} className="flex items-center justify-between gap-3 text-xs">
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: getProductColor(product) }} />
-                    <span className="text-gray-600">{product}</span>
+            {Object.keys(data)
+              .filter((k) => k.endsWith("_realisasi") && data[k] > 0)
+              .map((k) => {
+                const product = k.replace("_realisasi", "");
+                return (
+                  <div
+                    key={k}
+                    className="flex items-center justify-between gap-3 text-xs"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        className="w-2 h-2 rounded-full"
+                        style={{ backgroundColor: getProductColor(product) }}
+                      />
+                      <span className="text-gray-600">{product}</span>
+                    </div>
+                    <span className="font-semibold text-gray-900">
+                      {data[k].toLocaleString("id-ID", {
+                        maximumFractionDigits: 2,
+                      })}
+                    </span>
                   </div>
-                  <span className="font-semibold text-gray-900">{data[k].toLocaleString('id-ID', { maximumFractionDigits: 2 })}</span>
-                </div>
-              );
-            })}
+                );
+              })}
             <div className="pt-1 mt-1 border-t border-gray-100 flex justify-between text-xs font-bold text-gray-800">
               <span>Total</span>
-              <span>{data.realisasi.toLocaleString('id-ID', { maximumFractionDigits: 2 })} KL</span>
+              <span>
+                {data.realisasi.toLocaleString("id-ID", {
+                  maximumFractionDigits: 2,
+                })}{" "}
+                KL
+              </span>
             </div>
           </div>
         </div>
@@ -220,21 +272,38 @@ function AccumulationTooltip({
         <div>
           <p className="text-xs font-bold text-gray-500 mb-1">Penerimaan</p>
           <div className="space-y-1">
-            {Object.keys(data).filter(k => k.endsWith('_penerimaan') && data[k] > 0).map(k => {
-              const product = k.replace('_penerimaan', '');
-              return (
-                <div key={k} className="flex items-center justify-between gap-3 text-xs">
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: getProductColor(product) }} />
-                    <span className="text-gray-600">{product}</span>
+            {Object.keys(data)
+              .filter((k) => k.endsWith("_penerimaan") && data[k] > 0)
+              .map((k) => {
+                const product = k.replace("_penerimaan", "");
+                return (
+                  <div
+                    key={k}
+                    className="flex items-center justify-between gap-3 text-xs"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        className="w-2 h-2 rounded-full"
+                        style={{ backgroundColor: getProductColor(product) }}
+                      />
+                      <span className="text-gray-600">{product}</span>
+                    </div>
+                    <span className="font-semibold text-gray-900">
+                      {data[k].toLocaleString("id-ID", {
+                        maximumFractionDigits: 2,
+                      })}
+                    </span>
                   </div>
-                  <span className="font-semibold text-gray-900">{data[k].toLocaleString('id-ID', { maximumFractionDigits: 2 })}</span>
-                </div>
-              );
-            })}
+                );
+              })}
             <div className="pt-1 mt-1 border-t border-gray-100 flex justify-between text-xs font-bold text-gray-800">
               <span>Total</span>
-              <span>{data.penerimaan.toLocaleString('id-ID', { maximumFractionDigits: 2 })} KL</span>
+              <span>
+                {data.penerimaan.toLocaleString("id-ID", {
+                  maximumFractionDigits: 2,
+                })}{" "}
+                KL
+              </span>
             </div>
           </div>
         </div>
@@ -243,21 +312,38 @@ function AccumulationTooltip({
         <div>
           <p className="text-xs font-bold text-gray-500 mb-1">Pemakaian</p>
           <div className="space-y-1">
-            {Object.keys(data).filter(k => k.endsWith('_pemakaian') && data[k] > 0).map(k => {
-              const product = k.replace('_pemakaian', '');
-              return (
-                <div key={k} className="flex items-center justify-between gap-3 text-xs">
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: getProductColor(product) }} />
-                    <span className="text-gray-600">{product}</span>
+            {Object.keys(data)
+              .filter((k) => k.endsWith("_pemakaian") && data[k] > 0)
+              .map((k) => {
+                const product = k.replace("_pemakaian", "");
+                return (
+                  <div
+                    key={k}
+                    className="flex items-center justify-between gap-3 text-xs"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        className="w-2 h-2 rounded-full"
+                        style={{ backgroundColor: getProductColor(product) }}
+                      />
+                      <span className="text-gray-600">{product}</span>
+                    </div>
+                    <span className="font-semibold text-gray-900">
+                      {data[k].toLocaleString("id-ID", {
+                        maximumFractionDigits: 2,
+                      })}
+                    </span>
                   </div>
-                  <span className="font-semibold text-gray-900">{data[k].toLocaleString('id-ID', { maximumFractionDigits: 2 })}</span>
-                </div>
-              );
-            })}
+                );
+              })}
             <div className="pt-1 mt-1 border-t border-gray-100 flex justify-between text-xs font-bold text-gray-800">
               <span>Total</span>
-              <span>{data.pemakaian.toLocaleString('id-ID', { maximumFractionDigits: 2 })} KL</span>
+              <span>
+                {data.pemakaian.toLocaleString("id-ID", {
+                  maximumFractionDigits: 2,
+                })}{" "}
+                KL
+              </span>
             </div>
           </div>
         </div>
@@ -446,8 +532,12 @@ export default function Home() {
       pembangkitData.forEach((p) => {
         if (p.region) regions.add(p.region);
       });
+    if (tbbmData)
+      tbbmData.forEach((t) => {
+        if (t.region) regions.add(t.region);
+      });
     return Array.from(regions).sort();
-  }, [pembangkitData]);
+  }, [pembangkitData, tbbmData]);
 
   const filterSupplierOptions = useMemo(() => {
     if (!tbbmData || !bbmMonthlyData) return [];
@@ -460,12 +550,18 @@ export default function Home() {
           validTbbms.add(record.tbbm);
         }
       });
+    } else if (graphicRegion) {
+      tbbmData.forEach((t) => {
+        if (t.region === graphicRegion) {
+          validTbbms.add(t.name);
+        }
+      });
     } else {
       tbbmData.forEach((t) => validTbbms.add(t.name));
     }
 
     return Array.from(validTbbms).sort();
-  }, [tbbmData, bbmMonthlyData, graphicPlant]);
+  }, [tbbmData, bbmMonthlyData, graphicPlant, graphicRegion]);
 
   const filterPlantOptions = useMemo(() => {
     if (!pembangkitData) return [];
@@ -608,11 +704,15 @@ export default function Home() {
       const pReal = `${record.product}_realisasi`;
       const pPen = `${record.product}_penerimaan`;
       const pPem = `${record.product}_pemakaian`;
-      
-      chartGroups[name][pNom] = (chartGroups[name][pNom] || 0) + record.nominasi;
-      chartGroups[name][pReal] = (chartGroups[name][pReal] || 0) + record.realisasi;
-      chartGroups[name][pPen] = (chartGroups[name][pPen] || 0) + record.penerimaan;
-      chartGroups[name][pPem] = (chartGroups[name][pPem] || 0) + record.pemakaian;
+
+      chartGroups[name][pNom] =
+        (chartGroups[name][pNom] || 0) + record.nominasi;
+      chartGroups[name][pReal] =
+        (chartGroups[name][pReal] || 0) + record.realisasi;
+      chartGroups[name][pPen] =
+        (chartGroups[name][pPen] || 0) + record.penerimaan;
+      chartGroups[name][pPem] =
+        (chartGroups[name][pPem] || 0) + record.pemakaian;
 
       Object.entries(record.modaRealisasi).forEach(([moda, val]) => {
         if (!chartGroups[name].modaRealisasi[moda]) {
@@ -689,64 +789,72 @@ export default function Home() {
           </div>
 
           {/* Section: Donut Chart & Top Performers */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <FuelTypeDonutChart
-              openModalFunction={open}
-              data={dataPieChart}
-              changeFilterType={setFilterType}
-              filterType={filterType}
-              startDate={distributionStartDate}
-              endDate={distributionEndDate}
-              onStartDateChange={setDistributionStartDate}
-              onEndDateChange={setDistributionEndDate}
-              title="Volume BBM"
-              descriptionPrefix="Visualisasi volume BBM"
-              tabs={["TBBM", "Pembangkit"]}
-            />
+          <div className="flex overflow-x-auto gap-4 mb-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+            <div className="w-[360px] min-w-[360px] md:w-[420px] md:min-w-[420px] flex-shrink-0">
+              <FuelTypeDonutChart
+                openModalFunction={open}
+                data={dataPieChart}
+                changeFilterType={setFilterType}
+                filterType={filterType}
+                startDate={distributionStartDate}
+                endDate={distributionEndDate}
+                onStartDateChange={setDistributionStartDate}
+                onEndDateChange={setDistributionEndDate}
+                title="Volume BBM"
+                descriptionPrefix="Visualisasi volume BBM"
+                tabs={["TBBM", "Pembangkit"]}
+              />
+            </div>
 
-            <NominationAchievementChart
-              nominasi={nominationData.nominasi}
-              realisasi={nominationData.realisasi}
-              pemakaian={nominationData.pemakaian}
-              startDate={nominationStartDate}
-              endDate={nominationEndDate}
-              onStartDateChange={setNominationStartDate}
-              onEndDateChange={setNominationEndDate}
-            />
+            <div className="w-[360px] min-w-[360px] md:w-[420px] md:min-w-[420px] flex-shrink-0">
+              <NominationAchievementChart
+                nominasi={nominationData.nominasi}
+                realisasi={nominationData.realisasi}
+                pemakaian={nominationData.pemakaian}
+                startDate={nominationStartDate}
+                endDate={nominationEndDate}
+                onStartDateChange={setNominationStartDate}
+                onEndDateChange={setNominationEndDate}
+              />
+            </div>
 
-            <TopVolumeList
-              title="Top 5 Penyaluran TBBM"
-              list={topSuppliersList}
-              unit="KL"
-              description="List top 5 performa TBBM dengan volume tertinggi dalam periode tertentu"
-              startDate={topSuppliersStart}
-              endDate={topSuppliersEnd}
-              onStartDateChange={setTopSuppliersStart}
-              onEndDateChange={setTopSuppliersEnd}
-              product={topSuppliersProduct}
-              moda={topSuppliersModa}
-              onProductChange={setTopSuppliersProduct}
-              onModaChange={setTopSuppliersModa}
-              productOptions={filterProductOptions}
-              modaOptions={filterModaOptions}
-            />
+            <div className="w-[360px] min-w-[360px] md:w-[420px] md:min-w-[420px] flex-shrink-0">
+              <TopVolumeList
+                title="Top 5 Penyaluran Pembangkit"
+                list={topPembangkitList}
+                unit="KL"
+                description="List top 5 performa pembangkit BBM dengan volume tertinggi"
+                startDate={topPlantsStart}
+                endDate={topPlantsEnd}
+                onStartDateChange={setTopPlantsStart}
+                onEndDateChange={setTopPlantsEnd}
+                product={topPlantsProduct}
+                moda={topPlantsModa}
+                onProductChange={setTopPlantsProduct}
+                onModaChange={setTopPlantsModa}
+                productOptions={filterProductOptions}
+                modaOptions={filterModaOptions}
+              />
+            </div>
 
-            <TopVolumeList
-              title="Top 5 Penyaluran Pembangkit"
-              list={topPembangkitList}
-              unit="KL"
-              description="List top 5 performa pembangkit BBM dengan volume tertinggi"
-              startDate={topPlantsStart}
-              endDate={topPlantsEnd}
-              onStartDateChange={setTopPlantsStart}
-              onEndDateChange={setTopPlantsEnd}
-              product={topPlantsProduct}
-              moda={topPlantsModa}
-              onProductChange={setTopPlantsProduct}
-              onModaChange={setTopPlantsModa}
-              productOptions={filterProductOptions}
-              modaOptions={filterModaOptions}
-            />
+            <div className="w-[360px] min-w-[360px] md:w-[420px] md:min-w-[420px] flex-shrink-0">
+              <TopVolumeList
+                title="Top 5 Penyaluran TBBM"
+                list={topSuppliersList}
+                unit="KL"
+                description="List top 5 performa TBBM dengan volume tertinggi dalam periode tertentu"
+                startDate={topSuppliersStart}
+                endDate={topSuppliersEnd}
+                onStartDateChange={setTopSuppliersStart}
+                onEndDateChange={setTopSuppliersEnd}
+                product={topSuppliersProduct}
+                moda={topSuppliersModa}
+                onProductChange={setTopSuppliersProduct}
+                onModaChange={setTopSuppliersModa}
+                productOptions={filterProductOptions}
+                modaOptions={filterModaOptions}
+              />
+            </div>
           </div>
 
           {/* Section: Custom Bar Chart & Graphic Filter Panel */}
@@ -875,10 +983,16 @@ export default function Home() {
                             <div className="flex flex-col items-center gap-2 mb-4">
                               <div className="flex justify-center items-center flex-wrap gap-4">
                                 {filterProductOptions.map((product) => (
-                                  <div key={product} className="flex items-center gap-2">
+                                  <div
+                                    key={product}
+                                    className="flex items-center gap-2"
+                                  >
                                     <span
                                       className="w-2.5 h-2.5 rounded-full"
-                                      style={{ backgroundColor: getProductColor(product) }}
+                                      style={{
+                                        backgroundColor:
+                                          getProductColor(product),
+                                      }}
                                     />
                                     <span className="text-xs font-medium text-gray-600">
                                       {product}
@@ -898,7 +1012,12 @@ export default function Home() {
                             fill={getProductColor(product)}
                             stackId="nominasi"
                             maxBarSize={40}
-                            shape={(props: any) => <CustomRoundedTopBar {...props} productOptions={filterProductOptions} />}
+                            shape={(props: any) => (
+                              <CustomRoundedTopBar
+                                {...props}
+                                productOptions={filterProductOptions}
+                              />
+                            )}
                           />
                         ))}
                         {/* Penyaluran */}
@@ -910,7 +1029,12 @@ export default function Home() {
                             fill={getProductColor(product)}
                             stackId="realisasi"
                             maxBarSize={40}
-                            shape={(props: any) => <CustomRoundedTopBar {...props} productOptions={filterProductOptions} />}
+                            shape={(props: any) => (
+                              <CustomRoundedTopBar
+                                {...props}
+                                productOptions={filterProductOptions}
+                              />
+                            )}
                           />
                         ))}
                         {/* Penerimaan */}
@@ -922,7 +1046,12 @@ export default function Home() {
                             fill={getProductColor(product)}
                             stackId="penerimaan"
                             maxBarSize={40}
-                            shape={(props: any) => <CustomRoundedTopBar {...props} productOptions={filterProductOptions} />}
+                            shape={(props: any) => (
+                              <CustomRoundedTopBar
+                                {...props}
+                                productOptions={filterProductOptions}
+                              />
+                            )}
                           />
                         ))}
                         {/* Pemakaian */}
@@ -934,7 +1063,12 @@ export default function Home() {
                             fill={getProductColor(product)}
                             stackId="pemakaian"
                             maxBarSize={40}
-                            shape={(props: any) => <CustomRoundedTopBar {...props} productOptions={filterProductOptions} />}
+                            shape={(props: any) => (
+                              <CustomRoundedTopBar
+                                {...props}
+                                productOptions={filterProductOptions}
+                              />
+                            )}
                           />
                         ))}
                       </BarChart>
