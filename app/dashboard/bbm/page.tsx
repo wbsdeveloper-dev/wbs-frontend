@@ -628,7 +628,7 @@ export default function Home() {
           </div>
 
           {/* Section: Donut Chart & Top Performers */}
-          <div className="flex overflow-x-auto gap-6 mb-8 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex overflow-x-auto gap-4 mb-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
             <div className="w-[360px] min-w-[360px] md:w-[420px] md:min-w-[420px] flex-shrink-0">
               <FuelTypeDonutChart
                 openModalFunction={open}

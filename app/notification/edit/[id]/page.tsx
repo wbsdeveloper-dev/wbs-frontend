@@ -115,7 +115,7 @@ export default function EditNotificationPage() {
           await createEventMutation.mutateAsync({
             siteId: record?.siteId || undefined,
             siteName: record?.siteName || record?.supplierName || "Unknown",
-            occurredAt: new Date().toISOString(),
+            occurredAt: record?.reportDate ? new Date(record.reportDate).toISOString() : new Date().toISOString(),
             title: `Catatan Notifikasi - Di Bawah TOP`,
             description: form.notes.trim(),
             severity: "INFO",
