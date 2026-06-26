@@ -646,7 +646,8 @@ export default function Map({ commodity }: { commodity?: string }) {
                       type="checkbox"
                       checked={selectedOwners.has(owner)}
                       onChange={() => toggleOwner(owner)}
-                      className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-secondary cursor-pointer"
+                      className="w-4 h-4 rounded border-gray-300 cursor-pointer"
+                      style={{ accentColor: "var(--theme-primary)" }}
                     />
                     <span className="text-sm text-gray-700 group-hover:text-gray-900 transition-colors">
                       {owner}

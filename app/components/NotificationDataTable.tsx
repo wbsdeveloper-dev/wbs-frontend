@@ -26,7 +26,7 @@ import type {
   MonitoringPagination,
   MonitoringParams,
 } from "@/hooks/service/monitoring-api";
-import { useDeleteMonitoringRecord } from "@/hooks/service/monitoring-api";
+import { useDeleteNotification } from "@/hooks/service/notification-api";
 import { usePrivilege } from "@/hooks/usePrivilege";
 
 export interface NotificationRecord {
@@ -37,6 +37,7 @@ export interface NotificationRecord {
   metricType: string;
   finalValue: number | null;
   status: string;
+  isRead?: boolean;
 }
 
 interface NotificationDataTableProps {
@@ -287,11 +288,10 @@ export default function NotificationDataTable({
     align?: "left" | "center" | "right";
   }) => (
     <th
-      className={`px-4 py-3 text-${align} text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap ${
-        field
-          ? "cursor-pointer select-none hover:bg-gray-100 transition-colors"
-          : ""
-      }`}
+      className={`px-4 py-3 text-${align} text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap ${field
+        ? "cursor-pointer select-none hover:bg-gray-100 transition-colors"
+        : ""
+        }`}
       onClick={field ? () => handleSort(field) : undefined}
     >
       <span className="inline-flex items-center justify-center">
@@ -359,7 +359,7 @@ export default function NotificationDataTable({
   const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  const deleteMutation = useDeleteMonitoringRecord();
+  const deleteMutation = useDeleteNotification();
 
   const handleDeleteClick = (id: string, name: string) => {
     setPendingDeleteId(id);
@@ -426,11 +426,10 @@ export default function NotificationDataTable({
             {filtersEnabled && (
               <button
                 onClick={() => setShowFilters((v) => !v)}
-                className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-all duration-200 ${
-                  showFilters || activeFilterCount > 0
-                    ? "bg-primary text-white border-primary"
-                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                }`}
+                className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-all duration-200 ${showFilters || activeFilterCount > 0
+                  ? "bg-primary text-white border-primary"
+                  : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                  }`}
               >
                 <Filter size={16} />
                 Filter
@@ -636,7 +635,7 @@ export default function NotificationDataTable({
         {/* Status Legend */}
         <div className="px-4 py-3 bg-white border-b border-gray-200 flex flex-wrap items-center gap-x-6 gap-y-3">
           <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Legenda Status:</span>
-          
+
           <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
             <StatusBadge status="DI_BAWAH_TOP" />
             <StatusBadge status="DATA_HILANG" />
@@ -687,7 +686,10 @@ export default function NotificationDataTable({
                 sortedRecords.map((record, index) => (
                   <tr
                     key={record.id}
-                    className="hover:bg-gray-50 transition-colors"
+                    className={`transition-colors ${!record.isRead
+                      ? "bg-blue-50/70 hover:bg-blue-100/60 border border-l-4 border-l-blue-300"
+                      : "hover:bg-gray-50"
+                      }`}
                   >
                     <td className="px-4 py-3 text-center text-gray-700">
                       {startIndex + index + 1}
@@ -714,7 +716,7 @@ export default function NotificationDataTable({
                       <ActionButtons
                         id={record.id}
                         onEdit={(id) => {
-                          // onEdit(id)
+                          router.push(`/notification/edit/${id}`);
                         }}
                         onDelete={(id) => {
                           handleDeleteClick(
@@ -810,11 +812,10 @@ export default function NotificationDataTable({
                       <button
                         key={p}
                         onClick={() => onPageChange(p as number, itemsPerPage)}
-                        className={`min-w-[2rem] h-8 rounded-lg text-sm font-medium transition-all duration-200 ${
-                          p === displayPage
-                            ? "bg-primary text-white shadow-sm"
-                            : "text-gray-700 hover:bg-gray-100"
-                        }`}
+                        className={`min-w-[2rem] h-8 rounded-lg text-sm font-medium transition-all duration-200 ${p === displayPage
+                          ? "bg-primary text-white shadow-sm"
+                          : "text-gray-700 hover:bg-gray-100"
+                          }`}
                       >
                         {p}
                       </button>

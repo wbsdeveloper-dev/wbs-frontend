@@ -111,7 +111,7 @@ const TjkTable = forwardRef<TjkTableRef, { isEditMode: boolean }>(({ isEditMode 
 
     const columns: GridColDef[] = [
         { field: "no", headerName: "No", width: 60, align: "center", headerAlign: "center", renderCell },
-        { field: "region", headerName: "Region", width: 150, align: "center", headerAlign: "center", renderCell },
+        { field: "region", headerName: "Region", width: 180, align: "center", headerAlign: "center", renderCell },
         { field: "pemasok", headerName: "Pemasok", width: 180, align: "center", headerAlign: "center", renderCell },
         { field: "pembangkit", headerName: "Pembangkit", width: 180, align: "center", headerAlign: "center", renderCell },
         { field: "tjkBbtud", headerName: "TJK (BBTUD)", width: 130, align: "center", headerAlign: "center", editable: isEditMode, renderCell },

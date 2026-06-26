@@ -171,7 +171,7 @@ export default function FuelTypeDonutChart({
               key={type}
               className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer ${
                 filterType === type
-                  ? "bg-secondary text-white shadow-sm"
+                  ? "bg-primary text-white shadow-sm"
                   : "text-gray-600 hover:text-gray-900"
               }`}
               onClick={() => changeFilterType(type)}
@@ -183,63 +183,65 @@ export default function FuelTypeDonutChart({
       </div>
 
       {/* Chart */}
-      <ResponsiveContainer width="100%" height={250}>
-        <PieChart>
-          <Pie
-            data={data}
-            cx="50%"
-            cy="50%"
-            innerRadius={60}
-            outerRadius={90}
-            paddingAngle={2}
-            dataKey="value"
-          >
-            {data.map((_, index) => (
-              <Cell
-                key={`cell-${index}`}
-                fill={CHART_COLORS[index % CHART_COLORS.length]}
-              />
-            ))}
-          </Pie>
-          <Tooltip
-            content={({ active, payload }) => {
-              if (active && payload && payload.length) {
-                const item = payload[0];
+      <div className="flex-1 w-full min-h-[250px] flex flex-col items-center justify-center">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={data}
+              cx="50%"
+              cy="50%"
+              innerRadius={60}
+              outerRadius={90}
+              paddingAngle={2}
+              dataKey="value"
+            >
+              {data.map((_, index) => (
+                <Cell
+                  key={`cell-${index}`}
+                  fill={CHART_COLORS[index % CHART_COLORS.length]}
+                />
+              ))}
+            </Pie>
+            <Tooltip
+              content={({ active, payload }) => {
+                if (active && payload && payload.length) {
+                  const item = payload[0];
+                  const total = data.reduce((sum, d) => sum + d.value, 0);
+                  const pct =
+                    total > 0
+                      ? (((item.value as number) / total) * 100).toFixed(1)
+                      : "0.0";
+                  return (
+                    <div className="bg-white px-3 py-2 rounded-lg shadow-lg border border-gray-200 text-sm">
+                      <p className="font-medium text-gray-900">{item.name}</p>
+                      <p className="text-gray-600">{pct}%</p>
+                    </div>
+                  );
+                }
+                return null;
+              }}
+            />
+            <Legend
+              verticalAlign="bottom"
+              height={50}
+              iconType="circle"
+              wrapperStyle={{
+                maxHeight: 80,
+                overflowY: "auto",
+              }}
+              formatter={(value: string) => {
                 const total = data.reduce((sum, d) => sum + d.value, 0);
+                const entry = data.find((d) => d.name === value);
                 const pct =
-                  total > 0
-                    ? (((item.value as number) / total) * 100).toFixed(1)
+                  entry && total > 0
+                    ? ((entry.value / total) * 100).toFixed(1)
                     : "0.0";
-                return (
-                  <div className="bg-white px-3 py-2 rounded-lg shadow-lg border border-gray-200 text-sm">
-                    <p className="font-medium text-gray-900">{item.name}</p>
-                    <p className="text-gray-600">{pct}%</p>
-                  </div>
-                );
-              }
-              return null;
-            }}
-          />
-          <Legend
-            verticalAlign="bottom"
-            height={50}
-            iconType="circle"
-            wrapperStyle={{
-              maxHeight: 80,
-              overflowY: "auto",
-            }}
-            formatter={(value: string) => {
-              const total = data.reduce((sum, d) => sum + d.value, 0);
-              const entry = data.find((d) => d.name === value);
-              const pct =
-                entry && total > 0
-                  ? ((entry.value / total) * 100).toFixed(1)
-                  : "0.0";
-              return `${value} (${pct}%)`;
-            }}
-          />
-        </PieChart>
-      </ResponsiveContainer>
+                return `${value} (${pct}%)`;
+              }}
+            />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
 
       {/* Dynamic footer */}
       <p className="text-xs text-gray-500 mt-auto pt-4 border-t border-gray-200 min-h-[32px]">

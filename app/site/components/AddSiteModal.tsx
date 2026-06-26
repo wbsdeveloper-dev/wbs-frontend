@@ -113,8 +113,9 @@ export function AddSiteModal({
     } else {
       const isDuplicate = sites?.some(
         (site) =>
+          site.id !== editingId &&
           site.name.toLowerCase() === formData.name.trim().toLowerCase() &&
-          site.id !== editingId,
+          site.commodity === formData.commodity,
       );
       if (isDuplicate) {
         newErrors.name = "Nama site sudah terdaftar, silakan gunakan nama lain";

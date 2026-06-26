@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   MapContainer,
   Marker,
@@ -174,7 +174,7 @@ export default function SiteMap() {
   const [error, setError] = useState<string | null>(null);
 
   // Fetch map locations data
-  useState(() => {
+  useEffect(() => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
@@ -191,7 +191,7 @@ export default function SiteMap() {
     };
 
     fetchData();
-  });
+  }, []);
 
   // Get unique regions
   const regions = useMemo(() => {

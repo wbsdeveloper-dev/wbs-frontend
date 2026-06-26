@@ -1892,9 +1892,14 @@ export default function RealtimeChart({
                               key={mode}
                               className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
                                 intervalMode === mode
-                                  ? "bg-[#7ec9d4] text-primary shadow-sm"
+                                  ? "text-white shadow-sm"
                                   : "bg-gray-50 text-gray-600 hover:bg-gray-100"
                               }`}
+                              style={
+                                intervalMode === mode
+                                  ? { backgroundColor: "var(--theme-primary)" }
+                                  : {}
+                              }
                               onClick={() => {
                                 setIntervalMode(mode);
                                 if (onPeriodChange) {
@@ -1951,11 +1956,11 @@ export default function RealtimeChart({
                         onChange={(e) => setMeanLineActive(e.target.checked)}
                         sx={{
                           "& .MuiSwitch-switchBase.Mui-checked": {
-                            color: "var(--theme-secondary)",
+                            color: "var(--theme-primary)",
                           },
                           "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
                             {
-                              backgroundColor: "var(--theme-secondary)",
+                              backgroundColor: "var(--theme-primary)",
                             },
                         }}
                       />
@@ -1969,11 +1974,11 @@ export default function RealtimeChart({
                         onChange={(e) => setTopLineActive(e.target.checked)}
                         sx={{
                           "& .MuiSwitch-switchBase.Mui-checked": {
-                            color: "var(--theme-secondary)",
+                            color: "var(--theme-primary)",
                           },
                           "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
                             {
-                              backgroundColor: "var(--theme-secondary)",
+                              backgroundColor: "var(--theme-primary)",
                             },
                         }}
                       />
@@ -1987,11 +1992,11 @@ export default function RealtimeChart({
                         onChange={(e) => setJphLineActive(e.target.checked)}
                         sx={{
                           "& .MuiSwitch-switchBase.Mui-checked": {
-                            color: "var(--theme-secondary)",
+                            color: "var(--theme-primary)",
                           },
                           "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
                             {
-                              backgroundColor: "var(--theme-secondary)",
+                              backgroundColor: "var(--theme-primary)",
                             },
                         }}
                       />
