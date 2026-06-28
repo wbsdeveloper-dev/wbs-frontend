@@ -10,6 +10,8 @@ import {
   type CreateSitePayload,
   type Site,
 } from "@/hooks/service/site-api";
+import { useKertasKerjaMaster } from "@/hooks/service/kertas-kerja-api";
+import { Autocomplete, TextField } from "@mui/material";
 
 interface AddSiteModalProps {
   open: boolean;
@@ -25,6 +27,7 @@ export function AddSiteModal({
   editingId,
 }: AddSiteModalProps) {
   const { data: dropdowns, isLoading: isLoadingDropdowns } = useDropdowns();
+  const { data: jenisKits = [] } = useKertasKerjaMaster("master_jenis_kit");
   const createSiteMutation = useCreateSite({
     onSuccess: () => {
       onSuccess();
@@ -51,6 +54,7 @@ export function AddSiteModal({
     conversion_factor: undefined,
     owner: "",
     commodity: "",
+    kit_id: "",
   });
 
   const [selectedPlant, setSelectedPlant] = useState<string | null>(null);
@@ -70,6 +74,7 @@ export function AddSiteModal({
       conversion_factor: undefined,
       owner: "",
       commodity: "",
+      kit_id: "",
     });
     setSelectedPlant(null);
     setSelectedSupplier(null);
@@ -96,6 +101,7 @@ export function AddSiteModal({
           conversion_factor: editingSite.conversion_factor,
           owner: editingSite.owner ?? "",
           commodity: editingSite.commodity ?? "",
+          kit_id: editingSite.kit_id ?? "",
         });
         setSelectedPlant(editingSite.pembangkit_id || null);
         setSelectedSupplier(editingSite.pemasok_id || null);
@@ -146,6 +152,7 @@ export function AddSiteModal({
       conversion_factor: formData.conversion_factor,
       owner: formData.owner || undefined,
       commodity: formData.commodity || undefined,
+      kit_id: formData.kit_id || undefined,
     };
 
     // Use appropriate mutation
@@ -261,6 +268,50 @@ export function AddSiteModal({
                 <option value="PLN IP">PLN IP</option>
                 <option value="PLN NP">PLN NP</option>
               </select>
+            </div>
+          )}
+
+          {/* Jenis Site (Jenis Kit) */}
+          {formData.site_type == "PEMBANGKIT" && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Jenis Kit
+              </label>
+              <Autocomplete
+                options={jenisKits}
+                getOptionLabel={(option: any) => option.name}
+                value={jenisKits.find((j: any) => j.id === formData.kit_id) || null}
+                onChange={(_event, newValue: any) => {
+                  setFormData({
+                    ...formData,
+                    kit_id: newValue ? newValue.id : "",
+                  });
+                }}
+                isOptionEqualToValue={(option, value) => option.id === value?.id}
+                renderOption={(props, option: any) => {
+                  const { key, ...otherProps } = props as any;
+                  return (
+                    <li key={option.id} {...otherProps}>
+                      {option.name}
+                    </li>
+                  );
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    placeholder="Pilih jenis kit"
+                    variant="outlined"
+                    size="small"
+                    sx={{
+                      "& .MuiOutlinedInput-root": {
+                        borderRadius: "0.5rem", // matches rounded-lg
+                        backgroundColor: "white",
+                      },
+                    }}
+                  />
+                )}
+                className="w-full"
+              />
             </div>
           )}
 

@@ -11,6 +11,7 @@ export type Resource =
   | "template_group"
   | "spreadsheet_source"
   | "api_keys"
+  | "system_config"
   | "bot_management";
 
 export type Action = "CREATE" | "READ" | "UPDATE" | "DELETE";
