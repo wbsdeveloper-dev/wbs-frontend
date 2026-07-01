@@ -11,10 +11,11 @@ import {
 interface MasterGenericTabProps {
   table: string;
   title: string;
+  comodityFilter?: string;
 }
 
-export default function MasterGenericTab({ table, title }: MasterGenericTabProps) {
-  const { data = [], isLoading, error } = useKertasKerjaMaster(table);
+export default function MasterGenericTab({ table, title, comodityFilter }: MasterGenericTabProps) {
+  const { data = [], isLoading, error } = useKertasKerjaMaster(table, comodityFilter);
   const createMutation = useCreateKertasKerjaMaster(table);
   const updateMutation = useUpdateKertasKerjaMaster(table);
   const deleteMutation = useDeleteKertasKerjaMaster(table);
@@ -22,7 +23,8 @@ export default function MasterGenericTab({ table, title }: MasterGenericTabProps
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
   
-  const [formData, setFormData] = useState({ name: "", comodity: "BBM" });
+  const defaultComodity = comodityFilter ? comodityFilter.split(',')[0].trim() : "BBM";
+  const [formData, setFormData] = useState({ name: "", comodity: defaultComodity });
 
   const hasComodity = table !== "master_moda" && table !== "master_pola_operasi";
 
@@ -30,7 +32,7 @@ export default function MasterGenericTab({ table, title }: MasterGenericTabProps
     setEditingItem(item || null);
     setFormData({
       name: item?.name || "",
-      comodity: item?.comodity || "BBM",
+      comodity: item?.comodity || defaultComodity,
     });
     setIsModalOpen(true);
   };
@@ -152,13 +154,24 @@ export default function MasterGenericTab({ table, title }: MasterGenericTabProps
           {hasComodity && (
             <div>
               <label className="block text-sm font-medium text-gray-700">Komoditas</label>
-              <input
-                type="text"
-                value={formData.comodity}
-                readOnly
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border bg-gray-100 text-gray-700 cursor-not-allowed font-medium"
-                placeholder="BBM"
-              />
+              {comodityFilter && comodityFilter.includes(',') ? (
+                <select
+                  value={formData.comodity}
+                  onChange={(e) => setFormData({ ...formData, comodity: e.target.value })}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border text-gray-900 bg-white"
+                >
+                  {comodityFilter.split(',').map(c => c.trim()).map(c => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  type="text"
+                  value={formData.comodity}
+                  readOnly
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border bg-gray-100 text-gray-700 cursor-not-allowed font-medium"
+                />
+              )}
             </div>
           )}
           <div className="mt-5 sm:mt-6 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3">

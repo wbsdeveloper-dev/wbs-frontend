@@ -56,7 +56,7 @@ Teks:
 export const getMultiPembangkitPrompt = (
   siteIds: string[],
   kolomYangDiambil: string[],
-  pembangkitList: any[]
+  pembangkitList: any[],
 ) => {
   const dynamicSection = siteIds
     .map((siteId, index) => {
@@ -170,9 +170,9 @@ export default function InputBAValidasiModal({
       const newPrompt = getMultiPembangkitPrompt(
         formData.siteIds,
         formData.kolomYangDiambil,
-        filtersData?.pembangkit || []
+        filtersData?.pembangkit || [],
       );
-      
+
       // We check if the prompt starts with the known signature to only overwrite if it's the auto-generated one
       // or if it's completely default. This prevents overwriting manual prompt edits if they drastically changed it.
       // But actually, it's safer to just set it so it's fully dynamic as requested.
@@ -183,7 +183,12 @@ export default function InputBAValidasiModal({
         return prev;
       });
     }
-  }, [formData.jenisBa, formData.siteIds, formData.kolomYangDiambil, filtersData?.pembangkit]);
+  }, [
+    formData.jenisBa,
+    formData.siteIds,
+    formData.kolomYangDiambil,
+    filtersData?.pembangkit,
+  ]);
 
   const extractOcr = useExtractOcrPage();
   const extractOcrMultiPage = useExtractOcrMultiPage();
@@ -331,12 +336,9 @@ export default function InputBAValidasiModal({
           if (result.records && Array.isArray(result.records)) {
             const siteRecords = result.records.map((r: any) => ({
               tanggalKegiatan: r?.report_date || "",
-              volume:
-                r?.ENERGY_BBTUD != null ? String(r.ENERGY_BBTUD) : "0",
+              volume: r?.ENERGY_BBTUD != null ? String(r.ENERGY_BBTUD) : "0",
               flowrate:
-                r?.FLOWRATE_MMSCFD != null
-                  ? String(r.FLOWRATE_MMSCFD)
-                  : "0",
+                r?.FLOWRATE_MMSCFD != null ? String(r.FLOWRATE_MMSCFD) : "0",
               siteId: sId,
               siteName: sName,
             }));
@@ -413,12 +415,9 @@ export default function InputBAValidasiModal({
           } else {
             return {
               tanggalKegiatan: r?.report_date || "",
-              volume:
-                r?.ENERGY_BBTUD != null ? String(r.ENERGY_BBTUD) : "0",
+              volume: r?.ENERGY_BBTUD != null ? String(r.ENERGY_BBTUD) : "0",
               flowrate:
-                r?.FLOWRATE_MMSCFD != null
-                  ? String(r.FLOWRATE_MMSCFD)
-                  : "0",
+                r?.FLOWRATE_MMSCFD != null ? String(r.FLOWRATE_MMSCFD) : "0",
             };
           }
         });
@@ -635,11 +634,12 @@ export default function InputBAValidasiModal({
                             value="Tunggal"
                             checked={formData.jenisBa === "Tunggal"}
                             onChange={(e) => {
-                              const multiPembangkitPrompt = getMultiPembangkitPrompt(
-                                formData.siteIds,
-                                formData.kolomYangDiambil,
-                                filtersData?.pembangkit || []
-                              );
+                              const multiPembangkitPrompt =
+                                getMultiPembangkitPrompt(
+                                  formData.siteIds,
+                                  formData.kolomYangDiambil,
+                                  filtersData?.pembangkit || [],
+                                );
                               const newPrompt =
                                 formData.prompt === DEFAULT_PROMPT_MULTI ||
                                 formData.prompt === multiPembangkitPrompt ||
@@ -663,11 +663,12 @@ export default function InputBAValidasiModal({
                             value="Multi Stream"
                             checked={formData.jenisBa === "Multi Stream"}
                             onChange={(e) => {
-                              const multiPembangkitPrompt = getMultiPembangkitPrompt(
-                                formData.siteIds,
-                                formData.kolomYangDiambil,
-                                filtersData?.pembangkit || []
-                              );
+                              const multiPembangkitPrompt =
+                                getMultiPembangkitPrompt(
+                                  formData.siteIds,
+                                  formData.kolomYangDiambil,
+                                  filtersData?.pembangkit || [],
+                                );
                               const newPrompt =
                                 formData.prompt === DEFAULT_PROMPT_SINGLE ||
                                 formData.prompt === multiPembangkitPrompt ||
@@ -693,11 +694,12 @@ export default function InputBAValidasiModal({
                             value="Multi Pembangkit"
                             checked={formData.jenisBa === "Multi Pembangkit"}
                             onChange={(e) => {
-                              const multiPembangkitPrompt = getMultiPembangkitPrompt(
-                                formData.siteIds,
-                                formData.kolomYangDiambil,
-                                filtersData?.pembangkit || []
-                              );
+                              const multiPembangkitPrompt =
+                                getMultiPembangkitPrompt(
+                                  formData.siteIds,
+                                  formData.kolomYangDiambil,
+                                  filtersData?.pembangkit || [],
+                                );
                               const newPrompt =
                                 formData.prompt === DEFAULT_PROMPT_MULTI ||
                                 formData.prompt === DEFAULT_PROMPT_SINGLE ||
@@ -721,7 +723,7 @@ export default function InputBAValidasiModal({
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        TBBM <span className="text-red-500">*</span>
+                        Pemasok <span className="text-red-500">*</span>
                       </label>
                       <Autocomplete
                         options={(filtersData?.pemasok || []).filter(
@@ -744,7 +746,7 @@ export default function InputBAValidasiModal({
                         renderInput={(params) => (
                           <TextField
                             {...params}
-                            placeholder="Pilih TBBM"
+                            placeholder="Pilih Pemasok"
                             variant="outlined"
                             size="small"
                             sx={{
@@ -1125,10 +1127,14 @@ export default function InputBAValidasiModal({
                         ) : (
                           <>
                             <div className="font-semibold text-gray-700 text-center">
-                              {formData.jenisBa === "Multi Pembangkit" ? "VOLUME" : "FLOWRATE"}
+                              {formData.jenisBa === "Multi Pembangkit"
+                                ? "VOLUME"
+                                : "FLOWRATE"}
                             </div>
                             <div className="font-semibold text-gray-700 text-center">
-                              {formData.jenisBa === "Multi Pembangkit" ? "ENERGI" : "VOLUME"}
+                              {formData.jenisBa === "Multi Pembangkit"
+                                ? "ENERGI"
+                                : "VOLUME"}
                             </div>
                           </>
                         )}
@@ -1330,7 +1336,11 @@ export default function InputBAValidasiModal({
                           type="text"
                           readOnly
                           value={extractedRecords
-                            .filter(r => formData.jenisBa !== "Multi Pembangkit" || r.siteId === activeTabId)
+                            .filter(
+                              (r) =>
+                                formData.jenisBa !== "Multi Pembangkit" ||
+                                r.siteId === activeTabId,
+                            )
                             .reduce(
                               (sum, r) => sum + (parseFloat(r.flowrate) || 0),
                               0,
@@ -1342,7 +1352,11 @@ export default function InputBAValidasiModal({
                           type="text"
                           readOnly
                           value={extractedRecords
-                            .filter(r => formData.jenisBa !== "Multi Pembangkit" || r.siteId === activeTabId)
+                            .filter(
+                              (r) =>
+                                formData.jenisBa !== "Multi Pembangkit" ||
+                                r.siteId === activeTabId,
+                            )
                             .reduce(
                               (sum, r) => sum + (parseFloat(r.volume) || 0),
                               0,

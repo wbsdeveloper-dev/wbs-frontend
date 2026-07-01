@@ -56,7 +56,7 @@ export function AddSiteModal({
     long: undefined,
     conversion_factor: undefined,
     owner: "",
-    commodity: "",
+    commodity: "BBM",
     kit_id: "",
     upk_id: "",
     unit_id: "",
@@ -78,7 +78,7 @@ export function AddSiteModal({
       long: undefined,
       conversion_factor: undefined,
       owner: "",
-      commodity: "",
+      commodity: "BBM",
       kit_id: "",
       upk_id: "",
       unit_id: "",
@@ -233,16 +233,12 @@ export function AddSiteModal({
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Komoditas
             </label>
-            <select
-              value={formData.commodity ?? ""}
-              onChange={(e) =>
-                setFormData({ ...formData, commodity: e.target.value })
-              }
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white transition-all duration-200"
-            >
-              <option value="">Pilih Komoditas</option>
-              <option value="BBM">BBM</option>
-            </select>
+            <input
+              type="text"
+              value="BBM"
+              readOnly
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-500 bg-gray-50 cursor-not-allowed"
+            />
           </div>
           {/* Site Type Selection */}
           <div>
@@ -477,7 +473,7 @@ export function AddSiteModal({
           {formData.site_type != "TRANSPORTIR" && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Kapasitas {formData.site_type === "PEMBANGKIT" ? "(MW)" : "(kL)"}
+                  Kapasitas (KL)
                 </label>
                 <input
                   type="number"

@@ -369,7 +369,7 @@ export function DaftarSiteTable({
                   Lokasi
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Kapasitas
+                  Kapasitas {commodity?.includes("BBM") ? "(kL)" : ""}
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   Komoditas
@@ -422,7 +422,13 @@ export function DaftarSiteTable({
                     </td>
                     <td className="px-4 py-3 text-center text-gray-700">
                       {site.capacity
-                        ? `${site.capacity} ${site.site_type === "PEMBANGKIT" ? "MW" : "kL"}`
+                        ? `${site.capacity} ${
+                            commodity?.includes("BBM")
+                              ? "kL"
+                              : site.site_type === "PEMBANGKIT"
+                                ? "MW"
+                                : "kL"
+                          }`
                         : "-"}
                     </td>
                     <td className="px-4 py-3 text-center text-gray-700">

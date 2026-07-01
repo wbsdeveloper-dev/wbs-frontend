@@ -347,7 +347,9 @@ export default function Map() {
   // ---- helpers ------------------------------------------------------------
   const getSiteTypeLabel = (type: string) => {
     if (type === "PEMASOK") return "TBBM";
-    return customLegend?.siteTypes.find((st) => st.type === type)?.label || type;
+    return (
+      customLegend?.siteTypes.find((st) => st.type === type)?.label || type
+    );
   };
 
   const getSiteTypeColor = (type: string) =>
@@ -548,7 +550,7 @@ export default function Map() {
                             </div>
                             <div className="flex justify-between text-xs">
                               <span className="text-gray-500">
-                                Total Realisasi:
+                                Total Penyaluran:
                               </span>
                               <span className="font-medium text-emerald-600">
                                 {summary.totalRealisasi?.toLocaleString()} kL
@@ -694,23 +696,26 @@ export default function Map() {
                   })}
 
                 {/* Pipe type legend items */}
-                {customLegend?.pipeTypes && customLegend.pipeTypes.length > 0 && (
-                  <div className="pt-1 border-t border-gray-200">
-                    <p className="text-[10px] text-gray-500 mb-1">Jenis Pipa</p>
-                    {customLegend.pipeTypes.map((pt) => (
-                      <div
-                        key={pt.type}
-                        className="flex items-center gap-1.5 text-xs text-gray-600 py-0.5"
-                      >
-                        <span
-                          className="w-6 h-0.5"
-                          style={{ backgroundColor: pt.color }}
-                        />
-                        {pt.label}
-                      </div>
-                    ))}
-                  </div>
-                )}
+                {customLegend?.pipeTypes &&
+                  customLegend.pipeTypes.length > 0 && (
+                    <div className="pt-1 border-t border-gray-200">
+                      <p className="text-[10px] text-gray-500 mb-1">
+                        Jenis Pipa
+                      </p>
+                      {customLegend.pipeTypes.map((pt) => (
+                        <div
+                          key={pt.type}
+                          className="flex items-center gap-1.5 text-xs text-gray-600 py-0.5"
+                        >
+                          <span
+                            className="w-6 h-0.5"
+                            style={{ backgroundColor: pt.color }}
+                          />
+                          {pt.label}
+                        </div>
+                      ))}
+                    </div>
+                  )}
               </div>
             )}
           </div>

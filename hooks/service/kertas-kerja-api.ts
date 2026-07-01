@@ -142,7 +142,7 @@ export interface RecordKertasKerja {
 export const kertasKerjaKeys = {
   all: ["kertasKerja"] as const,
   masters: () => [...kertasKerjaKeys.all, "master"] as const,
-  master: (table: string) => [...kertasKerjaKeys.masters(), table] as const,
+  master: (table: string, comodityFilter?: string) => [...kertasKerjaKeys.masters(), table, comodityFilter] as const,
   templates: () => [...kertasKerjaKeys.all, "templates"] as const,
   records: () => [...kertasKerjaKeys.all, "records"] as const,
 };
@@ -151,8 +151,9 @@ export const kertasKerjaKeys = {
 // API Functions
 // ---------------------------------------------------------------------------
 
-export function getMasterData(table: string) {
-  return apiFetchData<MasterGeneric[]>(`/kertas-kerja/master/${table}`);
+export function getMasterData(table: string, comodityFilter?: string) {
+  const queryParam = comodityFilter ? `?comodity=${encodeURIComponent(comodityFilter)}` : "";
+  return apiFetchData<MasterGeneric[]>(`/kertas-kerja/master/${table}${queryParam}`);
 }
 
 export function createMasterData(table: string, payload: { name: string; comodity?: string }) {
@@ -214,10 +215,10 @@ export function bulkUpsertRecords(payload: { records: RecordKertasKerja[] }) {
 // React Query Hooks
 // ---------------------------------------------------------------------------
 
-export function useKertasKerjaMaster(table: string, options?: Partial<UseQueryOptions<MasterGeneric[]>>) {
+export function useKertasKerjaMaster(table: string, comodityFilter?: string, options?: Partial<UseQueryOptions<MasterGeneric[]>>) {
   return useQuery({
-    queryKey: kertasKerjaKeys.master(table),
-    queryFn: () => getMasterData(table),
+    queryKey: kertasKerjaKeys.master(table, comodityFilter),
+    queryFn: () => getMasterData(table, comodityFilter),
     ...options,
   });
 }

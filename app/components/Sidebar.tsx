@@ -145,6 +145,11 @@ export default function Sidebar() {
           path: "/konfigurasi/bot/api-keys",
           resource: "api_keys",
         },
+        {
+          title: "Data Master",
+          path: "/konfigurasi/kertas-kerja",
+          resource: "system_config",
+        },
       ],
     },
     {

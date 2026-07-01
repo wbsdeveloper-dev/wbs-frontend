@@ -10,6 +10,8 @@ import {
   type CreateSitePayload,
   type Site,
 } from "@/hooks/service/site-api";
+import { Autocomplete, TextField } from "@mui/material";
+import { useKertasKerjaMaster } from "@/hooks/service/kertas-kerja-api";
 
 interface AddSiteModalProps {
   open: boolean;
@@ -25,6 +27,8 @@ export function AddSiteModal({
   editingId,
 }: AddSiteModalProps) {
   const { data: dropdowns, isLoading: isLoadingDropdowns } = useDropdowns();
+  const { data: regions = [], isLoading: isLoadingRegions } = useKertasKerjaMaster("master_region", "GAS PIPA,LNG");
+  
   const createSiteMutation = useCreateSite({
     onSuccess: () => {
       onSuccess();
@@ -292,28 +296,56 @@ export function AddSiteModal({
           </div>
 
           {/* Region */}
-
           {formData.site_type != "TRANSPORTIR" && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Region
               </label>
-              <input
-                type="text"
-                value={formData.region}
-                onChange={(e) =>
-                  setFormData({ ...formData, region: e.target.value })
+              <Autocomplete
+                options={regions}
+                getOptionLabel={(option) => option.name}
+                value={
+                  regions.find((r) => r.name === formData.region) || null
                 }
-                placeholder="Masukkan region"
-                className={`w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200 ${
-                  errors.region
-                    ? "border-red-300 focus:ring-red-500"
-                    : "border-gray-300"
-                }`}
+                onChange={(event, newValue) => {
+                  setFormData({
+                    ...formData,
+                    region: newValue ? newValue.name : "",
+                  });
+                }}
+                isOptionEqualToValue={(option, value) => option.name === value?.name}
+                loading={isLoadingRegions}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    placeholder="Pilih region"
+                    error={!!errors.region}
+                    helperText={errors.region}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        padding: '4px 14px',
+                        borderRadius: '0.5rem',
+                        '& fieldset': {
+                          borderColor: errors.region ? '#ef4444' : '#d1d5db',
+                        },
+                        '&:hover fieldset': {
+                          borderColor: errors.region ? '#ef4444' : '#d1d5db',
+                        },
+                        '&.Mui-focused fieldset': {
+                          borderColor: errors.region ? '#ef4444' : '#0ea5e9', // using typical focus ring color for gas
+                        },
+                      },
+                      '& .MuiFormHelperText-root': {
+                        marginLeft: 0,
+                        marginRight: 0,
+                        marginTop: '4px',
+                        fontSize: '0.75rem',
+                        color: '#dc2626',
+                      }
+                    }}
+                  />
+                )}
               />
-              {errors.region && (
-                <p className="text-xs text-red-600 mt-1">{errors.region}</p>
-              )}
             </div>
           )}
 

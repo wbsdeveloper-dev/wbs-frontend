@@ -2,40 +2,19 @@
 
 import React, { useState } from "react";
 import Card from "@/app/components/ui/Card";
-import MasterGenericTab from "./components/MasterGenericTab";
-import TemplateTab from "./components/TemplateTab";
+import MasterGenericTab from "@/app/konfigurasi-bbm/kertas-kerja/components/MasterGenericTab";
 import {
   Database,
-  Settings,
-  Box,
-  Truck,
-  FileSpreadsheet,
-  Factory,
   MapPin,
 } from "lucide-react";
 
-type TabType =
-  | "jenis_kit"
-  | "unit_pembangkit"
-  | "moda"
-  | "product"
-  | "region"
-  | "unit"
-  | "pola_operasi"
-  | "template";
+type TabType = "region";
 
-export default function KertasKerjaConfigPage() {
-  const [activeTab, setActiveTab] = useState<TabType>("jenis_kit");
+export default function KertasKerjaConfigGasPage() {
+  const [activeTab, setActiveTab] = useState<TabType>("region");
 
   const tabs = [
-    { id: "jenis_kit", label: "Jenis Kit", icon: Settings },
-    { id: "unit_pembangkit", label: "Unit Pelaksana", icon: Factory },
-    { id: "moda", label: "Moda", icon: Truck },
-    { id: "product", label: "Product", icon: Box },
     { id: "region", label: "Region", icon: MapPin },
-    { id: "unit", label: "Unit", icon: Factory },
-    { id: "pola_operasi", label: "Pola Operasi", icon: Settings },
-    { id: "template", label: "Template Kertas Kerja", icon: FileSpreadsheet },
   ];
 
   return (
@@ -56,7 +35,7 @@ export default function KertasKerjaConfigPage() {
             Data Master
           </h1>
           <p className="text-gray-600 mt-1 text-sm md:text-base">
-            Kelola data master dan template untuk Kertas Kerja BBM
+            Kelola data master untuk Kertas Kerja Gas
           </p>
         </div>
       </div>
@@ -89,36 +68,9 @@ export default function KertasKerjaConfigPage() {
           </div>
 
           <div className="p-6">
-            {activeTab === "jenis_kit" && (
-              <MasterGenericTab table="master_jenis_kit" title="Jenis Kit" comodityFilter="BBM" />
-            )}
-            {activeTab === "unit_pembangkit" && (
-              <MasterGenericTab
-                table="master_unit_pelaksana"
-                title="Unit Pelaksana"
-                comodityFilter="BBM"
-              />
-            )}
-            {activeTab === "moda" && (
-              <MasterGenericTab table="master_moda" title="Moda" comodityFilter="BBM" />
-            )}
-            {activeTab === "product" && (
-              <MasterGenericTab table="master_product" title="Product" comodityFilter="BBM" />
-            )}
             {activeTab === "region" && (
-              <MasterGenericTab table="master_region" title="Region" comodityFilter="BBM" />
+              <MasterGenericTab table="master_region" title="Region" comodityFilter="GAS PIPA,LNG" />
             )}
-            {activeTab === "unit" && (
-              <MasterGenericTab table="master_unit" title="Unit" comodityFilter="BBM" />
-            )}
-            {activeTab === "pola_operasi" && (
-              <MasterGenericTab
-                table="master_pola_operasi"
-                title="Pola Operasi"
-                comodityFilter="BBM"
-              />
-            )}
-            {activeTab === "template" && <TemplateTab />}
           </div>
         </Card>
       </div>
