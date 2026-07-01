@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Card from "@/app/components/ui/Card";
 import MasterGenericTab from "./components/MasterGenericTab";
 import TemplateTab from "./components/TemplateTab";
+import CtmsMappingTab from "./components/CtmsMappingTab";
 import {
   Database,
   Settings,
@@ -22,6 +23,7 @@ type TabType =
   | "region"
   | "unit"
   | "pola_operasi"
+  | "ctms_mapping"
   | "template";
 
 export default function KertasKerjaConfigPage() {
@@ -35,6 +37,7 @@ export default function KertasKerjaConfigPage() {
     { id: "region", label: "Region", icon: MapPin },
     { id: "unit", label: "Unit", icon: Factory },
     { id: "pola_operasi", label: "Pola Operasi", icon: Settings },
+    { id: "ctms_mapping", label: "Mapping CTMS", icon: Database },
     { id: "template", label: "Template Kertas Kerja", icon: FileSpreadsheet },
   ];
 
@@ -118,6 +121,7 @@ export default function KertasKerjaConfigPage() {
                 comodityFilter="BBM"
               />
             )}
+            {activeTab === "ctms_mapping" && <CtmsMappingTab />}
             {activeTab === "template" && <TemplateTab />}
           </div>
         </Card>
