@@ -219,17 +219,46 @@ export function AddSiteModal({
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Jenis
             </label>
-            <select
-              value={formData.site_type}
-              onChange={(e) =>
-                handleSiteTypeChange(e.target.value as "PEMBANGKIT" | "PEMASOK")
-              }
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white transition-all duration-200"
-            >
-              <option value="PEMBANGKIT">Pembangkit</option>
-              <option value="PEMASOK">Pemasok</option>
-              <option value="TRANSPORTIR">Transportir</option>
-            </select>
+            <Autocomplete
+              options={[
+                { value: "PEMBANGKIT", label: "Pembangkit" },
+                { value: "PEMASOK", label: "Pemasok" },
+                { value: "TRANSPORTIR", label: "Transportir" }
+              ]}
+              getOptionLabel={(option) => option.label}
+              value={[
+                { value: "PEMBANGKIT", label: "Pembangkit" },
+                { value: "PEMASOK", label: "Pemasok" },
+                { value: "TRANSPORTIR", label: "Transportir" }
+              ].find((opt) => opt.value === formData.site_type) || null}
+              onChange={(event, newValue) => {
+                if (newValue) {
+                  handleSiteTypeChange(newValue.value as "PEMBANGKIT" | "PEMASOK");
+                }
+              }}
+              isOptionEqualToValue={(option, value) => option.value === value?.value}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  placeholder="Pilih jenis"
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      padding: '4px 14px',
+                      borderRadius: '0.5rem',
+                      '& fieldset': {
+                        borderColor: '#d1d5db',
+                      },
+                      '&:hover fieldset': {
+                        borderColor: '#d1d5db',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#0ea5e9',
+                      },
+                    }
+                  }}
+                />
+              )}
+            />
           </div>
 
           {/* Kepemilikan */}
@@ -238,18 +267,34 @@ export function AddSiteModal({
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Kepemilikan
               </label>
-              <select
-                value={formData.owner ?? ""}
-                onChange={(e) =>
-                  setFormData({ ...formData, owner: e.target.value })
-                }
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white transition-all duration-200"
-              >
-                <option value="">Pilih kepemilikan</option>
-                <option value="PLN">PLN</option>
-                <option value="PLN IP">PLN IP</option>
-                <option value="PLN NP">PLN NP</option>
-              </select>
+              <Autocomplete
+                options={["PLN", "PLN IP", "PLN NP"]}
+                value={formData.owner || null}
+                onChange={(event, newValue) => {
+                  setFormData({ ...formData, owner: newValue || "" });
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    placeholder="Pilih kepemilikan"
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        padding: '4px 14px',
+                        borderRadius: '0.5rem',
+                        '& fieldset': {
+                          borderColor: '#d1d5db',
+                        },
+                        '&:hover fieldset': {
+                          borderColor: '#d1d5db',
+                        },
+                        '&.Mui-focused fieldset': {
+                          borderColor: '#0ea5e9',
+                        },
+                      }
+                    }}
+                  />
+                )}
+              />
             </div>
           )}
 
@@ -258,18 +303,34 @@ export function AddSiteModal({
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Komoditas
             </label>
-            <select
-              value={formData.commodity ?? ""}
-              onChange={(e) =>
-                setFormData({ ...formData, commodity: e.target.value })
-              }
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white transition-all duration-200"
-            >
-              <option value="">Pilih Komoditas</option>
-              <option value="GAS PIPA">GAS PIPA</option>
-              <option value="LNG">LNG</option>
-              <option value="BBM">BBM</option>
-            </select>
+            <Autocomplete
+              options={["GAS PIPA", "LNG", "BBM"]}
+              value={formData.commodity || null}
+              onChange={(event, newValue) => {
+                setFormData({ ...formData, commodity: newValue || "" });
+              }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  placeholder="Pilih Komoditas"
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      padding: '4px 14px',
+                      borderRadius: '0.5rem',
+                      '& fieldset': {
+                        borderColor: '#d1d5db',
+                      },
+                      '&:hover fieldset': {
+                        borderColor: '#d1d5db',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#0ea5e9',
+                      },
+                    }
+                  }}
+                />
+              )}
+            />
           </div>
 
           {/* Site Name */}
