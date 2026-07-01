@@ -321,7 +321,7 @@ export function AddSiteModal({
             formData.site_type != "PEMASOK" && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Kapasitas (MW)
+                  Kapasitas {formData.commodity === "BBM" ? "(kL)" : "(MW)"}
                 </label>
                 <input
                   type="number"

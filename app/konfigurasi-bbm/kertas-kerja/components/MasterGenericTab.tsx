@@ -24,7 +24,7 @@ export default function MasterGenericTab({ table, title }: MasterGenericTabProps
   
   const [formData, setFormData] = useState({ name: "", comodity: "BBM" });
 
-  const hasComodity = table !== "master_moda";
+  const hasComodity = table !== "master_moda" && table !== "master_pola_operasi";
 
   const handleOpenModal = (item?: any) => {
     setEditingItem(item || null);

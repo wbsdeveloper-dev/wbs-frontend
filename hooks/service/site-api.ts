@@ -153,6 +153,8 @@ export interface Site {
   owner?: string;
   commodity?: string;
   kit_id?: string;
+  upk_id?: string;
+  unit_id?: string;
   created_at: string;
   updated_at: string;
 }
@@ -170,6 +172,8 @@ export interface CreateSitePayload {
   owner?: string | null;
   commodity?: string | null;
   kit_id?: string | null;
+  upk_id?: string | null;
+  unit_id?: string | null;
 }
 
 export interface UpdateSitePayload {
@@ -181,11 +185,13 @@ export interface UpdateSitePayload {
   pemasok_id?: string | null;
   lat?: number | null;
   long?: number | null;
+  unit_id?: string | null;
   is_enabled?: boolean;
   conversion_factor?: number | null;
   owner?: string | null;
   commodity?: string | null;
   kit_id?: string | null;
+  upk_id?: string | null;
 }
 
 export interface DeleteSiteResponse {

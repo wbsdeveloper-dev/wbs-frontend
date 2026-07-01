@@ -28,6 +28,9 @@ export function AddSiteModal({
 }: AddSiteModalProps) {
   const { data: dropdowns, isLoading: isLoadingDropdowns } = useDropdowns();
   const { data: jenisKits = [] } = useKertasKerjaMaster("master_jenis_kit");
+  const { data: upks = [] } = useKertasKerjaMaster("master_unit_pelaksana");
+  const { data: regions = [] } = useKertasKerjaMaster("master_region");
+  const { data: units = [] } = useKertasKerjaMaster("master_unit");
   const createSiteMutation = useCreateSite({
     onSuccess: () => {
       onSuccess();
@@ -55,6 +58,8 @@ export function AddSiteModal({
     owner: "",
     commodity: "",
     kit_id: "",
+    upk_id: "",
+    unit_id: "",
   });
 
   const [selectedPlant, setSelectedPlant] = useState<string | null>(null);
@@ -75,6 +80,8 @@ export function AddSiteModal({
       owner: "",
       commodity: "",
       kit_id: "",
+      upk_id: "",
+      unit_id: "",
     });
     setSelectedPlant(null);
     setSelectedSupplier(null);
@@ -102,6 +109,8 @@ export function AddSiteModal({
           owner: editingSite.owner ?? "",
           commodity: editingSite.commodity ?? "",
           kit_id: editingSite.kit_id ?? "",
+          upk_id: editingSite.upk_id ?? "",
+          unit_id: editingSite.unit_id ?? "",
         });
         setSelectedPlant(editingSite.pembangkit_id || null);
         setSelectedSupplier(editingSite.pemasok_id || null);
@@ -153,6 +162,8 @@ export function AddSiteModal({
       owner: formData.owner || undefined,
       commodity: formData.commodity || undefined,
       kit_id: formData.kit_id || undefined,
+      upk_id: formData.upk_id || undefined,
+      unit_id: formData.unit_id || undefined,
     };
 
     // Use appropriate mutation
@@ -315,6 +326,94 @@ export function AddSiteModal({
             </div>
           )}
 
+          {/* Unit Pelaksana */}
+          {formData.site_type == "PEMBANGKIT" && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Unit Pelaksana
+              </label>
+              <Autocomplete
+                options={upks}
+                getOptionLabel={(option: any) => option.name}
+                value={upks.find((j: any) => j.id === formData.upk_id) || null}
+                onChange={(_event, newValue: any) => {
+                  setFormData({
+                    ...formData,
+                    upk_id: newValue ? newValue.id : "",
+                  });
+                }}
+                isOptionEqualToValue={(option, value) => option.id === value?.id}
+                renderOption={(props, option: any) => {
+                  const { key, ...otherProps } = props as any;
+                  return (
+                    <li key={option.id} {...otherProps}>
+                      {option.name}
+                    </li>
+                  );
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    placeholder="Pilih unit pelaksana"
+                    variant="outlined"
+                    size="small"
+                    sx={{
+                      "& .MuiOutlinedInput-root": {
+                        borderRadius: "0.5rem",
+                        backgroundColor: "white",
+                      },
+                    }}
+                  />
+                )}
+                className="w-full"
+              />
+            </div>
+          )}
+
+          {/* Unit */}
+          {formData.site_type == "PEMBANGKIT" && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Unit
+              </label>
+              <Autocomplete
+                options={units}
+                getOptionLabel={(option: any) => option.name}
+                value={units.find((j: any) => j.id === formData.unit_id) || null}
+                onChange={(_event, newValue: any) => {
+                  setFormData({
+                    ...formData,
+                    unit_id: newValue ? newValue.id : "",
+                  });
+                }}
+                isOptionEqualToValue={(option, value) => option.id === value?.id}
+                renderOption={(props, option: any) => {
+                  const { key, ...otherProps } = props as any;
+                  return (
+                    <li key={option.id} {...otherProps}>
+                      {option.name}
+                    </li>
+                  );
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    placeholder="Pilih unit"
+                    variant="outlined"
+                    size="small"
+                    sx={{
+                      "& .MuiOutlinedInput-root": {
+                        borderRadius: "0.5rem",
+                        backgroundColor: "white",
+                      },
+                    }}
+                  />
+                )}
+                className="w-full"
+              />
+            </div>
+          )}
+
           {/* Site Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -345,30 +444,40 @@ export function AddSiteModal({
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Region
               </label>
-              <input
-                type="text"
+              <Autocomplete
+                options={regions.map((r: any) => r.name)}
                 value={formData.region}
-                onChange={(e) =>
-                  setFormData({ ...formData, region: e.target.value })
-                }
-                placeholder="Masukkan region"
-                className={`w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200 ${
-                  errors.region
-                    ? "border-red-300 focus:ring-red-500"
-                    : "border-gray-300"
-                }`}
+                onChange={(_event, newValue: string | null) => {
+                  setFormData({
+                    ...formData,
+                    region: newValue || "",
+                  });
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    placeholder="Pilih region"
+                    variant="outlined"
+                    size="small"
+                    error={!!errors.region}
+                    helperText={errors.region}
+                    sx={{
+                      "& .MuiOutlinedInput-root": {
+                        borderRadius: "0.5rem",
+                        backgroundColor: "white",
+                      },
+                    }}
+                  />
+                )}
+                className="w-full"
               />
-              {errors.region && (
-                <p className="text-xs text-red-600 mt-1">{errors.region}</p>
-              )}
             </div>
           )}
 
-          {formData.site_type != "TRANSPORTIR" &&
-            formData.site_type != "PEMASOK" && (
+          {formData.site_type != "TRANSPORTIR" && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Kapasitas (MW)
+                  Kapasitas {formData.site_type === "PEMBANGKIT" ? "(MW)" : "(kL)"}
                 </label>
                 <input
                   type="number"

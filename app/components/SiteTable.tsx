@@ -32,12 +32,14 @@ const StatusBadge = ({
   isEnabled: boolean;
 }) => (
   <span
-    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${isEnabled ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"
-      }`}
+    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
+      isEnabled ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"
+    }`}
   >
     <span
-      className={`w-1.5 h-1.5 rounded-full ${isEnabled ? "bg-green-500" : "bg-red-500"
-        }`}
+      className={`w-1.5 h-1.5 rounded-full ${
+        isEnabled ? "bg-green-500" : "bg-red-500"
+      }`}
     />
     {isEnabled ? "Aktif" : "Nonaktif"}
   </span>
@@ -139,7 +141,7 @@ function DeleteConfirmModal({
         </div>
       </div>
     </div>,
-    document.body
+    document.body,
   );
 }
 
@@ -224,7 +226,7 @@ function DeleteWarningModal({
         </div>
       </div>
     </div>,
-    document.body
+    document.body,
   );
 }
 
@@ -235,7 +237,11 @@ interface SiteTableProps {
   commodity?: string[];
 }
 
-export function DaftarSiteTable({ onEdit, onDelete, commodity }: SiteTableProps) {
+export function DaftarSiteTable({
+  onEdit,
+  onDelete,
+  commodity,
+}: SiteTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(0);
@@ -246,7 +252,10 @@ export function DaftarSiteTable({ onEdit, onDelete, commodity }: SiteTableProps)
   const [pendingDeleteName, setPendingDeleteName] = useState<string>("");
   const [warnedSites, setWarnedSites] = useState<string[]>([]);
 
-  const { data: sites, isLoading } = useSites({ search: debouncedSearch, commodity });
+  const { data: sites, isLoading } = useSites({
+    search: debouncedSearch,
+    commodity,
+  });
   const deleteSiteMutation = useDeleteSite({
     onSuccess: (data: DeleteSiteResponse) => {
       // Note: broad siteKeys.all invalidation is handled by useDeleteSite hook itself
@@ -412,7 +421,9 @@ export function DaftarSiteTable({ onEdit, onDelete, commodity }: SiteTableProps)
                       {site.region}
                     </td>
                     <td className="px-4 py-3 text-center text-gray-700">
-                      {site.capacity ? site.capacity + " MW" : "-"}
+                      {site.capacity
+                        ? `${site.capacity} ${site.site_type === "PEMBANGKIT" ? "MW" : "kL"}`
+                        : "-"}
                     </td>
                     <td className="px-4 py-3 text-center text-gray-700">
                       {site.commodity || "-"}
@@ -488,7 +499,11 @@ export function DaftarSiteTable({ onEdit, onDelete, commodity }: SiteTableProps)
 }
 
 // Relations Table Component
-export function RelasiOperasionalTable({ onEdit, onDelete, commodity }: SiteTableProps) {
+export function RelasiOperasionalTable({
+  onEdit,
+  onDelete,
+  commodity,
+}: SiteTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(0);

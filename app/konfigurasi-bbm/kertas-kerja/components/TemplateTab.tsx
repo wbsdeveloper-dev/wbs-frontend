@@ -33,7 +33,11 @@ export default function TemplateTab() {
     supplier_id: "",
     product_id: "",
     moda_id: "",
-    hop_minimum: ""
+    hop_minimum: "",
+    distance: "",
+    estimated_delivery_time: "",
+    average_usage: "",
+    is_active: true
   });
 
   const handleOpenModal = (item?: any) => {
@@ -43,7 +47,11 @@ export default function TemplateTab() {
       supplier_id: item?.supplier_id || "",
       product_id: item?.product_id || "",
       moda_id: item?.moda_id || "",
-      hop_minimum: item?.hop_minimum || ""
+      hop_minimum: item?.hop_minimum || "",
+      distance: item?.distance || "",
+      estimated_delivery_time: item?.estimated_delivery_time || "",
+      average_usage: item?.average_usage || "",
+      is_active: item?.is_active ?? true
     });
     setIsModalOpen(true);
   };
@@ -52,7 +60,10 @@ export default function TemplateTab() {
     e.preventDefault();
     const payload = {
       ...formData,
-      hop_minimum: formData.hop_minimum ? parseFloat(formData.hop_minimum) : null
+      hop_minimum: formData.hop_minimum ? parseFloat(formData.hop_minimum) : null,
+      distance: formData.distance ? parseFloat(formData.distance) : null,
+      estimated_delivery_time: formData.estimated_delivery_time ? parseFloat(formData.estimated_delivery_time) : null,
+      average_usage: formData.average_usage ? parseFloat(formData.average_usage) : null
     };
 
     try {
@@ -111,7 +122,11 @@ export default function TemplateTab() {
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Supplier</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Product</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Moda</th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Jarak</th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Est. Delivery Time</th>
                   <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">HOP Min</th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Pemakaian Rata2</th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
                   <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Aksi</th>
                 </tr>
               </thead>
@@ -123,7 +138,15 @@ export default function TemplateTab() {
                     <td className="px-4 py-3 text-gray-600">{item.supplier_name || "-"}</td>
                     <td className="px-4 py-3 text-gray-600">{item.product_name || "-"}</td>
                     <td className="px-4 py-3 text-gray-600">{item.moda_name || "-"}</td>
-                    <td className="px-4 py-3 text-center text-gray-600 font-medium">{item.hop_minimum}</td>
+                    <td className="px-4 py-3 text-center text-gray-600 font-medium">{item.distance ?? "-"}</td>
+                    <td className="px-4 py-3 text-center text-gray-600 font-medium">{item.estimated_delivery_time ?? "-"}</td>
+                    <td className="px-4 py-3 text-center text-gray-600 font-medium">{item.hop_minimum ?? "-"}</td>
+                    <td className="px-4 py-3 text-center text-gray-600 font-medium">{item.average_usage ?? "-"}</td>
+                    <td className="px-4 py-3 text-center">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${item.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                        {item.is_active ? 'Aktif' : 'Tidak Aktif'}
+                      </span>
+                    </td>
                     <td className="px-4 py-3 text-center">
                       <div className="flex items-center justify-center gap-1">
                         <button onClick={() => handleOpenModal(item)} className="p-1.5 text-primary hover:bg-primary/10 rounded-lg transition-colors" title="Edit">
@@ -138,7 +161,7 @@ export default function TemplateTab() {
                 ))}
                 {data.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-4 py-16 text-center text-gray-500">
+                    <td colSpan={11} className="px-4 py-16 text-center text-gray-500">
                       Tidak ada data template yang ditemukan
                     </td>
                   </tr>
@@ -313,6 +336,28 @@ export default function TemplateTab() {
             />
           </div>
           <div>
+            <label className="block text-sm font-medium text-gray-700">Distance</label>
+            <input
+              type="number"
+              step="any"
+              value={formData.distance}
+              onChange={(e) => setFormData({ ...formData, distance: e.target.value })}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border text-gray-900"
+              placeholder="0.00"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Estimated Delivery Time</label>
+            <input
+              type="number"
+              step="any"
+              value={formData.estimated_delivery_time}
+              onChange={(e) => setFormData({ ...formData, estimated_delivery_time: e.target.value })}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border text-gray-900"
+              placeholder="0.00"
+            />
+          </div>
+          <div>
             <label className="block text-sm font-medium text-gray-700">HOP Minimum</label>
             <input
               type="number"
@@ -322,6 +367,29 @@ export default function TemplateTab() {
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border text-gray-900"
               placeholder="0.00"
             />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Pemakaian Rata-Rata (Bln-1)</label>
+            <input
+              type="number"
+              step="any"
+              value={formData.average_usage}
+              onChange={(e) => setFormData({ ...formData, average_usage: e.target.value })}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border text-gray-900"
+              placeholder="0.00"
+            />
+          </div>
+          <div className="flex items-center mt-4">
+            <input
+              id="is_active"
+              type="checkbox"
+              checked={formData.is_active}
+              onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+            />
+            <label htmlFor="is_active" className="ml-2 block text-sm text-gray-900">
+              Aktif
+            </label>
           </div>
           <div className="mt-5 sm:mt-6 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3">
             <button

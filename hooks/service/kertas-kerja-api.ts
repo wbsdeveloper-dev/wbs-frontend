@@ -94,6 +94,8 @@ export interface TemplateKertasKerja {
   product_id: string;
   moda_id: string;
   hop_minimum: number;
+  average_usage?: number | null;
+  is_active?: boolean;
   created_at: string;
   updated_at?: string;
   // Joins
@@ -101,6 +103,36 @@ export interface TemplateKertasKerja {
   supplier_name?: string;
   product_name?: string;
   moda_name?: string;
+  unit_name?: string;
+  distance?: number;
+  estimated_delivery_time?: number;
+  upk_name?: string;
+  kit_name?: string;
+  site_capacity?: number | null;
+  site_region?: string;
+}
+
+export interface RecordKertasKerja {
+  id?: string;
+  template_kertas_kerja_id: string;
+  month_work: string;
+  stock?: number;
+  keterisian_tanki?: number;
+  hop?: number;
+  keterangan_hop_less_than_5?: string;
+  terima?: number;
+  pemakaian?: number;
+  stock_akhir_bulan?: number;
+  shop_akhir_bulan?: number;
+  delta_terima?: number;
+  pencapaian?: number;
+  renominasi_pesan?: number;
+  renominaso_proyeksi_akhir_bulan?: number;
+  rencana_pesan?: number;
+  rencana_hop?: number;
+  master_pola_id?: string;
+  keterangan?: string;
+  detail_keterangan?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -112,6 +144,7 @@ export const kertasKerjaKeys = {
   masters: () => [...kertasKerjaKeys.all, "master"] as const,
   master: (table: string) => [...kertasKerjaKeys.masters(), table] as const,
   templates: () => [...kertasKerjaKeys.all, "templates"] as const,
+  records: () => [...kertasKerjaKeys.all, "records"] as const,
 };
 
 // ---------------------------------------------------------------------------
@@ -163,6 +196,17 @@ export function updateTemplate(id: string, payload: any) {
 export function deleteTemplate(id: string) {
   return apiFetchData<{ success: boolean; message: string }>(`/kertas-kerja/templates/${id}`, {
     method: "DELETE",
+  });
+}
+
+export function getRecords() {
+  return apiFetchData<RecordKertasKerja[]>("/kertas-kerja/records");
+}
+
+export function bulkUpsertRecords(payload: { records: RecordKertasKerja[] }) {
+  return apiFetchData<RecordKertasKerja[]>("/kertas-kerja/records/bulk", {
+    method: "POST",
+    body: JSON.stringify(payload),
   });
 }
 
@@ -267,6 +311,28 @@ export function useDeleteKertasKerjaTemplate(
     mutationFn: (id: string) => deleteTemplate(id),
     onSuccess: (...args) => {
       qc.invalidateQueries({ queryKey: kertasKerjaKeys.templates() });
+      options?.onSuccess?.(...args);
+    },
+    ...options,
+  });
+}
+
+export function useKertasKerjaRecords(options?: Partial<UseQueryOptions<RecordKertasKerja[]>>) {
+  return useQuery({
+    queryKey: kertasKerjaKeys.records(),
+    queryFn: () => getRecords(),
+    ...options,
+  });
+}
+
+export function useBulkUpsertKertasKerjaRecords(
+  options?: Partial<UseMutationOptions<RecordKertasKerja[], Error, { records: RecordKertasKerja[] }>>,
+) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload) => bulkUpsertRecords(payload),
+    onSuccess: (...args) => {
+      qc.invalidateQueries({ queryKey: kertasKerjaKeys.records() });
       options?.onSuccess?.(...args);
     },
     ...options,

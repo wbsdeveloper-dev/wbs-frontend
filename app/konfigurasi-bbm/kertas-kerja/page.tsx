@@ -11,6 +11,7 @@ import {
   Truck,
   FileSpreadsheet,
   Factory,
+  MapPin,
 } from "lucide-react";
 
 type TabType =
@@ -18,6 +19,9 @@ type TabType =
   | "unit_pembangkit"
   | "moda"
   | "product"
+  | "region"
+  | "unit"
+  | "pola_operasi"
   | "template";
 
 export default function KertasKerjaConfigPage() {
@@ -28,6 +32,9 @@ export default function KertasKerjaConfigPage() {
     { id: "unit_pembangkit", label: "Unit Pelaksana", icon: Factory },
     { id: "moda", label: "Moda", icon: Truck },
     { id: "product", label: "Product", icon: Box },
+    { id: "region", label: "Region", icon: MapPin },
+    { id: "unit", label: "Unit", icon: Factory },
+    { id: "pola_operasi", label: "Pola Operasi", icon: Settings },
     { id: "template", label: "Template Kertas Kerja", icon: FileSpreadsheet },
   ];
 
@@ -39,14 +46,14 @@ export default function KertasKerjaConfigPage() {
         <span className="text-gray-400">/</span>
         <span>Konfigurasi Sistem</span>
         <span className="text-gray-400">/</span>
-        <span className="text-primary font-medium">Kertas Kerja</span>
+        <span className="text-primary font-medium">Data Master</span>
       </div>
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 md:mb-6 animate-fade-in">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900 flex items-center gap-3">
             <Database className="text-primary" size={28} />
-            Konfigurasi Kertas Kerja
+            Data Master
           </h1>
           <p className="text-gray-600 mt-1 text-sm md:text-base">
             Kelola data master dan template untuk Kertas Kerja BBM
@@ -96,6 +103,18 @@ export default function KertasKerjaConfigPage() {
             )}
             {activeTab === "product" && (
               <MasterGenericTab table="master_product" title="Product" />
+            )}
+            {activeTab === "region" && (
+              <MasterGenericTab table="master_region" title="Region" />
+            )}
+            {activeTab === "unit" && (
+              <MasterGenericTab table="master_unit" title="Unit" />
+            )}
+            {activeTab === "pola_operasi" && (
+              <MasterGenericTab
+                table="master_pola_operasi"
+                title="Pola Operasi"
+              />
             )}
             {activeTab === "template" && <TemplateTab />}
           </div>

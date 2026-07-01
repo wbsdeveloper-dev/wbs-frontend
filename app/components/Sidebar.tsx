@@ -203,7 +203,7 @@ export default function Sidebar() {
           resource: "spreadsheet_source",
         },
         {
-          title: "Kertas Kerja",
+          title: "Data Master",
           path: "/konfigurasi-bbm/kertas-kerja",
           resource: "system_config",
         },
