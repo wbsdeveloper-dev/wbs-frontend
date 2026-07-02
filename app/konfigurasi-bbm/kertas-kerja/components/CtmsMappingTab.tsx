@@ -21,15 +21,19 @@ export default function CtmsMappingTab() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
   
-  const [formData, setFormData] = useState({ ctms_name: "", site_name: "" });
+  const [formData, setFormData] = useState({ ctms_name: "", site_name: "", site_type: "" });
 
-  const allSites = [...(dropdowns?.suppliers || []), ...(dropdowns?.plants || [])];
+  const allSites = [
+    ...(dropdowns?.suppliers || []).map(s => ({ ...s, site_type: 'PEMASOK' })),
+    ...(dropdowns?.plants || []).map(p => ({ ...p, site_type: 'PEMBANGKIT' }))
+  ];
 
   const handleOpenModal = (item?: any) => {
     setEditingItem(item || null);
     setFormData({
       ctms_name: item?.ctms_name || "",
       site_name: item?.site_name || "",
+      site_type: item?.site_type || "",
     });
     setIsModalOpen(true);
   };
@@ -91,6 +95,7 @@ export default function CtmsMappingTab() {
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Nama CTMS</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">WBS Site</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Tipe</th>
                   <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Aksi</th>
                 </tr>
               </thead>
@@ -99,6 +104,13 @@ export default function CtmsMappingTab() {
                   <tr key={item.id} className="hover:bg-gray-50/50 transition-colors">
                     <td className="px-4 py-3 font-medium text-gray-900">{item.ctms_name}</td>
                     <td className="px-4 py-3 text-gray-600">{item.site_name}</td>
+                    <td className="px-4 py-3 text-gray-600">
+                      {item.site_type && (
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${item.site_type === 'PEMASOK' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
+                          {item.site_type}
+                        </span>
+                      )}
+                    </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-center gap-2">
                         <button
@@ -114,7 +126,7 @@ export default function CtmsMappingTab() {
                 ))}
                 {data.length === 0 && (
                   <tr>
-                    <td colSpan={3} className="px-4 py-16 text-center text-gray-500">
+                    <td colSpan={4} className="px-4 py-16 text-center text-gray-500">
                       Tidak ada data yang ditemukan
                     </td>
                   </tr>
@@ -150,7 +162,11 @@ export default function CtmsMappingTab() {
               getOptionLabel={(option) => option.name}
               value={allSites.find((s) => s.name === formData.site_name) || null}
               onChange={(event, newValue) => {
-                setFormData({ ...formData, site_name: newValue ? newValue.name : "" });
+                setFormData({ 
+                  ...formData, 
+                  site_name: newValue ? newValue.name : "",
+                  site_type: newValue ? newValue.site_type : ""
+                });
               }}
               isOptionEqualToValue={(option, value) => option.name === value?.name}
               loading={isLoadingDropdowns}

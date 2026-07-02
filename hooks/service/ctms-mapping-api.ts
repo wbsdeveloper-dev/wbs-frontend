@@ -52,6 +52,7 @@ export interface CtmsMapping {
   id: string;
   ctms_name: string;
   site_name: string;
+  site_type: string;
   created_at: string;
   updated_at: string;
 }
@@ -64,14 +65,14 @@ export function getCtmsMappings() {
   return apiFetch<CtmsMapping[]>("/ctms-mapping").then(res => res.data);
 }
 
-export function createCtmsMapping(payload: { ctms_name: string; site_name: string }) {
+export function createCtmsMapping(payload: { ctms_name: string; site_name: string; site_type: string }) {
   return apiFetch<CtmsMapping>("/ctms-mapping", {
     method: "POST",
     body: JSON.stringify(payload),
   }).then(res => res.data);
 }
 
-export function updateCtmsMapping(id: string, payload: { ctms_name?: string; site_name?: string }) {
+export function updateCtmsMapping(id: string, payload: { ctms_name?: string; site_name?: string; site_type?: string }) {
   return apiFetch<CtmsMapping>(`/ctms-mapping/${id}`, {
     method: "PUT",
     body: JSON.stringify(payload),
@@ -90,7 +91,7 @@ export function useCtmsMappings(options?: Partial<UseQueryOptions<CtmsMapping[]>
   });
 }
 
-export function useCreateCtmsMapping(options?: Partial<UseMutationOptions<CtmsMapping, Error, { ctms_name: string; site_name: string }>>) {
+export function useCreateCtmsMapping(options?: Partial<UseMutationOptions<CtmsMapping, Error, { ctms_name: string; site_name: string; site_type: string }>>) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (payload) => createCtmsMapping(payload) as Promise<CtmsMapping>,
@@ -102,7 +103,7 @@ export function useCreateCtmsMapping(options?: Partial<UseMutationOptions<CtmsMa
   });
 }
 
-export function useUpdateCtmsMapping(options?: Partial<UseMutationOptions<CtmsMapping, Error, { id: string; payload: { ctms_name?: string; site_name?: string } }>>) {
+export function useUpdateCtmsMapping(options?: Partial<UseMutationOptions<CtmsMapping, Error, { id: string; payload: { ctms_name?: string; site_name?: string; site_type?: string } }>>) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, payload }) => updateCtmsMapping(id, payload) as Promise<CtmsMapping>,
