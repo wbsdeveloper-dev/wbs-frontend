@@ -427,8 +427,8 @@ export default function Map() {
                   <Polyline
                     key={pipe.id}
                     positions={[
-                      [source.lat, source.lng] as LatLngTuple,
-                      [target.lat, target.lng] as LatLngTuple,
+                      [Number(source.lat), Number(source.lng)] as LatLngTuple,
+                      [Number(target.lat), Number(target.lng)] as LatLngTuple,
                     ]}
                     pathOptions={{
                       color: getPipeTypeColor(pipe.relationType),
@@ -459,7 +459,7 @@ export default function Map() {
               return (
                 <Marker
                   key={site.id}
-                  position={[site.lat, site.lng] as LatLngTuple}
+                  position={[Number(site.lat), Number(site.lng)] as LatLngTuple}
                   icon={icon}
                 >
                   <Popup>
@@ -514,7 +514,7 @@ export default function Map() {
                         <div className="flex justify-between text-xs">
                           <span className="text-gray-500">Koordinat:</span>
                           <span className="font-medium text-gray-700">
-                            {site.lat?.toFixed(4)}, {site.lng?.toFixed(4)}
+                            {site.lat != null ? Number(site.lat).toFixed(4) : ""}, {site.lng != null ? Number(site.lng).toFixed(4) : ""}
                           </span>
                         </div>
                       </div>

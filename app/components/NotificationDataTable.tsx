@@ -235,8 +235,8 @@ export default function NotificationDataTable({
 
   // Sort state
   type SortField = keyof NotificationRecord;
-  const [sortField, setSortField] = useState<SortField | null>(null);
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [sortField, setSortField] = useState<SortField | null>("reportDate");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
   const handleSort = (field: SortField) => {
     if (sortField !== field) {

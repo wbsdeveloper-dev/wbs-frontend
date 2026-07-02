@@ -641,8 +641,8 @@ export default function SiteMap() {
                 <Polyline
                   key={pipe.id}
                   positions={[
-                    [sourceSite.lat, sourceSite.lng] as LatLngTuple,
-                    [targetSite.lat, targetSite.lng] as LatLngTuple,
+                    [Number(sourceSite.lat), Number(sourceSite.lng)] as LatLngTuple,
+                    [Number(targetSite.lat), Number(targetSite.lng)] as LatLngTuple,
                   ]}
                   color={pipeColor}
                   weight={3}
@@ -670,7 +670,7 @@ export default function SiteMap() {
             return (
               <Marker
                 key={site.id}
-                position={[site.lat, site.lng] as LatLngTuple}
+                position={[Number(site.lat), Number(site.lng)] as LatLngTuple}
                 icon={icon}
                 opacity={displayStatus ? 1 : 0.5}
               >
@@ -716,7 +716,7 @@ export default function SiteMap() {
                       <div className="flex justify-between">
                         <span className="text-gray-500">Koordinat:</span>
                         <span>
-                          {site.lat?.toFixed(4)}, {site.lng?.toFixed(4)}
+                          {site.lat != null ? Number(site.lat).toFixed(4) : ""}, {site.lng != null ? Number(site.lng).toFixed(4) : ""}
                         </span>
                       </div>
                     </div>

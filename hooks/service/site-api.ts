@@ -146,8 +146,8 @@ export interface Site {
   capacity?: number;
   pembangkit_id?: string;
   pemasok_id?: string;
-  lat?: number;
-  long?: number;
+  lat?: string;
+  long?: string;
   is_enabled: boolean;
   conversion_factor?: number;
   owner?: string;
@@ -163,8 +163,8 @@ export interface CreateSitePayload {
   capacity?: number | null;
   pembangkit_id?: string | null;
   pemasok_id?: string | null;
-  lat?: number | null;
-  long?: number | null;
+  lat?: string | null;
+  long?: string | null;
   conversion_factor?: number | null;
   owner?: string | null;
   commodity?: string | null;
@@ -177,8 +177,8 @@ export interface UpdateSitePayload {
   capacity?: number | null;
   pembangkit_id?: string | null;
   pemasok_id?: string | null;
-  lat?: number | null;
-  long?: number | null;
+  lat?: string | null;
+  long?: string | null;
   is_enabled?: boolean;
   conversion_factor?: number | null;
   owner?: string | null;

@@ -353,15 +353,14 @@ export function AddSiteModal({
               Latitude
             </label>
             <input
-              type="number"
+              type="text"
               value={formData.lat ?? ""}
               onChange={(e) =>
                 setFormData({
                   ...formData,
-                  lat: e.target.value ? parseFloat(e.target.value) : undefined,
+                  lat: e.target.value || undefined,
                 })
               }
-              step="any"
               placeholder="-6.123456"
               className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
             />
@@ -373,15 +372,14 @@ export function AddSiteModal({
               Longitude
             </label>
             <input
-              type="number"
+              type="text"
               value={formData.long ?? ""}
               onChange={(e) =>
                 setFormData({
                   ...formData,
-                  long: e.target.value ? parseFloat(e.target.value) : undefined,
+                  long: e.target.value || undefined,
                 })
               }
-              step="any"
               placeholder="106.123456"
               className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
             />

@@ -2,6 +2,7 @@
 
 import { DASHBOARD_API_HOST } from "./dashboard-api";
 import { getAccessToken } from "@/lib/auth";
+import apiClient from "@/lib/api-client";
 import {
   useQuery,
   useMutation,
@@ -116,15 +117,40 @@ export async function getNotifications(
   const url = `${DASHBOARD_API_HOST}/notifications${query}`;
   const accessToken = getAccessToken();
 
-  const res = await fetch(url, {
+  let res = await fetch(url, {
     headers: {
       "Content-Type": "application/json",
       ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
     },
   });
 
+  if (res.status === 401) {
+    try {
+      const { refreshAccessToken } = await import("./auth-api");
+      const { setTokens } = await import("@/lib/auth");
+      const refreshData = await refreshAccessToken();
+      setTokens(refreshData.accessToken, refreshData.refreshToken, refreshData.expiresIn || 3600);
+      res = await fetch(url, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${refreshData.accessToken}`,
+        },
+      });
+    } catch {
+      /* ignore and proceed to error handling */
+    }
+  }
+
   if (!res.ok) {
-    throw new Error(`Notification API error: ${res.statusText}`);
+    let msg = res.statusText;
+    try {
+      const errBody = await res.json();
+      if (errBody.message) msg = errBody.message;
+      else if (errBody.error && errBody.error.message) msg = errBody.error.message;
+    } catch {
+      /* ignore */
+    }
+    throw new Error(`Notification API error: ${msg}`);
   }
 
   const body = await res.json();
@@ -142,111 +168,26 @@ export async function getNotifications(
 export async function getNotification(
   id: string,
 ): Promise<NotificationRecord> {
-  const url = `${DASHBOARD_API_HOST}/notifications/${id}`;
-  const accessToken = getAccessToken();
-
-  const res = await fetch(url, {
-    headers: {
-      "Content-Type": "application/json",
-      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-    },
-  });
-
-  if (!res.ok) {
-    throw new Error(`Notification API error: ${res.statusText}`);
-  }
-
-  const body = await res.json();
-
-  if (!body.success) {
-    throw new Error(body.message || "Unknown notification API error");
-  }
-
-  return body.data as NotificationRecord;
+  return apiClient.get(`/notifications/${id}`);
 }
 
 export async function createNotification(
   payload: CreateNotificationPayload,
 ): Promise<{ id: string; created: boolean }> {
-  const url = `${DASHBOARD_API_HOST}/notifications`;
-  const accessToken = getAccessToken();
-
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-    },
-    body: JSON.stringify(payload),
-  });
-
-  if (!res.ok) {
-    throw new Error(`Notification API error: ${res.statusText}`);
-  }
-
-  const body = await res.json();
-
-  if (!body.success) {
-    throw new Error(body.message || "Unknown notification API error");
-  }
-
-  return body.data;
+  return apiClient.post(`/notifications`, payload);
 }
 
 export async function updateNotification(
   id: string,
   payload: UpdateNotificationPayload,
 ): Promise<{ id: string; updated: boolean }> {
-  const url = `${DASHBOARD_API_HOST}/notifications/${id}`;
-  const accessToken = getAccessToken();
-
-  const res = await fetch(url, {
-    method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-    },
-    body: JSON.stringify(payload),
-  });
-
-  if (!res.ok) {
-    throw new Error(`Notification API error: ${res.statusText}`);
-  }
-
-  const body = await res.json();
-
-  if (!body.success) {
-    throw new Error(body.message || "Unknown notification API error");
-  }
-
-  return body.data;
+  return apiClient.patch(`/notifications/${id}`, payload);
 }
 
 export async function deleteNotification(
   id: string,
 ): Promise<{ id: string; deleted: boolean }> {
-  const url = `${DASHBOARD_API_HOST}/notifications/${id}`;
-  const accessToken = getAccessToken();
-
-  const res = await fetch(url, {
-    method: "DELETE",
-    headers: {
-      "Content-Type": "application/json",
-      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-    },
-  });
-
-  if (!res.ok) {
-    throw new Error(`Notification API error: ${res.statusText}`);
-  }
-
-  const body = await res.json();
-
-  if (!body.success) {
-    throw new Error(body.message || "Unknown notification API error");
-  }
-
-  return body.data;
+  return apiClient.delete(`/notifications/${id}`);
 }
 
 // ---------------------------------------------------------------------------
