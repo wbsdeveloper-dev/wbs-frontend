@@ -48,6 +48,7 @@ interface SourceFormData {
   sheetName: string;
   cronSchedule: string;
   dataStartRow: number;
+  dataEndRow: number | "";
 }
 
 const EMPTY_FORM: SourceFormData = {
@@ -56,6 +57,7 @@ const EMPTY_FORM: SourceFormData = {
   sheetName: "",
   cronSchedule: "0 11,23 * * *",
   dataStartRow: 1,
+  dataEndRow: "",
 };
 
 // ─── Grouped card per spreadsheet ─────────────────────────────────────────
@@ -195,7 +197,7 @@ function GroupedSpreadsheetCard({
                 <div>
                   <span className="text-gray-400">Mulai baris</span>
                   <p className="text-gray-700 font-medium">
-                    {source.dataStartRow ?? 1}
+                    {source.dataStartRow ?? 1} {source.dataEndRow ? `- ${source.dataEndRow}` : ""}
                   </p>
                 </div>
               </div>
@@ -329,6 +331,7 @@ export default function SpreadsheetSourcePage() {
       sheetName: source.sheetName,
       cronSchedule: source.cronSchedule || "",
       dataStartRow: source.dataStartRow || 1,
+      dataEndRow: source.dataEndRow || "",
     });
     setIsModalOpen(true);
   };
@@ -362,6 +365,7 @@ export default function SpreadsheetSourcePage() {
         sheetName: formData.sheetName,
         cronSchedule: formData.cronSchedule || undefined,
         dataStartRow: formData.dataStartRow,
+        dataEndRow: formData.dataEndRow === "" ? undefined : Number(formData.dataEndRow),
         commodity: editingSource.commodity || "BBM",
       };
       updateMutation.mutate(
@@ -384,6 +388,7 @@ export default function SpreadsheetSourcePage() {
         sheetName: formData.sheetName,
         cronSchedule: formData.cronSchedule || undefined,
         dataStartRow: formData.dataStartRow,
+        dataEndRow: formData.dataEndRow === "" ? undefined : Number(formData.dataEndRow),
         commodity: "BBM",
       };
       createMutation.mutate(payload, {
@@ -624,6 +629,24 @@ export default function SpreadsheetSourcePage() {
                 }
                 className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent"
                 placeholder="10"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Data End Row <span className="text-gray-400 font-normal">(Opsional)</span>
+              </label>
+              <input
+                type="number"
+                min="1"
+                value={formData.dataEndRow}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    dataEndRow: e.target.value === "" ? "" : parseInt(e.target.value) || "",
+                  })
+                }
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent"
+                placeholder="Biarkan kosong untuk sampai baris terakhir"
               />
             </div>
           </div>

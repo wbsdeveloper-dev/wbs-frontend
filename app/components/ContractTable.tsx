@@ -179,7 +179,7 @@ function findAnnualTotal(
 const numStr = (val?: number | string | null) => {
     if (val == null) return "";
     const num = typeof val === "string" ? parseFloat(val) : val;
-    return isNaN(num) ? "" : num.toFixed(4);
+    return isNaN(num) ? "" : String(num);
 };
 
 function mapContractToRow(
@@ -325,8 +325,16 @@ function createEmptyRow(rowNumber: number, years: number[] = []): ContractTableR
 // ---------------------------------------------------------------------------
 
 // Cell renderer — edit mode shows bordered input-like box, view mode shows plain text
-function makeRenderCell(isEditMode: boolean) {
+function makeRenderCell(isEditMode: boolean, isNumeric: boolean = false) {
     const RenderCell = (params: GridRenderCellParams) => {
+        let displayValue = params.value;
+        if (isNumeric && displayValue != null && displayValue !== "") {
+            const num = Number(displayValue);
+            if (!isNaN(num)) {
+                displayValue = num.toLocaleString("en-US", { maximumFractionDigits: 6 });
+            }
+        }
+
         if (isEditMode) {
             return (
                 <Box
@@ -347,13 +355,13 @@ function makeRenderCell(isEditMode: boolean) {
                         whiteSpace: "nowrap",
                     }}
                 >
-                    {params.value}
+                    {displayValue}
                 </Box>
             );
         }
         return (
             <span className="text-xs text-gray-700 truncate">
-                {params.value || <span style={{ fontSize: "10px", color: "#aaa" }}>—</span>}
+                {displayValue || <span style={{ fontSize: "10px", color: "#aaa" }}>—</span>}
             </span>
         );
     };
@@ -372,9 +380,11 @@ function buildColumns(
     years: number[] = [],
 ): GridColDef[] {
     const renderCell = makeRenderCell(isEditMode);
+    const numericRenderCell = makeRenderCell(isEditMode, true);
 
     // Custom renderCell for volume year columns with grayed-out support
-    const makeVolumeYearRenderCell = (year: number) => {
+    const makeVolumeYearRenderCell = (year: number, options?: { suffix?: string, readOnly?: boolean }) => {
+        const { suffix = "", readOnly = false } = options || {};
         const VolumeYearCell = (params: GridRenderCellParams) => {
             const row = params.row;
             const contractEndYear = row._akhirPerjanjianYear;
@@ -400,6 +410,14 @@ function buildColumns(
                 );
             }
 
+            let displayValue = params.value;
+            if (displayValue != null && displayValue !== "") {
+                const num = Number(displayValue);
+                if (!isNaN(num)) {
+                    displayValue = num.toLocaleString("en-US", { maximumFractionDigits: 6 });
+                }
+            }
+
             // Normal rendering
             if (isEditMode) {
                 return (
@@ -412,7 +430,8 @@ function buildColumns(
                             justifyContent: "center",
                             border: "1px solid #e5e7eb",
                             borderRadius: "6px",
-                            backgroundColor: "#fff",
+                            backgroundColor: readOnly ? "#f9fafb" : "#fff",
+                            color: readOnly ? "#9ca3af" : "inherit",
                             px: 1,
                             mx: "auto",
                             fontSize: "12px",
@@ -421,13 +440,13 @@ function buildColumns(
                             whiteSpace: "nowrap",
                         }}
                     >
-                        {params.value || "—"}
+                        {displayValue ? `${displayValue}${suffix}` : "—"}
                     </Box>
                 );
             }
             return (
                 <span className="text-xs text-gray-700 truncate">
-                    {params.value || <span style={{ fontSize: "10px", color: "#aaa" }}>—</span>}
+                    {displayValue ? `${displayValue}${suffix}` : <span style={{ fontSize: "10px", color: "#aaa" }}>—</span>}
                 </span>
             );
         };
@@ -554,7 +573,7 @@ function buildColumns(
             headerAlign: "center",
             align: "center",
             editable: isEditMode,
-            renderCell,
+            renderCell: numericRenderCell,
         },
         {
             field: "hgbt",
@@ -563,7 +582,7 @@ function buildColumns(
             headerAlign: "center",
             align: "center",
             editable: isEditMode,
-            renderCell,
+            renderCell: numericRenderCell,
         },
         {
             field: "volumeJPMH",
@@ -572,13 +591,15 @@ function buildColumns(
             headerAlign: "center",
             align: "center",
             editable: isEditMode,
-            renderCell,
+            renderCell: numericRenderCell,
         },
     ];
 
     // Add dynamic volume year group columns (JPH, TOP, %TOP, Jumlah Kontrak Tahunan, Volume Kepmen)
     for (const year of years) {
         const yearRenderCell = makeVolumeYearRenderCell(year);
+        const topRenderCell = makeVolumeYearRenderCell(year, { readOnly: true });
+        const percentTopRenderCell = makeVolumeYearRenderCell(year, { suffix: "%" });
         cols.push(
             {
                 field: `volume${year}JPH`,
@@ -595,8 +616,8 @@ function buildColumns(
                 width: 120,
                 headerAlign: "center",
                 align: "center",
-                editable: isEditMode,
-                renderCell: yearRenderCell,
+                editable: false,
+                renderCell: topRenderCell,
             },
             {
                 field: `volume${year}PercentTOP`,
@@ -605,7 +626,7 @@ function buildColumns(
                 headerAlign: "center",
                 align: "center",
                 editable: isEditMode,
-                renderCell: yearRenderCell,
+                renderCell: percentTopRenderCell,
             },
             {
                 field: `jumlahKontrakTahunan${year}`,
@@ -833,10 +854,35 @@ export default function ContractTable() {
 
     const processRowUpdate = useCallback(
         (newRow: ContractTableRow) => {
+            const updatedRow = { ...newRow };
+            for (const key of Object.keys(updatedRow)) {
+                if (key.startsWith("volume") && key.endsWith("JPH")) {
+                    const year = key.replace("volume", "").replace("JPH", "");
+                    const jphKey = `volume${year}JPH`;
+                    const pctTopKey = `volume${year}PercentTOP`;
+                    const topKey = `volume${year}TOP`;
+
+                    const jphValStr = updatedRow[jphKey];
+                    const pctTopValStr = updatedRow[pctTopKey];
+                    
+                    if (jphValStr && pctTopValStr) {
+                        const jph = parseFloat(String(jphValStr));
+                        const pctTop = parseFloat(String(pctTopValStr));
+                        if (!isNaN(jph) && !isNaN(pctTop)) {
+                            updatedRow[topKey] = String(jph * (pctTop / 100));
+                        } else {
+                            updatedRow[topKey] = "";
+                        }
+                    } else {
+                        updatedRow[topKey] = "";
+                    }
+                }
+            }
+
             setRows((prev) =>
-                prev.map((row) => (row.id === newRow.id ? newRow : row)),
+                prev.map((row) => (row.id === updatedRow.id ? updatedRow : row)),
             );
-            return newRow;
+            return updatedRow;
         },
         [],
     );

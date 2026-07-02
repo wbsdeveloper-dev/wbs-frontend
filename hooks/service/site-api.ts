@@ -110,8 +110,8 @@ export interface Plant {
   name: string;
   jenis: string;
   region: string;
-  lat: number;
-  long: number;
+  lat: string;
+  long: string;
   is_enabled: boolean;
   created_at: string;
   updated_at: string;
@@ -121,8 +121,8 @@ export interface Supplier {
   id: string;
   name: string;
   jenis: string;
-  lat: number;
-  long: number;
+  lat: string;
+  long: string;
   is_enabled: boolean;
   created_at: string;
   updated_at: string;
@@ -152,6 +152,9 @@ export interface Site {
   conversion_factor?: number;
   owner?: string;
   commodity?: string;
+  kit_id?: string;
+  upk_id?: string;
+  unit_id?: string;
   created_at: string;
   updated_at: string;
 }
@@ -168,6 +171,9 @@ export interface CreateSitePayload {
   conversion_factor?: number | null;
   owner?: string | null;
   commodity?: string | null;
+  kit_id?: string | null;
+  upk_id?: string | null;
+  unit_id?: string | null;
 }
 
 export interface UpdateSitePayload {
@@ -179,10 +185,13 @@ export interface UpdateSitePayload {
   pemasok_id?: string | null;
   lat?: string | null;
   long?: string | null;
+  unit_id?: string | null;
   is_enabled?: boolean;
   conversion_factor?: number | null;
   owner?: string | null;
   commodity?: string | null;
+  kit_id?: string | null;
+  upk_id?: string | null;
 }
 
 export interface DeleteSiteResponse {
@@ -312,7 +321,7 @@ export function getSites(filters?: {
     region: filters?.region,
     search: filters?.search,
   };
-  
+
   if (filters?.commodity) {
     if (Array.isArray(filters.commodity)) {
       queryParams.commodity = filters.commodity.join(',');

@@ -1144,143 +1144,112 @@ export default function Home() {
                   />
 
                   {/* Tanggal Filter */}
-                  {chartMode === "realisasi-moda" ? (
-                    <>
-                      {/* Period Selectors */}
-                      <p className="block text-sm font-medium text-gray-700 mt-2 mb-2">
-                        Periode
-                      </p>
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        {[
-                          { label: "1 Minggu", val: "1W", interval: "Hari" },
-                          { label: "1 Bulan", val: "1M", interval: "Hari" },
-                          { label: "1 Tahun", val: "1Y", interval: "Bulan" },
-                          { label: "3 Tahun", val: "3Y", interval: "Tahun" },
-                        ].map((item) => (
+                  <>
+                    {/* Period Selectors */}
+                    <p className="block text-sm font-medium text-gray-700 mt-2 mb-2">
+                      Periode
+                    </p>
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {[
+                        { label: "1 Minggu", val: "1W", interval: "Hari" },
+                        { label: "1 Bulan", val: "1M", interval: "Hari" },
+                        { label: "1 Tahun", val: "1Y", interval: "Bulan" },
+                        { label: "3 Tahun", val: "3Y", interval: "Tahun" },
+                      ].map((item) => (
+                        <button
+                          key={item.label}
+                          className={`px-3 py-2 text-sm font-medium rounded-md transition-colors text-center ${
+                            graphicPeriod === item.val
+                              ? "bg-primary text-white shadow-sm"
+                              : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+                          }`}
+                          onClick={() => {
+                            setGraphicPeriod(item.val as Periode);
+                            setGraphicIntervalMode(item.interval as any);
+
+                            const now = new Date();
+                            let newStart = "";
+                            let newEnd = "";
+
+                            if (item.val === "1W") {
+                              const start = new Date(now);
+                              start.setDate(now.getDate() - 7);
+                              newStart = formatLocalISODate(start);
+                              newEnd = formatLocalISODate(now);
+                            } else if (item.val === "1M") {
+                              const start = new Date(now);
+                              start.setDate(now.getDate() - 31);
+                              newStart = formatLocalISODate(start);
+                              newEnd = formatLocalISODate(now);
+                            } else if (item.val === "1Y") {
+                              const start = new Date(now.getFullYear(), 0, 1);
+                              const end = new Date(now.getFullYear(), 11, 31);
+                              newStart = formatLocalISODate(start);
+                              newEnd = formatLocalISODate(end);
+                            } else if (item.val === "3Y") {
+                              const start = new Date(
+                                now.getFullYear() - 2,
+                                0,
+                                1,
+                              );
+                              const end = new Date(now.getFullYear(), 11, 31);
+                              newStart = formatLocalISODate(start);
+                              newEnd = formatLocalISODate(end);
+                            }
+
+                            if (newStart && newEnd) {
+                              setGraphicStart(newStart);
+                              setGraphicEnd(newEnd);
+                            }
+                          }}
+                        >
+                          {item.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Interval Selectors */}
+                    <p className="block text-sm font-medium text-gray-700 mb-2">
+                      Interval
+                    </p>
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {(["Tahun", "Bulan", "Hari"] as const).map((mode) => {
+                        if (
+                          graphicPeriod === "1W" &&
+                          (mode === "Tahun" || mode === "Bulan")
+                        )
+                          return null;
+                        if (graphicPeriod === "1M" && mode === "Tahun")
+                          return null;
+
+                        return (
                           <button
-                            key={item.label}
-                            className={`px-3 py-2 text-sm font-medium rounded-md transition-colors text-center ${
-                              graphicPeriod === item.val
+                            key={mode}
+                            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                              graphicIntervalMode === mode
                                 ? "bg-primary text-white shadow-sm"
                                 : "bg-gray-50 text-gray-600 hover:bg-gray-100"
                             }`}
-                            onClick={() => {
-                              setGraphicPeriod(item.val as Periode);
-                              setGraphicIntervalMode(item.interval as any);
-
-                              const now = new Date();
-                              let newStart = "";
-                              let newEnd = "";
-
-                              if (item.val === "1W") {
-                                const start = new Date(now);
-                                start.setDate(now.getDate() - 7);
-                                newStart = formatLocalISODate(start);
-                                newEnd = formatLocalISODate(now);
-                              } else if (item.val === "1M") {
-                                const start = new Date(now);
-                                start.setDate(now.getDate() - 31);
-                                newStart = formatLocalISODate(start);
-                                newEnd = formatLocalISODate(now);
-                              } else if (item.val === "1Y") {
-                                const start = new Date(now.getFullYear(), 0, 1);
-                                const end = new Date(now.getFullYear(), 11, 31);
-                                newStart = formatLocalISODate(start);
-                                newEnd = formatLocalISODate(end);
-                              } else if (item.val === "3Y") {
-                                const start = new Date(
-                                  now.getFullYear() - 2,
-                                  0,
-                                  1,
-                                );
-                                const end = new Date(now.getFullYear(), 11, 31);
-                                newStart = formatLocalISODate(start);
-                                newEnd = formatLocalISODate(end);
-                              }
-
-                              if (newStart && newEnd) {
-                                setGraphicStart(newStart);
-                                setGraphicEnd(newEnd);
-                              }
-                            }}
+                            onClick={() => setGraphicIntervalMode(mode)}
                           >
-                            {item.label}
+                            {mode}
                           </button>
-                        ))}
-                      </div>
+                        );
+                      })}
+                    </div>
 
-                      {/* Interval Selectors */}
-                      <p className="block text-sm font-medium text-gray-700 mb-2">
-                        Interval
-                      </p>
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        {(["Tahun", "Bulan", "Hari"] as const).map((mode) => {
-                          if (
-                            graphicPeriod === "1W" &&
-                            (mode === "Tahun" || mode === "Bulan")
-                          )
-                            return null;
-                          if (graphicPeriod === "1M" && mode === "Tahun")
-                            return null;
-
-                          return (
-                            <button
-                              key={mode}
-                              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                                graphicIntervalMode === mode
-                                  ? "bg-primary text-white shadow-sm"
-                                  : "bg-gray-50 text-gray-600 hover:bg-gray-100"
-                              }`}
-                              onClick={() => setGraphicIntervalMode(mode)}
-                            >
-                              {mode}
-                            </button>
-                          );
-                        })}
-                      </div>
-
-                      <DateRangeFilter
-                        startDate={graphicStart}
-                        endDate={graphicEnd}
-                        setStartDate={setGraphicStart}
-                        setEndDate={setGraphicEnd}
-                        periode={graphicPeriod}
-                        isSingleDate={false}
-                        mode={
-                          graphicPeriod === "3Y" ? "Tahun" : graphicIntervalMode
-                        }
-                      />
-                    </>
-                  ) : (
-                    <>
-                      {/* Tanggal Awal */}
-                      <div>
-                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                          Tanggal Awal
-                        </label>
-                        <input
-                          type="date"
-                          value={graphicStart}
-                          onChange={(e) => setGraphicStart(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-secondary/40 focus:border-secondary transition-all"
-                        />
-                      </div>
-
-                      {/* Tanggal Akhir */}
-                      <div>
-                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                          Tanggal Akhir
-                        </label>
-                        <input
-                          type="date"
-                          value={graphicEnd}
-                          min={graphicStart}
-                          onChange={(e) => setGraphicEnd(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-secondary/40 focus:border-secondary transition-all"
-                        />
-                      </div>
-                    </>
-                  )}
+                    <DateRangeFilter
+                      startDate={graphicStart}
+                      endDate={graphicEnd}
+                      setStartDate={setGraphicStart}
+                      setEndDate={setGraphicEnd}
+                      periode={graphicPeriod}
+                      isSingleDate={false}
+                      mode={
+                        graphicPeriod === "3Y" ? "Tahun" : graphicIntervalMode
+                      }
+                    />
+                  </>
                 </div>
               </div>
             </div>

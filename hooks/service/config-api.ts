@@ -268,6 +268,7 @@ export interface SpreadsheetSource {
   isEnabled: boolean;
   cronSchedule: string | null;
   dataStartRow: number | null;
+  dataEndRow: number | null;
   commodity: string | null;
   createdAt: string;
   updatedAt: string;
@@ -281,6 +282,7 @@ export interface CreateSpreadsheetSourcePayload {
   timezone?: string;
   cronSchedule?: string;
   dataStartRow?: number;
+  dataEndRow?: number;
   commodity?: string;
 }
 
@@ -293,6 +295,7 @@ export interface UpdateSpreadsheetSourcePayload {
   isEnabled?: boolean;
   cronSchedule?: string;
   dataStartRow?: number;
+  dataEndRow?: number;
   commodity?: string | null;
 }
 
