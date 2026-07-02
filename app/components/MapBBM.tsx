@@ -22,6 +22,7 @@ import {
   Loader2,
   Truck,
   Ship,
+  Search,
 } from "lucide-react";
 import FilterAutocomplete from "./FilterAutocomplete";
 import {
@@ -105,6 +106,7 @@ export default function Map() {
       [key: string]: any;
     }[];
   } | null>(null);
+  const [modalSearchQuery, setModalSearchQuery] = useState("");
 
   // Visibility toggles per site type
   const [visibleSiteTypes, setVisibleSiteTypes] = useState<
@@ -143,10 +145,22 @@ export default function Map() {
   );
 
   // ---- Derived data -------------------------------------------------------
-  const icons = useMemo(() => {
-    if (!data?.legend) return {} as Record<string, L.DivIcon>;
-    return buildIcons(data.legend);
+  const customLegend = useMemo(() => {
+    if (!data?.legend) return undefined;
+    return {
+      ...data.legend,
+      siteTypes: data.legend.siteTypes.map((st) => {
+        if (st.type === "PEMASOK") return { ...st, color: "#ef4444" };
+        if (st.type === "PEMBANGKIT") return { ...st, color: "#3b82f6" };
+        return st;
+      }),
+    };
   }, [data?.legend]);
+
+  const icons = useMemo(() => {
+    if (!customLegend) return {} as Record<string, L.DivIcon>;
+    return buildIcons(customLegend);
+  }, [customLegend]);
 
   // ---- Relational Filtering Helpers ---------------------------------------
   const getConnectedSet = useCallback(
@@ -333,14 +347,14 @@ export default function Map() {
   // ---- helpers ------------------------------------------------------------
   const getSiteTypeLabel = (type: string) => {
     if (type === "PEMASOK") return "TBBM";
-    return data?.legend.siteTypes.find((st) => st.type === type)?.label || type;
+    return customLegend?.siteTypes.find((st) => st.type === type)?.label || type;
   };
 
   const getSiteTypeColor = (type: string) =>
-    data?.legend.siteTypes.find((st) => st.type === type)?.color || "#999999";
+    customLegend?.siteTypes.find((st) => st.type === type)?.color || "#999999";
 
   const getPipeTypeColor = (relationType: string) =>
-    data?.legend.pipeTypes.find((pt) => pt.type === relationType)?.color ||
+    customLegend?.pipeTypes.find((pt) => pt.type === relationType)?.color ||
     "#38BDF8";
 
   const getSiteById = (id: string): MapSite | undefined =>
@@ -552,12 +566,13 @@ export default function Map() {
                             {summary.pembangkitList &&
                               summary.pembangkitList.length > 0 && (
                                 <button
-                                  onClick={() =>
+                                  onClick={() => {
                                     setModalSiteList({
                                       title: "Daftar Pembangkit",
                                       list: summary.pembangkitList!,
-                                    })
-                                  }
+                                    });
+                                    setModalSearchQuery("");
+                                  }}
                                   className="w-full mt-2 py-1.5 px-2 bg-primary/10 hover:bg-primary/20 text-primary rounded text-xs font-semibold transition-colors"
                                 >
                                   Lihat Daftar Pembangkit
@@ -566,12 +581,13 @@ export default function Map() {
                             {summary.pemasokList &&
                               summary.pemasokList.length > 0 && (
                                 <button
-                                  onClick={() =>
+                                  onClick={() => {
                                     setModalSiteList({
                                       title: "Daftar Pemasok",
                                       list: summary.pemasokList!,
-                                    })
-                                  }
+                                    });
+                                    setModalSearchQuery("");
+                                  }}
                                   className="w-full mt-2 py-1.5 px-2 bg-primary/10 hover:bg-primary/20 text-primary rounded text-xs font-semibold transition-colors"
                                 >
                                   Lihat Daftar Pemasok
@@ -637,7 +653,7 @@ export default function Map() {
                 </div>
 
                 {/* Site type toggles — driven by legend */}
-                {data.legend.siteTypes
+                {customLegend?.siteTypes
                   .filter(
                     (st) => st.type === "PEMBANGKIT" || st.type === "PEMASOK",
                   )
@@ -678,10 +694,10 @@ export default function Map() {
                   })}
 
                 {/* Pipe type legend items */}
-                {data.legend.pipeTypes.length > 0 && (
+                {customLegend?.pipeTypes && customLegend.pipeTypes.length > 0 && (
                   <div className="pt-1 border-t border-gray-200">
                     <p className="text-[10px] text-gray-500 mb-1">Jenis Pipa</p>
-                    {data.legend.pipeTypes.map((pt) => (
+                    {customLegend.pipeTypes.map((pt) => (
                       <div
                         key={pt.type}
                         className="flex items-center gap-1.5 text-xs text-gray-600 py-0.5"
@@ -863,6 +879,14 @@ export default function Map() {
               ];
               const MODES = ["Kapal", "Truck", "Pipa", "Lainnya"];
 
+              const filteredModalList = modalSearchQuery
+                ? modalSiteList.list.filter((site) =>
+                    site.name
+                      .toLowerCase()
+                      .includes(modalSearchQuery.toLowerCase()),
+                  )
+                : modalSiteList.list;
+
               let grandNom = 0;
               let grandReal = 0;
               let grandPem = 0;
@@ -885,7 +909,7 @@ export default function Map() {
               });
               MODES.forEach((m) => (modaSummary[m] = 0));
 
-              modalSiteList.list.forEach((site) => {
+              filteredModalList.forEach((site) => {
                 grandNom += site.totalNominasi || 0;
                 grandReal += site.totalRealisasi || 0;
                 grandPem += site.totalPemakaian || 0;
@@ -924,24 +948,44 @@ export default function Map() {
                           {modalSiteList.title}
                         </h3>
                         <div className="bg-orange-50 text-orange-600 font-bold text-xs px-2 py-1 rounded-full border border-orange-200">
-                          {modalSiteList.list.length} unit
+                          {filteredModalList.length} unit
                         </div>
                       </div>
                       <button
-                        onClick={() => setModalSiteList(null)}
+                        onClick={() => {
+                          setModalSiteList(null);
+                          setModalSearchQuery("");
+                        }}
                         className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors md:hidden"
                       >
                         <X size={20} />
                       </button>
                     </div>
+
+                    <div className="px-4 py-3 border-b border-gray-200 bg-gray-50/50 shrink-0">
+                      <div className="relative">
+                        <input
+                          type="text"
+                          placeholder="Cari..."
+                          value={modalSearchQuery}
+                          onChange={(e) => setModalSearchQuery(e.target.value)}
+                          className="w-full pl-9 pr-3 py-2 text-sm text-gray-900 placeholder-gray-500 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary bg-white"
+                        />
+                        <Search
+                          className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                          size={16}
+                        />
+                      </div>
+                    </div>
+
                     <div className="p-4 overflow-y-auto flex-1">
-                      {modalSiteList.list.length === 0 ? (
+                      {filteredModalList.length === 0 ? (
                         <p className="text-sm text-gray-500 text-center py-4">
                           Tidak ada data
                         </p>
                       ) : (
                         <ul className="space-y-4">
-                          {modalSiteList.list.map((p, idx) => {
+                          {filteredModalList.map((p, idx) => {
                             const siteActiveProds = PRODUCTS.filter(
                               (prod) =>
                                 (p[`totalNominasi${prod}`] || 0) > 0 ||
@@ -1136,7 +1180,10 @@ export default function Map() {
                         Resume
                       </h3>
                       <button
-                        onClick={() => setModalSiteList(null)}
+                        onClick={() => {
+                          setModalSiteList(null);
+                          setModalSearchQuery("");
+                        }}
                         className="hidden md:block p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded-full transition-colors border border-gray-200"
                       >
                         <X size={16} />
@@ -1159,7 +1206,7 @@ export default function Map() {
                           </div>
                           <div className="flex justify-between items-center p-3">
                             <span className="text-gray-600 font-medium">
-                              Realisasi
+                              Penyaluran
                             </span>
                             <span className="font-bold text-emerald-600">
                               {grandReal.toLocaleString()} kL
@@ -1205,7 +1252,7 @@ export default function Map() {
                                   </div>
                                   <div className="flex justify-between items-center p-3">
                                     <span className="text-gray-600 font-medium">
-                                      Realisasi
+                                      Penyaluran
                                     </span>
                                     <span className="font-bold text-emerald-600">
                                       {prodSummary[prod].real.toLocaleString()}{" "}
@@ -1273,7 +1320,7 @@ export default function Map() {
                       {activeModas.length > 0 && (
                         <div>
                           <p className="text-[10px] font-bold text-gray-400 mb-2 uppercase tracking-wide">
-                            Realisasi per Moda
+                            Penyaluran per Moda
                           </p>
                           <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100 text-sm">
                             {activeModas.map((moda) => (
