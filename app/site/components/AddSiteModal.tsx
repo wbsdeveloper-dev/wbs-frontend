@@ -451,7 +451,7 @@ export function AddSiteModal({
               onChange={(e) =>
                 setFormData({
                   ...formData,
-                  lat: e.target.value ? parseFloat(e.target.value) : undefined,
+                  lat: e.target.value || undefined,
                 })
               }
               step="any"
@@ -471,7 +471,7 @@ export function AddSiteModal({
               onChange={(e) =>
                 setFormData({
                   ...formData,
-                  long: e.target.value ? parseFloat(e.target.value) : undefined,
+                  long: e.target.value || undefined,
                 })
               }
               step="any"
