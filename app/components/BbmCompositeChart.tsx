@@ -180,25 +180,37 @@ export default function BbmCompositeChart({
   const chartData = useMemo(() => {
     if (!data?.chartData) return [];
     return data.chartData.map((entry) => {
-      let monthStr = "";
-      let yearStr = "";
+      // If it has reportDate, it's time-series data
       if (entry.reportDate) {
+        let monthStr = "";
+        let yearStr = "";
         const d = new Date(entry.reportDate);
         monthStr = d.toLocaleDateString("id-ID", { month: "short" });
         yearStr = d.getFullYear().toString();
+        
+        return {
+          ...entry,
+          label: formatDayLabel(entry.reportDate, intervalMode),
+          monthStr,
+          yearStr,
+        };
       }
+      
+      // If no reportDate, it's categorical (dimension) data
       return {
         ...entry,
-        // Format day label for display
-        label: formatDayLabel(entry.reportDate, intervalMode),
-        monthStr,
-        yearStr,
+        label: entry.name || "Unknown",
+        monthStr: "",
+        yearStr: "",
       };
     });
   }, [data, intervalMode]);
 
-  const modaKeys = data?.modaKeys || [];
+  const modaKeys = data?.modas || data?.modaKeys || [];
   const nomination = data?.nomination || 0;
+  
+  // Determine if we are rendering time-series or categorical data
+  const isTimeSeries = data?.chartData?.[0]?.reportDate !== undefined;
 
   if (isLoading) {
     return (
@@ -273,34 +285,35 @@ export default function BbmCompositeChart({
             return value.toString();
           }}
           label={{
-            value: "Volume (KL)",
+            value: "Realisasi (KL)",
             angle: -90,
             position: "insideLeft",
-            style: { fontSize: 11, fill: "#9ca3af" },
-            offset: 10,
+            style: { fontSize: 11, fill: "#4b5563" },
+            offset: -5,
           }}
         />
-        <YAxis
-          yAxisId="right"
-          orientation="right"
-          tick={{ fill: "#ef4444", fontSize: 11 }}
-          axisLine={false}
-          tickLine={false}
-          tickFormatter={(value) => {
-            if (value >= 1000000)
-              return `${(value / 1000000).toFixed(1).replace(/\.0$/, "")}M`;
-            if (value >= 1000)
-              return `${(value / 1000).toFixed(1).replace(/\.0$/, "")}k`;
-            return value.toString();
-          }}
-          label={{
-            value: "Akumulasi (KL)",
-            angle: 90,
-            position: "insideRight",
-            style: { fontSize: 11, fill: "#ef4444" },
-            offset: 10,
-          }}
-        />
+        {isTimeSeries && (
+          <YAxis
+            yAxisId="right"
+            orientation="right"
+            axisLine={false}
+            tickLine={false}
+            tickFormatter={(value) => {
+              if (value >= 1000000)
+                return `${(value / 1000000).toFixed(1).replace(/\.0$/, "")}M`;
+              if (value >= 1000)
+                return `${(value / 1000).toFixed(1).replace(/\.0$/, "")}k`;
+              return value.toString();
+            }}
+            label={{
+              value: "Akumulasi (KL)",
+              angle: 90,
+              position: "insideRight",
+              style: { fontSize: 11, fill: "#ef4444" },
+              offset: 10,
+            }}
+          />
+        )}
         <Tooltip content={<CustomTooltip />} />
         <Legend
           verticalAlign="top"
@@ -327,45 +340,49 @@ export default function BbmCompositeChart({
           />
         ))}
 
-        {/* Nomination line */}
-        <Line
-          yAxisId="right"
-          type="monotone"
-          dataKey="nomination"
-          name="Nominasi"
-          stroke="#a855f7"
-          strokeWidth={2}
-          strokeDasharray="6 4"
-          dot={false}
-          activeDot={{
-            r: 4,
-            fill: "#a855f7",
-            stroke: "#fff",
-            strokeWidth: 2,
-          }}
-        />
+        {isTimeSeries && (
+          <>
+            {/* Nomination line */}
+            <Line
+              yAxisId="right"
+              type="monotone"
+              dataKey="nomination"
+              name="Nominasi"
+              stroke="#a855f7"
+              strokeWidth={2}
+              strokeDasharray="6 4"
+              dot={false}
+              activeDot={{
+                r: 4,
+                fill: "#a855f7",
+                stroke: "#fff",
+                strokeWidth: 2,
+              }}
+            />
 
-        {/* Cumulative line */}
-        <Line
-          yAxisId="right"
-          type="monotone"
-          dataKey="cumulative"
-          name="Akumulasi"
-          stroke="#db2777"
-          strokeWidth={2.5}
-          dot={{
-            r: 3,
-            fill: "#db2777",
-            stroke: "#fff",
-            strokeWidth: 2,
-          }}
-          activeDot={{
-            r: 6,
-            fill: "#db2777",
-            stroke: "#fff",
-            strokeWidth: 2,
-          }}
-        />
+            {/* Cumulative line */}
+            <Line
+              yAxisId="right"
+              type="monotone"
+              dataKey="cumulative"
+              name="Akumulasi"
+              stroke="#db2777"
+              strokeWidth={2.5}
+              dot={{
+                r: 3,
+                fill: "#db2777",
+                stroke: "#fff",
+                strokeWidth: 2,
+              }}
+              activeDot={{
+                r: 6,
+                fill: "#db2777",
+                stroke: "#fff",
+                strokeWidth: 2,
+              }}
+            />
+          </>
+        )}
       </ComposedChart>
     </ResponsiveContainer>
   );

@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
-import { Calendar, ChevronDown, ChevronUp } from "lucide-react";
+import { Calendar, ChevronDown, ChevronUp, Image as ImageIcon, FileText } from "lucide-react";
+import * as htmlToImage from "html-to-image";
+import jsPDF from "jspdf";
 
 type Props = {
   nominasi: number;
@@ -29,6 +31,51 @@ export default function NominationAchievementChart({
   const [showDateFilter, setShowDateFilter] = useState(false);
   const [tempStartDate, setTempStartDate] = useState(startDate);
   const [tempEndDate, setTempEndDate] = useState(endDate);
+
+  const chartRef = useRef<HTMLDivElement>(null);
+
+  const filterExportButtons = (node: HTMLElement) => {
+    if (node?.classList?.contains("export-buttons-container")) return false;
+    return true;
+  };
+
+  const handleExportImage = async () => {
+    if (!chartRef.current) return;
+    try {
+      const dataUrl = await htmlToImage.toPng(chartRef.current, { 
+        backgroundColor: "#ffffff", 
+        pixelRatio: 2,
+        filter: filterExportButtons as any,
+      });
+      const link = document.createElement("a");
+      link.download = `pencapaian-nominasi-${new Date().toISOString().split("T")[0]}.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error("Failed to export image", err);
+    }
+  };
+
+  const handleExportPDF = async () => {
+    if (!chartRef.current) return;
+    try {
+      const canvas = await htmlToImage.toCanvas(chartRef.current, { 
+        backgroundColor: "#ffffff", 
+        pixelRatio: 2,
+        filter: filterExportButtons as any,
+      });
+      const imgData = canvas.toDataURL("image/png");
+      
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      
+      pdf.addImage(imgData, "PNG", 0, 10, pdfWidth, pdfHeight);
+      pdf.save(`pencapaian-nominasi-${new Date().toISOString().split("T")[0]}.pdf`);
+    } catch (err) {
+      console.error("Failed to export PDF", err);
+    }
+  };
 
   useEffect(() => {
     setTempStartDate(startDate);
@@ -66,30 +113,48 @@ export default function NominationAchievementChart({
   };
 
   return (
-    <div className="bg-white rounded-2xl p-6 border border-gray-100 flex flex-col h-full shadow-sm">
+    <div ref={chartRef} className="bg-white rounded-2xl p-6 border border-gray-100 flex flex-col h-full shadow-sm">
       <div className="flex justify-between items-center relative z-20">
         <h3 className="text-lg font-semibold text-gray-900">
           Pencapaian Nominasi
         </h3>
-        {onStartDateChange && onEndDateChange && (
-          <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
+          <div className="export-buttons-container flex items-center bg-gray-100 rounded-lg p-0.5">
             <button
-              onClick={() => setShowDateFilter(!showDateFilter)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer ${showDateFilter
-                ? "bg-secondary/10 text-primary border border-secondary/30"
-                : "text-gray-500 hover:bg-gray-100 border border-transparent"
-                }`}
+              onClick={handleExportImage}
+              className="p-1.5 rounded-md text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 transition-all duration-200"
+              title="Export as Image (PNG)"
             >
-              <Calendar className="w-4 h-4" />
-              <span className="hidden sm:inline">Tanggal</span>
-              {showDateFilter ? (
-                <ChevronUp className="w-3.5 h-3.5" />
-              ) : (
-                <ChevronDown className="w-3.5 h-3.5" />
-              )}
+              <ImageIcon size={14} />
+            </button>
+            <button
+              onClick={handleExportPDF}
+              className="p-1.5 rounded-md text-red-600 hover:text-red-700 hover:bg-red-50 transition-all duration-200"
+              title="Export as PDF"
+            >
+              <FileText size={14} />
             </button>
           </div>
-        )}
+          {onStartDateChange && onEndDateChange && (
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setShowDateFilter(!showDateFilter)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer ${showDateFilter
+                  ? "bg-secondary/10 text-primary border border-secondary/30"
+                  : "text-gray-500 hover:bg-gray-100 border border-transparent"
+                  }`}
+              >
+                <Calendar className="w-4 h-4" />
+                <span className="hidden sm:inline">Tanggal</span>
+                {showDateFilter ? (
+                  <ChevronUp className="w-3.5 h-3.5" />
+                ) : (
+                  <ChevronDown className="w-3.5 h-3.5" />
+                )}
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {showDateFilter && (

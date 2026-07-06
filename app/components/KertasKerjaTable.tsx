@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Maximize2, Minimize2, Save, Loader2, Download } from "lucide-react";
+import { Maximize2, Minimize2, Save, Loader2, Download, Upload } from "lucide-react";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -14,17 +14,20 @@ import {
   RecordKertasKerja
 } from "@/hooks/service/kertas-kerja-api";
 
+import BulkUploadKertasKerjaModal from "./BulkUploadKertasKerjaModal";
+
 interface KertasKerjaTableProps {
   selectedRegion: string;
 }
 
 export default function KertasKerjaTable({ selectedRegion }: KertasKerjaTableProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [localRecords, setLocalRecords] = useState<Record<string, RecordKertasKerja>>({});
   const [dirtyRecords, setDirtyRecords] = useState<Record<string, Partial<RecordKertasKerja>>>({});
 
   const { data: templates = [], isLoading: templatesLoading } = useKertasKerjaTemplates();
-  const { data: records = [], isLoading: recordsLoading } = useKertasKerjaRecords();
+  const { data: records = [], isLoading: recordsLoading, refetch: refetchRecords } = useKertasKerjaRecords();
   const upsertMutation = useBulkUpsertKertasKerjaRecords();
   const { data: polaOperasiList = [] } = useKertasKerjaMaster("master_pola_operasi");
   
@@ -701,6 +704,12 @@ const handleExportExcel = () => {
             <FileText size={16} /> Export PDF
           </button>
           <button
+            onClick={() => setIsUploadOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 text-sm bg-white text-green-600 hover:bg-green-50 border border-green-200 rounded-md transition-colors shadow-sm font-bold"
+          >
+            <Upload size={16} /> Upload Excel
+          </button>
+          <button
             onClick={handleExportExcel}
             className="flex items-center gap-2 px-4 py-2 text-sm bg-white text-primary hover:bg-slate-50 rounded-md transition-colors shadow-sm font-bold"
           >
@@ -1226,6 +1235,14 @@ const handleExportExcel = () => {
             );
           })}
         </div>
+      )}
+
+      {isUploadOpen && (
+        <BulkUploadKertasKerjaModal
+          templates={templates}
+          setOpenModal={setIsUploadOpen}
+          onSuccess={() => refetchRecords()}
+        />
       )}
     </div>
   );

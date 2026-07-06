@@ -21,6 +21,10 @@ export interface BbmRecord {
   renomination?: number;
   moda?: string;
   unit?: string;
+  jenis_kit?: string;
+  instansi_unit?: string;
+  upk?: string;
+  region?: string;
 }
 
 export interface CreateBbmPayload {
@@ -293,6 +297,7 @@ export interface BbmTopFilters {
   tbbm?: string;
   pembangkit?: string;
   interval?: "day" | "month" | "year";
+  groupBy?: string;
 }
 
 async function fetchTopVolume(
@@ -358,13 +363,15 @@ export function useTopPembangkit(
 
 export interface BbmRealizationByModaResponse {
   chartData: Array<Record<string, unknown> & {
-    reportDate: string;
+    reportDate?: string;
+    name?: string;
     total: number;
-    cumulative: number;
-    nomination: number;
+    cumulative?: number;
+    nomination?: number;
   }>;
-  modaKeys: string[];
-  nomination: number;
+  modaKeys?: string[];
+  modas?: string[];
+  nomination?: number;
 }
 
 export async function getRealizationByModa(
@@ -378,6 +385,7 @@ export async function getRealizationByModa(
   if (filters?.tbbm) params.append("tbbm", filters.tbbm);
   if (filters?.pembangkit) params.append("pembangkit", filters.pembangkit);
   if (filters?.interval) params.append("interval", filters.interval);
+  if (filters?.groupBy) params.append("groupBy", filters.groupBy);
 
   const qs = params.toString() ? `?${params.toString()}` : "";
   const url = `${DASHBOARD_API_HOST}/bbm-monthly/realization-by-moda${qs}`;

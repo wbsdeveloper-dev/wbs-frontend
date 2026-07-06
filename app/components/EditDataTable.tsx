@@ -15,18 +15,23 @@ import {
   ArrowUp,
   ArrowDown,
   Loader2,
-  CheckCircle2,
-  AlertCircle,
   Filter,
   X,
+  FileSpreadsheet,
+  FileText,
+  CheckCircle2,
+  AlertCircle,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import type {
   MonitoringRecord,
   MonitoringPagination,
   MonitoringParams,
 } from "@/hooks/service/monitoring-api";
-import { useDeleteMonitoringRecord } from "@/hooks/service/monitoring-api";
+import { useDeleteMonitoringRecord, getMonitoringRecords } from "@/hooks/service/monitoring-api";
 import { usePrivilege } from "@/hooks/usePrivilege";
 
 // ---------------------------------------------------------------------------
@@ -379,6 +384,98 @@ export default function EditDataTable({
     onFilterChange?.({});
   };
 
+  // Export Handlers
+  const [isExporting, setIsExporting] = useState(false);
+
+  const fetchAllData = async () => {
+    try {
+      setIsExporting(true);
+      
+      let allRecords: any[] = [];
+      let currentPage = 1;
+      let totalPages = 1;
+
+      // The API limits requests to a maximum of 100 items per page
+      while (currentPage <= totalPages) {
+        const res = await getMonitoringRecords({
+          ...filters,
+          page: currentPage,
+          limit: 100, 
+        });
+
+        allRecords = [...allRecords, ...res.records];
+        totalPages = res.pagination.totalPages;
+        currentPage++;
+      }
+
+      return allRecords;
+    } catch (err) {
+      console.error("Failed to fetch full data for export", err);
+      alert("Gagal memuat data lengkap untuk export");
+      return [];
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleExportExcel = async () => {
+    const allRecords = await fetchAllData();
+    if (allRecords.length === 0) return;
+
+    const dataToExport = allRecords.map((r, i) => ({
+      No: i + 1,
+      Tanggal: r.reportDate || "-",
+      Pemasok: r.supplierName || "-",
+      Pembangkit: r.siteName || "-",
+      Periode: r.periodType || "-",
+      Jam: r.periodValue || "-",
+      MMSCFD: r.finalValueMmscfd ?? "-",
+      BBTUD: r.finalValueBbtud ?? "-",
+      Status: formatNormalizeText(r.status || "-"),
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Data");
+    XLSX.writeFile(workbook, `Tabel_Monitoring_${new Date().toISOString().split("T")[0]}.xlsx`);
+  };
+
+  const handleExportPDF = async () => {
+    const allRecords = await fetchAllData();
+    if (allRecords.length === 0) return;
+
+    const doc = new jsPDF("l", "mm", "a4");
+    
+    doc.setFontSize(14);
+    doc.text("Tabel Monitoring Data", 14, 15);
+    doc.setFontSize(10);
+    doc.text(`Dicetak pada: ${new Date().toLocaleString("id-ID")}`, 14, 22);
+
+    const tableColumn = ["No", "Tanggal", "Pemasok", "Pembangkit", "Periode", "Jam", "MMSCFD", "BBTUD", "Status"];
+    const tableRows = allRecords.map((r, i) => [
+      i + 1,
+      r.reportDate || "-",
+      r.supplierName || "-",
+      r.siteName || "-",
+      r.periodType || "-",
+      r.periodValue || "-",
+      r.finalValueMmscfd ?? "-",
+      r.finalValueBbtud ?? "-",
+      formatNormalizeText(r.status || "-"),
+    ]);
+
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 28,
+      theme: "grid",
+      styles: { fontSize: 8, cellPadding: 2 },
+      headStyles: { fillColor: [13, 74, 92], textColor: [255, 255, 255] }
+    });
+
+    doc.save(`Tabel_Monitoring_${new Date().toISOString().split("T")[0]}.pdf`);
+  };
+
   // Delete state
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
@@ -470,6 +567,27 @@ export default function EditDataTable({
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <div className="flex items-center bg-gray-50 rounded-lg p-0.5 border border-gray-200 mr-1">
+              <button
+                onClick={handleExportExcel}
+                disabled={isExporting}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-md transition-all duration-200 disabled:opacity-50"
+                title="Export Excel"
+              >
+                {isExporting ? <Loader2 size={15} className="animate-spin" /> : <FileSpreadsheet size={15} />}
+                <span className="hidden sm:inline">Excel</span>
+              </button>
+              <div className="w-px h-4 bg-gray-300 mx-0.5"></div>
+              <button
+                onClick={handleExportPDF}
+                disabled={isExporting}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md transition-all duration-200 disabled:opacity-50"
+                title="Export PDF"
+              >
+                {isExporting ? <Loader2 size={15} className="animate-spin" /> : <FileText size={15} />}
+                <span className="hidden sm:inline">PDF</span>
+              </button>
+            </div>
             {filtersEnabled && (
               <button
                 onClick={() => setShowFilters((v) => !v)}
@@ -752,6 +870,7 @@ export default function EditDataTable({
                     <Th label="MMSCFD" field="finalValueMmscfd" rowSpan={2} />
                     <Th label="BBTUD" field="finalValueBbtud" rowSpan={2} />
                     <Th label="Sumber Data" field="status" rowSpan={2} />
+                    <Th label="BA" colSpan={2} />
                     <Th label="WA" colSpan={2} />
                     <Th label="EMAIL" colSpan={2} />
                     <Th label="SHEET" colSpan={2} />
@@ -759,6 +878,8 @@ export default function EditDataTable({
                     <Th label="Aksi" rowSpan={2} />
                   </tr>
                   <tr>
+                    <Th label="MMSCFD" field="baValueMmscfd" />
+                    <Th label="BBTUD" field="baValueBbtud" />
                     <Th label="MMSCFD" field="waValueMmscfd" />
                     <Th label="BBTUD" field="waValueBbtud" />
                     <Th label="MMSCFD" field="plnValueMmscfd" />
@@ -788,7 +909,7 @@ export default function EditDataTable({
               {isLoading ? (
                 <tr>
                   <td
-                    colSpan={hasAction ? (viewMode === "detail" ? 18 : 10) : (viewMode === "detail" ? 17 : 9)}
+                    colSpan={hasAction ? (viewMode === "detail" ? 20 : 10) : (viewMode === "detail" ? 19 : 9)}
                     className="px-4 py-8 text-center text-gray-500"
                   >
                     <div className="flex items-center justify-center gap-2">
@@ -803,7 +924,7 @@ export default function EditDataTable({
               ) : records.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={hasAction ? (viewMode === "detail" ? 18 : 10) : (viewMode === "detail" ? 17 : 9)}
+                    colSpan={hasAction ? (viewMode === "detail" ? 20 : 10) : (viewMode === "detail" ? 19 : 9)}
                     className="px-4 py-8 text-center text-gray-500"
                   >
                     Tidak ada data monitoring
@@ -844,6 +965,12 @@ export default function EditDataTable({
                     </td>
                     {viewMode === "detail" && (
                       <>
+                        <td className="px-4 py-3 text-center text-gray-700 font-mono">
+                          {fmt4(record.baValueMmscfd)}
+                        </td>
+                        <td className="px-4 py-3 text-center text-gray-700 font-mono">
+                          {fmt4(record.baValueBbtud)}
+                        </td>
                         <td className="px-4 py-3 text-center text-gray-700 font-mono">
                           {fmt4(record.waValueMmscfd)}
                         </td>

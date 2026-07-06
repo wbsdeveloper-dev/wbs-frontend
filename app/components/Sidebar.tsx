@@ -209,7 +209,7 @@ export default function Sidebar() {
         },
         {
           title: "Data Master",
-          path: "/konfigurasi-bbm/kertas-kerja",
+          path: "/konfigurasi-bbm/data-master",
           resource: "system_config",
         },
       ],

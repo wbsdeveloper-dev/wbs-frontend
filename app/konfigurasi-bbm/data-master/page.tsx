@@ -103,7 +103,7 @@ export default function KertasKerjaConfigPage() {
               />
             )}
             {activeTab === "moda" && (
-              <MasterGenericTab table="master_moda" title="Moda" comodityFilter="BBM" />
+              <MasterGenericTab table="master_moda" title="Moda" />
             )}
             {activeTab === "product" && (
               <MasterGenericTab table="master_product" title="Product" comodityFilter="BBM" />
@@ -118,7 +118,6 @@ export default function KertasKerjaConfigPage() {
               <MasterGenericTab
                 table="master_pola_operasi"
                 title="Pola Operasi"
-                comodityFilter="BBM"
               />
             )}
             {activeTab === "ctms_mapping" && <CtmsMappingTab />}
