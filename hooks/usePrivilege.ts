@@ -14,6 +14,7 @@ export type Resource =
   | "api_keys" | "api_keys_gas" | "api_keys_bbm"
   | "system_config" | "system_config_gas" | "system_config_bbm"
   | "bot_management" | "bot_management_gas" | "bot_management_bbm"
+  | "notification" | "notification_gas" | "notification_bbm"
   | string;
 
 export type Action = "CREATE" | "READ" | "UPDATE" | "DELETE";
@@ -35,7 +36,7 @@ export function usePrivilege() {
         const legacyResources = [
           "dashboard", "data_management", "site_management", "contracts", "users",
           "email_ingest", "template_group", "spreadsheet_source", "api_keys",
-          "system_config", "bot_management"
+          "system_config", "bot_management", "notification"
         ];
         
         if (legacyResources.includes(resource as string)) {

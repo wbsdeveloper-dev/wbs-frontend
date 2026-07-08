@@ -117,6 +117,7 @@ export function RolePrivilegeModal({ open, onClose, role }: RolePrivilegeModalPr
 
   const GAS_RESOURCES = [
     { key: 'dashboard_gas', label: 'Beranda' },
+    { key: 'notification_gas', label: 'Notifikasi' },
     { key: 'data_input_gas', label: 'Data Input' },
     { key: 'data_transportir_gas', label: 'Data Transportir' },
     { key: 'file_berita_acara_gas', label: 'File Berita Acara' },

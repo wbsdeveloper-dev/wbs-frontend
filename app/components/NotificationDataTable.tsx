@@ -218,8 +218,8 @@ export default function NotificationDataTable({
 }: NotificationDataTableProps) {
   const router = useRouter();
   const { hasPrivilege } = usePrivilege();
-  const canUpdate = hasPrivilege("data_management", "UPDATE");
-  const canDelete = hasPrivilege("data_management", "DELETE");
+  const canUpdate = hasPrivilege("notification", "UPDATE");
+  const canDelete = hasPrivilege("notification", "DELETE");
   const hasAction = canUpdate || canDelete;
 
   // Server-side pagination mapping
@@ -654,14 +654,14 @@ export default function NotificationDataTable({
                 <Th label="Metrik" field="metricType" />
                 <Th label="Nilai Final" field="finalValue" />
                 <Th label="Status" field="status" />
-                <Th label="Aksi" />
+                {hasAction && <Th label="Aksi" />}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {isLoading ? (
                 <tr>
                   <td
-                    colSpan={hasAction ? 14 : 13}
+                    colSpan={hasAction ? 8 : 7}
                     className="px-4 py-8 text-center text-gray-500"
                   >
                     <div className="flex items-center justify-center gap-2">
@@ -676,7 +676,7 @@ export default function NotificationDataTable({
               ) : records.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={hasAction ? 14 : 13}
+                    colSpan={hasAction ? 8 : 7}
                     className="px-4 py-8 text-center text-gray-500"
                   >
                     Tidak ada data monitoring
@@ -712,22 +712,24 @@ export default function NotificationDataTable({
                     <td className="px-4 py-3 text-center">
                       <StatusBadge status={record.status} />
                     </td>
-                    <td className="px-4 py-3">
-                      <ActionButtons
-                        id={record.id}
-                        onEdit={(id) => {
-                          router.push(`/notification/edit/${id}`);
-                        }}
-                        onDelete={(id) => {
-                          handleDeleteClick(
-                            id,
-                            `${record.reportDate} - ${record.siteName}`,
-                          );
-                        }}
-                        canUpdate={canUpdate}
-                        canDelete={canDelete}
-                      />
-                    </td>
+                    {hasAction && (
+                      <td className="px-4 py-3">
+                        <ActionButtons
+                          id={record.id}
+                          onEdit={(id) => {
+                            router.push(`/notification/edit/${id}`);
+                          }}
+                          onDelete={(id) => {
+                            handleDeleteClick(
+                              id,
+                              `${record.reportDate} - ${record.siteName}`,
+                            );
+                          }}
+                          canUpdate={canUpdate}
+                          canDelete={canDelete}
+                        />
+                      </td>
+                    )}
                   </tr>
                 ))
               )}
