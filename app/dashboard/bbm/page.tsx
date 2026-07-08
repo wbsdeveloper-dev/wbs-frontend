@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { Loader2, BarChart3 } from "lucide-react";
 import {
@@ -17,6 +17,9 @@ import {
 
 // Shared hooks
 import { useModal } from "@/app/_hooks";
+import { usePrivilege } from "@/hooks/usePrivilege";
+import { useAuth } from "@/components/providers/auth-provider";
+import { useRouter } from "next/navigation";
 
 // Component imports
 import FuelTypeDonutChart from "@/app/components/FuelTypeDonutChart";
@@ -355,6 +358,12 @@ function AccumulationTooltip({
 // ---------------------------------------------------------------------------
 
 export default function Home() {
+  const router = useRouter();
+  const { hasPrivilege } = usePrivilege();
+  const { isLoading: isAuthLoading } = useAuth();
+  
+  const canRead = hasPrivilege("dashboard", "READ");
+
   const { isOpen, open, close } = useModal();
   const [filterType, setFilterType] = useState<string | null>("TBBM");
 
@@ -762,6 +771,21 @@ export default function Home() {
             : !!graphicSupplier || !!graphicPlant,
       },
     );
+
+  // Redirect if unauthorized
+  useEffect(() => {
+    if (!isAuthLoading && !canRead) {
+      router.push("/landingpage");
+    }
+  }, [isAuthLoading, canRead, router]);
+
+  if (isAuthLoading || !canRead) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <Loader2 className="animate-spin text-secondary" size={32} />
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-gray-50">

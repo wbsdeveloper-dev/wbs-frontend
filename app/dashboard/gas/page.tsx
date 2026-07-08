@@ -1,11 +1,14 @@
 "use client";
 
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 // Shared imports
 import { useModal } from "@/app/_hooks";
+import { usePrivilege } from "@/hooks/usePrivilege";
+import { useAuth } from "@/components/providers/auth-provider";
 
 // API hooks
 import {
@@ -39,8 +42,19 @@ function getCurrentMonthRange() {
 }
 
 export default function GasDashboard() {
+  const router = useRouter();
+  const { hasPrivilege } = usePrivilege();
+  const { isLoading: isAuthLoading } = useAuth();
+  const canRead = hasPrivilege("dashboard", "READ");
+
   const { isOpen, open, close } = useModal();
   const [filterType, setFilterType] = useState<string | null>("Pemasok");
+
+  useEffect(() => {
+    if (!isAuthLoading && !canRead) {
+      router.push("/landingpage");
+    }
+  }, [isAuthLoading, canRead, router]);
 
   const todayDate = useMemo(() => new Date().toISOString().split("T")[0], []);
   const { startDate, endDate } = useMemo(() => getCurrentMonthRange(), []);
@@ -231,6 +245,14 @@ export default function GasDashboard() {
       volume: `${item.value.toFixed(2)}`,
     }));
   }, [topPlantsData]);
+
+  if (isAuthLoading || !canRead) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <Loader2 className="animate-spin text-secondary" size={32} />
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-gray-50">

@@ -12,9 +12,15 @@ import {
 } from "@/hooks/use-api-keys";
 import type { GeneratedApiKey } from "@/hooks/service/api-keys";
 import { usePrivilege } from "@/hooks/usePrivilege";
+import { useAuth } from "@/components/providers/auth-provider";
+import { useRouter } from "next/navigation";
 
 export default function ApiKeyManagerPage() {
+  const router = useRouter();
   const { hasPrivilege } = usePrivilege();
+  const { isLoading: isAuthLoading } = useAuth();
+  
+  const canRead = hasPrivilege("api_keys", "READ");
   const canCreate = hasPrivilege("api_keys", "CREATE");
   const canDelete = hasPrivilege("api_keys", "DELETE");
 
@@ -106,6 +112,21 @@ export default function ApiKeyManagerPage() {
     }
   };
 
+  // Redirect if unauthorized
+  React.useEffect(() => {
+    if (!isAuthLoading && !canRead) {
+      router.push("/landingpage");
+    }
+  }, [isAuthLoading, canRead, router]);
+
+  if (isAuthLoading || !canRead) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <Loader2 className="animate-spin text-secondary" size={32} />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen p-4 md:p-6 lg:p-8">
       {/* Header */}
@@ -153,7 +174,7 @@ export default function ApiKeyManagerPage() {
                 <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3">Dibuat Pada</th>
                 <th className="px-4 py-3">Terakhir Digunakan</th>
-                <th className="px-4 py-3 text-right">Aksi</th>
+                {canDelete && <th className="px-4 py-3 text-right">Aksi</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -218,8 +239,8 @@ export default function ApiKeyManagerPage() {
                         )
                         : "-"}
                     </td>
-                    <td className="px-4 py-3 text-right">
-                      {canDelete && (
+                    {canDelete && (
+                      <td className="px-4 py-3 text-right">
                         <button
                           onClick={() => setRevokeTargetId(keyItem.id)}
                           className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-red-500/20"
@@ -227,8 +248,8 @@ export default function ApiKeyManagerPage() {
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
-                      )}
-                    </td>
+                      </td>
+                    )}
                   </tr>
                 ))
               )}

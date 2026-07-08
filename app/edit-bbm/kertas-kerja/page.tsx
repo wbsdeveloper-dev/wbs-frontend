@@ -3,14 +3,24 @@
 import { useState, useRef, useEffect } from "react";
 import KertasKerjaTable from "@/app/components/KertasKerjaTable";
 import RingkasanTable from "@/app/components/RingkasanTable";
-import { ArrowLeft, FileText, PieChart, ChevronDown, Check, Search } from "lucide-react";
+import { ArrowLeft, FileText, PieChart, ChevronDown, Check, Search, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useKertasKerjaMaster } from "@/hooks/service/kertas-kerja-api";
+import { usePrivilege } from "@/hooks/usePrivilege";
+import { useAuth } from "@/components/providers/auth-provider";
+import { useRouter } from "next/navigation";
 
 export default function KertasKerjaPage() {
   const [activeTab, setActiveTab] = useState("kertas-kerja");
   const [selectedRegion, setSelectedRegion] = useState("");
   const { data: regions = [] } = useKertasKerjaMaster("master_region");
+
+  const router = useRouter();
+  const { hasPrivilege } = usePrivilege();
+  const { isLoading: isAuthLoading } = useAuth();
+  
+  const canRead = hasPrivilege("kertas_kerja_bbm", "READ");
+  const canUpdate = hasPrivilege("kertas_kerja_bbm", "UPDATE");
 
   const [isRegionDropdownOpen, setIsRegionDropdownOpen] = useState(false);
   const [regionSearch, setRegionSearch] = useState("");
@@ -29,6 +39,21 @@ export default function KertasKerjaPage() {
   const filteredRegions = regions.filter((r: any) => 
     r.name.toLowerCase().includes(regionSearch.toLowerCase())
   );
+
+  // Redirect if unauthorized
+  useEffect(() => {
+    if (!isAuthLoading && !canRead) {
+      router.push("/landingpage");
+    }
+  }, [isAuthLoading, canRead, router]);
+
+  if (isAuthLoading || !canRead) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <Loader2 className="animate-spin text-secondary" size={32} />
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
@@ -150,7 +175,7 @@ export default function KertasKerjaPage() {
               </div>
             </div>
 
-            {activeTab === "kertas-kerja" && <KertasKerjaTable selectedRegion={selectedRegion} />}
+            {activeTab === "kertas-kerja" && <KertasKerjaTable selectedRegion={selectedRegion} canUpdate={canUpdate} />}
             {activeTab === "ringkasan" && <RingkasanTable selectedRegion={selectedRegion} />}
           </div>
         </div>

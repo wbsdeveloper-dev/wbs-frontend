@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Plus,
   Pencil,
@@ -32,6 +32,8 @@ import {
   type UpdateSpreadsheetSourcePayload,
 } from "@/hooks/service/config-api";
 import { usePrivilege } from "@/hooks/usePrivilege";
+import { useAuth } from "@/components/providers/auth-provider";
+import { useRouter } from "next/navigation";
 
 function extractSpreadsheetId(url: string): string | null {
   const match = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
@@ -75,6 +77,9 @@ interface GroupedCardProps {
   onAddSheet: (spreadsheetId: string) => void;
   deleteConfirmId: string | null;
   setDeleteConfirmId: (id: string | null) => void;
+  canCreate: boolean;
+  canUpdate: boolean;
+  canDelete: boolean;
 }
 
 function GroupedSpreadsheetCard({
@@ -85,6 +90,9 @@ function GroupedSpreadsheetCard({
   onAddSheet,
   deleteConfirmId,
   setDeleteConfirmId,
+  canCreate,
+  canUpdate,
+  canDelete,
 }: GroupedCardProps) {
   const [isExpanded, setIsExpanded] = useState(true);
   const { spreadsheetId, sheets } = group;
@@ -124,14 +132,16 @@ function GroupedSpreadsheetCard({
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          <button
-            onClick={() => onAddSheet(spreadsheetId)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary bg-primary/10 rounded-lg hover:bg-primary/20 transition-colors"
-            title="Tambah sheet baru ke spreadsheet ini"
-          >
-            <Plus size={13} />
-            Tambah Sheet
-          </button>
+          {canCreate && (
+            <button
+              onClick={() => onAddSheet(spreadsheetId)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary bg-primary/10 rounded-lg hover:bg-primary/20 transition-colors"
+              title="Tambah sheet baru ke spreadsheet ini"
+            >
+              <Plus size={13} />
+              Tambah Sheet
+            </button>
+          )}
           <button
             onClick={() => setIsExpanded(!isExpanded)}
             className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors text-gray-500"
@@ -204,52 +214,58 @@ function GroupedSpreadsheetCard({
 
               {/* Per-sheet actions */}
               <div className="flex items-center gap-1 shrink-0">
-                <button
-                  onClick={() => onToggle(source)}
-                  className="p-1.5 rounded-lg hover:bg-white transition-colors"
-                  title={source.isEnabled ? "Nonaktifkan" : "Aktifkan"}
-                >
-                  {source.isEnabled ? (
-                    <ToggleRight size={18} className="text-green-500" />
+                {canUpdate && (
+                  <>
+                    <button
+                      onClick={() => onToggle(source)}
+                      className="p-1.5 rounded-lg hover:bg-white transition-colors"
+                      title={source.isEnabled ? "Nonaktifkan" : "Aktifkan"}
+                    >
+                      {source.isEnabled ? (
+                        <ToggleRight size={18} className="text-green-500" />
+                      ) : (
+                        <ToggleLeft size={18} className="text-gray-400" />
+                      )}
+                    </button>
+                    <button
+                      onClick={() => onEdit(source)}
+                      className="p-1.5 rounded-lg hover:bg-white transition-colors"
+                      title="Edit"
+                    >
+                      <Pencil size={14} className="text-gray-500" />
+                    </button>
+                  </>
+                )}
+                {canDelete && (
+                  deleteConfirmId === source.id ? (
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => onDelete(source.id)}
+                        className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 transition-colors"
+                        title="Konfirmasi hapus"
+                      >
+                        <Check size={14} className="text-red-600" />
+                      </button>
+                      <button
+                        onClick={() => setDeleteConfirmId(null)}
+                        className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+                        title="Batal"
+                      >
+                        <X size={14} className="text-gray-500" />
+                      </button>
+                    </div>
                   ) : (
-                    <ToggleLeft size={18} className="text-gray-400" />
-                  )}
-                </button>
-                <button
-                  onClick={() => onEdit(source)}
-                  className="p-1.5 rounded-lg hover:bg-white transition-colors"
-                  title="Edit"
-                >
-                  <Pencil size={14} className="text-gray-500" />
-                </button>
-                {deleteConfirmId === source.id ? (
-                  <div className="flex items-center gap-1">
                     <button
-                      onClick={() => onDelete(source.id)}
-                      className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 transition-colors"
-                      title="Konfirmasi hapus"
+                      onClick={() => setDeleteConfirmId(source.id)}
+                      className="p-1.5 rounded-lg hover:bg-red-50 transition-colors"
+                      title="Hapus"
                     >
-                      <Check size={14} className="text-red-600" />
+                      <Trash2
+                        size={14}
+                        className="text-gray-400 hover:text-red-500"
+                      />
                     </button>
-                    <button
-                      onClick={() => setDeleteConfirmId(null)}
-                      className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
-                      title="Batal"
-                    >
-                      <X size={14} className="text-gray-500" />
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => setDeleteConfirmId(source.id)}
-                    className="p-1.5 rounded-lg hover:bg-red-50 transition-colors"
-                    title="Hapus"
-                  >
-                    <Trash2
-                      size={14}
-                      className="text-gray-400 hover:text-red-500"
-                    />
-                  </button>
+                  )
                 )}
               </div>
             </div>
@@ -263,7 +279,11 @@ function GroupedSpreadsheetCard({
 // ─── Main Page ────────────────────────────────────────────────────────────
 
 export default function SpreadsheetSourcePage() {
+  const router = useRouter();
   const { hasPrivilege } = usePrivilege();
+  const { isLoading: isAuthLoading } = useAuth();
+  
+  const canRead = hasPrivilege("spreadsheet_source", "READ");
   const canCreate = hasPrivilege("spreadsheet_source", "CREATE");
   const canUpdate = hasPrivilege("spreadsheet_source", "UPDATE");
   const canDelete = hasPrivilege("spreadsheet_source", "DELETE");
@@ -429,6 +449,21 @@ export default function SpreadsheetSourcePage() {
     );
   };
 
+  // Redirect if unauthorized
+  useEffect(() => {
+    if (!isAuthLoading && !canRead) {
+      router.push("/landingpage");
+    }
+  }, [isAuthLoading, canRead, router]);
+
+  if (isAuthLoading || !canRead) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <Loader2 className="animate-spin text-secondary" size={32} />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen p-4 md:p-6 lg:p-8">
       {/* Notification */}
@@ -531,6 +566,9 @@ export default function SpreadsheetSourcePage() {
               onAddSheet={(id) => openCreateModal(id)}
               deleteConfirmId={deleteConfirmId}
               setDeleteConfirmId={setDeleteConfirmId}
+              canCreate={canCreate}
+              canUpdate={canUpdate}
+              canDelete={canDelete}
             />
           ))
         )}

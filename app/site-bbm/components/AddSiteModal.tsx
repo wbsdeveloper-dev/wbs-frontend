@@ -26,11 +26,11 @@ export function AddSiteModal({
   onSuccess,
   editingId,
 }: AddSiteModalProps) {
-  const { data: dropdowns, isLoading: isLoadingDropdowns } = useDropdowns();
-  const { data: jenisKits = [] } = useKertasKerjaMaster("master_jenis_kit");
-  const { data: upks = [] } = useKertasKerjaMaster("master_unit_pelaksana");
-  const { data: regions = [] } = useKertasKerjaMaster("master_region");
-  const { data: units = [] } = useKertasKerjaMaster("master_unit");
+  const { data: dropdowns, isLoading: isLoadingDropdowns } = useDropdowns({ enabled: open });
+  const { data: jenisKits = [] } = useKertasKerjaMaster("master_jenis_kit", undefined, { enabled: open });
+  const { data: upks = [] } = useKertasKerjaMaster("master_unit_pelaksana", undefined, { enabled: open });
+  const { data: regions = [] } = useKertasKerjaMaster("master_region", undefined, { enabled: open });
+  const { data: units = [] } = useKertasKerjaMaster("master_unit", undefined, { enabled: open });
   const createSiteMutation = useCreateSite({
     onSuccess: () => {
       onSuccess();

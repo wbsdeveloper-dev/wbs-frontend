@@ -43,6 +43,8 @@ interface CronScheduleSelectorProps {
   label?: string;
   /** Whether the field is optional */
   optional?: boolean;
+  /** Whether the inputs should be disabled */
+  disabled?: boolean;
   /** Additional class for the outer wrapper */
   className?: string;
 }
@@ -52,6 +54,7 @@ export default function CronScheduleSelector({
   onChange,
   label = "Cron Schedule",
   optional = true,
+  disabled = false,
   className = "",
 }: CronScheduleSelectorProps) {
   const [selectedPreset, setSelectedPreset] = useState<string>(() =>
@@ -113,7 +116,8 @@ export default function CronScheduleSelector({
         <select
           value={selectedPreset}
           onChange={handlePresetChange}
-          className="w-full pl-9 pr-10 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent appearance-none cursor-pointer transition-all duration-200"
+          disabled={disabled}
+          className="w-full pl-9 pr-10 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent appearance-none cursor-pointer transition-all duration-200 disabled:opacity-60 disabled:bg-gray-100 disabled:cursor-not-allowed"
         >
           {CRON_PRESETS.map((preset) => (
             <option key={preset.value} value={preset.value}>
@@ -134,7 +138,8 @@ export default function CronScheduleSelector({
             type="text"
             value={customValue}
             onChange={handleCustomChange}
-            className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm font-mono text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
+            disabled={disabled}
+            className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm font-mono text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200 disabled:opacity-60 disabled:bg-gray-100 disabled:cursor-not-allowed"
             placeholder="Contoh: 0 11,23 * * *"
           />
           <p className="text-xs text-gray-500">

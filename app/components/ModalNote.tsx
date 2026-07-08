@@ -9,6 +9,7 @@ import {
   type DashboardEvent,
 } from "@/hooks/service/dashboard-api";
 import { getAccessToken } from "@/lib/auth";
+import { usePrivilege } from "@/hooks/usePrivilege";
 
 type Props = {
   setOpenModal: (value: boolean) => void;
@@ -46,6 +47,11 @@ export default function ModalNote({
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+  const { hasPrivilege } = usePrivilege();
+  const canCreate = hasPrivilege("dashboard", "CREATE");
+  const canUpdate = hasPrivilege("dashboard", "UPDATE");
+  const canDelete = hasPrivilege("dashboard", "DELETE");
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -238,7 +244,7 @@ export default function ModalNote({
         className="absolute inset-0 bg-black/40"
         onClick={() => setOpenModal(false)}
       />
-      <div className="relative bg-white w-full max-w-5xl rounded-xl shadow-lg p-6 z-10">
+      <div className={`relative bg-white w-full ${canCreate ? "max-w-5xl" : "max-w-2xl"} rounded-xl shadow-lg p-6 z-10`}>
         <div className="text-right text-gray-900">
           <button
             onClick={() => setOpenModal(false)}
@@ -248,7 +254,7 @@ export default function ModalNote({
           </button>
         </div>
         <div>
-          <div className="grid grid-cols-2 text-gray-900 gap-8">
+          <div className={`grid ${canCreate ? "grid-cols-2" : "grid-cols-1"} text-gray-900 gap-8`}>
             <div>
               <div className="flex justify-between">
                 <h3 className="font-bold mb-2">Catatan {supplier}</h3>
@@ -327,33 +333,35 @@ export default function ModalNote({
                             )}
 
                             {/* Delete button / confirm */}
-                            {confirmDeleteId === n.id ? (
-                              <div className="flex items-center gap-2">
-                                <span className="text-red-500 text-xs">
-                                  Hapus catatan ini?
-                                </span>
+                            {canDelete && (
+                              confirmDeleteId === n.id ? (
+                                <div className="flex items-center gap-2">
+                                  <span className="text-red-500 text-xs">
+                                    Hapus catatan ini?
+                                  </span>
+                                  <button
+                                    onClick={() => handleDelete(n.id)}
+                                    disabled={deletingId === n.id}
+                                    className="text-xs font-medium text-white bg-red-500 hover:bg-red-600 px-2 py-0.5 rounded transition-colors disabled:opacity-50 cursor-pointer"
+                                  >
+                                    {deletingId === n.id ? "Menghapus..." : "Ya"}
+                                  </button>
+                                  <button
+                                    onClick={() => setConfirmDeleteId(null)}
+                                    className="text-xs font-medium text-gray-500 hover:text-gray-700 px-2 py-0.5 rounded border border-gray-300 hover:border-gray-400 transition-colors cursor-pointer"
+                                  >
+                                    Batal
+                                  </button>
+                                </div>
+                              ) : (
                                 <button
-                                  onClick={() => handleDelete(n.id)}
-                                  disabled={deletingId === n.id}
-                                  className="text-xs font-medium text-white bg-red-500 hover:bg-red-600 px-2 py-0.5 rounded transition-colors disabled:opacity-50 cursor-pointer"
+                                  onClick={() => setConfirmDeleteId(n.id)}
+                                  className="text-gray-400 hover:text-red-500 transition-colors cursor-pointer p-0.5 rounded hover:bg-red-50"
+                                  title="Hapus catatan"
                                 >
-                                  {deletingId === n.id ? "Menghapus..." : "Ya"}
+                                  <Trash2 size={14} />
                                 </button>
-                                <button
-                                  onClick={() => setConfirmDeleteId(null)}
-                                  className="text-xs font-medium text-gray-500 hover:text-gray-700 px-2 py-0.5 rounded border border-gray-300 hover:border-gray-400 transition-colors cursor-pointer"
-                                >
-                                  Batal
-                                </button>
-                              </div>
-                            ) : (
-                              <button
-                                onClick={() => setConfirmDeleteId(n.id)}
-                                className="text-gray-400 hover:text-red-500 transition-colors cursor-pointer p-0.5 rounded hover:bg-red-50"
-                                title="Hapus catatan"
-                              >
-                                <Trash2 size={14} />
-                              </button>
+                              )
                             )}
                           </div>
                         </div>
@@ -369,64 +377,67 @@ export default function ModalNote({
                 </div>
               )}
             </div>
-            <div>
-              <h3 className="font-bold mb-2">Tambah Catatan Baru</h3>
+            {canCreate && (
               <div>
-                <textarea
-                  id="message"
-                  rows={4}
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                  placeholder="Tulis catatan di sini..."
-                  className="
-                        w-full rounded-lg border border-gray-200
-                        px-4 py-2 text-sm
-                        focus:outline-none focus:ring-2 focus:ring-blue-200
-                        focus:border-blue-200
-                        resize-none
-                      "
-                />
-                <div className="flex justify-between items-center mt-3">
-                  <div className="flex items-center gap-2">
-                    <label className="flex items-center gap-1.5 px-3 py-2 border border-gray-200 hover:border-gray-300 rounded-lg text-xs font-semibold text-gray-700 bg-white hover:bg-gray-50 cursor-pointer transition-colors shadow-sm">
-                      <Paperclip size={14} className="text-gray-500" />
-                      <span>{selectedFile ? selectedFile.name : "Unggah Bukti"}</span>
-                      <input
-                        type="file"
-                        className="hidden"
-                        accept="application/pdf,image/*"
-                        onChange={handleFileChange}
-                      />
-                    </label>
-                    {selectedFile && (
+                <h3 className="font-bold mb-2">Tambah Catatan Baru</h3>
+                <div>
+                  <textarea
+                    id="message"
+                    rows={4}
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    placeholder="Tulis catatan di sini..."
+                    className="
+                          w-full rounded-lg border border-gray-200
+                          px-4 py-2 text-sm
+                          focus:outline-none focus:ring-2 focus:ring-blue-200
+                          focus:border-blue-200
+                          resize-none
+                        "
+                  />
+                  <div className="flex justify-between items-center mt-3">
+                    <div className="flex items-center gap-2">
+                      <label className="flex items-center gap-1.5 px-3 py-2 border border-gray-200 hover:border-gray-300 rounded-lg text-xs font-semibold text-gray-700 bg-white hover:bg-gray-50 cursor-pointer transition-colors shadow-sm">
+                        <Paperclip size={14} className="text-gray-500" />
+                        <span>{selectedFile ? selectedFile.name : "Unggah Bukti"}</span>
+                        <input
+                          type="file"
+                          className="hidden"
+                          accept="application/pdf,image/*"
+                          onChange={handleFileChange}
+                        />
+                      </label>
+                      {selectedFile && (
+                        <button
+                          onClick={() => setSelectedFile(null)}
+                          className="text-red-500 hover:text-red-700 text-xs font-semibold cursor-pointer"
+                        >
+                          Hapus
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex flex-col items-end gap-1">
                       <button
-                        onClick={() => setSelectedFile(null)}
-                        className="text-red-500 hover:text-red-700 text-xs font-semibold cursor-pointer"
+                        className={`w-[100px] font-medium py-2 rounded-lg transition-colors cursor-pointer text-white ${saving || !note.trim() || !canUpdate
+                          ? "bg-gray-300 cursor-not-allowed"
+                          : "bg-[#115d72] hover:bg-[#0d4a5c]"
+                          }`}
+                        onClick={handleSave}
+                        disabled={saving || !note.trim() || !canUpdate}
+                        title={!canUpdate ? "Anda tidak memiliki akses untuk menyimpan catatan" : ""}
                       >
-                        Hapus
+                        {saving ? "Menyimpan..." : "Simpan"}
                       </button>
-                    )}
-                  </div>
-                  <div className="flex flex-col items-end gap-1">
-                    <button
-                      className={`w-[100px] font-medium py-2 rounded-lg transition-colors cursor-pointer text-white ${saving || !note.trim()
-                        ? "bg-gray-300 cursor-not-allowed"
-                        : "bg-[#115d72] hover:bg-[#0d4a5c]"
-                        }`}
-                      onClick={handleSave}
-                      disabled={saving || !note.trim()}
-                    >
-                      {saving ? "Menyimpan..." : "Simpan"}
-                    </button>
-                    {savedSuccess && (
-                      <span className="text-green-600 text-xs font-medium animate-fade-in">
-                        ✓ Catatan berhasil disimpan
-                      </span>
-                    )}
+                      {savedSuccess && (
+                        <span className="text-green-600 text-xs font-medium animate-fade-in">
+                          ✓ Catatan berhasil disimpan
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>

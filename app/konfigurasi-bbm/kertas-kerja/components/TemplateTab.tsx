@@ -10,8 +10,13 @@ import {
 } from "@/hooks/service/kertas-kerja-api";
 import { useDropdowns } from "@/hooks/service/site-api";
 import { Autocomplete, TextField } from "@mui/material";
+import { usePrivilege } from "@/hooks/usePrivilege";
 
 export default function TemplateTab() {
+  const { hasPrivilege } = usePrivilege();
+  const canCreate = hasPrivilege("system_config", "CREATE");
+  const canUpdate = hasPrivilege("system_config", "UPDATE");
+  const canDelete = hasPrivilege("system_config", "DELETE");
   const { data = [], isLoading: isTemplatesLoading, error } = useKertasKerjaTemplates();
   const createMutation = useCreateKertasKerjaTemplate();
   const updateMutation = useUpdateKertasKerjaTemplate();
@@ -93,13 +98,15 @@ export default function TemplateTab() {
     <div className="space-y-4">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-medium text-gray-900">Template Kertas Kerja</h2>
-        <button
-          onClick={() => handleOpenModal()}
-          className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white text-sm font-medium rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
-        >
-          <Plus size={18} />
-          Tambah Template
-        </button>
+        {canCreate && (
+          <button
+            onClick={() => handleOpenModal()}
+            className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white text-sm font-medium rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
+          >
+            <Plus size={18} />
+            Tambah Template
+          </button>
+        )}
       </div>
 
       {isLoading ? (
@@ -149,12 +156,16 @@ export default function TemplateTab() {
                     </td>
                     <td className="px-4 py-3 text-center">
                       <div className="flex items-center justify-center gap-1">
-                        <button onClick={() => handleOpenModal(item)} className="p-1.5 text-primary hover:bg-primary/10 rounded-lg transition-colors" title="Edit">
-                          <Edit2 size={16} />
-                        </button>
-                        <button onClick={() => handleDelete(item.id)} className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Hapus">
-                          <Trash2 size={16} />
-                        </button>
+                        {canUpdate && (
+                          <button onClick={() => handleOpenModal(item)} className="p-1.5 text-primary hover:bg-primary/10 rounded-lg transition-colors" title="Edit">
+                            <Edit2 size={16} />
+                          </button>
+                        )}
+                        {canDelete && (
+                          <button onClick={() => handleDelete(item.id)} className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Hapus">
+                            <Trash2 size={16} />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

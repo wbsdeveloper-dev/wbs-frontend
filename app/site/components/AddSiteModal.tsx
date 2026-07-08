@@ -26,8 +26,8 @@ export function AddSiteModal({
   onSuccess,
   editingId,
 }: AddSiteModalProps) {
-  const { data: dropdowns, isLoading: isLoadingDropdowns } = useDropdowns();
-  const { data: regions = [], isLoading: isLoadingRegions } = useKertasKerjaMaster("master_region", "GAS PIPA,LNG");
+  const { data: dropdowns, isLoading: isLoadingDropdowns } = useDropdowns({ enabled: open });
+  const { data: regions = [], isLoading: isLoadingRegions } = useKertasKerjaMaster("master_region", "GAS PIPA,LNG", { enabled: open });
   
   const createSiteMutation = useCreateSite({
     onSuccess: () => {

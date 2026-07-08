@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, MapPin, ArrowRightLeft, Map } from "lucide-react";
 import {
   DaftarSiteTable,
@@ -13,6 +13,9 @@ const SiteMap = dynamic(() => import("./components/SiteMap"), { ssr: false });
 import { useQueryClient } from "@tanstack/react-query";
 import { siteKeys } from "@/hooks/service/site-api";
 import { usePrivilege } from "@/hooks/usePrivilege";
+import { useAuth } from "@/components/providers/auth-provider";
+import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
 
 const tabs = [
   { label: "Daftar TBBM & Pembangkit", icon: MapPin },
@@ -25,13 +28,25 @@ export default function SitePage() {
   const [addSiteModalOpen, setAddSiteModalOpen] = useState(false);
   const [addRelationModalOpen, setAddRelationModalOpen] = useState(false);
 
+  const router = useRouter();
   const { hasPrivilege } = usePrivilege();
+  const { isLoading: isAuthLoading } = useAuth();
+  
+  const canRead = hasPrivilege("site_management", "READ");
   const canCreate = hasPrivilege("site_management", "CREATE");
+  
   const [editingSiteId, setEditingSiteId] = useState<string | null>(null);
   const [editingRelationId, setEditingRelationId] = useState<string | null>(
     null,
   );
   const queryClient = useQueryClient();
+
+  // Redirect if unauthorized
+  useEffect(() => {
+    if (!isAuthLoading && !canRead) {
+      router.push("/landingpage");
+    }
+  }, [isAuthLoading, canRead, router]);
 
   const handleAddSiteSuccess = () => {
     queryClient.invalidateQueries({ queryKey: siteKeys.all });
@@ -60,6 +75,14 @@ export default function SitePage() {
     setEditingRelationId(id);
     setAddRelationModalOpen(true);
   };
+
+  if (isAuthLoading || !canRead) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <Loader2 className="animate-spin text-secondary" size={32} />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen p-4 md:p-6 lg:p-8">

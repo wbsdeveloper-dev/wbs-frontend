@@ -756,7 +756,7 @@ export default function EditDataTable({
                     <Th label="EMAIL" colSpan={2} />
                     <Th label="SHEET" colSpan={2} />
                     <Th label="ID" colSpan={2} />
-                    <Th label="Aksi" rowSpan={2} />
+                    {hasAction && <Th label="Aksi" rowSpan={2} />}
                   </tr>
                   <tr>
                     <Th label="MMSCFD" field="waValueMmscfd" />
@@ -780,7 +780,7 @@ export default function EditDataTable({
                   <Th label="MMSCFD" field="finalValueMmscfd" />
                   <Th label="BBTUD" field="finalValueBbtud" />
                   <Th label="Sumber Data" field="status" />
-                  <Th label="Aksi" />
+                  {hasAction && <Th label="Aksi" />}
                 </tr>
               )}
             </thead>

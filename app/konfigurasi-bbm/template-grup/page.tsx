@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Search,
   Plus,
@@ -42,6 +42,8 @@ import { usePrivilege } from "@/hooks/usePrivilege";
 import { useBotGroups } from "@/hooks/use-bot-groups";
 import { BOT_PRIMARY_API } from "@/hooks/service/bot-api";
 import type { GroupItem } from "@/hooks/service/bot-api";
+import { useAuth } from "@/components/providers/auth-provider";
+import { useRouter } from "next/navigation";
 
 // Wrapper component to fetch full details
 function TemplateEditorWrapper({
@@ -111,7 +113,11 @@ function TemplateEditorWrapper({
 export type { Template, TemplateField };
 
 export default function TemplateGrupPage() {
+  const router = useRouter();
   const { hasPrivilege } = usePrivilege();
+  const { isLoading: isAuthLoading } = useAuth();
+  
+  const canRead = hasPrivilege("template_group", "READ");
   const canCreate = hasPrivilege("template_group", "CREATE");
 
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(
@@ -389,6 +395,21 @@ export default function TemplateGrupPage() {
     name: g.name,
     isEnabled: g.isEnabled ?? g.is_enabled ?? true,
   }));
+
+  // Redirect if unauthorized
+  useEffect(() => {
+    if (!isAuthLoading && !canRead) {
+      router.push("/landingpage");
+    }
+  }, [isAuthLoading, canRead, router]);
+
+  if (isAuthLoading || !canRead) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <Loader2 className="animate-spin text-secondary" size={32} />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen p-4 md:p-6 lg:p-8">

@@ -25,8 +25,8 @@ export function AddRelationModal({
   onSuccess,
   editingId,
 }: AddRelationModalProps) {
-  const { data: dropdowns, isLoading: isLoadingDropdowns } = useDropdowns();
-  const { data: sites, isLoading: isLoadingSites } = useSites();
+  const { data: dropdowns, isLoading: isLoadingDropdowns } = useDropdowns({ enabled: open });
+  const { data: sites, isLoading: isLoadingSites } = useSites(undefined, { enabled: open });
   const createRelationMutation = useCreateRelation({
     onSuccess: () => {
       onSuccess();

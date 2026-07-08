@@ -16,9 +16,10 @@ import {
 
 interface KertasKerjaTableProps {
   selectedRegion: string;
+  canUpdate?: boolean;
 }
 
-export default function KertasKerjaTable({ selectedRegion }: KertasKerjaTableProps) {
+export default function KertasKerjaTable({ selectedRegion, canUpdate = true }: KertasKerjaTableProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [localRecords, setLocalRecords] = useState<Record<string, RecordKertasKerja>>({});
   const [dirtyRecords, setDirtyRecords] = useState<Record<string, Partial<RecordKertasKerja>>>({});
@@ -135,7 +136,7 @@ export default function KertasKerjaTable({ selectedRegion }: KertasKerjaTablePro
     defaultValue, 
     onBlur, 
     className = "", 
-    readOnly = false,
+    readOnly = !canUpdate,
     bgColorClass
   }: { 
     defaultValue: any, 
@@ -708,8 +709,8 @@ const handleExportExcel = () => {
           </button>
           <button
             onClick={handleSave}
-            disabled={upsertMutation.isPending || isLoading || !isDirty}
-            className="flex items-center gap-2 px-4 py-2 text-sm bg-white text-primary hover:bg-slate-50 rounded-md transition-colors shadow-sm disabled:opacity-70 font-bold"
+            disabled={upsertMutation.isPending || isLoading || !isDirty || !canUpdate}
+            className={`flex items-center gap-2 px-4 py-2 text-sm bg-white rounded-md transition-colors shadow-sm font-bold ${!canUpdate ? 'hidden' : 'text-primary hover:bg-slate-50 disabled:opacity-70'}`}
           >
             {upsertMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin text-primary" /> : <Save size={16} />}
             {upsertMutation.isPending ? "Menyimpan..." : isDirty ? "Simpan Perubahan*" : "Simpan Perubahan"}
@@ -1076,6 +1077,7 @@ const handleExportExcel = () => {
                               handleRecordChange(template.id, m, "master_pola_id", val);
                             });
                           }}
+                          disabled={!canUpdate}
                         >
                           <option value="">-</option>
                           {polaOperasiList.map((pola) => (

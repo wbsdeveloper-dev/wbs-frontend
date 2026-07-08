@@ -242,6 +242,11 @@ export function DaftarSiteTable({
   onDelete,
   commodity,
 }: SiteTableProps) {
+  const { hasPrivilege } = usePrivilege();
+  const canUpdate = hasPrivilege("site_management", "UPDATE");
+  const canDelete = hasPrivilege("site_management", "DELETE");
+  const hasAction = canUpdate || canDelete;
+
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(0);
@@ -377,9 +382,11 @@ export function DaftarSiteTable({
                 <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   Status
                 </th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Aksi
-                </th>
+                {hasAction && (
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Aksi
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -440,13 +447,15 @@ export function DaftarSiteTable({
                         isEnabled={site.is_enabled}
                       />
                     </td>
-                    <td className="px-4 py-3 text-center">
-                      <ActionButtons
-                        id={site.id}
-                        onEdit={handleEdit}
-                        onDelete={() => handleDeleteClick(site.id, site.name)}
-                      />
-                    </td>
+                    {hasAction && (
+                      <td className="px-4 py-3 text-center">
+                        <ActionButtons
+                          id={site.id}
+                          onEdit={handleEdit}
+                          onDelete={() => handleDeleteClick(site.id, site.name)}
+                        />
+                      </td>
+                    )}
                   </tr>
                 ))
               )}
@@ -510,6 +519,11 @@ export function RelasiOperasionalTable({
   onDelete,
   commodity,
 }: SiteTableProps) {
+  const { hasPrivilege } = usePrivilege();
+  const canUpdate = hasPrivilege("site_management", "UPDATE");
+  const canDelete = hasPrivilege("site_management", "DELETE");
+  const hasAction = canUpdate || canDelete;
+
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(0);
@@ -658,9 +672,11 @@ export function RelasiOperasionalTable({
                 <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   Status
                 </th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Aksi
-                </th>
+                {hasAction && (
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Aksi
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -708,18 +724,20 @@ export function RelasiOperasionalTable({
                         isEnabled={relation.status === "ACTIVE"}
                       />
                     </td>
-                    <td className="px-4 py-3 text-center">
-                      <ActionButtons
-                        id={relation.id}
-                        onEdit={handleEdit}
-                        onDelete={() =>
-                          handleDeleteClick(
-                            relation.id,
-                            relation.source_site_name,
-                          )
-                        }
-                      />
-                    </td>
+                    {hasAction && (
+                      <td className="px-4 py-3 text-center">
+                        <ActionButtons
+                          id={relation.id}
+                          onEdit={handleEdit}
+                          onDelete={() =>
+                            handleDeleteClick(
+                              relation.id,
+                              relation.source_site_name,
+                            )
+                          }
+                        />
+                      </td>
+                    )}
                   </tr>
                 ))
               )}
