@@ -7,6 +7,7 @@ import { UserTable } from "./components/UserTable";
 import { AddEditUserModal } from "./components/AddEditUserModal";
 import { ResetPasswordModal } from "./components/ResetPasswordModal";
 import { RoleTable } from "./components/RoleTable";
+import { AddRoleModal } from "./components/AddRoleModal";
 import { usePrivilege } from "@/hooks/usePrivilege";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useRouter } from "next/navigation";
@@ -36,6 +37,7 @@ export default function PenggunaPage() {
   const [resetModalOpen, setResetModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [resetUser, setResetUser] = useState<User | null>(null);
+  const [addRoleModalOpen, setAddRoleModalOpen] = useState(false);
 
   const handleAddUser = () => {
     setEditingUser(null);
@@ -104,6 +106,15 @@ export default function PenggunaPage() {
               Tambah Pengguna
             </button>
           )}
+          {activeTab === "roles" && hasPrivilege("users", "CREATE") && (
+            <button
+              onClick={() => setAddRoleModalOpen(true)}
+              className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white text-sm font-medium rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
+            >
+              <Plus size={18} />
+              Tambah Role
+            </button>
+          )}
         </div>
       </div>
 
@@ -158,6 +169,12 @@ export default function PenggunaPage() {
         open={resetModalOpen}
         onClose={() => setResetModalOpen(false)}
         user={resetUser}
+        onSuccess={() => {}}
+      />
+
+      <AddRoleModal
+        open={addRoleModalOpen}
+        onClose={() => setAddRoleModalOpen(false)}
         onSuccess={() => {}}
       />
 

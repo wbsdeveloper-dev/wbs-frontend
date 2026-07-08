@@ -36,7 +36,7 @@ export function usePrivilege() {
         const legacyResources = [
           "dashboard", "data_management", "site_management", "contracts", "users",
           "email_ingest", "template_group", "spreadsheet_source", "api_keys",
-          "system_config", "bot_management", "notification"
+          "system_config", "bot_management", "notification", "external"
         ];
         
         if (legacyResources.includes(resource as string)) {

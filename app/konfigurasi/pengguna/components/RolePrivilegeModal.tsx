@@ -73,7 +73,11 @@ export function RolePrivilegeModal({ open, onClose, role }: RolePrivilegeModalPr
   const handleToggleRow = (resourceKey: string) => {
     const resourceDef = resourcesData?.find(r => r.key === resourceKey);
     // If not found in API, assume all actions [CREATE, READ, UPDATE, DELETE]
-    const availableActions = resourceDef?.actions || ["CREATE", "READ", "UPDATE", "DELETE"];
+    let availableActions = resourceDef?.actions || ["CREATE", "READ", "UPDATE", "DELETE"];
+    
+    if (resourceKey === 'external_gas') {
+      availableActions = ["READ"];
+    }
     
     setPrivilegeMap((prev) => {
       const next = { ...prev };
@@ -130,6 +134,7 @@ export function RolePrivilegeModal({ open, onClose, role }: RolePrivilegeModalPr
     { key: 'api_keys_gas', label: 'API Keys' },
     { key: 'system_config_gas', label: 'Data Master' },
     { key: 'bot_management_gas', label: 'Manajemen Bot' },
+    { key: 'external_gas', label: 'Eksternal (Non EPI)' },
   ];
 
   const BBM_RESOURCES = [
@@ -222,7 +227,13 @@ export function RolePrivilegeModal({ open, onClose, role }: RolePrivilegeModalPr
                     const resourceKey = resDef.key;
                     // Usually we get available actions from API, but we know it's CRUD
                     const resourceFromApi = resourcesData?.find(r => r.key === resourceKey);
-                    const availableActions = resourceFromApi?.actions || allPossibleActions;
+                    let availableActions = resourceFromApi?.actions || allPossibleActions;
+                    
+                    // Khusus untuk Eksternal (Non EPI), hanya ada satu aksi (READ)
+                    if (resourceKey === 'external_gas') {
+                      availableActions = ["READ"];
+                    }
+                    
                     const isEven = i % 2 === 0;
                     const rowSet = privilegeMap[resourceKey] || new Set();
                     const isAllSelected = !!availableActions.length && rowSet.size === availableActions.length;
@@ -241,6 +252,10 @@ export function RolePrivilegeModal({ open, onClose, role }: RolePrivilegeModalPr
                           </label>
                         </td>
                         {allPossibleActions.map(action => {
+                          if (resourceKey === 'external_gas') {
+                            return <td key={action} className="px-4 py-3 border-r border-gray-200 text-center bg-gray-50/50" />;
+                          }
+
                           const isAvailable = availableActions.includes(action);
                           const isChecked = rowSet.has(action);
                           
