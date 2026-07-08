@@ -3,9 +3,23 @@
 import { useState, useRef, useEffect } from "react";
 import KertasKerjaTable from "@/app/components/KertasKerjaTable";
 import RingkasanTable from "@/app/components/RingkasanTable";
-import { ArrowLeft, FileText, PieChart, ChevronDown, Check, Search, Loader2 } from "lucide-react";
+import {
+  ArrowLeft,
+  FileText,
+  PieChart,
+  ChevronDown,
+  Check,
+  Search,
+  Loader2,
+  Upload,
+} from "lucide-react";
 import Link from "next/link";
-import { useKertasKerjaMaster } from "@/hooks/service/kertas-kerja-api";
+import BulkUploadKertasKerjaModal from "@/app/components/BulkUploadKertasKerjaModal";
+import {
+  useKertasKerjaMaster,
+  useKertasKerjaTemplates,
+  useKertasKerjaRecords,
+} from "@/hooks/service/kertas-kerja-api";
 import { usePrivilege } from "@/hooks/usePrivilege";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useRouter } from "next/navigation";
@@ -14,11 +28,14 @@ export default function KertasKerjaPage() {
   const [activeTab, setActiveTab] = useState("kertas-kerja");
   const [selectedRegion, setSelectedRegion] = useState("");
   const { data: regions = [] } = useKertasKerjaMaster("master_region");
+  const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const { data: templates = [] } = useKertasKerjaTemplates();
+  const { refetch: refetchRecords } = useKertasKerjaRecords();
 
   const router = useRouter();
   const { hasPrivilege } = usePrivilege();
   const { isLoading: isAuthLoading } = useAuth();
-  
+
   const canRead = hasPrivilege("kertas_kerja_bbm", "READ");
   const canUpdate = hasPrivilege("kertas_kerja_bbm", "UPDATE");
 
@@ -28,7 +45,10 @@ export default function KertasKerjaPage() {
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (regionRef.current && !regionRef.current.contains(event.target as Node)) {
+      if (
+        regionRef.current &&
+        !regionRef.current.contains(event.target as Node)
+      ) {
         setIsRegionDropdownOpen(false);
       }
     };
@@ -36,8 +56,8 @@ export default function KertasKerjaPage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const filteredRegions = regions.filter((r: any) => 
-    r.name.toLowerCase().includes(regionSearch.toLowerCase())
+  const filteredRegions = regions.filter((r: any) =>
+    r.name.toLowerCase().includes(regionSearch.toLowerCase()),
   );
 
   // Redirect if unauthorized
@@ -59,22 +79,35 @@ export default function KertasKerjaPage() {
     <div className="flex h-screen bg-gray-50 overflow-hidden">
       <main className="flex-1 flex flex-col h-full overflow-hidden">
         <div className="p-4 md:p-6 lg:p-8 flex flex-col h-full overflow-hidden">
-          <div className="mb-4 flex flex-col gap-2 shrink-0">
-            <Link 
-              href="/edit-bbm"
-              className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition-colors w-fit"
-            >
-              <ArrowLeft size={16} />
-              Kembali ke Manajemen Data
-            </Link>
-            
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-                Kertas Kerja BBM
-              </h1>
-              <p className="text-gray-600 mt-1 text-sm md:text-base">
-                Tabel rekapitulasi kertas kerja rakor BBM
-              </p>
+          <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shrink-0">
+            <div className="flex flex-col gap-2">
+              <Link
+                href="/edit-bbm"
+                className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition-colors w-fit"
+              >
+                <ArrowLeft size={16} />
+                Kembali ke Manajemen Data
+              </Link>
+
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+                  Kertas Kerja BBM
+                </h1>
+                <p className="text-gray-600 mt-1 text-sm md:text-base">
+                  Tabel rekapitulasi kertas kerja rakor BBM
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              {canUpdate && (
+                <button
+                  onClick={() => setIsUploadOpen(true)}
+                  className="px-4 py-2 bg-primary text-white rounded-lg flex items-center gap-2 text-sm font-medium hover:bg-secondary transition-colors cursor-pointer shadow-sm"
+                >
+                  <Upload size={16} /> Upload Kertas Kerja Rakor BBM
+                </button>
+              )}
             </div>
           </div>
 
@@ -83,23 +116,37 @@ export default function KertasKerjaPage() {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 border-b border-gray-100 pb-4 shrink-0">
               {/* Region Filter */}
               <div className="flex items-center gap-3 relative" ref={regionRef}>
-                <span className="text-sm font-medium text-gray-700 whitespace-nowrap">Filter Region:</span>
+                <span className="text-sm font-medium text-gray-700 whitespace-nowrap">
+                  Filter Region:
+                </span>
                 <div className="relative">
                   <button
-                    onClick={() => setIsRegionDropdownOpen(!isRegionDropdownOpen)}
+                    onClick={() =>
+                      setIsRegionDropdownOpen(!isRegionDropdownOpen)
+                    }
                     className="flex items-center justify-between pl-3 pr-2 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 min-w-[200px]"
                   >
-                    <span className={selectedRegion ? "text-gray-900" : "text-gray-500"}>
+                    <span
+                      className={
+                        selectedRegion ? "text-gray-900" : "text-gray-500"
+                      }
+                    >
                       {selectedRegion || "Semua Region"}
                     </span>
-                    <ChevronDown size={16} className={`text-gray-500 transition-transform ${isRegionDropdownOpen ? "rotate-180" : ""}`} />
+                    <ChevronDown
+                      size={16}
+                      className={`text-gray-500 transition-transform ${isRegionDropdownOpen ? "rotate-180" : ""}`}
+                    />
                   </button>
-                  
+
                   {isRegionDropdownOpen && (
                     <div className="absolute top-full left-0 mt-1 w-full min-w-[220px] bg-white rounded-lg shadow-lg border border-gray-100 z-50 overflow-hidden flex flex-col">
                       <div className="p-2 border-b border-gray-100 sticky top-0 bg-white">
                         <div className="relative">
-                          <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                          <Search
+                            size={14}
+                            className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400"
+                          />
                           <input
                             type="text"
                             placeholder="Cari region..."
@@ -175,11 +222,26 @@ export default function KertasKerjaPage() {
               </div>
             </div>
 
-            {activeTab === "kertas-kerja" && <KertasKerjaTable selectedRegion={selectedRegion} canUpdate={canUpdate} />}
-            {activeTab === "ringkasan" && <RingkasanTable selectedRegion={selectedRegion} />}
+            {activeTab === "kertas-kerja" && (
+              <KertasKerjaTable
+                selectedRegion={selectedRegion}
+                canUpdate={canUpdate}
+              />
+            )}
+            {activeTab === "ringkasan" && (
+              <RingkasanTable selectedRegion={selectedRegion} />
+            )}
           </div>
         </div>
       </main>
+
+      {isUploadOpen && (
+        <BulkUploadKertasKerjaModal
+          templates={templates}
+          setOpenModal={setIsUploadOpen}
+          onSuccess={() => refetchRecords()}
+        />
+      )}
     </div>
   );
 }

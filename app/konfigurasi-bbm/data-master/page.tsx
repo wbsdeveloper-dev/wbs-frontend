@@ -97,11 +97,11 @@ export default function KertasKerjaConfigPage() {
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id as TabType)}
                     className={`
-                    group relative min-w-0 flex-1 overflow-hidden bg-white py-4 px-4 text-center text-sm font-medium hover:bg-gray-50 focus:z-10
+                    group relative min-w-max shrink-0 bg-white py-4 px-4 text-center text-sm font-medium hover:bg-gray-50 focus:z-10
                     ${activeTab === tab.id ? "text-secondary border-b-2 border-secondary" : "text-gray-500 border-b-2 border-transparent hover:text-gray-700"}
                   `}
                   >
-                    <span className="flex items-center justify-center gap-2">
+                    <span className="flex items-center justify-center gap-2 whitespace-nowrap">
                       <Icon
                         className={`h-5 w-5 ${activeTab === tab.id ? "text-secondary" : "text-gray-400 group-hover:text-gray-500"}`}
                       />

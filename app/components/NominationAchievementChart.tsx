@@ -2,7 +2,13 @@
 
 import { useState, useEffect, useRef } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
-import { Calendar, ChevronDown, ChevronUp, Image as ImageIcon, FileText } from "lucide-react";
+import {
+  Calendar,
+  ChevronDown,
+  ChevronUp,
+  Image as ImageIcon,
+  FileText,
+} from "lucide-react";
 import * as htmlToImage from "html-to-image";
 import jsPDF from "jspdf";
 
@@ -42,8 +48,8 @@ export default function NominationAchievementChart({
   const handleExportImage = async () => {
     if (!chartRef.current) return;
     try {
-      const dataUrl = await htmlToImage.toPng(chartRef.current, { 
-        backgroundColor: "#ffffff", 
+      const dataUrl = await htmlToImage.toPng(chartRef.current, {
+        backgroundColor: "#ffffff",
         pixelRatio: 2,
         filter: filterExportButtons as any,
       });
@@ -59,19 +65,21 @@ export default function NominationAchievementChart({
   const handleExportPDF = async () => {
     if (!chartRef.current) return;
     try {
-      const canvas = await htmlToImage.toCanvas(chartRef.current, { 
-        backgroundColor: "#ffffff", 
+      const canvas = await htmlToImage.toCanvas(chartRef.current, {
+        backgroundColor: "#ffffff",
         pixelRatio: 2,
         filter: filterExportButtons as any,
       });
       const imgData = canvas.toDataURL("image/png");
-      
+
       const pdf = new jsPDF("p", "mm", "a4");
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      
+
       pdf.addImage(imgData, "PNG", 0, 10, pdfWidth, pdfHeight);
-      pdf.save(`pencapaian-nominasi-${new Date().toISOString().split("T")[0]}.pdf`);
+      pdf.save(
+        `pencapaian-nominasi-${new Date().toISOString().split("T")[0]}.pdf`,
+      );
     } catch (err) {
       console.error("Failed to export PDF", err);
     }
@@ -113,7 +121,10 @@ export default function NominationAchievementChart({
   };
 
   return (
-    <div ref={chartRef} className="bg-white rounded-2xl p-6 border border-gray-100 flex flex-col h-full shadow-sm">
+    <div
+      ref={chartRef}
+      className="bg-white rounded-2xl p-6 border border-gray-100 flex flex-col h-full shadow-sm"
+    >
       <div className="flex justify-between items-center relative z-20">
         <h3 className="text-lg font-semibold text-gray-900">
           Pencapaian Nominasi
@@ -139,10 +150,11 @@ export default function NominationAchievementChart({
             <div className="flex items-center gap-1">
               <button
                 onClick={() => setShowDateFilter(!showDateFilter)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer ${showDateFilter
-                  ? "bg-secondary/10 text-primary border border-secondary/30"
-                  : "text-gray-500 hover:bg-gray-100 border border-transparent"
-                  }`}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer ${
+                  showDateFilter
+                    ? "bg-secondary/10 text-primary border border-secondary/30"
+                    : "text-gray-500 hover:bg-gray-100 border border-transparent"
+                }`}
               >
                 <Calendar className="w-4 h-4" />
                 <span className="hidden sm:inline">Tanggal</span>
@@ -205,19 +217,21 @@ export default function NominationAchievementChart({
         <div className="inline-flex bg-gray-100 rounded-lg p-0.5 border border-transparent">
           <button
             onClick={() => setTab("Penyaluran")}
-            className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer ${tab === "Penyaluran"
-              ? "bg-secondary text-white shadow-sm"
-              : "text-gray-600 hover:text-gray-900"
-              }`}
+            className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer ${
+              tab === "Penyaluran"
+                ? "bg-primary text-white shadow-sm"
+                : "text-gray-600 hover:text-gray-900"
+            }`}
           >
             Penyaluran
           </button>
           <button
             onClick={() => setTab("Pemakaian")}
-            className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer ${tab === "Pemakaian"
-              ? "bg-secondary text-white shadow-sm"
-              : "text-gray-600 hover:text-gray-900"
-              }`}
+            className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer ${
+              tab === "Pemakaian"
+                ? "bg-secondary text-white shadow-sm"
+                : "text-gray-600 hover:text-gray-900"
+            }`}
           >
             Pemakaian
           </button>

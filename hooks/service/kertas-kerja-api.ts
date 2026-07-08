@@ -55,16 +55,26 @@ async function apiFetch<T>(
     throw new ApiError(res.status, msg);
   }
 
-  const body = (await res.json()) as ApiResponse<T>;
+  const text = await res.text();
+  if (!text) {
+    return { data: null as unknown as T };
+  }
 
-  if (!body.success) {
+  let body: ApiResponse<T>;
+  try {
+    body = JSON.parse(text) as ApiResponse<T>;
+  } catch (e) {
+    throw new ApiError(res.status, "Invalid JSON response");
+  }
+
+  if (body.success === false) {
     throw new ApiError(
       res.status,
       body.error || body.message || "Unknown API error",
     );
   }
 
-  return { data: body.data };
+  return { data: body.data !== undefined ? body.data : (null as unknown as T) };
 }
 
 async function apiFetchData<T>(
@@ -142,7 +152,8 @@ export interface RecordKertasKerja {
 export const kertasKerjaKeys = {
   all: ["kertasKerja"] as const,
   masters: () => [...kertasKerjaKeys.all, "master"] as const,
-  master: (table: string, comodityFilter?: string) => [...kertasKerjaKeys.masters(), table, comodityFilter] as const,
+  masterTable: (table: string) => [...kertasKerjaKeys.masters(), table] as const,
+  master: (table: string, comodityFilter?: string) => [...kertasKerjaKeys.masterTable(table), comodityFilter] as const,
   templates: () => [...kertasKerjaKeys.all, "templates"] as const,
   records: () => [...kertasKerjaKeys.all, "records"] as const,
 };
@@ -231,7 +242,7 @@ export function useCreateKertasKerjaMaster(
   return useMutation({
     mutationFn: (payload) => createMasterData(table, payload),
     onSuccess: (...args) => {
-      qc.invalidateQueries({ queryKey: kertasKerjaKeys.master(table) });
+      qc.invalidateQueries({ queryKey: kertasKerjaKeys.masterTable(table) });
       options?.onSuccess?.(...args);
     },
     ...options,
@@ -246,7 +257,7 @@ export function useUpdateKertasKerjaMaster(
   return useMutation({
     mutationFn: ({ id, payload }) => updateMasterData(table, id, payload),
     onSuccess: (...args) => {
-      qc.invalidateQueries({ queryKey: kertasKerjaKeys.master(table) });
+      qc.invalidateQueries({ queryKey: kertasKerjaKeys.masterTable(table) });
       options?.onSuccess?.(...args);
     },
     ...options,
@@ -261,7 +272,7 @@ export function useDeleteKertasKerjaMaster(
   return useMutation({
     mutationFn: (id: string) => deleteMasterData(table, id),
     onSuccess: (...args) => {
-      qc.invalidateQueries({ queryKey: kertasKerjaKeys.master(table) });
+      qc.invalidateQueries({ queryKey: kertasKerjaKeys.masterTable(table) });
       options?.onSuccess?.(...args);
     },
     ...options,

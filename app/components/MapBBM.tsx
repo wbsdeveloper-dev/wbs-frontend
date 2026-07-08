@@ -95,8 +95,8 @@ export default function Map() {
   const handleExportImage = async () => {
     if (!mapRef.current) return;
     try {
-      const dataUrl = await htmlToImage.toPng(mapRef.current, { 
-        backgroundColor: "#ffffff", 
+      const dataUrl = await htmlToImage.toPng(mapRef.current, {
+        backgroundColor: "#ffffff",
         pixelRatio: 2,
         filter: filterExportButtons as any,
       });
@@ -112,17 +112,17 @@ export default function Map() {
   const handleExportPDF = async () => {
     if (!mapRef.current) return;
     try {
-      const canvas = await htmlToImage.toCanvas(mapRef.current, { 
-        backgroundColor: "#ffffff", 
+      const canvas = await htmlToImage.toCanvas(mapRef.current, {
+        backgroundColor: "#ffffff",
         pixelRatio: 2,
         filter: filterExportButtons as any,
       });
       const imgData = canvas.toDataURL("image/png");
-      
+
       const pdf = new jsPDF("l", "mm", "a4");
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      
+
       pdf.addImage(imgData, "PNG", 0, 10, pdfWidth, pdfHeight);
       pdf.save(`peta-bbm-${new Date().toISOString().split("T")[0]}.pdf`);
     } catch (err) {
@@ -491,77 +491,79 @@ export default function Map() {
           </div>
 
           <div className="relative h-[250px] sm:h-[300px] md:h-[350px] lg:h-[400px] w-full">
-          <MapContainer
-            center={[-2.5, 118]}
-            zoom={5}
-            scrollWheelZoom={true}
-            className="h-full w-full rounded-lg z-0"
-          >
-            <TileLayer
-              attribution="&copy; OpenStreetMap contributors"
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
+            <MapContainer
+              center={[-2.5, 118]}
+              zoom={5}
+              scrollWheelZoom={true}
+              className="h-full w-full rounded-lg z-0"
+            >
+              <TileLayer
+                attribution="&copy; OpenStreetMap contributors"
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
 
-            {/* PIPES */}
-            {showPipes &&
-              filteredPipes.map((pipe) => {
-                const source = getSiteById(pipe.sourceSiteId);
-                const target = getSiteById(pipe.targetSiteId);
-                if (!source || !target) return null;
+              {/* PIPES */}
+              {showPipes &&
+                filteredPipes.map((pipe) => {
+                  const source = getSiteById(pipe.sourceSiteId);
+                  const target = getSiteById(pipe.targetSiteId);
+                  if (!source || !target) return null;
+
+                  return (
+                    <Polyline
+                      key={pipe.id}
+                      positions={[
+                        [Number(source.lat), Number(source.lng)] as LatLngTuple,
+                        [Number(target.lat), Number(target.lng)] as LatLngTuple,
+                      ]}
+                      pathOptions={{
+                        color: getPipeTypeColor(pipe.relationType),
+                        weight: 3,
+                        opacity: 0.8,
+                        dashArray: "1 5",
+                      }}
+                    >
+                      <Tooltip sticky>
+                        <div className="text-xs">
+                          <p className="font-medium">
+                            {source.name} → {target.name}
+                          </p>
+                          <p>Komoditas: {pipe.commodity}</p>
+                          <p>Status: {pipe.status}</p>
+                        </div>
+                      </Tooltip>
+                    </Polyline>
+                  );
+                })}
+
+              {/* SITE MARKERS */}
+              {filteredSites.map((site) => {
+                const icon = icons[site.siteType];
+                const summary = bbmSitesSummary?.find((s) => s.id === site.id);
+                const connected = getConnectedSites(site.id);
 
                 return (
-                  <Polyline
-                    key={pipe.id}
-                    positions={[
-                      [Number(source.lat), Number(source.lng)] as LatLngTuple,
-                      [Number(target.lat), Number(target.lng)] as LatLngTuple,
-                    ]}
-                    pathOptions={{
-                      color: getPipeTypeColor(pipe.relationType),
-                      weight: 3,
-                      opacity: 0.8,
-                      dashArray: "1 5",
-                    }}
+                  <Marker
+                    key={site.id}
+                    position={
+                      [Number(site.lat), Number(site.lng)] as LatLngTuple
+                    }
+                    icon={icon}
                   >
-                    <Tooltip sticky>
-                      <div className="text-xs">
-                        <p className="font-medium">
-                          {source.name} → {target.name}
+                    <Popup>
+                      <div className="min-w-[180px]">
+                        <p
+                          className="font-semibold text-sm"
+                          style={{ color: getSiteTypeColor(site.siteType) }}
+                        >
+                          {getSiteTypeLabel(site.siteType)}
                         </p>
-                        <p>Komoditas: {pipe.commodity}</p>
-                        <p>Status: {pipe.status}</p>
-                      </div>
-                    </Tooltip>
-                  </Polyline>
-                );
-              })}
-
-            {/* SITE MARKERS */}
-            {filteredSites.map((site) => {
-              const icon = icons[site.siteType];
-              const summary = bbmSitesSummary?.find((s) => s.id === site.id);
-              const connected = getConnectedSites(site.id);
-
-              return (
-                <Marker
-                  key={site.id}
-                  position={[Number(site.lat), Number(site.lng)] as LatLngTuple}
-                  icon={icon}
-                >
-                  <Popup>
-                    <div className="min-w-[180px]">
-                      <p
-                        className="font-semibold text-sm"
-                        style={{ color: getSiteTypeColor(site.siteType) }}
-                      >
-                        {getSiteTypeLabel(site.siteType)}
-                      </p>
-                      <p className="text-sm font-medium text-gray-800">
-                        {site.name}
-                      </p>
-                      <div className="mt-2 pt-2 border-t border-gray-200 space-y-1">
-                        {(site.siteType === "PEMASOK" ||
-                          site.siteType === "PEMBANGKIT") && (
+                        <p className="text-sm font-medium text-gray-800">
+                          {site.name}
+                        </p>
+                        <div className="mt-2 pt-2 border-t border-gray-200 space-y-1">
+                          {(site.siteType === "PEMASOK" ||
+                            site.siteType === "PEMBANGKIT") && (
                             <div className="flex justify-between text-xs">
                               <span className="text-gray-500">
                                 {site.siteType === "PEMASOK"
@@ -575,220 +577,233 @@ export default function Map() {
                               </span>
                             </div>
                           )}
-                        <div className="flex justify-between text-xs">
-                          <span className="text-gray-500">Region:</span>
-                          <span className="font-medium text-gray-700">
-                            {site.region}
-                          </span>
-                        </div>
-                        {site.siteType === "PEMBANGKIT" && site.capacity && (
                           <div className="flex justify-between text-xs">
-                            <span className="text-gray-500">Kapasitas:</span>
-                            <span className="font-medium text-primary">
-                              {parseFloat(site.capacity).toLocaleString()} MW
-                            </span>
-                          </div>
-                        )}
-                        {site.siteType === "PEMBANGKIT" && site.owner && (
-                          <div className="flex justify-between text-xs">
-                            <span className="text-gray-500">Kepemilikan:</span>
+                            <span className="text-gray-500">Region:</span>
                             <span className="font-medium text-gray-700">
-                              {site.owner}
+                              {site.region}
                             </span>
                           </div>
-                        )}
-                        <div className="flex justify-between text-xs">
-                          <span className="text-gray-500">Koordinat:</span>
-                          <span className="font-medium text-gray-700">
-                            {site.lat != null ? Number(site.lat).toFixed(4) : ""}, {site.lng != null ? Number(site.lng).toFixed(4) : ""}
-                          </span>
-                        </div>
-                      </div>
-
-                      {(() => {
-                        if (!summary) return null;
-
-                        return (
-                          <div className="mt-2 pt-2 border-t border-gray-200 space-y-1">
+                          {site.siteType === "PEMBANGKIT" && site.capacity && (
                             <div className="flex justify-between text-xs">
-                              <span className="text-gray-500">
-                                Total Nominasi:
-                              </span>
+                              <span className="text-gray-500">Kapasitas:</span>
                               <span className="font-medium text-primary">
-                                {summary.totalNominasi?.toLocaleString()} kL
+                                {parseFloat(site.capacity).toLocaleString()} MW
                               </span>
                             </div>
+                          )}
+                          {site.siteType === "PEMBANGKIT" && site.owner && (
                             <div className="flex justify-between text-xs">
                               <span className="text-gray-500">
-                                Total Penyaluran:
+                                Kepemilikan:
                               </span>
-                              <span className="font-medium text-emerald-600">
-                                {summary.totalRealisasi?.toLocaleString()} kL
-                              </span>
-                            </div>
-                            <div className="flex justify-between text-xs">
-                              <span className="text-gray-500">
-                                Total Pemakaian:
-                              </span>
-                              <span className="font-medium text-amber-600">
-                                {summary.totalPemakaian?.toLocaleString()} kL
+                              <span className="font-medium text-gray-700">
+                                {site.owner}
                               </span>
                             </div>
-
-                            {summary.pembangkitList &&
-                              summary.pembangkitList.length > 0 && (
-                                <button
-                                  onClick={() => {
-                                    setModalSiteList({
-                                      title: "Daftar Pembangkit",
-                                      list: summary.pembangkitList!,
-                                    });
-                                    setModalSearchQuery("");
-                                  }}
-                                  className="w-full mt-2 py-1.5 px-2 bg-primary/10 hover:bg-primary/20 text-primary rounded text-xs font-semibold transition-colors"
-                                >
-                                  Lihat Daftar Pembangkit
-                                </button>
-                              )}
-                            {summary.pemasokList &&
-                              summary.pemasokList.length > 0 && (
-                                <button
-                                  onClick={() => {
-                                    setModalSiteList({
-                                      title: "Daftar Pemasok",
-                                      list: summary.pemasokList!,
-                                    });
-                                    setModalSearchQuery("");
-                                  }}
-                                  className="w-full mt-2 py-1.5 px-2 bg-primary/10 hover:bg-primary/20 text-primary rounded text-xs font-semibold transition-colors"
-                                >
-                                  Lihat Daftar Pemasok
-                                </button>
-                              )}
+                          )}
+                          <div className="flex justify-between text-xs">
+                            <span className="text-gray-500">Koordinat:</span>
+                            <span className="font-medium text-gray-700">
+                              {site.lat != null
+                                ? Number(site.lat).toFixed(4)
+                                : ""}
+                              ,{" "}
+                              {site.lng != null
+                                ? Number(site.lng).toFixed(4)
+                                : ""}
+                            </span>
                           </div>
-                        );
-                      })()}
-                      {connected.length > 0 && (
-                        <div className="mt-2 pt-2 border-t border-gray-200">
-                          <p className="text-xs text-gray-500 mb-1">Relasi:</p>
-                          <ul className="text-xs text-gray-700 space-y-0.5">
-                            {connected.map((c) => (
-                              <li
-                                key={c.id}
-                                className="flex items-center gap-1"
-                              >
-                                <span
-                                  className="w-1.5 h-1.5 rounded-full"
-                                  style={{
-                                    backgroundColor: getSiteTypeColor(
-                                      c.siteType,
-                                    ),
-                                  }}
-                                />
-                                {c.name}
-                              </li>
-                            ))}
-                          </ul>
                         </div>
-                      )}
-                    </div>
-                  </Popup>
-                </Marker>
-              );
-            })}
-          </MapContainer>
 
-          {/* INTERACTIVE LEGEND - Collapsible */}
-          <div className="absolute bottom-2 left-2 sm:bottom-4 sm:left-4 z-1000">
-            {!legendExpanded ? (
-              <button
-                onClick={() => setLegendExpanded(true)}
-                className="flex items-center gap-2 bg-white/95 backdrop-blur rounded-lg shadow-lg px-3 py-2 text-xs hover:bg-white transition-all"
-              >
-                <Layers size={16} className="text-primary" />
-                <span className="text-gray-700 font-medium">Legend</span>
-                <ChevronUp size={14} className="text-gray-400" />
-              </button>
-            ) : (
-              <div className="bg-white/95 backdrop-blur rounded-lg shadow-lg px-3 py-2 sm:px-4 sm:py-3 text-xs space-y-2 min-w-[140px]">
-                {/* Header with collapse button */}
-                <div className="flex items-center justify-between border-b border-gray-200 pb-1.5 mb-1">
-                  <span className="text-gray-700 font-semibold text-xs">
-                    Keterangan Map
-                  </span>
-                  <button
-                    onClick={() => setLegendExpanded(false)}
-                    className="p-1 hover:bg-gray-100 rounded transition-colors"
-                  >
-                    <ChevronDown size={14} className="text-gray-500" />
-                  </button>
-                </div>
+                        {(() => {
+                          if (!summary) return null;
 
-                {/* Site type toggles — driven by legend */}
-                {customLegend?.siteTypes
-                  .filter(
-                    (st) => st.type === "PEMBANGKIT" || st.type === "PEMASOK",
-                  )
-                  .map((st) => {
-                    const isVisible = visibleSiteTypes[st.type] ?? true;
-                    return (
-                      <button
-                        key={st.type}
-                        onClick={() => toggleSiteType(st.type)}
-                        className={`flex items-center gap-2 w-full py-1 px-1.5 rounded-md transition-all ${isVisible ? `bg-opacity-10` : "bg-gray-100 opacity-60"
-                          }`}
-                        style={
-                          isVisible
-                            ? { backgroundColor: `${st.color}1A` }
-                            : undefined
-                        }
-                      >
-                        <span
-                          className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full`}
-                          style={{
-                            backgroundColor: st.color,
-                            boxShadow: isVisible
-                              ? `0 0 0 4px ${st.color}33`
-                              : "none",
-                          }}
-                        />
-                        <span className="text-gray-700 text-xs flex-1 text-left">
-                          {getSiteTypeLabel(st.type)}
-                        </span>
-                        {isVisible ? (
-                          <Eye size={14} style={{ color: st.color }} />
-                        ) : (
-                          <EyeOff size={14} className="text-gray-400" />
+                          return (
+                            <div className="mt-2 pt-2 border-t border-gray-200 space-y-1">
+                              <div className="flex justify-between text-xs">
+                                <span className="text-gray-500">
+                                  Total Nominasi:
+                                </span>
+                                <span className="font-medium text-primary">
+                                  {summary.totalNominasi?.toLocaleString()} kL
+                                </span>
+                              </div>
+                              <div className="flex justify-between text-xs">
+                                <span className="text-gray-500">
+                                  Total Penyaluran:
+                                </span>
+                                <span className="font-medium text-emerald-600">
+                                  {summary.totalRealisasi?.toLocaleString()} kL
+                                </span>
+                              </div>
+                              <div className="flex justify-between text-xs">
+                                <span className="text-gray-500">
+                                  Total Pemakaian:
+                                </span>
+                                <span className="font-medium text-amber-600">
+                                  {summary.totalPemakaian?.toLocaleString()} kL
+                                </span>
+                              </div>
+
+                              {summary.pembangkitList &&
+                                summary.pembangkitList.length > 0 && (
+                                  <button
+                                    onClick={() => {
+                                      setModalSiteList({
+                                        title: "Daftar Pembangkit",
+                                        list: summary.pembangkitList!,
+                                      });
+                                      setModalSearchQuery("");
+                                    }}
+                                    className="w-full mt-2 py-1.5 px-2 bg-primary/10 hover:bg-primary/20 text-primary rounded text-xs font-semibold transition-colors"
+                                  >
+                                    Lihat Daftar Pembangkit
+                                  </button>
+                                )}
+                              {summary.pemasokList &&
+                                summary.pemasokList.length > 0 && (
+                                  <button
+                                    onClick={() => {
+                                      setModalSiteList({
+                                        title: "Daftar Pemasok",
+                                        list: summary.pemasokList!,
+                                      });
+                                      setModalSearchQuery("");
+                                    }}
+                                    className="w-full mt-2 py-1.5 px-2 bg-primary/10 hover:bg-primary/20 text-primary rounded text-xs font-semibold transition-colors"
+                                  >
+                                    Lihat Daftar Pemasok
+                                  </button>
+                                )}
+                            </div>
+                          );
+                        })()}
+                        {connected.length > 0 && (
+                          <div className="mt-2 pt-2 border-t border-gray-200">
+                            <p className="text-xs text-gray-500 mb-1">
+                              Relasi:
+                            </p>
+                            <ul className="text-xs text-gray-700 space-y-0.5">
+                              {connected.map((c) => (
+                                <li
+                                  key={c.id}
+                                  className="flex items-center gap-1"
+                                >
+                                  <span
+                                    className="w-1.5 h-1.5 rounded-full"
+                                    style={{
+                                      backgroundColor: getSiteTypeColor(
+                                        c.siteType,
+                                      ),
+                                    }}
+                                  />
+                                  {c.name}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
                         )}
-                      </button>
-                    );
-                  })}
+                      </div>
+                    </Popup>
+                  </Marker>
+                );
+              })}
+            </MapContainer>
 
-                {/* Pipe type legend items */}
-                {customLegend?.pipeTypes &&
-                  customLegend.pipeTypes.length > 0 && (
-                    <div className="pt-1 border-t border-gray-200">
-                      <p className="text-[10px] text-gray-500 mb-1">
-                        Jenis Pipa
-                      </p>
-                      {customLegend.pipeTypes.map((pt) => (
-                        <div
-                          key={pt.type}
-                          className="flex items-center gap-1.5 text-xs text-gray-600 py-0.5"
+            {/* INTERACTIVE LEGEND - Collapsible */}
+            <div className="absolute bottom-2 left-2 sm:bottom-4 sm:left-4 z-1000">
+              {!legendExpanded ? (
+                <button
+                  onClick={() => setLegendExpanded(true)}
+                  className="flex items-center gap-2 bg-white/95 backdrop-blur rounded-lg shadow-lg px-3 py-2 text-xs hover:bg-white transition-all"
+                >
+                  <Layers size={16} className="text-primary" />
+                  <span className="text-gray-700 font-medium">Legend</span>
+                  <ChevronUp size={14} className="text-gray-400" />
+                </button>
+              ) : (
+                <div className="bg-white/95 backdrop-blur rounded-lg shadow-lg px-3 py-2 sm:px-4 sm:py-3 text-xs space-y-2 min-w-[140px]">
+                  {/* Header with collapse button */}
+                  <div className="flex items-center justify-between border-b border-gray-200 pb-1.5 mb-1">
+                    <span className="text-gray-700 font-semibold text-xs">
+                      Keterangan Map
+                    </span>
+                    <button
+                      onClick={() => setLegendExpanded(false)}
+                      className="p-1 hover:bg-gray-100 rounded transition-colors"
+                    >
+                      <ChevronDown size={14} className="text-gray-500" />
+                    </button>
+                  </div>
+
+                  {/* Site type toggles — driven by legend */}
+                  {customLegend?.siteTypes
+                    .filter(
+                      (st) => st.type === "PEMBANGKIT" || st.type === "PEMASOK",
+                    )
+                    .map((st) => {
+                      const isVisible = visibleSiteTypes[st.type] ?? true;
+                      return (
+                        <button
+                          key={st.type}
+                          onClick={() => toggleSiteType(st.type)}
+                          className={`flex items-center gap-2 w-full py-1 px-1.5 rounded-md transition-all ${
+                            isVisible
+                              ? `bg-opacity-10`
+                              : "bg-gray-100 opacity-60"
+                          }`}
+                          style={
+                            isVisible
+                              ? { backgroundColor: `${st.color}1A` }
+                              : undefined
+                          }
                         >
                           <span
-                            className="w-6 h-0.5"
-                            style={{ backgroundColor: pt.color }}
+                            className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full`}
+                            style={{
+                              backgroundColor: st.color,
+                              boxShadow: isVisible
+                                ? `0 0 0 4px ${st.color}33`
+                                : "none",
+                            }}
                           />
-                          {pt.label}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-              </div>
-            )}
+                          <span className="text-gray-700 text-xs flex-1 text-left">
+                            {getSiteTypeLabel(st.type)}
+                          </span>
+                          {isVisible ? (
+                            <Eye size={14} style={{ color: st.color }} />
+                          ) : (
+                            <EyeOff size={14} className="text-gray-400" />
+                          )}
+                        </button>
+                      );
+                    })}
+
+                  {/* Pipe type legend items */}
+                  {customLegend?.pipeTypes &&
+                    customLegend.pipeTypes.length > 0 && (
+                      <div className="pt-1 border-t border-gray-200">
+                        <p className="text-[10px] text-gray-500 mb-1">
+                          Jenis Pipa
+                        </p>
+                        {customLegend.pipeTypes.map((pt) => (
+                          <div
+                            key={pt.type}
+                            className="flex items-center gap-1.5 text-xs text-gray-600 py-0.5"
+                          >
+                            <span
+                              className="w-6 h-0.5"
+                              style={{ backgroundColor: pt.color }}
+                            />
+                            {pt.label}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
         </div>
       </div>
 
@@ -859,10 +874,11 @@ export default function Map() {
                 <div className="flex flex-wrap gap-1.5">
                   <button
                     onClick={() => setSelectedModes([])}
-                    className={`px-3 py-1 text-xs font-medium rounded-md transition-all duration-200 cursor-pointer ${selectedModes.length === 0
-                        ? "bg-secondary/90 text-white"
+                    className={`px-3 py-1 text-xs font-medium rounded-md transition-all duration-200 cursor-pointer ${
+                      selectedModes.length === 0
+                        ? "bg-primary text-white"
                         : "text-gray-600 hover:text-secondary hover:bg-gray-50"
-                      }`}
+                    }`}
                   >
                     All
                   </button>
@@ -876,10 +892,11 @@ export default function Map() {
                             : [...prev, mode],
                         );
                       }}
-                      className={`px-3 py-1 text-xs font-medium rounded-md transition-all duration-200 cursor-pointer ${selectedModes.includes(mode)
-                          ? "bg-secondary/90 text-white"
+                      className={`px-3 py-1 text-xs font-medium rounded-md transition-all duration-200 cursor-pointer ${
+                        selectedModes.includes(mode)
+                          ? "bg-primary text-white"
                           : "text-gray-600 hover:text-secondary hover:bg-gray-50"
-                        }`}
+                      }`}
                     >
                       {mode}
                     </button>
@@ -892,10 +909,11 @@ export default function Map() {
                 <div className="flex flex-wrap gap-1.5">
                   <button
                     onClick={() => setSelectedProducts([])}
-                    className={`px-3 py-1 text-xs font-medium rounded-md transition-all duration-200 cursor-pointer ${selectedProducts.length === 0
-                        ? "bg-secondary/90 text-white"
+                    className={`px-3 py-1 text-xs font-medium rounded-md transition-all duration-200 cursor-pointer ${
+                      selectedProducts.length === 0
+                        ? "bg-primary text-white"
                         : "text-gray-600 hover:text-secondary hover:bg-gray-50"
-                      }`}
+                    }`}
                   >
                     All
                   </button>
@@ -910,10 +928,11 @@ export default function Map() {
                               : [...prev, prod],
                           );
                         }}
-                        className={`px-3 py-1 text-xs font-medium rounded-md transition-all duration-200 cursor-pointer ${selectedProducts.includes(prod)
-                            ? "bg-secondary/90 text-white"
+                        className={`px-3 py-1 text-xs font-medium rounded-md transition-all duration-200 cursor-pointer ${
+                          selectedProducts.includes(prod)
+                            ? "bg-primary text-white"
                             : "text-gray-600 hover:text-secondary hover:bg-gray-50"
-                          }`}
+                        }`}
                       >
                         {prod}
                       </button>
@@ -952,10 +971,10 @@ export default function Map() {
 
               const filteredModalList = modalSearchQuery
                 ? modalSiteList.list.filter((site) =>
-                  site.name
-                    .toLowerCase()
-                    .includes(modalSearchQuery.toLowerCase()),
-                )
+                    site.name
+                      .toLowerCase()
+                      .includes(modalSearchQuery.toLowerCase()),
+                  )
                 : modalSiteList.list;
 
               let grandNom = 0;
@@ -1128,114 +1147,114 @@ export default function Map() {
                                 {/* Product Breakdown */}
                                 {(siteActiveProds.length > 0 ||
                                   siteActiveModas.length > 0) && (
-                                    <div className="p-3">
-                                      <p className="text-[10px] font-bold text-gray-400 mb-2 uppercase">
-                                        Produk & Moda Realisasi
-                                      </p>
-                                      <div className="flex flex-col gap-3">
-                                        {siteActiveProds.map((prod) => (
-                                          <div
-                                            key={prod}
-                                            className="flex flex-col gap-2"
-                                          >
-                                            <div className="flex items-center gap-4">
-                                              <span className="font-bold text-gray-800 text-sm w-8">
-                                                {prod}
-                                              </span>
-                                              <div className="flex items-center gap-4 text-xs">
-                                                <div className="flex flex-col items-center">
-                                                  <span className="text-[9px] font-bold text-gray-400 uppercase">
-                                                    Nom
-                                                  </span>
-                                                  <span className="font-medium text-gray-600">
-                                                    {(
-                                                      p[`totalNominasi${prod}`] ||
-                                                      0
-                                                    ).toLocaleString()}
-                                                  </span>
-                                                </div>
-                                                <div className="flex flex-col items-center">
-                                                  <span className="text-[9px] font-bold text-gray-400 uppercase">
-                                                    Real
-                                                  </span>
-                                                  <span className="font-bold text-emerald-600">
-                                                    {(
-                                                      p[
+                                  <div className="p-3">
+                                    <p className="text-[10px] font-bold text-gray-400 mb-2 uppercase">
+                                      Produk & Moda Realisasi
+                                    </p>
+                                    <div className="flex flex-col gap-3">
+                                      {siteActiveProds.map((prod) => (
+                                        <div
+                                          key={prod}
+                                          className="flex flex-col gap-2"
+                                        >
+                                          <div className="flex items-center gap-4">
+                                            <span className="font-bold text-gray-800 text-sm w-8">
+                                              {prod}
+                                            </span>
+                                            <div className="flex items-center gap-4 text-xs">
+                                              <div className="flex flex-col items-center">
+                                                <span className="text-[9px] font-bold text-gray-400 uppercase">
+                                                  Nom
+                                                </span>
+                                                <span className="font-medium text-gray-600">
+                                                  {(
+                                                    p[`totalNominasi${prod}`] ||
+                                                    0
+                                                  ).toLocaleString()}
+                                                </span>
+                                              </div>
+                                              <div className="flex flex-col items-center">
+                                                <span className="text-[9px] font-bold text-gray-400 uppercase">
+                                                  Real
+                                                </span>
+                                                <span className="font-bold text-emerald-600">
+                                                  {(
+                                                    p[
                                                       `totalRealisasi${prod}`
-                                                      ] || 0
-                                                    ).toLocaleString()}
-                                                  </span>
-                                                </div>
-                                                <div className="flex flex-col items-center">
-                                                  <span className="text-[9px] font-bold text-gray-400 uppercase">
-                                                    Pem
-                                                  </span>
-                                                  <span className="font-medium text-gray-600">
-                                                    {(
-                                                      p[
+                                                    ] || 0
+                                                  ).toLocaleString()}
+                                                </span>
+                                              </div>
+                                              <div className="flex flex-col items-center">
+                                                <span className="text-[9px] font-bold text-gray-400 uppercase">
+                                                  Pem
+                                                </span>
+                                                <span className="font-medium text-gray-600">
+                                                  {(
+                                                    p[
                                                       `totalPemakaian${prod}`
-                                                      ] || 0
-                                                    ).toLocaleString()}
-                                                  </span>
-                                                </div>
+                                                    ] || 0
+                                                  ).toLocaleString()}
+                                                </span>
                                               </div>
                                             </div>
-                                            {/* Moda specifically for this product */}
-                                            {(() => {
-                                              const productActiveModas =
-                                                MODES.filter(
-                                                  (moda) =>
-                                                    (p[
-                                                      `totalRealisasi${prod}_${moda}`
-                                                    ] || 0) > 0,
-                                                );
-
-                                              if (productActiveModas.length === 0)
-                                                return null;
-
-                                              return (
-                                                <div className="flex gap-2 flex-wrap ml-12">
-                                                  {productActiveModas.map(
-                                                    (moda) => (
-                                                      <div
-                                                        key={moda}
-                                                        className="flex items-center gap-1.5 bg-emerald-50 px-2 py-1 rounded-full border border-emerald-200 text-[10px]"
-                                                      >
-                                                        {moda
-                                                          .toLowerCase()
-                                                          .includes("kapal") ? (
-                                                          <Ship
-                                                            size={10}
-                                                            className="text-emerald-600"
-                                                          />
-                                                        ) : (
-                                                          <Truck
-                                                            size={10}
-                                                            className="text-emerald-600"
-                                                          />
-                                                        )}
-                                                        <span className="text-emerald-700 font-medium">
-                                                          {moda}
-                                                        </span>
-                                                        <span className="font-bold text-emerald-700">
-                                                          {(
-                                                            p[
-                                                            `totalRealisasi${prod}_${moda}`
-                                                            ] || 0
-                                                          ).toLocaleString()}{" "}
-                                                          kL
-                                                        </span>
-                                                      </div>
-                                                    ),
-                                                  )}
-                                                </div>
-                                              );
-                                            })()}
                                           </div>
-                                        ))}
-                                      </div>
+                                          {/* Moda specifically for this product */}
+                                          {(() => {
+                                            const productActiveModas =
+                                              MODES.filter(
+                                                (moda) =>
+                                                  (p[
+                                                    `totalRealisasi${prod}_${moda}`
+                                                  ] || 0) > 0,
+                                              );
+
+                                            if (productActiveModas.length === 0)
+                                              return null;
+
+                                            return (
+                                              <div className="flex gap-2 flex-wrap ml-12">
+                                                {productActiveModas.map(
+                                                  (moda) => (
+                                                    <div
+                                                      key={moda}
+                                                      className="flex items-center gap-1.5 bg-emerald-50 px-2 py-1 rounded-full border border-emerald-200 text-[10px]"
+                                                    >
+                                                      {moda
+                                                        .toLowerCase()
+                                                        .includes("kapal") ? (
+                                                        <Ship
+                                                          size={10}
+                                                          className="text-emerald-600"
+                                                        />
+                                                      ) : (
+                                                        <Truck
+                                                          size={10}
+                                                          className="text-emerald-600"
+                                                        />
+                                                      )}
+                                                      <span className="text-emerald-700 font-medium">
+                                                        {moda}
+                                                      </span>
+                                                      <span className="font-bold text-emerald-700">
+                                                        {(
+                                                          p[
+                                                            `totalRealisasi${prod}_${moda}`
+                                                          ] || 0
+                                                        ).toLocaleString()}{" "}
+                                                        kL
+                                                      </span>
+                                                    </div>
+                                                  ),
+                                                )}
+                                              </div>
+                                            );
+                                          })()}
+                                        </div>
+                                      ))}
                                     </div>
-                                  )}
+                                  </div>
+                                )}
                               </li>
                             );
                           })}
@@ -1333,44 +1352,44 @@ export default function Map() {
                                   {MODES.filter(
                                     (m) => prodModaSummary[prod][m] > 0,
                                   ).length > 0 && (
-                                      <div className="p-3 bg-emerald-50/50">
-                                        <div className="flex flex-col gap-2">
-                                          {MODES.filter(
-                                            (m) => prodModaSummary[prod][m] > 0,
-                                          ).map((moda) => (
-                                            <div
-                                              key={moda}
-                                              className="flex justify-between items-center"
-                                            >
-                                              <div className="flex items-center gap-1.5 text-xs">
-                                                {moda
-                                                  .toLowerCase()
-                                                  .includes("kapal") ? (
-                                                  <Ship
-                                                    size={12}
-                                                    className="text-emerald-500"
-                                                  />
-                                                ) : (
-                                                  <Truck
-                                                    size={12}
-                                                    className="text-emerald-500"
-                                                  />
-                                                )}
-                                                <span className="text-emerald-700 font-medium">
-                                                  {moda}
-                                                </span>
-                                              </div>
-                                              <span className="font-bold text-emerald-700 text-xs">
-                                                {prodModaSummary[prod][
-                                                  moda
-                                                ].toLocaleString()}{" "}
-                                                kL
+                                    <div className="p-3 bg-emerald-50/50">
+                                      <div className="flex flex-col gap-2">
+                                        {MODES.filter(
+                                          (m) => prodModaSummary[prod][m] > 0,
+                                        ).map((moda) => (
+                                          <div
+                                            key={moda}
+                                            className="flex justify-between items-center"
+                                          >
+                                            <div className="flex items-center gap-1.5 text-xs">
+                                              {moda
+                                                .toLowerCase()
+                                                .includes("kapal") ? (
+                                                <Ship
+                                                  size={12}
+                                                  className="text-emerald-500"
+                                                />
+                                              ) : (
+                                                <Truck
+                                                  size={12}
+                                                  className="text-emerald-500"
+                                                />
+                                              )}
+                                              <span className="text-emerald-700 font-medium">
+                                                {moda}
                                               </span>
                                             </div>
-                                          ))}
-                                        </div>
+                                            <span className="font-bold text-emerald-700 text-xs">
+                                              {prodModaSummary[prod][
+                                                moda
+                                              ].toLocaleString()}{" "}
+                                              kL
+                                            </span>
+                                          </div>
+                                        ))}
                                       </div>
-                                    )}
+                                    </div>
+                                  )}
                                   <div className="flex justify-between items-center p-3 border-t border-gray-100">
                                     <span className="text-gray-600 font-medium">
                                       Pemakaian
