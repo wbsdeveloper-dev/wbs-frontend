@@ -26,8 +26,8 @@ export function AddSiteModal({
   onSuccess,
   editingId,
 }: AddSiteModalProps) {
-  const { data: dropdowns, isLoading: isLoadingDropdowns } = useDropdowns();
-  const { data: regions = [], isLoading: isLoadingRegions } = useKertasKerjaMaster("master_region", "GAS PIPA,LNG");
+  const { data: dropdowns, isLoading: isLoadingDropdowns } = useDropdowns({ enabled: open });
+  const { data: regions = [], isLoading: isLoadingRegions } = useKertasKerjaMaster("master_region", "GAS PIPA,LNG", { enabled: open });
   
   const createSiteMutation = useCreateSite({
     onSuccess: () => {
@@ -446,7 +446,7 @@ export function AddSiteModal({
               Latitude
             </label>
             <input
-              type="number"
+              type="text"
               value={formData.lat ?? ""}
               onChange={(e) =>
                 setFormData({
@@ -454,7 +454,6 @@ export function AddSiteModal({
                   lat: e.target.value || undefined,
                 })
               }
-              step="any"
               placeholder="-6.123456"
               className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
             />
@@ -466,7 +465,7 @@ export function AddSiteModal({
               Longitude
             </label>
             <input
-              type="number"
+              type="text"
               value={formData.long ?? ""}
               onChange={(e) =>
                 setFormData({
@@ -474,7 +473,6 @@ export function AddSiteModal({
                   long: e.target.value || undefined,
                 })
               }
-              step="any"
               placeholder="106.123456"
               className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
             />

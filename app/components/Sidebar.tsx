@@ -86,24 +86,24 @@ export default function Sidebar() {
       title: "Beranda",
       path: "/dashboard/gas",
       icon: LayoutDashboard,
-      resource: "dashboard",
+      resource: "dashboard_gas",
     },
     {
       title: "Manajemen Data",
       path: "/edit",
       icon: FileText,
-      resource: "data_management",
+      resource: "data_input_gas",
       children: [
-        { title: "Data Input", path: "/edit", resource: "data_management" },
+        { title: "Data Input", path: "/edit", resource: "data_input_gas" },
         {
           title: "Data Transportir",
           path: "/edit/transportir",
-          resource: "data_management",
+          resource: "data_transportir_gas",
         },
         {
           title: "File Berita Acara",
           path: "/edit/ba-files",
-          resource: "data_management",
+          resource: "file_berita_acara_gas",
         },
       ],
     },
@@ -111,44 +111,48 @@ export default function Sidebar() {
       title: "Pemasok & Pembangkit",
       path: "/site",
       icon: MapPin,
-      resource: "site_management",
+      resource: "site_management_gas",
     },
     {
       title: "Kontrak & Dokumen",
       path: "/kontrak",
       icon: Briefcase,
-      resource: "contracts",
+      resource: "contracts_gas",
     },
     {
       title: "Konfigurasi Sistem",
       path: "/konfigurasi",
       icon: Database,
       children: [
-        { title: "Pengguna", path: "/konfigurasi/pengguna", resource: "users" },
+        {
+          title: "Pengguna",
+          path: "/konfigurasi/pengguna",
+          resource: "users_gas",
+        },
         {
           title: "Email Ingest",
           path: "/konfigurasi/email-ingest",
-          resource: "email_ingest",
+          resource: "email_ingest_gas",
         },
         {
           title: "Template Grup",
           path: "/konfigurasi/template-grup",
-          resource: "template_group",
+          resource: "template_group_gas",
         },
         {
           title: "Spreadsheet",
           path: "/konfigurasi/spreadsheet-source",
-          resource: "spreadsheet_source",
+          resource: "spreadsheet_source_gas",
         },
         {
           title: "API Keys",
           path: "/konfigurasi/bot/api-keys",
-          resource: "api_keys",
+          resource: "api_keys_gas",
         },
         {
           title: "Data Master",
           path: "/konfigurasi/kertas-kerja",
-          resource: "system_config",
+          resource: "system_config_gas",
         },
       ],
     },
@@ -156,7 +160,7 @@ export default function Sidebar() {
       title: "Manajemen Bot",
       path: "/whatsappbot",
       icon: Bot,
-      resource: "bot_management",
+      resource: "bot_management_gas",
     },
   ];
 
@@ -165,19 +169,21 @@ export default function Sidebar() {
       title: "Beranda",
       path: "/dashboard/bbm",
       icon: LayoutDashboard,
-      resource: "dashboard",
+      resource: "dashboard_bbm",
     },
     {
       title: "Manajemen Data",
       path: "/edit-bbm",
       icon: FileText,
-      resource: "data_management",
+      // Default to data_input_bbm to show parent.
+      // Individual children have explicit resources.
+      resource: "data_input_bbm",
       children: [
-        { title: "Data Input", path: "/edit-bbm", resource: "data_management" },
+        { title: "Data Input", path: "/edit-bbm", resource: "data_input_bbm" },
         {
           title: "Kertas Kerja",
           path: "/edit-bbm/kertas-kerja",
-          resource: "data_management",
+          resource: "kertas_kerja_bbm",
         },
       ],
     },
@@ -185,7 +191,7 @@ export default function Sidebar() {
       title: "TBBM & Pembangkit",
       path: "/site-bbm",
       icon: MapPin,
-      resource: "site_management",
+      resource: "site_management_bbm",
     },
     {
       title: "Konfigurasi Sistem",
@@ -195,17 +201,17 @@ export default function Sidebar() {
         {
           title: "Pengguna",
           path: "/konfigurasi-bbm/pengguna",
-          resource: "users",
+          resource: "users_bbm",
         },
         {
           title: "Template Grup",
           path: "/konfigurasi-bbm/template-grup",
-          resource: "template_group",
+          resource: "template_group_bbm",
         },
         {
           title: "Spreadsheet",
           path: "/konfigurasi-bbm/spreadsheet-source",
-          resource: "spreadsheet_source",
+          resource: "spreadsheet_source_bbm",
         },
         {
           title: "Data Master",
@@ -232,8 +238,10 @@ export default function Sidebar() {
       return menu;
     })
     .filter((menu) => {
+      if (menu.children) {
+        return menu.children.length > 0;
+      }
       if (menu.resource && !hasPrivilege(menu.resource, "READ")) return false;
-      if (menu.children && menu.children.length === 0) return false;
       return true;
     });
 

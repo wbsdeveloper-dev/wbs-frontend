@@ -144,6 +144,7 @@ export function UserTable({
   const { hasPrivilege } = usePrivilege();
   const canUpdate = hasPrivilege("users", "UPDATE");
   const canDelete = hasPrivilege("users", "DELETE");
+  const hasAction = canUpdate || canDelete;
 
   const activeFilterCount = [filters.search, filters.status].filter(
     Boolean,
@@ -337,9 +338,11 @@ export function UserTable({
                 <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   Status
                 </th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Aksi
-                </th>
+                {hasAction && (
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Aksi
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -407,37 +410,39 @@ export function UserTable({
                       <td className="px-4 py-3 text-center">
                         <StatusBadge status={user.status} />
                       </td>
-                      <td className="px-4 py-3 text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          {canUpdate && (
-                            <>
+                      {hasAction && (
+                        <td className="px-4 py-3 text-center">
+                          <div className="flex items-center justify-center gap-1">
+                            {canUpdate && (
+                              <>
+                                <button
+                                  onClick={() => onResetPassword(user)}
+                                  className="p-1.5 text-amber-500 hover:bg-amber-50 rounded-lg transition-colors"
+                                  title="Reset Password"
+                                >
+                                  <KeyRound size={16} />
+                                </button>
+                                <button
+                                  onClick={() => onEdit(user)}
+                                  className="p-1.5 text-primary hover:bg-primary/10 rounded-lg transition-colors"
+                                  title="Edit"
+                                >
+                                  <Pencil size={16} />
+                                </button>
+                              </>
+                            )}
+                            {canDelete && (
                               <button
-                                onClick={() => onResetPassword(user)}
-                                className="p-1.5 text-amber-500 hover:bg-amber-50 rounded-lg transition-colors"
-                                title="Reset Password"
+                                onClick={() => handleDeleteClick(user)}
+                                className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                title="Hapus"
                               >
-                                <KeyRound size={16} />
+                                <Trash2 size={16} />
                               </button>
-                              <button
-                                onClick={() => onEdit(user)}
-                                className="p-1.5 text-primary hover:bg-primary/10 rounded-lg transition-colors"
-                                title="Edit"
-                              >
-                                <Pencil size={16} />
-                              </button>
-                            </>
-                          )}
-                          {canDelete && (
-                            <button
-                              onClick={() => handleDeleteClick(user)}
-                              className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                              title="Hapus"
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          )}
-                        </div>
-                      </td>
+                            )}
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   );
                 })

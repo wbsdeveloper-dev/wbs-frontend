@@ -7,6 +7,7 @@ import {
   useUpdateKertasKerjaMaster, 
   useDeleteKertasKerjaMaster 
 } from "@/hooks/service/kertas-kerja-api";
+import { usePrivilege } from "@/hooks/usePrivilege";
 
 interface MasterGenericTabProps {
   table: string;
@@ -15,6 +16,11 @@ interface MasterGenericTabProps {
 }
 
 export default function MasterGenericTab({ table, title, comodityFilter }: MasterGenericTabProps) {
+  const { hasPrivilege } = usePrivilege();
+  const canCreate = hasPrivilege("system_config", "CREATE");
+  const canUpdate = hasPrivilege("system_config", "UPDATE");
+  const canDelete = hasPrivilege("system_config", "DELETE");
+
   const { data = [], isLoading, error } = useKertasKerjaMaster(table, comodityFilter);
   const createMutation = useCreateKertasKerjaMaster(table);
   const updateMutation = useUpdateKertasKerjaMaster(table);
@@ -69,13 +75,15 @@ export default function MasterGenericTab({ table, title, comodityFilter }: Maste
     <div className="space-y-4">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-medium text-gray-900">{title}</h2>
-        <button
-          onClick={() => handleOpenModal()}
-          className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white text-sm font-medium rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
-        >
-          <Plus size={18} />
-          Tambah Data
-        </button>
+        {canCreate && (
+          <button
+            onClick={() => handleOpenModal()}
+            className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white text-sm font-medium rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
+          >
+            <Plus size={18} />
+            Tambah Data
+          </button>
+        )}
       </div>
 
       {isLoading ? (
@@ -97,7 +105,9 @@ export default function MasterGenericTab({ table, title, comodityFilter }: Maste
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Nama</th>
                   {hasComodity && <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Komoditas</th>}
                   <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Dibuat Pada</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Aksi</th>
+                  {(canUpdate || canDelete) && (
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Aksi</th>
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 bg-white">
@@ -109,16 +119,22 @@ export default function MasterGenericTab({ table, title, comodityFilter }: Maste
                     <td className="px-4 py-3 text-center text-gray-500 text-xs">
                       {new Date(item.created_at).toLocaleDateString("id-ID")}
                     </td>
-                    <td className="px-4 py-3 text-center">
-                      <div className="flex items-center justify-center gap-1">
-                        <button onClick={() => handleOpenModal(item)} className="p-1.5 text-primary hover:bg-primary/10 rounded-lg transition-colors" title="Edit">
-                          <Edit2 size={16} />
-                        </button>
-                        <button onClick={() => handleDelete(item.id)} className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Hapus">
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </td>
+                    {(canUpdate || canDelete) && (
+                      <td className="px-4 py-3 text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          {canUpdate && (
+                            <button onClick={() => handleOpenModal(item)} className="p-1.5 text-primary hover:bg-primary/10 rounded-lg transition-colors" title="Edit">
+                              <Edit2 size={16} />
+                            </button>
+                          )}
+                          {canDelete && (
+                            <button onClick={() => handleDelete(item.id)} className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Hapus">
+                              <Trash2 size={16} />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 ))}
                 {data.length === 0 && (

@@ -6,16 +6,40 @@ import MasterGenericTab from "@/app/konfigurasi-bbm/data-master/components/Maste
 import {
   Database,
   MapPin,
+  Loader2
 } from "lucide-react";
+import { usePrivilege } from "@/hooks/usePrivilege";
+import { useAuth } from "@/components/providers/auth-provider";
+import { useRouter } from "next/navigation";
 
 type TabType = "region";
 
 export default function KertasKerjaConfigGasPage() {
+  const router = useRouter();
+  const { hasPrivilege } = usePrivilege();
+  const { isLoading: isAuthLoading } = useAuth();
+  
+  const canRead = hasPrivilege("system_config", "READ");
   const [activeTab, setActiveTab] = useState<TabType>("region");
 
   const tabs = [
     { id: "region", label: "Region", icon: MapPin },
   ];
+
+  // Redirect if unauthorized
+  React.useEffect(() => {
+    if (!isAuthLoading && !canRead) {
+      router.push("/landingpage");
+    }
+  }, [isAuthLoading, canRead, router]);
+
+  if (isAuthLoading || !canRead) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <Loader2 className="animate-spin text-secondary" size={32} />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen p-4 md:p-6 lg:p-8">

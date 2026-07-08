@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Search,
   Plus,
@@ -38,12 +38,18 @@ import {
   type UpdateEmailSourcePayload,
 } from "@/hooks/service/config-api";
 import { usePrivilege } from "@/hooks/usePrivilege";
+import { useAuth } from "@/components/providers/auth-provider";
+import { useRouter } from "next/navigation";
 
 // Re-export for child components
 export type { EmailSource };
 
 export default function EmailIngestPage() {
+  const router = useRouter();
   const { hasPrivilege } = usePrivilege();
+  const { isLoading: isAuthLoading } = useAuth();
+
+  const canRead = hasPrivilege("email_ingest", "READ");
   const canCreate = hasPrivilege("email_ingest", "CREATE");
   const canUpdate = hasPrivilege("email_ingest", "UPDATE");
 
@@ -309,6 +315,21 @@ export default function EmailIngestPage() {
       },
     });
   };
+
+  // Redirect if unauthorized
+  useEffect(() => {
+    if (!isAuthLoading && !canRead) {
+      router.push("/landingpage");
+    }
+  }, [isAuthLoading, canRead, router]);
+
+  if (isAuthLoading || !canRead) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <Loader2 className="animate-spin text-secondary" size={32} />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen p-4 md:p-6 lg:p-8">

@@ -1,8 +1,34 @@
 "use client";
 
+import { useEffect } from "react";
 import ContractTable from "../components/ContractTable";
+import { useAuth } from "@/components/providers/auth-provider";
+import { usePrivilege } from "@/hooks/usePrivilege";
+import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
 
 export default function KontrakPage() {
+  const router = useRouter();
+  const { hasPrivilege } = usePrivilege();
+  const { isLoading: isAuthLoading } = useAuth();
+  
+  const canRead = hasPrivilege("contracts", "READ");
+
+  // Redirect if unauthorized
+  useEffect(() => {
+    if (!isAuthLoading && !canRead) {
+      router.push("/landingpage");
+    }
+  }, [isAuthLoading, canRead, router]);
+
+  if (isAuthLoading || !canRead) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <Loader2 className="animate-spin text-secondary" size={32} />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen p-4 md:p-6 lg:p-8">
       {/* Breadcrumb */}

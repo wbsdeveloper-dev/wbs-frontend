@@ -321,7 +321,7 @@ export function getSites(filters?: {
     region: filters?.region,
     search: filters?.search,
   };
-  
+
   if (filters?.commodity) {
     if (Array.isArray(filters.commodity)) {
       queryParams.commodity = filters.commodity.join(',');

@@ -9,8 +9,13 @@ import {
   useDeleteCtmsMapping 
 } from "@/hooks/service/ctms-mapping-api";
 import { useDropdowns } from "@/hooks/service/site-api";
+import { usePrivilege } from "@/hooks/usePrivilege";
 
 export default function CtmsMappingTab() {
+  const { hasPrivilege } = usePrivilege();
+  const canCreate = hasPrivilege("system_config", "CREATE");
+  const canUpdate = hasPrivilege("system_config", "UPDATE");
+  const canDelete = hasPrivilege("system_config", "DELETE");
   const { data = [], isLoading, error } = useCtmsMappings();
   const { data: dropdowns, isLoading: isLoadingDropdowns } = useDropdowns();
   
@@ -69,13 +74,15 @@ export default function CtmsMappingTab() {
     <div className="space-y-4">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-medium text-gray-900">Mapping CTMS</h2>
-        <button
-          onClick={() => handleOpenModal()}
-          className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white text-sm font-medium rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
-        >
-          <Plus size={18} />
-          Tambah Mapping
-        </button>
+        {canCreate && (
+          <button
+            onClick={() => handleOpenModal()}
+            className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white text-sm font-medium rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
+          >
+            <Plus size={18} />
+            Tambah Mapping
+          </button>
+        )}
       </div>
 
       {isLoading ? (
@@ -113,13 +120,15 @@ export default function CtmsMappingTab() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-center gap-2">
-                        <button
-                          onClick={() => handleDelete(item.id)}
-                          className="p-1.5 text-red-500 hover:bg-red-50 hover:text-red-600 rounded-md transition-colors"
-                          title="Hapus"
-                        >
-                          <Trash2 size={16} />
-                        </button>
+                        {canDelete && (
+                          <button
+                            onClick={() => handleDelete(item.id)}
+                            className="p-1.5 text-red-500 hover:bg-red-50 hover:text-red-600 rounded-md transition-colors"
+                            title="Hapus"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

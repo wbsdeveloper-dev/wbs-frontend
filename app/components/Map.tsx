@@ -455,8 +455,8 @@ export default function Map({ commodity }: { commodity?: string }) {
                   <Polyline
                     key={pipe.id}
                     positions={[
-                      [parseFloat(source.lat as string || "0"), parseFloat(source.lng as string || "0")] as LatLngTuple,
-                      [parseFloat(target.lat as string || "0"), parseFloat(target.lng as string || "0")] as LatLngTuple,
+                      [Number(source.lat), Number(source.lng)] as LatLngTuple,
+                      [Number(target.lat), Number(target.lng)] as LatLngTuple,
                     ]}
                     pathOptions={{
                       color: getPipeTypeColor(pipe.relationType),
@@ -485,7 +485,7 @@ export default function Map({ commodity }: { commodity?: string }) {
               return (
                 <Marker
                   key={site.id}
-                  position={[parseFloat(site.lat as string || "0"), parseFloat(site.lng as string || "0")] as LatLngTuple}
+                  position={[Number(site.lat), Number(site.lng)] as LatLngTuple}
                   icon={icon}
                 >
                   <Popup>
@@ -525,7 +525,7 @@ export default function Map({ commodity }: { commodity?: string }) {
                         <div className="flex justify-between text-xs">
                           <span className="text-gray-500">Koordinat:</span>
                           <span className="font-medium text-gray-700">
-                            {site.lat ? parseFloat(site.lat).toFixed(4) : "-"}, {site.lng ? parseFloat(site.lng).toFixed(4) : "-"}
+                            {site.lat != null ? Number(site.lat).toFixed(4) : ""}, {site.lng != null ? Number(site.lng).toFixed(4) : ""}
                           </span>
                         </div>
                       </div>

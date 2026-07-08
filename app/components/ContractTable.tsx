@@ -1592,7 +1592,7 @@ export default function ContractTable() {
                             </button>
                         </div>
                     ) : (
-                        canUpdate && (
+                        (canUpdate || canCreate) && (
                             <button
                                 onClick={() => setIsEditMode(true)}
                                 className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
@@ -1672,6 +1672,10 @@ export default function ContractTable() {
                                             processRowUpdate={processRowUpdate}
                                             isCellEditable={(params) => {
                                                 if (!isEditMode) return false;
+                                                
+                                                // If user only has CREATE privilege, they can only edit newly created rows
+                                                if (!canUpdate && !params.row._isNew) return false;
+
                                                 const field = params.field;
                                                 // Match dynamic year-based fields: volume{year}JPH, volume{year}TOP, volume{year}PercentTOP, jumlahKontrakTahunan{year}, volumeKepmen{year}
                                                 const yearMatch = field.match(/^(?:volume(\d{4})(?:JPH|TOP|PercentTOP)|jumlahKontrakTahunan(\d{4})|volumeKepmen(\d{4}))$/);
@@ -1929,17 +1933,19 @@ export default function ContractTable() {
                                                 >
                                                     <Download size={16} />
                                                 </IconButton>
-                                                <IconButton
-                                                    size="small"
-                                                    sx={{ color: "#ef4444", "&:hover": { color: "#dc2626", backgroundColor: "#fef2f2" } }}
-                                                    title="Hapus Dokumen"
-                                                    onClick={() => {
-                                                        setDocToDelete({ contractId: row._contractId, documentId: doc.id });
-                                                        setDocDeleteConfirmOpen(true);
-                                                    }}
-                                                >
-                                                    <Trash2 size={16} />
-                                                </IconButton>
+                                                {canDelete && (
+                                                    <IconButton
+                                                        size="small"
+                                                        sx={{ color: "#ef4444", "&:hover": { color: "#dc2626", backgroundColor: "#fef2f2" } }}
+                                                        title="Hapus Dokumen"
+                                                        onClick={() => {
+                                                            setDocToDelete({ contractId: row._contractId, documentId: doc.id });
+                                                            setDocDeleteConfirmOpen(true);
+                                                        }}
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </IconButton>
+                                                )}
                                             </div>
                                         </div>
                                     ) : (
@@ -1954,40 +1960,42 @@ export default function ContractTable() {
                                 <Divider />
 
                                 {/* Upload Section */}
-                                <div>
-                                    <Typography variant="subtitle2" sx={{ fontWeight: 600, color: "#374151", mb: 2 }}>
-                                        {doc ? "Unggah Dokumen Baru" : "Unggah Dokumen"}
-                                    </Typography>
-                                    <Button
-                                        variant="outlined"
-                                        fullWidth
-                                        startIcon={isUploadingThis ? <CircularProgress size={16} /> : <Upload size={16} />}
-                                        onClick={() => {
-                                            if (documentModalRowId) {
-                                                handleUploadClick(documentModalRowId);
-                                            }
-                                        }}
-                                        disabled={isUploadingThis}
-                                        sx={{
-                                            textTransform: "none",
-                                            fontWeight: 500,
-                                            borderRadius: "8px",
-                                            color: "var(--theme-primary)",
-                                            borderColor: "var(--theme-primary)",
-                                            "&:hover": {
-                                                borderColor: "#0d4a5c",
-                                                backgroundColor: "#f8fafc"
-                                            }
-                                        }}
-                                    >
-                                        {isUploadingThis
-                                            ? (selectedFileName ? `Mengunggah ${selectedFileName}...` : "Mengunggah...")
-                                            : (selectedFileName ? selectedFileName : "Pilih File")}
-                                    </Button>
-                                    <Typography variant="caption" sx={{ display: 'block', mt: 1, color: "#6b7280", textAlign: 'center' }}>
-                                        Format yang didukung: PDF. Ukuran maksimal: 10MB.
-                                    </Typography>
-                                </div>
+                                {canUpdate && (
+                                    <div>
+                                        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: "#374151", mb: 2 }}>
+                                            {doc ? "Unggah Dokumen Baru" : "Unggah Dokumen"}
+                                        </Typography>
+                                        <Button
+                                            variant="outlined"
+                                            fullWidth
+                                            startIcon={isUploadingThis ? <CircularProgress size={16} /> : <Upload size={16} />}
+                                            onClick={() => {
+                                                if (documentModalRowId) {
+                                                    handleUploadClick(documentModalRowId);
+                                                }
+                                            }}
+                                            disabled={isUploadingThis}
+                                            sx={{
+                                                textTransform: "none",
+                                                fontWeight: 500,
+                                                borderRadius: "8px",
+                                                color: "var(--theme-primary)",
+                                                borderColor: "var(--theme-primary)",
+                                                "&:hover": {
+                                                    borderColor: "#0d4a5c",
+                                                    backgroundColor: "#f8fafc"
+                                                }
+                                            }}
+                                        >
+                                            {isUploadingThis
+                                                ? (selectedFileName ? `Mengunggah ${selectedFileName}...` : "Mengunggah...")
+                                                : (selectedFileName ? selectedFileName : "Pilih File")}
+                                        </Button>
+                                        <Typography variant="caption" sx={{ display: 'block', mt: 1, color: "#6b7280", textAlign: 'center' }}>
+                                            Format yang didukung: PDF. Ukuran maksimal: 10MB.
+                                        </Typography>
+                                    </div>
+                                )}
                             </div>
                         );
                     })()}

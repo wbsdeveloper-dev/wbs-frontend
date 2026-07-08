@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Card from "@/app/components/ui/Card";
 import MasterGenericTab from "./components/MasterGenericTab";
 import TemplateTab from "./components/TemplateTab";
@@ -14,6 +14,9 @@ import {
   Factory,
   MapPin,
 } from "lucide-react";
+import { usePrivilege } from "@/hooks/usePrivilege";
+import { useAuth } from "@/components/providers/auth-provider";
+import { useRouter } from "next/navigation";
 
 type TabType =
   | "jenis_kit"
@@ -27,6 +30,11 @@ type TabType =
   | "template";
 
 export default function KertasKerjaConfigPage() {
+  const router = useRouter();
+  const { hasPrivilege } = usePrivilege();
+  const { isLoading: isAuthLoading } = useAuth();
+  const canRead = hasPrivilege("system_config", "READ");
+
   const [activeTab, setActiveTab] = useState<TabType>("jenis_kit");
 
   const tabs = [
@@ -40,6 +48,20 @@ export default function KertasKerjaConfigPage() {
     { id: "ctms_mapping", label: "Mapping CTMS", icon: Database },
     { id: "template", label: "Template Kertas Kerja", icon: FileSpreadsheet },
   ];
+
+  useEffect(() => {
+    if (!isAuthLoading && !canRead) {
+      router.push("/landingpage");
+    }
+  }, [isAuthLoading, canRead, router]);
+
+  if (isAuthLoading || !canRead) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-secondary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen p-4 md:p-6 lg:p-8">

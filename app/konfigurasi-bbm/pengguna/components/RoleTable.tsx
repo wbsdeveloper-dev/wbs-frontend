@@ -14,6 +14,7 @@ export function RoleTable() {
   const { hasPrivilege } = usePrivilege();
   const canUpdate = hasPrivilege("users", "UPDATE");
   const canDelete = hasPrivilege("users", "DELETE");
+  const hasAction = canUpdate || canDelete;
 
   const handleEditPrivileges = (role: Role) => {
     setSelectedRole(role);
@@ -54,9 +55,11 @@ export function RoleTable() {
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   Deskripsi
                 </th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider w-32">
-                  Aksi
-                </th>
+                {hasAction && (
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider w-32">
+                    Aksi
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -99,27 +102,29 @@ export function RoleTable() {
                     <td className="px-4 py-3 text-gray-600">
                       {role.description}
                     </td>
-                    <td className="px-4 py-3 text-center">
-                      <div className="flex items-center justify-center gap-1">
-                        {canUpdate && (
-                          <button
-                            onClick={() => handleEditPrivileges(role)}
-                            className="p-1.5 text-primary hover:bg-primary/10 rounded-lg transition-colors"
-                            title="Atur Hak Akses"
-                          >
-                            <Settings2 size={16} />
-                          </button>
-                        )}
-                        {canDelete && (
-                          <button
-                            className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                            title="Hapus"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        )}
-                      </div>
-                    </td>
+                    {hasAction && (
+                      <td className="px-4 py-3 text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          {canUpdate && (
+                            <button
+                              onClick={() => handleEditPrivileges(role)}
+                              className="p-1.5 text-primary hover:bg-primary/10 rounded-lg transition-colors"
+                              title="Atur Hak Akses"
+                            >
+                              <Settings2 size={16} />
+                            </button>
+                          )}
+                          {canDelete && (
+                            <button
+                              className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                              title="Hapus"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 ))
               )}

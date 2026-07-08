@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Users, Shield } from "lucide-react";
 import { useUsers, type User } from "@/hooks/service/user-api";
 import { UserTable } from "./components/UserTable";
@@ -8,10 +8,17 @@ import { AddEditUserModal } from "./components/AddEditUserModal";
 import { ResetPasswordModal } from "./components/ResetPasswordModal";
 import { RoleTable } from "./components/RoleTable";
 import { usePrivilege } from "@/hooks/usePrivilege";
+import { useAuth } from "@/components/providers/auth-provider";
+import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
 
 export default function PenggunaPage() {
   const [activeTab, setActiveTab] = useState<"users" | "roles">("users");
+  const router = useRouter();
   const { hasPrivilege } = usePrivilege();
+  const { isLoading: isAuthLoading } = useAuth();
+  
+  const canRead = hasPrivilege("users", "READ");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
   const [filters, setFilters] = useState<{ search?: string; status?: string }>(
@@ -49,6 +56,21 @@ export default function PenggunaPage() {
     setPage(newPage);
     if (newLimit !== limit) setLimit(newLimit);
   };
+
+  // Redirect if unauthorized
+  useEffect(() => {
+    if (!isAuthLoading && !canRead) {
+      router.push("/landingpage");
+    }
+  }, [isAuthLoading, canRead, router]);
+
+  if (isAuthLoading || !canRead) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <Loader2 className="animate-spin text-secondary" size={32} />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen p-4 md:p-6 lg:p-8">
