@@ -209,9 +209,9 @@ export async function getUsers(filters?: {
   return {
     users: res.data,
     meta: {
-      page: res.pagination?.page ?? res.meta?.page ?? 1,
-      limit: res.pagination?.limit ?? res.meta?.limit ?? 20,
-      total: res.pagination?.total ?? res.meta?.total ?? 0,
+      page: res.pagination?.page ?? 1,
+      limit: res.pagination?.limit ?? 20,
+      total: res.pagination?.total ?? 0,
     },
   };
 }
