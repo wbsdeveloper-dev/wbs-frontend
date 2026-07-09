@@ -1,12 +1,12 @@
 import React, { useState } from "react";
 import { Plus, Edit2, Trash2, Loader2, AlertCircle } from "lucide-react";
 import { Modal } from "@/app/components/ui";
-import { 
+import {
   useKertasKerjaTemplates,
   useCreateKertasKerjaTemplate,
   useUpdateKertasKerjaTemplate,
   useDeleteKertasKerjaTemplate,
-  useKertasKerjaMaster
+  useKertasKerjaMaster,
 } from "@/hooks/service/kertas-kerja-api";
 import { useDropdowns } from "@/hooks/service/site-api";
 import { Autocomplete, TextField } from "@mui/material";
@@ -17,7 +17,11 @@ export default function TemplateTab() {
   const canCreate = hasPrivilege("system_config", "CREATE");
   const canUpdate = hasPrivilege("system_config", "UPDATE");
   const canDelete = hasPrivilege("system_config", "DELETE");
-  const { data = [], isLoading: isTemplatesLoading, error } = useKertasKerjaTemplates();
+  const {
+    data = [],
+    isLoading: isTemplatesLoading,
+    error,
+  } = useKertasKerjaTemplates();
   const createMutation = useCreateKertasKerjaTemplate();
   const updateMutation = useUpdateKertasKerjaTemplate();
   const deleteMutation = useDeleteKertasKerjaTemplate();
@@ -29,12 +33,12 @@ export default function TemplateTab() {
   const sites = dropdowns?.plants || [];
   const suppliers = dropdowns?.suppliers || [];
   const isLoading = isTemplatesLoading || isDropdownsLoading;
-  
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
-  
-  const [formData, setFormData] = useState({ 
-    site_id: "", 
+
+  const [formData, setFormData] = useState({
+    site_id: "",
     supplier_id: "",
     product_id: "",
     moda_id: "",
@@ -42,7 +46,7 @@ export default function TemplateTab() {
     distance: "",
     estimated_delivery_time: "",
     average_usage: "",
-    is_active: true
+    is_active: true,
   });
 
   const handleOpenModal = (item?: any) => {
@@ -56,7 +60,7 @@ export default function TemplateTab() {
       distance: item?.distance || "",
       estimated_delivery_time: item?.estimated_delivery_time || "",
       average_usage: item?.average_usage || "",
-      is_active: item?.is_active ?? true
+      is_active: item?.is_active ?? true,
     });
     setIsModalOpen(true);
   };
@@ -65,10 +69,16 @@ export default function TemplateTab() {
     e.preventDefault();
     const payload = {
       ...formData,
-      hop_minimum: formData.hop_minimum ? parseFloat(formData.hop_minimum) : null,
+      hop_minimum: formData.hop_minimum
+        ? parseFloat(formData.hop_minimum)
+        : null,
       distance: formData.distance ? parseFloat(formData.distance) : null,
-      estimated_delivery_time: formData.estimated_delivery_time ? parseFloat(formData.estimated_delivery_time) : null,
-      average_usage: formData.average_usage ? parseFloat(formData.average_usage) : null
+      estimated_delivery_time: formData.estimated_delivery_time
+        ? parseFloat(formData.estimated_delivery_time)
+        : null,
+      average_usage: formData.average_usage
+        ? parseFloat(formData.average_usage)
+        : null,
     };
 
     try {
@@ -97,7 +107,9 @@ export default function TemplateTab() {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-medium text-gray-900">Template Kertas Kerja</h2>
+        <h2 className="text-lg font-medium text-gray-900">
+          Template Kertas Kerja
+        </h2>
         {canCreate && (
           <button
             onClick={() => handleOpenModal()}
@@ -124,45 +136,98 @@ export default function TemplateTab() {
             <table className="w-full text-sm">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">No</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Site</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Supplier</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Product</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Moda</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Jarak</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Est. Delivery Time</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">HOP Min</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Pemakaian Rata2</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Aksi</th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    No
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Pembangkit
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    TBBM
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Product
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Moda
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Jarak
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Est. Delivery Time
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    HOP Min
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Pemakaian Rata2
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Aksi
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 bg-white">
                 {data.map((item, index) => (
-                  <tr key={item.id} className="hover:bg-gray-50/80 transition-colors">
-                    <td className="px-4 py-3 text-center text-gray-700">{index + 1}</td>
-                    <td className="px-4 py-3 text-gray-900 font-medium">{item.site_name || "-"}</td>
-                    <td className="px-4 py-3 text-gray-600">{item.supplier_name || "-"}</td>
-                    <td className="px-4 py-3 text-gray-600">{item.product_name || "-"}</td>
-                    <td className="px-4 py-3 text-gray-600">{item.moda_name || "-"}</td>
-                    <td className="px-4 py-3 text-center text-gray-600 font-medium">{item.distance ?? "-"}</td>
-                    <td className="px-4 py-3 text-center text-gray-600 font-medium">{item.estimated_delivery_time ?? "-"}</td>
-                    <td className="px-4 py-3 text-center text-gray-600 font-medium">{item.hop_minimum ?? "-"}</td>
-                    <td className="px-4 py-3 text-center text-gray-600 font-medium">{item.average_usage ?? "-"}</td>
+                  <tr
+                    key={item.id}
+                    className="hover:bg-gray-50/80 transition-colors"
+                  >
+                    <td className="px-4 py-3 text-center text-gray-700">
+                      {index + 1}
+                    </td>
+                    <td className="px-4 py-3 text-gray-900 font-medium">
+                      {item.site_name || "-"}
+                    </td>
+                    <td className="px-4 py-3 text-gray-600">
+                      {item.supplier_name || "-"}
+                    </td>
+                    <td className="px-4 py-3 text-gray-600">
+                      {item.product_name || "-"}
+                    </td>
+                    <td className="px-4 py-3 text-gray-600">
+                      {item.moda_name || "-"}
+                    </td>
+                    <td className="px-4 py-3 text-center text-gray-600 font-medium">
+                      {item.distance ?? "-"}
+                    </td>
+                    <td className="px-4 py-3 text-center text-gray-600 font-medium">
+                      {item.estimated_delivery_time ?? "-"}
+                    </td>
+                    <td className="px-4 py-3 text-center text-gray-600 font-medium">
+                      {item.hop_minimum ?? "-"}
+                    </td>
+                    <td className="px-4 py-3 text-center text-gray-600 font-medium">
+                      {item.average_usage ?? "-"}
+                    </td>
                     <td className="px-4 py-3 text-center">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${item.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                        {item.is_active ? 'Aktif' : 'Tidak Aktif'}
+                      <span
+                        className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${item.is_active ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}`}
+                      >
+                        {item.is_active ? "Aktif" : "Tidak Aktif"}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-center">
                       <div className="flex items-center justify-center gap-1">
                         {canUpdate && (
-                          <button onClick={() => handleOpenModal(item)} className="p-1.5 text-primary hover:bg-primary/10 rounded-lg transition-colors" title="Edit">
+                          <button
+                            onClick={() => handleOpenModal(item)}
+                            className="p-1.5 text-primary hover:bg-primary/10 rounded-lg transition-colors"
+                            title="Edit"
+                          >
                             <Edit2 size={16} />
                           </button>
                         )}
                         {canDelete && (
-                          <button onClick={() => handleDelete(item.id)} className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Hapus">
+                          <button
+                            onClick={() => handleDelete(item.id)}
+                            className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Hapus"
+                          >
                             <Trash2 size={16} />
                           </button>
                         )}
@@ -172,7 +237,10 @@ export default function TemplateTab() {
                 ))}
                 {data.length === 0 && (
                   <tr>
-                    <td colSpan={11} className="px-4 py-16 text-center text-gray-500">
+                    <td
+                      colSpan={11}
+                      className="px-4 py-16 text-center text-gray-500"
+                    >
                       Tidak ada data template yang ditemukan
                     </td>
                   </tr>
@@ -191,7 +259,9 @@ export default function TemplateTab() {
       >
         <form onSubmit={handleSave} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700">Site</label>
+            <label className="block text-sm font-medium text-gray-700">
+              Pembangkit
+            </label>
             <Autocomplete
               options={sites || []}
               getOptionLabel={(option) => option.name}
@@ -230,11 +300,15 @@ export default function TemplateTab() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Supplier</label>
+            <label className="block text-sm font-medium text-gray-700">
+              TBBM
+            </label>
             <Autocomplete
               options={suppliers || []}
               getOptionLabel={(option) => option.name}
-              value={suppliers?.find((s) => s.id === formData.supplier_id) || null}
+              value={
+                suppliers?.find((s) => s.id === formData.supplier_id) || null
+              }
               onChange={(event, newValue) => {
                 setFormData({
                   ...formData,
@@ -269,11 +343,15 @@ export default function TemplateTab() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Product</label>
+            <label className="block text-sm font-medium text-gray-700">
+              Product
+            </label>
             <Autocomplete
               options={products || []}
               getOptionLabel={(option) => option.name}
-              value={products?.find((s) => s.id === formData.product_id) || null}
+              value={
+                products?.find((s) => s.id === formData.product_id) || null
+              }
               onChange={(event, newValue) => {
                 setFormData({
                   ...formData,
@@ -308,7 +386,9 @@ export default function TemplateTab() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Moda</label>
+            <label className="block text-sm font-medium text-gray-700">
+              Moda
+            </label>
             <Autocomplete
               options={modas || []}
               getOptionLabel={(option) => option.name}
@@ -347,45 +427,64 @@ export default function TemplateTab() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Distance</label>
+            <label className="block text-sm font-medium text-gray-700">
+              Distance
+            </label>
             <input
               type="number"
               step="any"
               value={formData.distance}
-              onChange={(e) => setFormData({ ...formData, distance: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, distance: e.target.value })
+              }
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border text-gray-900"
               placeholder="0.00"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Estimated Delivery Time</label>
+            <label className="block text-sm font-medium text-gray-700">
+              Estimated Delivery Time
+            </label>
             <input
               type="number"
               step="any"
               value={formData.estimated_delivery_time}
-              onChange={(e) => setFormData({ ...formData, estimated_delivery_time: e.target.value })}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  estimated_delivery_time: e.target.value,
+                })
+              }
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border text-gray-900"
               placeholder="0.00"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">HOP Minimum</label>
+            <label className="block text-sm font-medium text-gray-700">
+              HOP Minimum
+            </label>
             <input
               type="number"
               step="any"
               value={formData.hop_minimum}
-              onChange={(e) => setFormData({ ...formData, hop_minimum: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, hop_minimum: e.target.value })
+              }
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border text-gray-900"
               placeholder="0.00"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Pemakaian Rata-Rata (Bln-1)</label>
+            <label className="block text-sm font-medium text-gray-700">
+              Pemakaian Rata-Rata (Bln-1)
+            </label>
             <input
               type="number"
               step="any"
               value={formData.average_usage}
-              onChange={(e) => setFormData({ ...formData, average_usage: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, average_usage: e.target.value })
+              }
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border text-gray-900"
               placeholder="0.00"
             />
@@ -395,10 +494,15 @@ export default function TemplateTab() {
               id="is_active"
               type="checkbox"
               checked={formData.is_active}
-              onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+              onChange={(e) =>
+                setFormData({ ...formData, is_active: e.target.checked })
+              }
               className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
             />
-            <label htmlFor="is_active" className="ml-2 block text-sm text-gray-900">
+            <label
+              htmlFor="is_active"
+              className="ml-2 block text-sm text-gray-900"
+            >
               Aktif
             </label>
           </div>

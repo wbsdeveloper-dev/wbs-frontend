@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Plus, Edit2, Trash2, Loader2, AlertCircle } from "lucide-react";
+import { Plus, Edit2, Trash2, Loader2, AlertCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import { Modal } from "@/app/components/ui";
 import { 
   useKertasKerjaMaster, 
@@ -31,6 +31,18 @@ export default function MasterGenericTab({ table, title, comodityFilter }: Maste
   
   const defaultComodity = comodityFilter ? comodityFilter.split(',')[0].trim() : "BBM";
   const [formData, setFormData] = useState({ name: "", comodity: defaultComodity });
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const totalPages = Math.ceil(data.length / itemsPerPage);
+  
+  React.useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
+    }
+  }, [totalPages, currentPage]);
+
+  const paginatedData = data.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const hasComodity = table !== "master_moda" && table !== "master_pola_operasi";
 
@@ -111,9 +123,9 @@ export default function MasterGenericTab({ table, title, comodityFilter }: Maste
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 bg-white">
-                {data.map((item, index) => (
+                {paginatedData.map((item, index) => (
                   <tr key={item.id} className="hover:bg-gray-50/80 transition-colors">
-                    <td className="px-4 py-3 text-center text-gray-700">{index + 1}</td>
+                    <td className="px-4 py-3 text-center text-gray-700">{((currentPage - 1) * itemsPerPage) + index + 1}</td>
                     <td className="px-4 py-3 font-medium text-gray-900">{item.name}</td>
                     {hasComodity && <td className="px-4 py-3 text-gray-600">{item.comodity || "-"}</td>}
                     <td className="px-4 py-3 text-center text-gray-500 text-xs">
@@ -147,6 +159,69 @@ export default function MasterGenericTab({ table, title, comodityFilter }: Maste
               </tbody>
             </table>
           </div>
+          
+          {data.length > 0 && (
+            <div className="px-4 py-3 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between bg-white gap-4">
+              <div className="flex items-center gap-4 text-sm text-gray-500">
+                <span>
+                  Menampilkan {((currentPage - 1) * itemsPerPage) + 1}-{Math.min(currentPage * itemsPerPage, data.length)} dari {data.length} data
+                </span>
+                <div className="flex items-center gap-2">
+                  <span>Baris:</span>
+                  <select 
+                    value={itemsPerPage} 
+                    onChange={(e) => {
+                      setItemsPerPage(Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                    className="border border-gray-300 rounded-md py-1 px-2 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                  >
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                  </select>
+                </div>
+              </div>
+              
+              {totalPages > 1 && (
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="p-1 rounded text-gray-500 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+
+                  {Array.from({ length: totalPages }, (_, i) => i + 1)
+                    .filter(p => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
+                    .map((p, i, arr) => (
+                      <React.Fragment key={p}>
+                        {i > 0 && arr[i - 1] !== p - 1 && <span className="px-2 text-gray-400">...</span>}
+                        <button
+                          onClick={() => setCurrentPage(p)}
+                          className={`min-w-[28px] h-7 flex items-center justify-center rounded-md text-sm font-medium transition-colors ${
+                            currentPage === p ? "bg-primary text-white shadow-sm" : "text-gray-600 hover:bg-gray-100"
+                          }`}
+                        >
+                          {p}
+                        </button>
+                      </React.Fragment>
+                    ))
+                  }
+
+                  <button
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="p-1 rounded text-gray-500 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 

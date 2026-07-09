@@ -80,6 +80,7 @@ export default function EditRecordPage() {
         waValue: record.waValue,
         plnValue: record.plnValue,
         sheetValue: record.sheetValue,
+        baValue: record.baValue,
         finalValue: record.finalValue,
         finalSource: record.finalSource,
         resolution: record.resolution,
@@ -222,6 +223,11 @@ export default function EditRecordPage() {
               label="Niali Dari WA"
               value={form.waValue}
               onChange={(v) => handleNumberChange("waValue", v)}
+            />
+            <NumberField
+              label="Nilai Dari BA (Berita Acara)"
+              value={form.baValue}
+              onChange={(v) => handleNumberChange("baValue", v)}
             />
             <NumberField
               label="Nilai Dari Email"

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Maximize2, Minimize2, Save, Loader2, Download } from "lucide-react";
+import { Maximize2, Minimize2, Save, Loader2, Download, Upload } from "lucide-react";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -25,7 +25,7 @@ export default function KertasKerjaTable({ selectedRegion, canUpdate = true }: K
   const [dirtyRecords, setDirtyRecords] = useState<Record<string, Partial<RecordKertasKerja>>>({});
 
   const { data: templates = [], isLoading: templatesLoading } = useKertasKerjaTemplates();
-  const { data: records = [], isLoading: recordsLoading } = useKertasKerjaRecords();
+  const { data: records = [], isLoading: recordsLoading, refetch: refetchRecords } = useKertasKerjaRecords();
   const upsertMutation = useBulkUpsertKertasKerjaRecords();
   const { data: polaOperasiList = [] } = useKertasKerjaMaster("master_pola_operasi");
   

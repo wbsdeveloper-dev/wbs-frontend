@@ -126,7 +126,11 @@ export default function Sidebar() {
       path: "/konfigurasi",
       icon: Database,
       children: [
-        { title: "Pengguna", path: "/konfigurasi/pengguna", resource: "users_gas" },
+        {
+          title: "Pengguna",
+          path: "/konfigurasi/pengguna",
+          resource: "users_gas",
+        },
         {
           title: "Email Ingest",
           path: "/konfigurasi/email-ingest",
@@ -173,7 +177,7 @@ export default function Sidebar() {
       title: "Manajemen Data",
       path: "/edit-bbm",
       icon: FileText,
-      // Default to data_input_bbm to show parent. 
+      // Default to data_input_bbm to show parent.
       // Individual children have explicit resources.
       resource: "data_input_bbm",
       children: [
@@ -213,8 +217,8 @@ export default function Sidebar() {
         },
         {
           title: "Data Master",
-          path: "/konfigurasi-bbm/kertas-kerja",
-          resource: "system_config_bbm",
+          path: "/konfigurasi-bbm/data-master",
+          resource: "system_config",
         },
       ],
     },
@@ -525,9 +529,10 @@ export default function Sidebar() {
                           key={idx}
                           href={child.path}
                           className={`flex items-center gap-3 px-3 py-2 text-sm rounded-lg w-full cursor-pointer transition-all duration-200 hover:scale-[1.02]
-                            ${isChildActive
-                              ? "text-primary font-semibold bg-primary/10"
-                              : "text-gray-500 hover:text-primary hover:bg-gray-100 font-medium"
+                            ${
+                              isChildActive
+                                ? "text-primary font-semibold bg-primary/10"
+                                : "text-gray-500 hover:text-primary hover:bg-gray-100 font-medium"
                             }
                           ${isCollapsed && !isMobile ? "justify-center" : ""}
                         `}
@@ -595,16 +600,18 @@ export default function Sidebar() {
 
       {/* Mobile sidebar */}
       <aside
-        className={`lg:hidden fixed top-0 left-0 h-full w-72 bg-white z-50 transform transition-transform duration-300 ease-in-out flex flex-col overflow-y-auto shadow-2xl border-r border-gray-100 ${isMobileOpen ? "translate-x-0" : "-translate-x-full"
-          }`}
+        className={`lg:hidden fixed top-0 left-0 h-full w-72 bg-white z-50 transform transition-transform duration-300 ease-in-out flex flex-col overflow-y-auto shadow-2xl border-r border-gray-100 ${
+          isMobileOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
       >
         {sidebarContent(true)}
       </aside>
 
       {/* Desktop sidebar */}
       <aside
-        className={`${isCollapsed ? "w-20" : "w-64"
-          } bg-white h-full flex-shrink-0 hidden lg:flex flex-col transition-[width] duration-300 ease-in-out shadow-lg border-r border-gray-100 overflow-hidden`}
+        className={`${
+          isCollapsed ? "w-20" : "w-64"
+        } bg-white h-full flex-shrink-0 hidden lg:flex flex-col transition-[width] duration-300 ease-in-out shadow-lg border-r border-gray-100 overflow-hidden`}
       >
         {sidebarContent(false)}
       </aside>

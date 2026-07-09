@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Card from "@/app/components/ui/Card";
-import MasterGenericTab from "@/app/konfigurasi-bbm/kertas-kerja/components/MasterGenericTab";
+import MasterGenericTab from "@/app/konfigurasi-bbm/data-master/components/MasterGenericTab";
 import {
   Database,
   MapPin,
