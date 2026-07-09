@@ -377,6 +377,7 @@ function buildColumns(
     isEditMode: boolean,
     supplierNames: string[],
     powerplantNames: string[],
+    isExternal: boolean,
     years: number[] = [],
 ): GridColDef[] {
     const renderCell = makeRenderCell(isEditMode);
@@ -566,7 +567,7 @@ function buildColumns(
             editable: isEditMode,
             renderCell,
         },
-        {
+        ...(isExternal ? [] : [{
             field: "hargaPJBG",
             headerName: "Harga PJBG",
             width: 100,
@@ -574,7 +575,7 @@ function buildColumns(
             align: "center",
             editable: isEditMode,
             renderCell: numericRenderCell,
-        },
+        }] as GridColDef[]),
         {
             field: "hgbt",
             headerName: "HGBT",
@@ -681,6 +682,7 @@ export default function ContractTable() {
     const canCreate = hasPrivilege("contracts", "CREATE");
     const canUpdate = hasPrivilege("contracts", "UPDATE");
     const canDelete = hasPrivilege("contracts", "DELETE");
+    const isExternal = hasPrivilege("external", "READ");
 
     // File Upload State
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -897,7 +899,7 @@ export default function ContractTable() {
             "No", "Region", "Pemasok", "Pembangkit", "Pemilik KIT",
             "Jenis Dokumen", "No Kontrak Awal", "Jenis Dokumen Tambahan", "No Kontrak Terbaru",
             "Awal Perjanjian", "Tanggal Efektif", "Akhir Perjanjian",
-            "Harga PJBG", "Harga HGBT", "Unit", "Volume JPMH", "TJK"
+            ...(isExternal ? [] : ["Harga PJBG"]), "Harga HGBT", "Unit", "Volume JPMH", "TJK"
         ];
 
         for (const year of yearRange) {
@@ -922,7 +924,7 @@ export default function ContractTable() {
                 "Awal Perjanjian": row.awalPerjanjian,
                 "Tanggal Efektif": row.tanggalEfektif,
                 "Akhir Perjanjian": row.akhirPerjanjian,
-                "Harga PJBG": row.hargaPJBG,
+                ...(!isExternal && { "Harga PJBG": row.hargaPJBG }),
                 "Harga HGBT": row.hgbt,
                 "Unit": row.unitSwitch,
                 "Volume JPMH": row.volumeJPMH,
@@ -1416,7 +1418,7 @@ export default function ContractTable() {
 
     // ---- Column definitions ----
 
-    const baseColumns = buildColumns(isEditMode, supplierNames, powerplantNames, yearRange);
+    const baseColumns = buildColumns(isEditMode, supplierNames, powerplantNames, isExternal, yearRange);
 
     const unitColumn: GridColDef = {
         field: "unitSwitch",

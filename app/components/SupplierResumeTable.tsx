@@ -2,6 +2,7 @@
 
 import { Loader2 } from "lucide-react";
 import type { Contract } from "@/hooks/service/contract-api";
+import { usePrivilege } from "@/hooks/usePrivilege";
 
 interface SupplierResumeTableProps {
   contracts?: Contract[] | null;
@@ -22,7 +23,7 @@ function formatDate(isoStr: string | null | undefined): string {
   }
 }
 
-function ContractCard({ contract }: { contract: Contract }) {
+function ContractCard({ contract, isExternal }: { contract: Contract, isExternal: boolean }) {
   return (
     <div className="w-full text-sm text-gray-800 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
       <div>
@@ -82,14 +83,16 @@ function ContractCard({ contract }: { contract: Contract }) {
             {contract.realisasi != null ? `${Number(contract.realisasi).toFixed(2)}%` : "-"}
           </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-[120px_1fr] border-b border-gray-300 mb-1 border-dashed">
-          <div className="bg-white font-semibold px-2">Harga PJBG</div>
-          <div className="bg-white px-2">
-            {contract.price_value != null
-              ? `${contract.price_value || ""}`
-              : "-"}
+        {!isExternal && (
+          <div className="grid grid-cols-1 md:grid-cols-[120px_1fr] border-b border-gray-300 mb-1 border-dashed">
+            <div className="bg-white font-semibold px-2">Harga PJBG</div>
+            <div className="bg-white px-2">
+              {contract.price_value != null
+                ? `${contract.price_value || ""}`
+                : "-"}
+            </div>
           </div>
-        </div>
+        )}
         <div className="grid grid-cols-1 md:grid-cols-[120px_1fr]">
           <div className="bg-white font-semibold px-2">Status</div>
           <div className="bg-white px-2">{contract.status || "-"}</div>
@@ -103,6 +106,9 @@ export default function SupplierResumeTable({
   contracts,
   isLoading,
 }: SupplierResumeTableProps) {
+  const { hasPrivilege } = usePrivilege();
+  const isExternal = hasPrivilege("external", "READ");
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -135,7 +141,7 @@ export default function SupplierResumeTable({
             </p>
           )}
 
-          <ContractCard contract={contract} />
+          <ContractCard contract={contract} isExternal={isExternal} />
         </div>
       ))}
     </div>

@@ -1,10 +1,72 @@
 "use client";
 
-import { useState } from "react";
-import { useRoles, type Role } from "@/hooks/service/user-api";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
+import { useRoles, useDeleteRole, type Role } from "@/hooks/service/user-api";
 import { Loader2, Plus, Settings2, Trash2 } from "lucide-react";
 import { RolePrivilegeModal } from "./RolePrivilegeModal";
 import { usePrivilege } from "@/hooks/usePrivilege";
+
+interface DeleteConfirmModalProps {
+  open: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  itemName: string;
+  isDeleting: boolean;
+}
+
+function DeleteConfirmModal({
+  open,
+  onClose,
+  onConfirm,
+  itemName,
+  isDeleting,
+}: DeleteConfirmModalProps) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  if (!mounted || !open) return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+        <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-200">
+          <Trash2 className="w-6 h-6 text-red-500" />
+          <h2 className="text-lg font-semibold text-gray-900">
+            Konfirmasi Hapus
+          </h2>
+        </div>
+        <div className="p-6">
+          <p className="text-sm text-gray-700 mb-4">
+            Apakah Anda yakin ingin menghapus peran{" "}
+            <span className="font-semibold text-gray-900">{itemName}</span>?
+          </p>
+          <p className="text-sm text-gray-600">
+            Tindakan ini tidak dapat dibatalkan.
+          </p>
+        </div>
+        <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-gray-200">
+          <button
+            onClick={onClose}
+            disabled={isDeleting}
+            className="px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-all duration-200 disabled:opacity-50"
+          >
+            Batal
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={isDeleting}
+            className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-all duration-200 hover:shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isDeleting && <Loader2 size={14} className="animate-spin" />}
+            Ya, Hapus
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
 
 export function RoleTable() {
   const { data: roles, isLoading } = useRoles();
@@ -21,8 +83,44 @@ export function RoleTable() {
     setModalOpen(true);
   };
 
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [pendingDeleteName, setPendingDeleteName] = useState("");
+  const deleteMutation = useDeleteRole();
+
+  const handleDeleteClick = (role: Role) => {
+    setPendingDeleteId(role.id);
+    setPendingDeleteName(role.name);
+    setDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (pendingDeleteId) {
+      deleteMutation
+        .mutateAsync(pendingDeleteId)
+        .then(() => {
+          setDeleteModalOpen(false);
+          setPendingDeleteId(null);
+          setPendingDeleteName("");
+        })
+        .catch((err) => {
+          setDeleteModalOpen(false);
+          setPendingDeleteId(null);
+          setPendingDeleteName("");
+          alert(err?.message || "Gagal menghapus peran");
+        });
+    }
+  };
+
   return (
     <>
+      <DeleteConfirmModal
+        open={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={handleConfirmDelete}
+        itemName={pendingDeleteName}
+        isDeleting={deleteMutation.isPending}
+      />
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden min-h-[300px]">
         {/* Toolbar */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-white z-10 relative">
@@ -32,12 +130,6 @@ export function RoleTable() {
             </span>
           </div>
           <div className="flex items-center gap-2">
-            {/* <button
-              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-[#0d4a5c] transition-all"
-            >
-              <Plus size={16} />
-              Tambah Peran
-            </button> */}
           </div>
         </div>
 
@@ -116,6 +208,7 @@ export function RoleTable() {
                           )}
                           {canDelete && (
                             <button
+                              onClick={() => handleDeleteClick(role)}
                               className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                               title="Hapus"
                             >

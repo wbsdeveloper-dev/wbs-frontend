@@ -291,7 +291,7 @@ export function UserTable({
                 >
                   <option value="">Semua Status</option>
                   <option value="ACTIVE">Aktif</option>
-                  <option value="INACTIVE">Non-aktif</option>
+                  <option value="DISABLED">Non-aktif</option>
                 </select>
               </div>
             </div>

@@ -15,8 +15,6 @@ import {
   type UpdateNotificationPayload,
 } from "@/hooks/service/notification-api";
 import { useCreateEvent } from "@/hooks/service/dashboard-api";
-import { useAuth } from "@/components/providers/auth-provider";
-import { usePrivilege } from "@/hooks/usePrivilege";
 
 // ---------------------------------------------------------------------------
 // Status options
@@ -74,11 +72,6 @@ export default function EditNotificationPage() {
   const { data: record, isLoading, isError } = useNotification(recordId);
   const updateMutation = useUpdateNotification();
   const createEventMutation = useCreateEvent();
-
-  const { isLoading: isAuthLoading } = useAuth();
-  const { hasPrivilege } = usePrivilege();
-  const canRead = hasPrivilege("notification", "READ");
-  const canUpdate = hasPrivilege("notification", "UPDATE");
 
   // Form state
   const [form, setForm] = useState<UpdateNotificationPayload>({});
@@ -140,20 +133,12 @@ export default function EditNotificationPage() {
   };
 
   // ---------- Loading state ----------
-  if (isLoading || isAuthLoading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full min-h-[60vh]">
         <Loader2 className="animate-spin text-secondary" size={36} />
       </div>
     );
-  }
-
-  // ---------- Authorization ----------
-  if (!canRead) {
-    if (typeof window !== "undefined") {
-      router.push("/landingpage");
-    }
-    return null;
   }
 
   // ---------- Error state ----------
@@ -285,7 +270,7 @@ export default function EditNotificationPage() {
           </button>
           <button
             type="submit"
-            disabled={updateMutation.isPending || !canUpdate}
+            disabled={updateMutation.isPending}
             className="flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-primary rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {updateMutation.isPending ? (

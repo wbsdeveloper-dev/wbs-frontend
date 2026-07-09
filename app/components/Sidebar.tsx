@@ -37,6 +37,8 @@ export default function Sidebar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const { hasPrivilege } = usePrivilege();
+  
+  const canReadNotification = hasPrivilege("notification", "READ");
 
   const { data: notificationsData } = useNotifications(
     { isRead: false, limit: 1 },
@@ -395,7 +397,7 @@ export default function Sidebar() {
                   {user?.roles?.join(", ") || "User"}
                 </p>
               </div>
-              {!isBbmRoute && (
+              {!isBbmRoute && canReadNotification && (
                 <div
                   onClick={() => router.push("/notification")}
                   className="relative p-1.5 rounded-full hover:bg-gray-200 cursor-pointer text-gray-500 transition-colors"
@@ -426,7 +428,7 @@ export default function Sidebar() {
             >
               <User size={16} className="text-gray-600" />
             </div>
-            {!isBbmRoute && (
+            {!isBbmRoute && canReadNotification && (
               <div
                 onClick={() => router.push("/notification")}
                 title="Notifikasi"
