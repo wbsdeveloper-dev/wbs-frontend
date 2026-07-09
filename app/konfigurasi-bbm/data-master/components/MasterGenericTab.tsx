@@ -90,7 +90,7 @@ export default function MasterGenericTab({ table, title, comodityFilter }: Maste
         {canCreate && (
           <button
             onClick={() => handleOpenModal()}
-            className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white text-sm font-medium rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
+            className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white text-sm font-medium rounded-lg hover:brightness-90 transition-all duration-200 hover:shadow-md active:scale-95"
           >
             <Plus size={18} />
             Tambah Data
@@ -269,7 +269,7 @@ export default function MasterGenericTab({ table, title, comodityFilter }: Maste
             <button
               type="submit"
               disabled={isSaving}
-              className="inline-flex w-full justify-center rounded-md border border-transparent bg-primary px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-[#0d4a5c] focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 sm:col-start-2 sm:text-sm disabled:opacity-50"
+              className="inline-flex w-full justify-center rounded-md border border-transparent bg-primary px-4 py-2 text-base font-medium text-white shadow-sm hover:brightness-90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 sm:col-start-2 sm:text-sm disabled:opacity-50"
             >
               {isSaving ? "Menyimpan..." : "Simpan"}
             </button>

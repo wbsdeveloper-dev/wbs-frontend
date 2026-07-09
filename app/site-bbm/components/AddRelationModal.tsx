@@ -201,11 +201,10 @@ export function AddRelationModal({
               {filteredSuppliers.map((site) => (
                 <label
                   key={site.id}
-                  className={`flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors ${
-                    selectedSourceSites.includes(site.id)
+                  className={`flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors ${selectedSourceSites.includes(site.id)
                       ? "bg-secondary/10 text-primary"
                       : "hover:bg-gray-50 text-gray-700"
-                  }`}
+                    }`}
                 >
                   <input
                     type={editingId ? "radio" : "checkbox"}
@@ -266,11 +265,10 @@ export function AddRelationModal({
               {filteredPlants.map((site) => (
                 <label
                   key={site.id}
-                  className={`flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors ${
-                    selectedTargetSites.includes(site.id)
+                  className={`flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors ${selectedTargetSites.includes(site.id)
                       ? "bg-secondary/10 text-primary"
                       : "hover:bg-gray-50 text-gray-700"
-                  }`}
+                    }`}
                 >
                   <input
                     type={editingId ? "radio" : "checkbox"}
@@ -349,10 +347,10 @@ export function AddRelationModal({
               createRelationMutation.isPending ||
               updateRelationMutation.isPending
             }
-            className="px-4 py-2.5 text-sm font-medium text-white bg-primary rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            className="px-4 py-2.5 text-sm font-medium text-white bg-primary rounded-lg hover:brightness-90 transition-all duration-200 hover:shadow-md active:scale-95 disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
             {createRelationMutation.isPending ||
-            updateRelationMutation.isPending
+              updateRelationMutation.isPending
               ? "Menyimpan..."
               : "Simpan"}
           </button>

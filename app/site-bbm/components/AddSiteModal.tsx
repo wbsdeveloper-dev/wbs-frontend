@@ -422,11 +422,10 @@ export function AddSiteModal({
                 setFormData({ ...formData, name: e.target.value })
               }
               placeholder="Masukkan nama site"
-              className={`w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200 ${
-                errors.name
+              className={`w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200 ${errors.name
                   ? "border-red-300 focus:ring-red-500"
                   : "border-gray-300"
-              }`}
+                }`}
             />
             {errors.name && (
               <p className="text-xs text-red-600 mt-1">{errors.name}</p>
@@ -471,33 +470,32 @@ export function AddSiteModal({
           )}
 
           {formData.site_type != "TRANSPORTIR" && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Kapasitas (KL)
-                </label>
-                <input
-                  type="number"
-                  value={formData.capacity ?? ""}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      capacity: e.target.value
-                        ? Number(e.target.value)
-                        : undefined,
-                    })
-                  }
-                  placeholder="Masukkan kapasitas"
-                  className={`w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200 ${
-                    errors.capacity
-                      ? "border-red-300 focus:ring-red-500"
-                      : "border-gray-300"
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Kapasitas (KL)
+              </label>
+              <input
+                type="number"
+                value={formData.capacity ?? ""}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    capacity: e.target.value
+                      ? Number(e.target.value)
+                      : undefined,
+                  })
+                }
+                placeholder="Masukkan kapasitas"
+                className={`w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200 ${errors.capacity
+                    ? "border-red-300 focus:ring-red-500"
+                    : "border-gray-300"
                   }`}
-                />
-                {errors.capacity && (
-                  <p className="text-xs text-red-600 mt-1">{errors.capacity}</p>
-                )}
-              </div>
-            )}
+              />
+              {errors.capacity && (
+                <p className="text-xs text-red-600 mt-1">{errors.capacity}</p>
+              )}
+            </div>
+          )}
 
           {/* Latitude */}
           <div>
@@ -552,7 +550,7 @@ export function AddSiteModal({
             disabled={
               createSiteMutation.isPending || updateSiteMutation.isPending
             }
-            className="px-4 py-2.5 text-sm font-medium text-white bg-primary rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            className="px-4 py-2.5 text-sm font-medium text-white bg-primary rounded-lg hover:brightness-90 transition-all duration-200 hover:shadow-md active:scale-95 disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
             {createSiteMutation.isPending || updateSiteMutation.isPending
               ? "Menyimpan..."

@@ -169,13 +169,13 @@ export default function PenggunaPage() {
         open={resetModalOpen}
         onClose={() => setResetModalOpen(false)}
         user={resetUser}
-        onSuccess={() => {}}
+        onSuccess={() => { }}
       />
 
       <AddRoleModal
         open={addRoleModalOpen}
         onClose={() => setAddRoleModalOpen(false)}
-        onSuccess={() => {}}
+        onSuccess={() => { }}
       />
 
       {/* CSS Animations */}

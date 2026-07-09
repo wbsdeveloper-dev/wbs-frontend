@@ -169,16 +169,14 @@ function GroupedSpreadsheetCard({
                     {source.name}
                   </p>
                   <span
-                    className={`inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded-full mt-0.5 ${
-                      source.isEnabled
-                        ? "bg-green-100 text-green-700"
-                        : "bg-gray-100 text-gray-500"
-                    }`}
+                    className={`inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded-full mt-0.5 ${source.isEnabled
+                      ? "bg-green-100 text-green-700"
+                      : "bg-gray-100 text-gray-500"
+                      }`}
                   >
                     <span
-                      className={`w-1 h-1 rounded-full ${
-                        source.isEnabled ? "bg-green-500" : "bg-gray-400"
-                      }`}
+                      className={`w-1 h-1 rounded-full ${source.isEnabled ? "bg-green-500" : "bg-gray-400"
+                        }`}
                     />
                     {source.isEnabled ? "Aktif" : "Nonaktif"}
                   </span>
@@ -282,7 +280,7 @@ export default function SpreadsheetSourcePage() {
   const router = useRouter();
   const { hasPrivilege } = usePrivilege();
   const { isLoading: isAuthLoading } = useAuth();
-  
+
   const canRead = hasPrivilege("spreadsheet_source", "READ");
   const canCreate = hasPrivilege("spreadsheet_source", "CREATE");
   const canUpdate = hasPrivilege("spreadsheet_source", "UPDATE");
@@ -469,11 +467,10 @@ export default function SpreadsheetSourcePage() {
       {/* Notification */}
       {notification && (
         <div
-          className={`fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg animate-slideIn ${
-            notification.type === "success"
-              ? "bg-green-50 text-green-800 border border-green-200"
-              : "bg-red-50 text-red-800 border border-red-200"
-          }`}
+          className={`fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg animate-slideIn ${notification.type === "success"
+            ? "bg-green-50 text-green-800 border border-green-200"
+            : "bg-red-50 text-red-800 border border-red-200"
+            }`}
         >
           {notification.type === "success" ? (
             <Check size={18} />
@@ -517,7 +514,7 @@ export default function SpreadsheetSourcePage() {
           {canCreate && (
             <button
               onClick={() => openCreateModal()}
-              className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white text-sm font-medium rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
+              className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white text-sm font-medium rounded-lg hover:brightness-90 transition-all duration-200 hover:shadow-md active:scale-95"
             >
               <Plus size={18} />
               Tambah Source
@@ -618,11 +615,10 @@ export default function SpreadsheetSourcePage() {
                 setFormData({ ...formData, spreadsheetUrl: e.target.value })
               }
               readOnly={!!lockedSpreadsheetId}
-              className={`w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent ${
-                lockedSpreadsheetId
-                  ? "bg-gray-50 cursor-not-allowed opacity-70"
-                  : ""
-              }`}
+              className={`w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent ${lockedSpreadsheetId
+                ? "bg-gray-50 cursor-not-allowed opacity-70"
+                : ""
+                }`}
               placeholder="https://docs.google.com/spreadsheets/d/.../edit"
             />
             {formData.spreadsheetUrl && (
@@ -704,7 +700,7 @@ export default function SpreadsheetSourcePage() {
             <button
               onClick={handleSubmit}
               disabled={createMutation.isPending || updateMutation.isPending}
-              className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-primary rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-primary rounded-lg hover:brightness-90 transition-all duration-200 hover:shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {createMutation.isPending || updateMutation.isPending ? (
                 <span className="flex items-center justify-center gap-2">

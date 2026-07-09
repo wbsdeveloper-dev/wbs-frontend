@@ -328,7 +328,7 @@ export default function AddBbmModal({ setOpenModal, onSuccess }: Props) {
               !formData.siteId ||
               !formData.supplierId
             }
-            className="px-4 py-2 font-medium text-white bg-primary rounded-lg hover:bg-[#0d4a5c] transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+            className="px-4 py-2 font-medium text-white bg-primary rounded-lg hover:brightness-90 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
             {createRecord.isPending ? "Menyimpan..." : "Simpan Data"}
           </button>

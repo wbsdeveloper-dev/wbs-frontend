@@ -104,7 +104,7 @@ export default function KertasKerjaPage() {
               {canUpdate && (
                 <button
                   onClick={() => setIsUploadOpen(true)}
-                  className="px-4 py-2 bg-primary text-white rounded-lg flex items-center gap-2 text-sm font-medium hover:bg-secondary transition-colors cursor-pointer shadow-sm"
+                  className="px-4 py-2 bg-primary text-white rounded-lg flex items-center gap-2 text-sm font-medium hover:brightness-90 transition-colors cursor-pointer shadow-sm"
                 >
                   <Upload size={16} /> Upload Kertas Kerja Rakor BBM
                 </button>
@@ -229,22 +229,20 @@ export default function KertasKerjaPage() {
               <div className="flex bg-gray-100 p-1 rounded-lg w-fit">
                 <button
                   onClick={() => setActiveTab("kertas-kerja")}
-                  className={`flex items-center gap-2 px-6 py-2.5 rounded-md text-sm font-medium transition-all ${
-                    activeTab === "kertas-kerja"
+                  className={`flex items-center gap-2 px-6 py-2.5 rounded-md text-sm font-medium transition-all ${activeTab === "kertas-kerja"
                       ? "bg-white text-primary shadow-sm"
                       : "text-gray-600 hover:text-gray-900 hover:bg-gray-200/50"
-                  }`}
+                    }`}
                 >
                   <FileText size={16} />
                   Kertas Kerja
                 </button>
                 <button
                   onClick={() => setActiveTab("ringkasan")}
-                  className={`flex items-center gap-2 px-6 py-2.5 rounded-md text-sm font-medium transition-all ${
-                    activeTab === "ringkasan"
+                  className={`flex items-center gap-2 px-6 py-2.5 rounded-md text-sm font-medium transition-all ${activeTab === "ringkasan"
                       ? "bg-white text-primary shadow-sm"
                       : "text-gray-600 hover:text-gray-900 hover:bg-gray-200/50"
-                  }`}
+                    }`}
                 >
                   <PieChart size={16} />
                   Ringkasan

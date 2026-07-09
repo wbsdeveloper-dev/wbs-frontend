@@ -63,7 +63,7 @@ export default function Home() {
                   </button>
                   <button
                     onClick={() => setOpenBulkModal(true)}
-                    className="px-4 py-2 bg-primary text-white rounded-lg flex items-center gap-2 text-sm font-medium hover:bg-secondary transition-colors cursor-pointer shadow-sm"
+                    className="px-4 py-2 bg-primary text-white rounded-lg flex items-center gap-2 text-sm font-medium hover:brightness-90 transition-colors cursor-pointer shadow-sm"
                   >
                     <Upload size={16} /> Upload Kertas Kerja Rakor BBM
                   </button>
