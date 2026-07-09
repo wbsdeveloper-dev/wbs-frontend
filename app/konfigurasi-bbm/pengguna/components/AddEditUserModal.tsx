@@ -201,21 +201,7 @@ export function AddEditUserModal({
               </div>
             )}
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Status
-              </label>
-              <select
-                value={status}
-                onChange={(e) =>
-                  setStatus(e.target.value as "ACTIVE" | "DISABLED")
-                }
-                className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all appearance-none"
-              >
-                <option value="ACTIVE">Active</option>
-                <option value="DISABLED">Non-aktif</option>
-              </select>
-            </div>
+
 
             <div>
               <div className="flex items-center justify-between mb-2">
