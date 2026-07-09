@@ -447,7 +447,7 @@ export default function EditBbmDataTable({
           <div className="flex items-center bg-gray-50 rounded-lg p-0.5 border border-gray-200 mr-1">
             <button
               onClick={handleExportExcel}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-md transition-all duration-200"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-emerald-500 hover:bg-emerald-50 rounded-md transition-all duration-200"
               title="Export Excel"
             >
               <FileSpreadsheet size={15} />
@@ -456,7 +456,7 @@ export default function EditBbmDataTable({
             <div className="w-px h-4 bg-gray-300 mx-0.5"></div>
             <button
               onClick={handleExportPDF}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md transition-all duration-200"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-rose-400 hover:bg-rose-50 rounded-md transition-all duration-200"
               title="Export PDF"
             >
               <FileText size={15} />

@@ -27,6 +27,7 @@ import { useRouter } from "next/navigation";
 export default function KertasKerjaPage() {
   const [activeTab, setActiveTab] = useState("kertas-kerja");
   const [selectedRegion, setSelectedRegion] = useState("");
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const { data: regions = [] } = useKertasKerjaMaster("master_region");
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const { data: templates = [] } = useKertasKerjaTemplates();
@@ -114,11 +115,39 @@ export default function KertasKerjaPage() {
           <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col flex-1 overflow-hidden min-h-0">
             {/* Controls Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 border-b border-gray-100 pb-4 shrink-0">
-              {/* Region Filter */}
-              <div className="flex items-center gap-3 relative" ref={regionRef}>
-                <span className="text-sm font-medium text-gray-700 whitespace-nowrap">
-                  Filter Region:
-                </span>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                {/* Year Filter */}
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-medium text-gray-700 whitespace-nowrap">
+                    Tahun:
+                  </span>
+                  <select
+                    value={selectedYear}
+                    onChange={(e) => setSelectedYear(Number(e.target.value))}
+                    className="pl-3 pr-8 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 cursor-pointer appearance-none"
+                    style={{
+                      backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                      backgroundRepeat: 'no-repeat',
+                      backgroundPosition: 'right 0.5rem center',
+                      backgroundSize: '1.25em 1.25em'
+                    }}
+                  >
+                    {Array.from({ length: 11 }).map((_, i) => {
+                      const year = new Date().getFullYear() - 5 + i;
+                      return (
+                        <option key={year} value={year}>
+                          {year}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+                
+                {/* Region Filter */}
+                <div className="flex items-center gap-3 relative" ref={regionRef}>
+                  <span className="text-sm font-medium text-gray-700 whitespace-nowrap">
+                    Filter Region:
+                  </span>
                 <div className="relative">
                   <button
                     onClick={() =>
@@ -194,6 +223,7 @@ export default function KertasKerjaPage() {
                   )}
                 </div>
               </div>
+            </div>
 
               {/* Tabs */}
               <div className="flex bg-gray-100 p-1 rounded-lg w-fit">
@@ -225,11 +255,15 @@ export default function KertasKerjaPage() {
             {activeTab === "kertas-kerja" && (
               <KertasKerjaTable
                 selectedRegion={selectedRegion}
+                selectedYear={selectedYear}
                 canUpdate={canUpdate}
               />
             )}
             {activeTab === "ringkasan" && (
-              <RingkasanTable selectedRegion={selectedRegion} />
+              <RingkasanTable 
+                selectedRegion={selectedRegion} 
+                selectedYear={selectedYear}
+              />
             )}
           </div>
         </div>

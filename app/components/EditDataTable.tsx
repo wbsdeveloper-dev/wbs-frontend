@@ -571,7 +571,7 @@ export default function EditDataTable({
               <button
                 onClick={handleExportExcel}
                 disabled={isExporting}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-md transition-all duration-200 disabled:opacity-50"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-emerald-500 hover:bg-emerald-50 rounded-md transition-all duration-200 disabled:opacity-50"
                 title="Export Excel"
               >
                 {isExporting ? <Loader2 size={15} className="animate-spin" /> : <FileSpreadsheet size={15} />}
@@ -581,7 +581,7 @@ export default function EditDataTable({
               <button
                 onClick={handleExportPDF}
                 disabled={isExporting}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md transition-all duration-200 disabled:opacity-50"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-rose-400 hover:bg-rose-50 rounded-md transition-all duration-200 disabled:opacity-50"
                 title="Export PDF"
               >
                 {isExporting ? <Loader2 size={15} className="animate-spin" /> : <FileText size={15} />}

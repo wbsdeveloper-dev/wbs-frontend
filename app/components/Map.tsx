@@ -415,7 +415,7 @@ export default function Map({ commodity }: { commodity?: string }) {
             <div className="export-buttons-container flex items-center gap-2 bg-gray-100 rounded-lg p-0.5">
               <button
                 onClick={handleExportImage}
-                className="px-3 py-1.5 rounded-md text-xs font-medium text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 flex items-center gap-1.5 transition-all duration-200"
+                className="px-3 py-1.5 rounded-md text-xs font-medium text-emerald-500 hover:bg-emerald-50 flex items-center gap-1.5 transition-all duration-200"
                 title="Export as Image (PNG)"
               >
                 <ImageIcon size={14} />
@@ -423,7 +423,7 @@ export default function Map({ commodity }: { commodity?: string }) {
               </button>
               <button
                 onClick={handleExportPDF}
-                className="px-3 py-1.5 rounded-md text-xs font-medium text-red-600 hover:text-red-700 hover:bg-red-50 flex items-center gap-1.5 transition-all duration-200"
+                className="px-3 py-1.5 rounded-md text-xs font-medium text-rose-400 hover:bg-rose-50 flex items-center gap-1.5 transition-all duration-200"
                 title="Export as PDF"
               >
                 <FileText size={14} />

@@ -15,12 +15,14 @@ import RingkasanPembangkit from "./RingkasanPembangkit";
 
 interface RingkasanTableProps {
   selectedRegion: string;
+  selectedYear: number;
 }
 
 type GroupingType = "Regional" | "TBBM" | "Pembangkit";
 
 export default function RingkasanTable({
   selectedRegion,
+  selectedYear,
 }: RingkasanTableProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeSubTab, setActiveSubTab] = useState<GroupingType>("Regional");
@@ -38,19 +40,20 @@ export default function RingkasanTable({
       : templates;
   }, [templates, selectedRegion]);
 
+  const shortYear = String(selectedYear).slice(-2);
   const allMonths = [
-    "Jan '26",
-    "Feb '26",
-    "Mar '26",
-    "Apr '26",
-    "Mei '26",
-    "Jun '26",
-    "Jul '26",
-    "Agu '26",
-    "Sep '26",
-    "Okt '26",
-    "Nov '26",
-    "Des '26",
+    `Jan '${shortYear}`,
+    `Feb '${shortYear}`,
+    `Mar '${shortYear}`,
+    `Apr '${shortYear}`,
+    `Mei '${shortYear}`,
+    `Jun '${shortYear}`,
+    `Jul '${shortYear}`,
+    `Agu '${shortYear}`,
+    `Sep '${shortYear}`,
+    `Okt '${shortYear}`,
+    `Nov '${shortYear}`,
+    `Des '${shortYear}`,
   ];
 
   const currentMonthIndex = new Date().getMonth();
@@ -577,7 +580,7 @@ export default function RingkasanTable({
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleExportRingkasanExcel}
-                  className="flex items-center gap-2 px-4 py-2 text-sm bg-white text-primary hover:bg-slate-50 rounded-md transition-colors shadow-sm font-bold"
+                  className="flex items-center gap-2 px-4 py-2 text-sm bg-white text-emerald-500 hover:bg-emerald-50 rounded-md transition-colors shadow-sm font-bold"
                 >
                   <Download size={16} /> Export Excel
                 </button>

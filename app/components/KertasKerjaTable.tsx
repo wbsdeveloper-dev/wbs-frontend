@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Maximize2, Minimize2, Save, Loader2, Download, Upload } from "lucide-react";
+import { Maximize2, Minimize2, Save, Loader2, Download, Upload, Eye, EyeOff } from "lucide-react";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -16,11 +16,13 @@ import {
 
 interface KertasKerjaTableProps {
   selectedRegion: string;
+  selectedYear: number;
   canUpdate?: boolean;
 }
 
-export default function KertasKerjaTable({ selectedRegion, canUpdate = true }: KertasKerjaTableProps) {
+export default function KertasKerjaTable({ selectedRegion, selectedYear, canUpdate = true }: KertasKerjaTableProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [showInactive, setShowInactive] = useState(false);
   const [localRecords, setLocalRecords] = useState<Record<string, RecordKertasKerja>>({});
   const [dirtyRecords, setDirtyRecords] = useState<Record<string, Partial<RecordKertasKerja>>>({});
 
@@ -30,7 +32,7 @@ export default function KertasKerjaTable({ selectedRegion, canUpdate = true }: K
   const { data: polaOperasiList = [] } = useKertasKerjaMaster("master_pola_operasi");
   
   const filteredTemplates = (selectedRegion ? templates.filter(t => t.site_region === selectedRegion) : templates)
-    .filter(t => t.is_active !== false);
+    .filter(t => showInactive ? true : t.is_active !== false);
 
   const availableUnits = Array.from(
     new Set(filteredTemplates.map(t => t.unit_name).filter(Boolean))
@@ -120,10 +122,11 @@ export default function KertasKerjaTable({ selectedRegion, canUpdate = true }: K
     }
   };
 
+  const shortYear = String(selectedYear).slice(-2);
   const allMonths = [
-    "Jan '26", "Feb '26", "Mar '26", "Apr '26",
-    "Mei '26", "Jun '26", "Jul '26", "Agu '26",
-    "Sep '26", "Okt '26", "Nov '26", "Des '26",
+    `Jan '${shortYear}`, `Feb '${shortYear}`, `Mar '${shortYear}`, `Apr '${shortYear}`,
+    `Mei '${shortYear}`, `Jun '${shortYear}`, `Jul '${shortYear}`, `Agu '${shortYear}`,
+    `Sep '${shortYear}`, `Okt '${shortYear}`, `Nov '${shortYear}`, `Des '${shortYear}`,
   ];
 
   const currentMonthIndex = new Date().getMonth();
@@ -165,7 +168,7 @@ export default function KertasKerjaTable({ selectedRegion, canUpdate = true }: K
         onBlur={() => onBlur?.(val as string)}
         readOnly={readOnly}
         placeholder="-"
-        className={`w-full min-w-[60px] px-1 py-1 text-xs font-medium border border-transparent hover:border-gray-300 focus:border-primary focus:ring-1 focus:ring-primary rounded outline-none transition-all ${className} ${bgColorClass ? bgColorClass : (readOnly ? "bg-gray-50 cursor-default hover:border-transparent focus:border-transparent focus:ring-0 text-gray-700" : "bg-transparent focus:bg-white text-gray-900")}`}
+        className={`w-full min-w-[60px] px-1 py-1 text-xs font-medium border border-transparent hover:border-gray-300 focus:border-primary focus:ring-1 focus:ring-primary rounded outline-none transition-all ${className} ${bgColorClass ? bgColorClass : (readOnly ? "bg-black/5 cursor-default hover:border-transparent focus:border-transparent focus:ring-0 text-gray-700" : "bg-transparent focus:bg-white text-gray-900")}`}
       />
     );
   };
@@ -695,15 +698,22 @@ const handleExportExcel = () => {
         </div>
 
         <div className="flex items-center gap-2">
-                    <button
+          <button
+            onClick={() => setShowInactive(!showInactive)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-white text-gray-600 hover:bg-gray-50 border border-gray-200 rounded-md transition-colors shadow-sm font-semibold"
+          >
+            {showInactive ? <EyeOff size={14} /> : <Eye size={14} />}
+            {showInactive ? "Sembunyikan Non-Aktif" : "Tampilkan Non-Aktif"}
+          </button>
+          <button
             onClick={handleExportPdf}
-            className="flex items-center gap-2 px-4 py-2 text-sm bg-white text-red-500 hover:bg-red-50 border border-gray-200 rounded-md transition-colors shadow-sm font-bold"
+            className="flex items-center gap-2 px-4 py-2 text-sm bg-white text-rose-400 hover:bg-rose-50 border border-gray-200 rounded-md transition-colors shadow-sm font-bold"
           >
             <FileText size={16} /> Export PDF
           </button>
           <button
             onClick={handleExportExcel}
-            className="flex items-center gap-2 px-4 py-2 text-sm bg-white text-primary hover:bg-slate-50 rounded-md transition-colors shadow-sm font-bold"
+            className="flex items-center gap-2 px-4 py-2 text-sm bg-white text-emerald-500 hover:bg-emerald-50 border border-gray-200 rounded-md transition-colors shadow-sm font-bold"
           >
             <Download size={16} /> Export Excel
           </button>
@@ -934,17 +944,17 @@ const handleExportExcel = () => {
                     {siteTemplates.map((template, idx) => {
                       globalIdx++;
                       return (
-                        <tr key={template.id} className="hover:bg-slate-50 border-b border-slate-200 transition-colors">
-                          <td className="border-r border-slate-200 p-1 sticky left-0 z-10 bg-white shadow-[2px_0_8px_-3px_rgba(0,0,0,0.1)]">
+                        <tr key={template.id} className={`border-b border-slate-200 transition-colors ${template.is_active === false ? 'bg-amber-100 hover:bg-amber-200/80' : 'hover:bg-slate-50'}`}>
+                          <td className={`border-r border-slate-200 p-1 sticky left-0 z-10 shadow-[2px_0_8px_-3px_rgba(0,0,0,0.1)] ${template.is_active === false ? 'bg-amber-100' : 'bg-white'}`}>
                             <InputCell defaultValue={globalIdx} readOnly className="text-center font-medium" />
                           </td>
-                      <td className="border-r border-slate-200 p-1 sticky left-[40px] z-10 bg-white shadow-[2px_0_8px_-3px_rgba(0,0,0,0.1)]">
+                      <td className={`border-r border-slate-200 p-1 sticky left-[40px] z-10 shadow-[2px_0_8px_-3px_rgba(0,0,0,0.1)] ${template.is_active === false ? 'bg-amber-100' : 'bg-white'}`}>
                         <InputCell defaultValue={template.upk_name || "-"} readOnly className="text-left font-medium" />
                       </td>
-                      <td className="border-r border-slate-200 p-1 sticky left-[190px] z-10 bg-white shadow-[2px_0_8px_-3px_rgba(0,0,0,0.1)]">
+                      <td className={`border-r border-slate-200 p-1 sticky left-[190px] z-10 shadow-[2px_0_8px_-3px_rgba(0,0,0,0.1)] ${template.is_active === false ? 'bg-amber-100' : 'bg-white'}`}>
                         <InputCell defaultValue={template.kit_name || "-"} readOnly className="text-left" />
                       </td>
-                      <td className="border-r border-slate-200 p-1 sticky left-[280px] z-10 bg-white shadow-[2px_0_8px_-3px_rgba(0,0,0,0.1)]">
+                      <td className={`border-r border-slate-200 p-1 sticky left-[280px] z-10 shadow-[2px_0_8px_-3px_rgba(0,0,0,0.1)] ${template.is_active === false ? 'bg-amber-100' : 'bg-white'}`}>
                         <InputCell defaultValue={template.site_name || "-"} readOnly className="text-left font-semibold text-slate-800" />
                       </td>
                       <td className="border-r border-slate-200 p-1">
@@ -978,10 +988,10 @@ const handleExportExcel = () => {
                               : "-"
                           } 
                           readOnly 
-                          className="text-right bg-gray-50 text-gray-700" 
+                          className="text-right text-gray-700" 
                         />
                       </td>
-                      <td className="border border-gray-200 p-1 bg-green-50">
+                      <td className={`border border-gray-200 p-1 ${template.is_active === false ? '' : 'bg-green-50'}`}>
                         <InputCell defaultValue={template.hop_minimum} readOnly className="text-center font-bold text-green-700 bg-transparent" />
                       </td>
                       
@@ -1000,7 +1010,7 @@ const handleExportExcel = () => {
                                     : "-"
                                 } 
                                 readOnly 
-                                className="text-right bg-gray-50 text-gray-700"
+                                className="text-right text-gray-700"
                               />
                             </td>
                             <td className="border border-gray-200 p-1">

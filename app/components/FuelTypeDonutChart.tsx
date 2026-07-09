@@ -139,14 +139,14 @@ export default function FuelTypeDonutChart({
           <div className="export-buttons-container flex items-center bg-gray-100 rounded-lg p-0.5">
             <button
               onClick={handleExportImage}
-              className="p-1.5 rounded-md text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 transition-all duration-200"
+              className="p-1.5 rounded-md text-emerald-500 hover:bg-emerald-50 transition-all duration-200"
               title="Export as Image (PNG)"
             >
               <ImageIcon size={14} />
             </button>
             <button
               onClick={handleExportPDF}
-              className="p-1.5 rounded-md text-red-600 hover:text-red-700 hover:bg-red-50 transition-all duration-200"
+              className="p-1.5 rounded-md text-rose-400 hover:bg-rose-50 transition-all duration-200"
               title="Export as PDF"
             >
               <FileText size={14} />

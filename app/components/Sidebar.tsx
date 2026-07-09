@@ -153,7 +153,7 @@ export default function Sidebar() {
         },
         {
           title: "Data Master",
-          path: "/konfigurasi/kertas-kerja",
+          path: "/konfigurasi/data-master",
           resource: "system_config_gas",
         },
       ],
