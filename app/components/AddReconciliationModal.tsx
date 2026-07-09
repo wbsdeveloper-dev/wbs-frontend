@@ -2,6 +2,13 @@ import React, { useState } from "react";
 import { X, CheckCircle2, AlertCircle } from "lucide-react";
 import { useCreateReconciliationRecord } from "@/hooks/service/monitoring-api";
 import { useFilters } from "@/hooks/service/dashboard-api";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  getNotifications,
+  deleteNotification,
+  updateNotification,
+  notificationKeys,
+} from "@/hooks/service/notification-api";
 
 type Props = {
   setOpenModal: (value: boolean) => void;
@@ -33,6 +40,10 @@ export default function AddReconciliationModal({
 
   const createRecord = useCreateReconciliationRecord();
   const { data: filtersData } = useFilters();
+  const queryClient = useQueryClient();
+
+  const pembangkitGasPipa = filtersData?.pembangkit?.filter((p) => p.commodity === "GAS PIPA") || [];
+  const pemasokGasPipa = filtersData?.pemasok?.filter((p) => p.commodity === "GAS PIPA") || [];
 
   const handleSave = async () => {
     try {
@@ -52,6 +63,43 @@ export default function AddReconciliationModal({
         finalSource: formData.finalSource || null,
         resolution: formData.resolution || null,
       });
+
+      if (formData.reportDate && formData.siteId) {
+        try {
+          const notifs = await getNotifications({
+            page: 1,
+            limit: 100,
+            startDate: formData.reportDate,
+            endDate: formData.reportDate,
+          });
+
+          const matchingRecords = notifs.records.filter((r: any) => {
+            const matchSite = r.siteId === formData.siteId || r.siteName === formData.siteName;
+            const matchMetric = r.metricType?.toUpperCase() === formData.metricType?.toUpperCase();
+            const matchDate = r.reportDate?.slice(0, 10) === formData.reportDate?.slice(0, 10);
+            return matchSite && matchMetric && matchDate;
+          });
+
+          console.log("Matching notifications found:", matchingRecords);
+
+          for (const notif of matchingRecords) {
+            if (notif.status === "DATA_HILANG") {
+              await deleteNotification(notif.id);
+              console.log(`Deleted notification ${notif.id} (DATA_HILANG)`);
+            } else if (notif.status === "DI_BAWAH_TOP") {
+              await updateNotification(notif.id, {
+                isRead: true,
+                finalValue: formData.finalValue ? Number(formData.finalValue) : null,
+              });
+              console.log(`Updated notification ${notif.id} (DI_BAWAH_TOP)`);
+            }
+          }
+
+          queryClient.invalidateQueries({ queryKey: notificationKeys.all });
+        } catch (notifErr) {
+          console.error("Failed to process related notifications:", notifErr);
+        }
+      }
 
       setShowSuccess(true);
       setTimeout(() => {
@@ -105,7 +153,7 @@ export default function AddReconciliationModal({
             <select
               value={formData.siteId}
               onChange={(e) => {
-                const selected = filtersData?.pembangkit?.find(
+                const selected = pembangkitGasPipa.find(
                   (p) => p.id === e.target.value,
                 );
                 setFormData({
@@ -117,7 +165,7 @@ export default function AddReconciliationModal({
               className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all"
             >
               <option value="">Pilih Pembangkit</option>
-              {filtersData?.pembangkit?.map((p) => (
+              {pembangkitGasPipa.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
                 </option>
@@ -136,7 +184,7 @@ export default function AddReconciliationModal({
               className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all"
             >
               <option value="">Pilih Pemasok</option>
-              {filtersData?.pemasok?.map((p) => (
+              {pemasokGasPipa.map((p) => (
                 <option key={p.id} value={p.name}>
                   {p.name}
                 </option>

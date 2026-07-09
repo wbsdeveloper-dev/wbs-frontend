@@ -10,6 +10,8 @@ import {
   type CreateSitePayload,
   type Site,
 } from "@/hooks/service/site-api";
+import { Autocomplete, TextField } from "@mui/material";
+import { useKertasKerjaMaster } from "@/hooks/service/kertas-kerja-api";
 
 interface AddSiteModalProps {
   open: boolean;
@@ -24,7 +26,9 @@ export function AddSiteModal({
   onSuccess,
   editingId,
 }: AddSiteModalProps) {
-  const { data: dropdowns, isLoading: isLoadingDropdowns } = useDropdowns();
+  const { data: dropdowns, isLoading: isLoadingDropdowns } = useDropdowns({ enabled: open });
+  const { data: regions = [], isLoading: isLoadingRegions } = useKertasKerjaMaster("master_region", "GAS PIPA,LNG", { enabled: open });
+  
   const createSiteMutation = useCreateSite({
     onSuccess: () => {
       onSuccess();
@@ -215,17 +219,46 @@ export function AddSiteModal({
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Jenis
             </label>
-            <select
-              value={formData.site_type}
-              onChange={(e) =>
-                handleSiteTypeChange(e.target.value as "PEMBANGKIT" | "PEMASOK")
-              }
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white transition-all duration-200"
-            >
-              <option value="PEMBANGKIT">Pembangkit</option>
-              <option value="PEMASOK">Pemasok</option>
-              <option value="TRANSPORTIR">Transportir</option>
-            </select>
+            <Autocomplete
+              options={[
+                { value: "PEMBANGKIT", label: "Pembangkit" },
+                { value: "PEMASOK", label: "Pemasok" },
+                { value: "TRANSPORTIR", label: "Transportir" }
+              ]}
+              getOptionLabel={(option) => option.label}
+              value={[
+                { value: "PEMBANGKIT", label: "Pembangkit" },
+                { value: "PEMASOK", label: "Pemasok" },
+                { value: "TRANSPORTIR", label: "Transportir" }
+              ].find((opt) => opt.value === formData.site_type) || null}
+              onChange={(event, newValue) => {
+                if (newValue) {
+                  handleSiteTypeChange(newValue.value as "PEMBANGKIT" | "PEMASOK");
+                }
+              }}
+              isOptionEqualToValue={(option, value) => option.value === value?.value}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  placeholder="Pilih jenis"
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      padding: '4px 14px',
+                      borderRadius: '0.5rem',
+                      '& fieldset': {
+                        borderColor: '#d1d5db',
+                      },
+                      '&:hover fieldset': {
+                        borderColor: '#d1d5db',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#0ea5e9',
+                      },
+                    }
+                  }}
+                />
+              )}
+            />
           </div>
 
           {/* Kepemilikan */}
@@ -234,18 +267,34 @@ export function AddSiteModal({
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Kepemilikan
               </label>
-              <select
-                value={formData.owner ?? ""}
-                onChange={(e) =>
-                  setFormData({ ...formData, owner: e.target.value })
-                }
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white transition-all duration-200"
-              >
-                <option value="">Pilih kepemilikan</option>
-                <option value="PLN">PLN</option>
-                <option value="PLN IP">PLN IP</option>
-                <option value="PLN NP">PLN NP</option>
-              </select>
+              <Autocomplete
+                options={["PLN", "PLN IP", "PLN NP"]}
+                value={formData.owner || null}
+                onChange={(event, newValue) => {
+                  setFormData({ ...formData, owner: newValue || "" });
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    placeholder="Pilih kepemilikan"
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        padding: '4px 14px',
+                        borderRadius: '0.5rem',
+                        '& fieldset': {
+                          borderColor: '#d1d5db',
+                        },
+                        '&:hover fieldset': {
+                          borderColor: '#d1d5db',
+                        },
+                        '&.Mui-focused fieldset': {
+                          borderColor: '#0ea5e9',
+                        },
+                      }
+                    }}
+                  />
+                )}
+              />
             </div>
           )}
 
@@ -254,18 +303,34 @@ export function AddSiteModal({
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Komoditas
             </label>
-            <select
-              value={formData.commodity ?? ""}
-              onChange={(e) =>
-                setFormData({ ...formData, commodity: e.target.value })
-              }
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white transition-all duration-200"
-            >
-              <option value="">Pilih Komoditas</option>
-              <option value="GAS PIPA">GAS PIPA</option>
-              <option value="LNG">LNG</option>
-              <option value="BBM">BBM</option>
-            </select>
+            <Autocomplete
+              options={["GAS PIPA", "LNG", "BBM"]}
+              value={formData.commodity || null}
+              onChange={(event, newValue) => {
+                setFormData({ ...formData, commodity: newValue || "" });
+              }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  placeholder="Pilih Komoditas"
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      padding: '4px 14px',
+                      borderRadius: '0.5rem',
+                      '& fieldset': {
+                        borderColor: '#d1d5db',
+                      },
+                      '&:hover fieldset': {
+                        borderColor: '#d1d5db',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#0ea5e9',
+                      },
+                    }
+                  }}
+                />
+              )}
+            />
           </div>
 
           {/* Site Name */}
@@ -292,28 +357,56 @@ export function AddSiteModal({
           </div>
 
           {/* Region */}
-
           {formData.site_type != "TRANSPORTIR" && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Region
               </label>
-              <input
-                type="text"
-                value={formData.region}
-                onChange={(e) =>
-                  setFormData({ ...formData, region: e.target.value })
+              <Autocomplete
+                options={regions}
+                getOptionLabel={(option) => option.name}
+                value={
+                  regions.find((r) => r.name === formData.region) || null
                 }
-                placeholder="Masukkan region"
-                className={`w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200 ${
-                  errors.region
-                    ? "border-red-300 focus:ring-red-500"
-                    : "border-gray-300"
-                }`}
+                onChange={(event, newValue) => {
+                  setFormData({
+                    ...formData,
+                    region: newValue ? newValue.name : "",
+                  });
+                }}
+                isOptionEqualToValue={(option, value) => option.name === value?.name}
+                loading={isLoadingRegions}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    placeholder="Pilih region"
+                    error={!!errors.region}
+                    helperText={errors.region}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        padding: '4px 14px',
+                        borderRadius: '0.5rem',
+                        '& fieldset': {
+                          borderColor: errors.region ? '#ef4444' : '#d1d5db',
+                        },
+                        '&:hover fieldset': {
+                          borderColor: errors.region ? '#ef4444' : '#d1d5db',
+                        },
+                        '&.Mui-focused fieldset': {
+                          borderColor: errors.region ? '#ef4444' : '#0ea5e9', // using typical focus ring color for gas
+                        },
+                      },
+                      '& .MuiFormHelperText-root': {
+                        marginLeft: 0,
+                        marginRight: 0,
+                        marginTop: '4px',
+                        fontSize: '0.75rem',
+                        color: '#dc2626',
+                      }
+                    }}
+                  />
+                )}
               />
-              {errors.region && (
-                <p className="text-xs text-red-600 mt-1">{errors.region}</p>
-              )}
             </div>
           )}
 
@@ -321,7 +414,7 @@ export function AddSiteModal({
             formData.site_type != "PEMASOK" && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Kapasitas (MW)
+                  Kapasitas {formData.commodity === "BBM" ? "(kL)" : "(MW)"}
                 </label>
                 <input
                   type="number"
@@ -353,15 +446,14 @@ export function AddSiteModal({
               Latitude
             </label>
             <input
-              type="number"
+              type="text"
               value={formData.lat ?? ""}
               onChange={(e) =>
                 setFormData({
                   ...formData,
-                  lat: e.target.value ? parseFloat(e.target.value) : undefined,
+                  lat: e.target.value || undefined,
                 })
               }
-              step="any"
               placeholder="-6.123456"
               className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
             />
@@ -373,15 +465,14 @@ export function AddSiteModal({
               Longitude
             </label>
             <input
-              type="number"
+              type="text"
               value={formData.long ?? ""}
               onChange={(e) =>
                 setFormData({
                   ...formData,
-                  long: e.target.value ? parseFloat(e.target.value) : undefined,
+                  long: e.target.value || undefined,
                 })
               }
-              step="any"
               placeholder="106.123456"
               className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
             />

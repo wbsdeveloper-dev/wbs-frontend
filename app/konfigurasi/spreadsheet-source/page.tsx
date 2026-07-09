@@ -32,6 +32,8 @@ import {
   type UpdateSpreadsheetSourcePayload,
 } from "@/hooks/service/config-api";
 import { usePrivilege } from "@/hooks/usePrivilege";
+import { useAuth } from "@/components/providers/auth-provider";
+import { useRouter } from "next/navigation";
 
 function extractSpreadsheetId(url: string): string | null {
   const match = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
@@ -48,6 +50,7 @@ interface SourceFormData {
   sheetName: string;
   cronSchedule: string;
   dataStartRow: number;
+  dataEndRow: number | "";
 }
 
 const EMPTY_FORM: SourceFormData = {
@@ -56,6 +59,7 @@ const EMPTY_FORM: SourceFormData = {
   sheetName: "",
   cronSchedule: "0 11,23 * * *",
   dataStartRow: 1,
+  dataEndRow: "",
 };
 
 // ─── Grouped card per spreadsheet ─────────────────────────────────────────
@@ -73,6 +77,9 @@ interface GroupedCardProps {
   onAddSheet: (spreadsheetId: string) => void;
   deleteConfirmId: string | null;
   setDeleteConfirmId: (id: string | null) => void;
+  canCreate: boolean;
+  canUpdate: boolean;
+  canDelete: boolean;
 }
 
 function GroupedSpreadsheetCard({
@@ -83,6 +90,9 @@ function GroupedSpreadsheetCard({
   onAddSheet,
   deleteConfirmId,
   setDeleteConfirmId,
+  canCreate,
+  canUpdate,
+  canDelete,
 }: GroupedCardProps) {
   const [isExpanded, setIsExpanded] = useState(true);
   const { spreadsheetId, sheets } = group;
@@ -122,14 +132,16 @@ function GroupedSpreadsheetCard({
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          <button
-            onClick={() => onAddSheet(spreadsheetId)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary bg-primary/10 rounded-lg hover:bg-primary/20 transition-colors"
-            title="Tambah sheet baru ke spreadsheet ini"
-          >
-            <Plus size={13} />
-            Tambah Sheet
-          </button>
+          {canCreate && (
+            <button
+              onClick={() => onAddSheet(spreadsheetId)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary bg-primary/10 rounded-lg hover:bg-primary/20 transition-colors"
+              title="Tambah sheet baru ke spreadsheet ini"
+            >
+              <Plus size={13} />
+              Tambah Sheet
+            </button>
+          )}
           <button
             onClick={() => setIsExpanded(!isExpanded)}
             className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors text-gray-500"
@@ -195,32 +207,38 @@ function GroupedSpreadsheetCard({
                 <div>
                   <span className="text-gray-400">Mulai baris</span>
                   <p className="text-gray-700 font-medium">
-                    {source.dataStartRow ?? 1}
+                    {source.dataStartRow ?? 1} {source.dataEndRow ? `- ${source.dataEndRow}` : ""}
                   </p>
                 </div>
               </div>
 
               {/* Per-sheet actions */}
-              <div className="flex items-center gap-1 shrink-0">
-                <button
-                  onClick={() => onToggle(source)}
-                  className="p-1.5 rounded-lg hover:bg-white transition-colors"
-                  title={source.isEnabled ? "Nonaktifkan" : "Aktifkan"}
-                >
-                  {source.isEnabled ? (
-                    <ToggleRight size={18} className="text-green-500" />
-                  ) : (
-                    <ToggleLeft size={18} className="text-gray-400" />
+              {(canUpdate || canDelete) && (
+                <div className="flex items-center gap-1 shrink-0">
+                  {canUpdate && (
+                    <button
+                      onClick={() => onToggle(source)}
+                      className="p-1.5 rounded-lg hover:bg-white transition-colors"
+                      title={source.isEnabled ? "Nonaktifkan" : "Aktifkan"}
+                    >
+                      {source.isEnabled ? (
+                        <ToggleRight size={18} className="text-green-500" />
+                      ) : (
+                        <ToggleLeft size={18} className="text-gray-400" />
+                      )}
+                    </button>
                   )}
-                </button>
-                <button
-                  onClick={() => onEdit(source)}
-                  className="p-1.5 rounded-lg hover:bg-white transition-colors"
-                  title="Edit"
-                >
-                  <Pencil size={14} className="text-gray-500" />
-                </button>
-                {deleteConfirmId === source.id ? (
+                  {canUpdate && (
+                    <button
+                      onClick={() => onEdit(source)}
+                      className="p-1.5 rounded-lg hover:bg-white transition-colors"
+                      title="Edit"
+                    >
+                      <Pencil size={14} className="text-gray-500" />
+                    </button>
+                  )}
+                  {canDelete && (
+                    deleteConfirmId === source.id ? (
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => onDelete(source.id)}
@@ -248,10 +266,11 @@ function GroupedSpreadsheetCard({
                       className="text-gray-400 hover:text-red-500"
                     />
                   </button>
-                )}
+                ))}
               </div>
-            </div>
-          ))}
+            )}
+          </div>
+        ))}
         </div>
       )}
     </Card>
@@ -261,7 +280,11 @@ function GroupedSpreadsheetCard({
 // ─── Main Page ────────────────────────────────────────────────────────────
 
 export default function SpreadsheetSourcePage() {
+  const router = useRouter();
   const { hasPrivilege } = usePrivilege();
+  const { isLoading: isAuthLoading } = useAuth();
+  
+  const canRead = hasPrivilege("spreadsheet_source", "READ");
   const canCreate = hasPrivilege("spreadsheet_source", "CREATE");
   const canUpdate = hasPrivilege("spreadsheet_source", "UPDATE");
   const canDelete = hasPrivilege("spreadsheet_source", "DELETE");
@@ -329,6 +352,7 @@ export default function SpreadsheetSourcePage() {
       sheetName: source.sheetName,
       cronSchedule: source.cronSchedule || "",
       dataStartRow: source.dataStartRow || 1,
+      dataEndRow: source.dataEndRow || "",
     });
     setIsModalOpen(true);
   };
@@ -362,6 +386,7 @@ export default function SpreadsheetSourcePage() {
         sheetName: formData.sheetName,
         cronSchedule: formData.cronSchedule || undefined,
         dataStartRow: formData.dataStartRow,
+        dataEndRow: formData.dataEndRow === "" ? undefined : Number(formData.dataEndRow),
         commodity: editingSource.commodity || "GAS PIPA",
       };
       updateMutation.mutate(
@@ -384,6 +409,7 @@ export default function SpreadsheetSourcePage() {
         sheetName: formData.sheetName,
         cronSchedule: formData.cronSchedule || undefined,
         dataStartRow: formData.dataStartRow,
+        dataEndRow: formData.dataEndRow === "" ? undefined : Number(formData.dataEndRow),
         commodity: "GAS PIPA",
       };
       createMutation.mutate(payload, {
@@ -423,6 +449,21 @@ export default function SpreadsheetSourcePage() {
       },
     );
   };
+
+  // Redirect if unauthorized
+  React.useEffect(() => {
+    if (!isAuthLoading && !canRead) {
+      router.push("/landingpage");
+    }
+  }, [isAuthLoading, canRead, router]);
+
+  if (isAuthLoading || !canRead) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <Loader2 className="animate-spin text-secondary" size={32} />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen p-4 md:p-6 lg:p-8">
@@ -526,6 +567,9 @@ export default function SpreadsheetSourcePage() {
               onAddSheet={(id) => openCreateModal(id)}
               deleteConfirmId={deleteConfirmId}
               setDeleteConfirmId={setDeleteConfirmId}
+              canCreate={canCreate}
+              canUpdate={canUpdate}
+              canDelete={canDelete}
             />
           ))
         )}
@@ -624,6 +668,24 @@ export default function SpreadsheetSourcePage() {
                 }
                 className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent"
                 placeholder="10"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Data End Row <span className="text-gray-400 font-normal">(Opsional)</span>
+              </label>
+              <input
+                type="number"
+                min="1"
+                value={formData.dataEndRow}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    dataEndRow: e.target.value === "" ? "" : parseInt(e.target.value) || "",
+                  })
+                }
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent"
+                placeholder="Biarkan kosong untuk sampai baris terakhir"
               />
             </div>
           </div>

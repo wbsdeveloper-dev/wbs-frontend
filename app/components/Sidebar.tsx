@@ -37,8 +37,13 @@ export default function Sidebar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const { hasPrivilege } = usePrivilege();
+  
+  const canReadNotification = hasPrivilege("notification", "READ");
 
-  const { data: notificationsData } = useNotifications({ isRead: false, limit: 1 }, { refetchInterval: 30_000 });
+  const { data: notificationsData } = useNotifications(
+    { isRead: false, limit: 1 },
+    { refetchInterval: 30_000 },
+  );
   const unreadCount = notificationsData?.pagination?.total || 0;
 
   const [openMenu, setOpenMenu] = useState<string | null>(null);
@@ -83,20 +88,24 @@ export default function Sidebar() {
       title: "Beranda",
       path: "/dashboard/gas",
       icon: LayoutDashboard,
-      resource: "dashboard",
+      resource: "dashboard_gas",
     },
     {
       title: "Manajemen Data",
       path: "/edit",
       icon: FileText,
-      resource: "data_management",
+      resource: "data_input_gas",
       children: [
-        { title: "Data Input", path: "/edit", resource: "data_management" },
-        { title: "Data Transportir", path: "/edit/transportir", resource: "data_management" },
+        { title: "Data Input", path: "/edit", resource: "data_input_gas" },
+        {
+          title: "Data Transportir",
+          path: "/edit/transportir",
+          resource: "data_transportir_gas",
+        },
         {
           title: "File Berita Acara",
           path: "/edit/ba-files",
-          resource: "data_management",
+          resource: "file_berita_acara_gas",
         },
       ],
     },
@@ -104,39 +113,48 @@ export default function Sidebar() {
       title: "Pemasok & Pembangkit",
       path: "/site",
       icon: MapPin,
-      resource: "site_management",
+      resource: "site_management_gas",
     },
     {
       title: "Kontrak & Dokumen",
       path: "/kontrak",
       icon: Briefcase,
-      resource: "contracts",
+      resource: "contracts_gas",
     },
     {
       title: "Konfigurasi Sistem",
       path: "/konfigurasi",
       icon: Database,
       children: [
-        { title: "Pengguna", path: "/konfigurasi/pengguna", resource: "users" },
+        {
+          title: "Pengguna",
+          path: "/konfigurasi/pengguna",
+          resource: "users_gas",
+        },
         {
           title: "Email Ingest",
           path: "/konfigurasi/email-ingest",
-          resource: "email_ingest",
+          resource: "email_ingest_gas",
         },
         {
           title: "Template Grup",
           path: "/konfigurasi/template-grup",
-          resource: "template_group",
+          resource: "template_group_gas",
         },
         {
           title: "Spreadsheet",
           path: "/konfigurasi/spreadsheet-source",
-          resource: "spreadsheet_source",
+          resource: "spreadsheet_source_gas",
         },
         {
           title: "API Keys",
           path: "/konfigurasi/bot/api-keys",
-          resource: "api_keys",
+          resource: "api_keys_gas",
+        },
+        {
+          title: "Data Master",
+          path: "/konfigurasi/data-master",
+          resource: "system_config_gas",
         },
       ],
     },
@@ -144,7 +162,7 @@ export default function Sidebar() {
       title: "Manajemen Bot",
       path: "/whatsappbot",
       icon: Bot,
-      resource: "bot_management",
+      resource: "bot_management_gas",
     },
   ];
 
@@ -153,19 +171,29 @@ export default function Sidebar() {
       title: "Beranda",
       path: "/dashboard/bbm",
       icon: LayoutDashboard,
-      resource: "dashboard",
+      resource: "dashboard_bbm",
     },
     {
       title: "Manajemen Data",
       path: "/edit-bbm",
       icon: FileText,
-      resource: "data_management",
+      // Default to data_input_bbm to show parent.
+      // Individual children have explicit resources.
+      resource: "data_input_bbm",
+      children: [
+        { title: "Data Input", path: "/edit-bbm", resource: "data_input_bbm" },
+        {
+          title: "Kertas Kerja",
+          path: "/edit-bbm/kertas-kerja",
+          resource: "kertas_kerja_bbm",
+        },
+      ],
     },
     {
       title: "TBBM & Pembangkit",
       path: "/site-bbm",
       icon: MapPin,
-      resource: "site_management",
+      resource: "site_management_bbm",
     },
     {
       title: "Konfigurasi Sistem",
@@ -175,17 +203,22 @@ export default function Sidebar() {
         {
           title: "Pengguna",
           path: "/konfigurasi-bbm/pengguna",
-          resource: "users",
+          resource: "users_bbm",
         },
         {
           title: "Template Grup",
           path: "/konfigurasi-bbm/template-grup",
-          resource: "template_group",
+          resource: "template_group_bbm",
         },
         {
           title: "Spreadsheet",
           path: "/konfigurasi-bbm/spreadsheet-source",
-          resource: "spreadsheet_source",
+          resource: "spreadsheet_source_bbm",
+        },
+        {
+          title: "Data Master",
+          path: "/konfigurasi-bbm/data-master",
+          resource: "system_config",
         },
       ],
     },
@@ -207,8 +240,10 @@ export default function Sidebar() {
       return menu;
     })
     .filter((menu) => {
+      if (menu.children) {
+        return menu.children.length > 0;
+      }
       if (menu.resource && !hasPrivilege(menu.resource, "READ")) return false;
-      if (menu.children && menu.children.length === 0) return false;
       return true;
     });
 
@@ -322,20 +357,26 @@ export default function Sidebar() {
       {/* Merged Dashboard & User Card */}
       <div className="px-3 pt-4 pb-3">
         {!isCollapsed || isMobile ? (
-          <div className={`rounded-xl border ${activeDash.borderColor} ${activeDash.bgColor} flex flex-col overflow-hidden shadow-sm`}>
+          <div
+            className={`rounded-xl border ${activeDash.borderColor} ${activeDash.bgColor} flex flex-col overflow-hidden shadow-sm`}
+          >
             {/* Top: Active Dashboard */}
-            <div 
+            <div
               onClick={() => router.push("/landingpage")}
               className="p-3 flex items-center gap-3 cursor-pointer hover:bg-white/40 transition-colors"
             >
-              <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${activeDash.gradient} flex items-center justify-center shrink-0 shadow-sm`}>
+              <div
+                className={`w-10 h-10 rounded-xl bg-gradient-to-br ${activeDash.gradient} flex items-center justify-center shrink-0 shadow-sm`}
+              >
                 <DashIcon size={20} className="text-white" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-gray-500 text-[10px] font-bold uppercase tracking-wider mb-0.5">
                   Dashboard Aktif
                 </p>
-                <p className={`font-bold text-sm truncate ${activeDash.textColor}`}>
+                <p
+                  className={`font-bold text-sm truncate ${activeDash.textColor}`}
+                >
                   {activeDash.title}
                 </p>
               </div>
@@ -356,7 +397,7 @@ export default function Sidebar() {
                   {user?.roles?.join(", ") || "User"}
                 </p>
               </div>
-              {!isBbmRoute && (
+              {!isBbmRoute && canReadNotification && (
                 <div
                   onClick={() => router.push("/notification")}
                   className="relative p-1.5 rounded-full hover:bg-gray-200 cursor-pointer text-gray-500 transition-colors"
@@ -374,21 +415,21 @@ export default function Sidebar() {
           </div>
         ) : (
           <div className="flex flex-col gap-4 items-center">
-            <div 
+            <div
               onClick={() => router.push("/landingpage")}
               title={activeDash.title}
               className={`w-10 h-10 rounded-xl bg-gradient-to-br ${activeDash.gradient} flex items-center justify-center shrink-0 shadow-sm cursor-pointer hover:opacity-90 transition-opacity`}
             >
               <DashIcon size={20} className="text-white" />
             </div>
-            <div 
+            <div
               title={user?.email || "User"}
               className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center shrink-0 shadow-sm cursor-pointer hover:opacity-90 transition-opacity"
             >
               <User size={16} className="text-gray-600" />
             </div>
-            {!isBbmRoute && (
-              <div 
+            {!isBbmRoute && canReadNotification && (
+              <div
                 onClick={() => router.push("/notification")}
                 title="Notifikasi"
                 className="relative w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center shrink-0 shadow-sm cursor-pointer hover:opacity-90 transition-opacity text-gray-600"
@@ -429,11 +470,11 @@ export default function Sidebar() {
                 {/* Parent menu */}
                 {menu.children ? (
                   <button
-                    onClick={() => setOpenMenu(openMenu === menu.title ? null : menu.title)}
+                    onClick={() =>
+                      setOpenMenu(openMenu === menu.title ? null : menu.title)
+                    }
                     className={
-                      isParentActive || isOpen
-                        ? menuActive
-                        : menuNonActive
+                      isParentActive || isOpen ? menuActive : menuNonActive
                     }
                   >
                     {Icon && <Icon className="w-5 h-5" />}
@@ -453,15 +494,13 @@ export default function Sidebar() {
                   <Link
                     href={menu.path || "#"}
                     className={
-                      isParentActive || isOpen
-                        ? menuActive
-                        : menuNonActive
+                      isParentActive || isOpen ? menuActive : menuNonActive
                     }
                   >
                     {Icon && (
                       <div className="relative">
                         <Icon className="w-5 h-5" />
-                        {menu.badgeCount && (isCollapsed && !isMobile) && (
+                        {menu.badgeCount && isCollapsed && !isMobile && (
                           <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm ring-2 ring-white">
                             {menu.badgeCount}
                           </span>

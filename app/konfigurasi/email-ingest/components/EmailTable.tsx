@@ -23,6 +23,7 @@ export default function EmailTable({
   const { hasPrivilege } = usePrivilege();
   const canUpdate = hasPrivilege("email_ingest", "UPDATE");
   const canDelete = hasPrivilege("email_ingest", "DELETE");
+  const hasAction = canUpdate || canDelete;
 
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.checked) {
@@ -94,11 +95,13 @@ export default function EmailTable({
                   <span className="text-gray-400">↕</span>
                 </div>
               </th>
-              <th className="px-4 py-4 text-center">
-                <div className="text-sm font-semibold text-gray-700">
-                  Aksi
-                </div>
-              </th>
+              {hasAction && (
+                <th className="px-4 py-4 text-center">
+                  <div className="text-sm font-semibold text-gray-700">
+                    Aksi
+                  </div>
+                </th>
+              )}
             </tr>
           </thead>
           <tbody>
@@ -158,34 +161,36 @@ export default function EmailTable({
                     {email.isEnabled ? "Aktif" : "Nonaktif"}
                   </span>
                 </td>
-                <td className="px-4 py-4">
-                  <div className="flex items-center justify-center gap-2">
-                    {canUpdate && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onRowClick(email);
-                        }}
-                        className="p-2 text-gray-500 hover:text-primary hover:bg-primary/10 rounded-lg transition-all duration-200"
-                        title="Edit"
-                      >
-                        <Pencil size={16} />
-                      </button>
-                    )}
-                    {canDelete && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onDelete(email.id);
-                        }}
-                        className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
-                        title="Hapus"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    )}
-                  </div>
-                </td>
+                {hasAction && (
+                  <td className="px-4 py-4">
+                    <div className="flex items-center justify-center gap-2">
+                      {canUpdate && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onRowClick(email);
+                          }}
+                          className="p-2 text-gray-500 hover:text-primary hover:bg-primary/10 rounded-lg transition-all duration-200"
+                          title="Edit"
+                        >
+                          <Pencil size={16} />
+                        </button>
+                      )}
+                      {canDelete && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDelete(email.id);
+                          }}
+                          className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
+                          title="Hapus"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                )}
               </tr>
             ))}
             {emails.length === 0 && (

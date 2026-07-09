@@ -1,7 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Filter, X, Info, AlertTriangle } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
+import { Filter, X, Info, AlertTriangle, Image as ImageIcon, FileText } from "lucide-react";
+import * as htmlToImage from "html-to-image";
+import jsPDF from "jspdf";
 import {
   CartesianGrid,
   Line,
@@ -692,6 +694,38 @@ export default function RealtimeChart({
   onPembangkitChange,
   onDateRangeChange,
 }: RealtimeChartProps = {}) {
+  const chartRef = useRef<HTMLDivElement>(null);
+
+  const handleExportImage = async () => {
+    if (!chartRef.current) return;
+    try {
+      const dataUrl = await htmlToImage.toPng(chartRef.current, { backgroundColor: "#ffffff", pixelRatio: 2 });
+      const link = document.createElement("a");
+      link.download = `grafik-gas-${new Date().toISOString().split("T")[0]}.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error("Failed to export image", err);
+    }
+  };
+
+  const handleExportPDF = async () => {
+    if (!chartRef.current) return;
+    try {
+      const canvas = await htmlToImage.toCanvas(chartRef.current, { backgroundColor: "#ffffff", pixelRatio: 2 });
+      const imgData = canvas.toDataURL("image/png");
+      
+      const pdf = new jsPDF("l", "mm", "a4");
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      
+      pdf.addImage(imgData, "PNG", 0, 10, pdfWidth, pdfHeight);
+      pdf.save(`grafik-gas-${new Date().toISOString().split("T")[0]}.pdf`);
+    } catch (err) {
+      console.error("Failed to export PDF", err);
+    }
+  };
+
   const [intervalMode, setIntervalMode] = useState<
     "Jam" | "Hari" | "Bulan" | "Tahun"
   >("Jam");
@@ -1169,7 +1203,7 @@ export default function RealtimeChart({
     <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:divide-x divide-gray-200">
       {pemasok || pembangkit ? (
         <div className="lg:col-span-9 lg:pr-6">
-          <div>
+          <div ref={chartRef} className="bg-white pb-2">
             <div className="flex justify-between items-start mb-6">
               <div className="flex flex-col gap-1">
                 <h3 className="text-lg font-semibold text-gray-900">
@@ -1205,28 +1239,50 @@ export default function RealtimeChart({
                 </p>
               </div>
 
-              {/* Toggle Switch */}
-              <div className="flex items-center bg-gray-100 rounded-lg p-0.5 h-fit shrink-0">
-                <button
-                  onClick={() => setChartMode("non-transportir")}
-                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
-                    chartMode === "non-transportir"
-                      ? "bg-white text-gray-900 shadow-sm"
-                      : "text-gray-500 hover:text-gray-700"
-                  }`}
-                >
-                  Non-Transportir
-                </button>
-                <button
-                  onClick={() => setChartMode("transportir")}
-                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
-                    chartMode === "transportir"
-                      ? "bg-white text-gray-900 shadow-sm"
-                      : "text-gray-500 hover:text-gray-700"
-                  }`}
-                >
-                  Transportir
-                </button>
+              <div className="flex items-center gap-3 h-fit shrink-0">
+                {/* Export Buttons */}
+                <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
+                  <button
+                    onClick={handleExportImage}
+                    className="px-3 py-1.5 rounded-md text-xs font-medium text-emerald-500 hover:bg-emerald-50 flex items-center gap-1.5 transition-all duration-200"
+                    title="Export as Image (PNG)"
+                  >
+                    <ImageIcon size={14} />
+                    PNG
+                  </button>
+                  <button
+                    onClick={handleExportPDF}
+                    className="px-3 py-1.5 rounded-md text-xs font-medium text-rose-400 hover:bg-rose-50 flex items-center gap-1.5 transition-all duration-200"
+                    title="Export as PDF"
+                  >
+                    <FileText size={14} />
+                    PDF
+                  </button>
+                </div>
+
+                {/* Toggle Switch */}
+                <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
+                  <button
+                    onClick={() => setChartMode("non-transportir")}
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
+                      chartMode === "non-transportir"
+                        ? "bg-white text-gray-900 shadow-sm"
+                        : "text-gray-500 hover:text-gray-700"
+                    }`}
+                  >
+                    Non-Transportir
+                  </button>
+                  <button
+                    onClick={() => setChartMode("transportir")}
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
+                      chartMode === "transportir"
+                        ? "bg-white text-gray-900 shadow-sm"
+                        : "text-gray-500 hover:text-gray-700"
+                    }`}
+                  >
+                    Transportir
+                  </button>
+                </div>
               </div>
             </div>
             {chartMode === "transportir" ? (

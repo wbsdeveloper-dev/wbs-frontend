@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import * as htmlToImage from "html-to-image";
+import jsPDF from "jspdf";
 import {
   MapContainer,
   Marker,
@@ -23,6 +25,8 @@ import {
   Truck,
   Ship,
   Search,
+  Image as ImageIcon,
+  FileText,
 } from "lucide-react";
 import FilterAutocomplete from "./FilterAutocomplete";
 import {
@@ -81,6 +85,51 @@ const buildIcons = (legend: MapLegend): Record<string, L.DivIcon> => {
 // ---------------------------------------------------------------------------
 
 export default function Map() {
+  const mapRef = useRef<HTMLDivElement>(null);
+
+  const filterExportButtons = (node: HTMLElement) => {
+    if (node?.classList?.contains("export-buttons-container")) return false;
+    return true;
+  };
+
+  const handleExportImage = async () => {
+    if (!mapRef.current) return;
+    try {
+      const dataUrl = await htmlToImage.toPng(mapRef.current, {
+        backgroundColor: "#ffffff",
+        pixelRatio: 2,
+        filter: filterExportButtons as any,
+      });
+      const link = document.createElement("a");
+      link.download = `peta-bbm-${new Date().toISOString().split("T")[0]}.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error("Failed to export image", err);
+    }
+  };
+
+  const handleExportPDF = async () => {
+    if (!mapRef.current) return;
+    try {
+      const canvas = await htmlToImage.toCanvas(mapRef.current, {
+        backgroundColor: "#ffffff",
+        pixelRatio: 2,
+        filter: filterExportButtons as any,
+      });
+      const imgData = canvas.toDataURL("image/png");
+
+      const pdf = new jsPDF("l", "mm", "a4");
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+      pdf.addImage(imgData, "PNG", 0, 10, pdfWidth, pdfHeight);
+      pdf.save(`peta-bbm-${new Date().toISOString().split("T")[0]}.pdf`);
+    } catch (err) {
+      console.error("Failed to export PDF", err);
+    }
+  };
+
   // ---- API data -----------------------------------------------------------
   const { data, isLoading: isMapLoading, isError, error } = useMapLocations();
   const { data: bbmSites } = useSites({ commodity: "BBM" });
@@ -347,7 +396,9 @@ export default function Map() {
   // ---- helpers ------------------------------------------------------------
   const getSiteTypeLabel = (type: string) => {
     if (type === "PEMASOK") return "TBBM";
-    return customLegend?.siteTypes.find((st) => st.type === type)?.label || type;
+    return (
+      customLegend?.siteTypes.find((st) => st.type === type)?.label || type
+    );
   };
 
   const getSiteTypeColor = (type: string) =>
@@ -414,305 +465,344 @@ export default function Map() {
     <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6 mt-4 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:divide-x divide-gray-200">
       {/* Map Section */}
       <div className="lg:col-span-9 lg:pr-6">
-        <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-4">
-          Titik Lokasi TBBM dan Pembangkit
-        </h3>
+        <div ref={mapRef} className="bg-white pb-2">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-base md:text-lg font-semibold text-gray-900">
+              Titik Lokasi TBBM dan Pembangkit
+            </h3>
+            <div className="export-buttons-container flex items-center gap-2 bg-gray-100 rounded-lg p-0.5">
+              <button
+                onClick={handleExportImage}
+                className="px-3 py-1.5 rounded-md text-xs font-medium text-emerald-500 hover:bg-emerald-50 flex items-center gap-1.5 transition-all duration-200"
+                title="Export as Image (PNG)"
+              >
+                <ImageIcon size={14} />
+                PNG
+              </button>
+              <button
+                onClick={handleExportPDF}
+                className="px-3 py-1.5 rounded-md text-xs font-medium text-rose-400 hover:bg-rose-50 flex items-center gap-1.5 transition-all duration-200"
+                title="Export as PDF"
+              >
+                <FileText size={14} />
+                PDF
+              </button>
+            </div>
+          </div>
 
-        <div className="relative h-[250px] sm:h-[300px] md:h-[350px] lg:h-[400px] w-full">
-          <MapContainer
-            center={[-2.5, 118]}
-            zoom={5}
-            scrollWheelZoom={true}
-            className="h-full w-full rounded-lg z-0"
-          >
-            <TileLayer
-              attribution="&copy; OpenStreetMap contributors"
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
+          <div className="relative h-[250px] sm:h-[300px] md:h-[350px] lg:h-[400px] w-full">
+            <MapContainer
+              center={[-2.5, 118]}
+              zoom={5}
+              scrollWheelZoom={true}
+              className="h-full w-full rounded-lg z-0"
+            >
+              <TileLayer
+                attribution="&copy; OpenStreetMap contributors"
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
 
-            {/* PIPES */}
-            {showPipes &&
-              filteredPipes.map((pipe) => {
-                const source = getSiteById(pipe.sourceSiteId);
-                const target = getSiteById(pipe.targetSiteId);
-                if (!source || !target) return null;
+              {/* PIPES */}
+              {showPipes &&
+                filteredPipes.map((pipe) => {
+                  const source = getSiteById(pipe.sourceSiteId);
+                  const target = getSiteById(pipe.targetSiteId);
+                  if (!source || !target) return null;
+
+                  return (
+                    <Polyline
+                      key={pipe.id}
+                      positions={[
+                        [Number(source.lat), Number(source.lng)] as LatLngTuple,
+                        [Number(target.lat), Number(target.lng)] as LatLngTuple,
+                      ]}
+                      pathOptions={{
+                        color: getPipeTypeColor(pipe.relationType),
+                        weight: 3,
+                        opacity: 0.8,
+                        dashArray: "1 5",
+                      }}
+                    >
+                      <Tooltip sticky>
+                        <div className="text-xs">
+                          <p className="font-medium">
+                            {source.name} → {target.name}
+                          </p>
+                          <p>Komoditas: {pipe.commodity}</p>
+                          <p>Status: {pipe.status}</p>
+                        </div>
+                      </Tooltip>
+                    </Polyline>
+                  );
+                })}
+
+              {/* SITE MARKERS */}
+              {filteredSites.map((site) => {
+                const icon = icons[site.siteType];
+                const summary = bbmSitesSummary?.find((s) => s.id === site.id);
+                const connected = getConnectedSites(site.id);
 
                 return (
-                  <Polyline
-                    key={pipe.id}
-                    positions={[
-                      [source.lat, source.lng] as LatLngTuple,
-                      [target.lat, target.lng] as LatLngTuple,
-                    ]}
-                    pathOptions={{
-                      color: getPipeTypeColor(pipe.relationType),
-                      weight: 3,
-                      opacity: 0.8,
-                      dashArray: "1 5",
-                    }}
+                  <Marker
+                    key={site.id}
+                    position={
+                      [Number(site.lat), Number(site.lng)] as LatLngTuple
+                    }
+                    icon={icon}
                   >
-                    <Tooltip sticky>
-                      <div className="text-xs">
-                        <p className="font-medium">
-                          {source.name} → {target.name}
+                    <Popup>
+                      <div className="min-w-[180px]">
+                        <p
+                          className="font-semibold text-sm"
+                          style={{ color: getSiteTypeColor(site.siteType) }}
+                        >
+                          {getSiteTypeLabel(site.siteType)}
                         </p>
-                        <p>Komoditas: {pipe.commodity}</p>
-                        <p>Status: {pipe.status}</p>
+                        <p className="text-sm font-medium text-gray-800">
+                          {site.name}
+                        </p>
+                        <div className="mt-2 pt-2 border-t border-gray-200 space-y-1">
+                          {(site.siteType === "PEMASOK" ||
+                            site.siteType === "PEMBANGKIT") && (
+                            <div className="flex justify-between text-xs">
+                              <span className="text-gray-500">
+                                {site.siteType === "PEMASOK"
+                                  ? "Jumlah Pembangkit:"
+                                  : "Jumlah TBBM:"}
+                              </span>
+                              <span className="font-medium text-gray-700">
+                                {site.siteType === "PEMASOK"
+                                  ? summary?.pembangkitList?.length || 0
+                                  : summary?.pemasokList?.length || 0}
+                              </span>
+                            </div>
+                          )}
+                          <div className="flex justify-between text-xs">
+                            <span className="text-gray-500">Region:</span>
+                            <span className="font-medium text-gray-700">
+                              {site.region}
+                            </span>
+                          </div>
+                          {site.siteType === "PEMBANGKIT" && site.capacity && (
+                            <div className="flex justify-between text-xs">
+                              <span className="text-gray-500">Kapasitas:</span>
+                              <span className="font-medium text-primary">
+                                {parseFloat(site.capacity).toLocaleString()} MW
+                              </span>
+                            </div>
+                          )}
+                          {site.siteType === "PEMBANGKIT" && site.owner && (
+                            <div className="flex justify-between text-xs">
+                              <span className="text-gray-500">
+                                Kepemilikan:
+                              </span>
+                              <span className="font-medium text-gray-700">
+                                {site.owner}
+                              </span>
+                            </div>
+                          )}
+                          <div className="flex justify-between text-xs">
+                            <span className="text-gray-500">Koordinat:</span>
+                            <span className="font-medium text-gray-700">
+                              {site.lat != null
+                                ? Number(site.lat).toFixed(4)
+                                : ""}
+                              ,{" "}
+                              {site.lng != null
+                                ? Number(site.lng).toFixed(4)
+                                : ""}
+                            </span>
+                          </div>
+                        </div>
+
+                        {(() => {
+                          if (!summary) return null;
+
+                          return (
+                            <div className="mt-2 pt-2 border-t border-gray-200 space-y-1">
+                              <div className="flex justify-between text-xs">
+                                <span className="text-gray-500">
+                                  Total Nominasi:
+                                </span>
+                                <span className="font-medium text-primary">
+                                  {summary.totalNominasi?.toLocaleString()} kL
+                                </span>
+                              </div>
+                              <div className="flex justify-between text-xs">
+                                <span className="text-gray-500">
+                                  Total Penyaluran:
+                                </span>
+                                <span className="font-medium text-emerald-600">
+                                  {summary.totalRealisasi?.toLocaleString()} kL
+                                </span>
+                              </div>
+                              <div className="flex justify-between text-xs">
+                                <span className="text-gray-500">
+                                  Total Pemakaian:
+                                </span>
+                                <span className="font-medium text-amber-600">
+                                  {summary.totalPemakaian?.toLocaleString()} kL
+                                </span>
+                              </div>
+
+                              {summary.pembangkitList &&
+                                summary.pembangkitList.length > 0 && (
+                                  <button
+                                    onClick={() => {
+                                      setModalSiteList({
+                                        title: "Daftar Pembangkit",
+                                        list: summary.pembangkitList!,
+                                      });
+                                      setModalSearchQuery("");
+                                    }}
+                                    className="w-full mt-2 py-1.5 px-2 bg-primary/10 hover:bg-primary/20 text-primary rounded text-xs font-semibold transition-colors"
+                                  >
+                                    Lihat Daftar Pembangkit
+                                  </button>
+                                )}
+                              {summary.pemasokList &&
+                                summary.pemasokList.length > 0 && (
+                                  <button
+                                    onClick={() => {
+                                      setModalSiteList({
+                                        title: "Daftar Pemasok",
+                                        list: summary.pemasokList!,
+                                      });
+                                      setModalSearchQuery("");
+                                    }}
+                                    className="w-full mt-2 py-1.5 px-2 bg-primary/10 hover:bg-primary/20 text-primary rounded text-xs font-semibold transition-colors"
+                                  >
+                                    Lihat Daftar Pemasok
+                                  </button>
+                                )}
+                            </div>
+                          );
+                        })()}
+                        {connected.length > 0 && (
+                          <div className="mt-2 pt-2 border-t border-gray-200">
+                            <p className="text-xs text-gray-500 mb-1">
+                              Relasi:
+                            </p>
+                            <ul className="text-xs text-gray-700 space-y-0.5">
+                              {connected.map((c) => (
+                                <li
+                                  key={c.id}
+                                  className="flex items-center gap-1"
+                                >
+                                  <span
+                                    className="w-1.5 h-1.5 rounded-full"
+                                    style={{
+                                      backgroundColor: getSiteTypeColor(
+                                        c.siteType,
+                                      ),
+                                    }}
+                                  />
+                                  {c.name}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
                       </div>
-                    </Tooltip>
-                  </Polyline>
+                    </Popup>
+                  </Marker>
                 );
               })}
+            </MapContainer>
 
-            {/* SITE MARKERS */}
-            {filteredSites.map((site) => {
-              const icon = icons[site.siteType];
-              const summary = bbmSitesSummary?.find((s) => s.id === site.id);
-              const connected = getConnectedSites(site.id);
-
-              return (
-                <Marker
-                  key={site.id}
-                  position={[site.lat, site.lng] as LatLngTuple}
-                  icon={icon}
+            {/* INTERACTIVE LEGEND - Collapsible */}
+            <div className="absolute bottom-2 left-2 sm:bottom-4 sm:left-4 z-1000">
+              {!legendExpanded ? (
+                <button
+                  onClick={() => setLegendExpanded(true)}
+                  className="flex items-center gap-2 bg-white/95 backdrop-blur rounded-lg shadow-lg px-3 py-2 text-xs hover:bg-white transition-all"
                 >
-                  <Popup>
-                    <div className="min-w-[180px]">
-                      <p
-                        className="font-semibold text-sm"
-                        style={{ color: getSiteTypeColor(site.siteType) }}
-                      >
-                        {getSiteTypeLabel(site.siteType)}
-                      </p>
-                      <p className="text-sm font-medium text-gray-800">
-                        {site.name}
-                      </p>
-                      <div className="mt-2 pt-2 border-t border-gray-200 space-y-1">
-                        {(site.siteType === "PEMASOK" ||
-                          site.siteType === "PEMBANGKIT") && (
-                          <div className="flex justify-between text-xs">
-                            <span className="text-gray-500">
-                              {site.siteType === "PEMASOK"
-                                ? "Jumlah Pembangkit:"
-                                : "Jumlah TBBM:"}
-                            </span>
-                            <span className="font-medium text-gray-700">
-                              {site.siteType === "PEMASOK"
-                                ? summary?.pembangkitList?.length || 0
-                                : summary?.pemasokList?.length || 0}
-                            </span>
-                          </div>
-                        )}
-                        <div className="flex justify-between text-xs">
-                          <span className="text-gray-500">Region:</span>
-                          <span className="font-medium text-gray-700">
-                            {site.region}
-                          </span>
-                        </div>
-                        {site.siteType === "PEMBANGKIT" && site.capacity && (
-                          <div className="flex justify-between text-xs">
-                            <span className="text-gray-500">Kapasitas:</span>
-                            <span className="font-medium text-primary">
-                              {parseFloat(site.capacity).toLocaleString()} MW
-                            </span>
-                          </div>
-                        )}
-                        {site.siteType === "PEMBANGKIT" && site.owner && (
-                          <div className="flex justify-between text-xs">
-                            <span className="text-gray-500">Kepemilikan:</span>
-                            <span className="font-medium text-gray-700">
-                              {site.owner}
-                            </span>
-                          </div>
-                        )}
-                        <div className="flex justify-between text-xs">
-                          <span className="text-gray-500">Koordinat:</span>
-                          <span className="font-medium text-gray-700">
-                            {site.lat?.toFixed(4)}, {site.lng?.toFixed(4)}
-                          </span>
-                        </div>
-                      </div>
-
-                      {(() => {
-                        if (!summary) return null;
-
-                        return (
-                          <div className="mt-2 pt-2 border-t border-gray-200 space-y-1">
-                            <div className="flex justify-between text-xs">
-                              <span className="text-gray-500">
-                                Total Nominasi:
-                              </span>
-                              <span className="font-medium text-primary">
-                                {summary.totalNominasi?.toLocaleString()} kL
-                              </span>
-                            </div>
-                            <div className="flex justify-between text-xs">
-                              <span className="text-gray-500">
-                                Total Realisasi:
-                              </span>
-                              <span className="font-medium text-emerald-600">
-                                {summary.totalRealisasi?.toLocaleString()} kL
-                              </span>
-                            </div>
-                            <div className="flex justify-between text-xs">
-                              <span className="text-gray-500">
-                                Total Pemakaian:
-                              </span>
-                              <span className="font-medium text-amber-600">
-                                {summary.totalPemakaian?.toLocaleString()} kL
-                              </span>
-                            </div>
-
-                            {summary.pembangkitList &&
-                              summary.pembangkitList.length > 0 && (
-                                <button
-                                  onClick={() => {
-                                    setModalSiteList({
-                                      title: "Daftar Pembangkit",
-                                      list: summary.pembangkitList!,
-                                    });
-                                    setModalSearchQuery("");
-                                  }}
-                                  className="w-full mt-2 py-1.5 px-2 bg-primary/10 hover:bg-primary/20 text-primary rounded text-xs font-semibold transition-colors"
-                                >
-                                  Lihat Daftar Pembangkit
-                                </button>
-                              )}
-                            {summary.pemasokList &&
-                              summary.pemasokList.length > 0 && (
-                                <button
-                                  onClick={() => {
-                                    setModalSiteList({
-                                      title: "Daftar Pemasok",
-                                      list: summary.pemasokList!,
-                                    });
-                                    setModalSearchQuery("");
-                                  }}
-                                  className="w-full mt-2 py-1.5 px-2 bg-primary/10 hover:bg-primary/20 text-primary rounded text-xs font-semibold transition-colors"
-                                >
-                                  Lihat Daftar Pemasok
-                                </button>
-                              )}
-                          </div>
-                        );
-                      })()}
-                      {connected.length > 0 && (
-                        <div className="mt-2 pt-2 border-t border-gray-200">
-                          <p className="text-xs text-gray-500 mb-1">Relasi:</p>
-                          <ul className="text-xs text-gray-700 space-y-0.5">
-                            {connected.map((c) => (
-                              <li
-                                key={c.id}
-                                className="flex items-center gap-1"
-                              >
-                                <span
-                                  className="w-1.5 h-1.5 rounded-full"
-                                  style={{
-                                    backgroundColor: getSiteTypeColor(
-                                      c.siteType,
-                                    ),
-                                  }}
-                                />
-                                {c.name}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
-                  </Popup>
-                </Marker>
-              );
-            })}
-          </MapContainer>
-
-          {/* INTERACTIVE LEGEND - Collapsible */}
-          <div className="absolute bottom-2 left-2 sm:bottom-4 sm:left-4 z-1000">
-            {!legendExpanded ? (
-              <button
-                onClick={() => setLegendExpanded(true)}
-                className="flex items-center gap-2 bg-white/95 backdrop-blur rounded-lg shadow-lg px-3 py-2 text-xs hover:bg-white transition-all"
-              >
-                <Layers size={16} className="text-primary" />
-                <span className="text-gray-700 font-medium">Legend</span>
-                <ChevronUp size={14} className="text-gray-400" />
-              </button>
-            ) : (
-              <div className="bg-white/95 backdrop-blur rounded-lg shadow-lg px-3 py-2 sm:px-4 sm:py-3 text-xs space-y-2 min-w-[140px]">
-                {/* Header with collapse button */}
-                <div className="flex items-center justify-between border-b border-gray-200 pb-1.5 mb-1">
-                  <span className="text-gray-700 font-semibold text-xs">
-                    Keterangan Map
-                  </span>
-                  <button
-                    onClick={() => setLegendExpanded(false)}
-                    className="p-1 hover:bg-gray-100 rounded transition-colors"
-                  >
-                    <ChevronDown size={14} className="text-gray-500" />
-                  </button>
-                </div>
-
-                {/* Site type toggles — driven by legend */}
-                {customLegend?.siteTypes
-                  .filter(
-                    (st) => st.type === "PEMBANGKIT" || st.type === "PEMASOK",
-                  )
-                  .map((st) => {
-                    const isVisible = visibleSiteTypes[st.type] ?? true;
-                    return (
-                      <button
-                        key={st.type}
-                        onClick={() => toggleSiteType(st.type)}
-                        className={`flex items-center gap-2 w-full py-1 px-1.5 rounded-md transition-all ${
-                          isVisible ? `bg-opacity-10` : "bg-gray-100 opacity-60"
-                        }`}
-                        style={
-                          isVisible
-                            ? { backgroundColor: `${st.color}1A` }
-                            : undefined
-                        }
-                      >
-                        <span
-                          className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full`}
-                          style={{
-                            backgroundColor: st.color,
-                            boxShadow: isVisible
-                              ? `0 0 0 4px ${st.color}33`
-                              : "none",
-                          }}
-                        />
-                        <span className="text-gray-700 text-xs flex-1 text-left">
-                          {getSiteTypeLabel(st.type)}
-                        </span>
-                        {isVisible ? (
-                          <Eye size={14} style={{ color: st.color }} />
-                        ) : (
-                          <EyeOff size={14} className="text-gray-400" />
-                        )}
-                      </button>
-                    );
-                  })}
-
-                {/* Pipe type legend items */}
-                {customLegend?.pipeTypes && customLegend.pipeTypes.length > 0 && (
-                  <div className="pt-1 border-t border-gray-200">
-                    <p className="text-[10px] text-gray-500 mb-1">Jenis Pipa</p>
-                    {customLegend.pipeTypes.map((pt) => (
-                      <div
-                        key={pt.type}
-                        className="flex items-center gap-1.5 text-xs text-gray-600 py-0.5"
-                      >
-                        <span
-                          className="w-6 h-0.5"
-                          style={{ backgroundColor: pt.color }}
-                        />
-                        {pt.label}
-                      </div>
-                    ))}
+                  <Layers size={16} className="text-primary" />
+                  <span className="text-gray-700 font-medium">Legend</span>
+                  <ChevronUp size={14} className="text-gray-400" />
+                </button>
+              ) : (
+                <div className="bg-white/95 backdrop-blur rounded-lg shadow-lg px-3 py-2 sm:px-4 sm:py-3 text-xs space-y-2 min-w-[140px]">
+                  {/* Header with collapse button */}
+                  <div className="flex items-center justify-between border-b border-gray-200 pb-1.5 mb-1">
+                    <span className="text-gray-700 font-semibold text-xs">
+                      Keterangan Map
+                    </span>
+                    <button
+                      onClick={() => setLegendExpanded(false)}
+                      className="p-1 hover:bg-gray-100 rounded transition-colors"
+                    >
+                      <ChevronDown size={14} className="text-gray-500" />
+                    </button>
                   </div>
-                )}
-              </div>
-            )}
+
+                  {/* Site type toggles — driven by legend */}
+                  {customLegend?.siteTypes
+                    .filter(
+                      (st) => st.type === "PEMBANGKIT" || st.type === "PEMASOK",
+                    )
+                    .map((st) => {
+                      const isVisible = visibleSiteTypes[st.type] ?? true;
+                      return (
+                        <button
+                          key={st.type}
+                          onClick={() => toggleSiteType(st.type)}
+                          className={`flex items-center gap-2 w-full py-1 px-1.5 rounded-md transition-all ${
+                            isVisible
+                              ? `bg-opacity-10`
+                              : "bg-gray-100 opacity-60"
+                          }`}
+                          style={
+                            isVisible
+                              ? { backgroundColor: `${st.color}1A` }
+                              : undefined
+                          }
+                        >
+                          <span
+                            className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full`}
+                            style={{
+                              backgroundColor: st.color,
+                              boxShadow: isVisible
+                                ? `0 0 0 4px ${st.color}33`
+                                : "none",
+                            }}
+                          />
+                          <span className="text-gray-700 text-xs flex-1 text-left">
+                            {getSiteTypeLabel(st.type)}
+                          </span>
+                          {isVisible ? (
+                            <Eye size={14} style={{ color: st.color }} />
+                          ) : (
+                            <EyeOff size={14} className="text-gray-400" />
+                          )}
+                        </button>
+                      );
+                    })}
+
+                  {/* Pipe type legend items */}
+                  {customLegend?.pipeTypes &&
+                    customLegend.pipeTypes.length > 0 && (
+                      <div className="pt-1 border-t border-gray-200">
+                        <p className="text-[10px] text-gray-500 mb-1">
+                          Jenis Pipa
+                        </p>
+                        {customLegend.pipeTypes.map((pt) => (
+                          <div
+                            key={pt.type}
+                            className="flex items-center gap-1.5 text-xs text-gray-600 py-0.5"
+                          >
+                            <span
+                              className="w-6 h-0.5"
+                              style={{ backgroundColor: pt.color }}
+                            />
+                            {pt.label}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -786,7 +876,7 @@ export default function Map() {
                     onClick={() => setSelectedModes([])}
                     className={`px-3 py-1 text-xs font-medium rounded-md transition-all duration-200 cursor-pointer ${
                       selectedModes.length === 0
-                        ? "bg-secondary/90 text-white"
+                        ? "bg-primary text-white"
                         : "text-gray-600 hover:text-secondary hover:bg-gray-50"
                     }`}
                   >
@@ -804,7 +894,7 @@ export default function Map() {
                       }}
                       className={`px-3 py-1 text-xs font-medium rounded-md transition-all duration-200 cursor-pointer ${
                         selectedModes.includes(mode)
-                          ? "bg-secondary/90 text-white"
+                          ? "bg-primary text-white"
                           : "text-gray-600 hover:text-secondary hover:bg-gray-50"
                       }`}
                     >
@@ -821,7 +911,7 @@ export default function Map() {
                     onClick={() => setSelectedProducts([])}
                     className={`px-3 py-1 text-xs font-medium rounded-md transition-all duration-200 cursor-pointer ${
                       selectedProducts.length === 0
-                        ? "bg-secondary/90 text-white"
+                        ? "bg-primary text-white"
                         : "text-gray-600 hover:text-secondary hover:bg-gray-50"
                     }`}
                   >
@@ -840,7 +930,7 @@ export default function Map() {
                         }}
                         className={`px-3 py-1 text-xs font-medium rounded-md transition-all duration-200 cursor-pointer ${
                           selectedProducts.includes(prod)
-                            ? "bg-secondary/90 text-white"
+                            ? "bg-primary text-white"
                             : "text-gray-600 hover:text-secondary hover:bg-gray-50"
                         }`}
                       >

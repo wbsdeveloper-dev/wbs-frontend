@@ -27,11 +27,14 @@ export default function AddBbmModal({ setOpenModal, onSuccess }: Props) {
 
   const createRecord = useCreateBbmMonthly();
 
-  const { data: tbbmData } = useSites({ type: "PEMASOK", commodity: "BBM" });
-  const { data: pembangkitData } = useSites({
+  const { data: rawTbbmData } = useSites({ type: "PEMASOK", commodity: "BBM" });
+  const { data: rawPembangkitData } = useSites({
     type: "PEMBANGKIT",
     commodity: "BBM",
   });
+
+  const tbbmData = rawTbbmData?.filter((p) => p.commodity === "BBM") || [];
+  const pembangkitData = rawPembangkitData?.filter((p) => p.commodity === "BBM") || [];
 
   const handleSave = async () => {
     try {

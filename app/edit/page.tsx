@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { Plus, Upload, FileText } from "lucide-react";
+import { useState, useCallback, useEffect } from "react";
+import { Plus, Upload, FileText, Loader2 } from "lucide-react";
 import EditDataTable from "../components/EditDataTable";
 import AddReconciliationModal from "../components/AddReconciliationModal";
 import BulkUploadReconciliationModal from "../components/BulkUploadReconciliationModal";
@@ -11,13 +11,19 @@ import {
   type MonitoringParams,
 } from "@/hooks/service/monitoring-api";
 import { usePrivilege } from "@/hooks/usePrivilege";
+import { useAuth } from "@/components/providers/auth-provider";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
+  const router = useRouter();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [filters, setFilters] = useState<MonitoringParams>({});
 
   const { hasPrivilege } = usePrivilege();
+  const { isLoading: isAuthLoading } = useAuth();
+  
+  const canRead = hasPrivilege("data_management", "READ");
   const canCreate = hasPrivilege("data_management", "CREATE");
 
   const [openAddModal, setOpenAddModal] = useState(false);
@@ -42,6 +48,21 @@ export default function Home() {
     setFilters(newFilters);
     setPage(1); // Reset to first page on filter change
   }, []);
+
+  // Redirect if unauthorized
+  useEffect(() => {
+    if (!isAuthLoading && !canRead) {
+      router.push("/landingpage");
+    }
+  }, [isAuthLoading, canRead, router]);
+
+  if (isAuthLoading || !canRead) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <Loader2 className="animate-spin text-secondary" size={32} />
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-gray-50">

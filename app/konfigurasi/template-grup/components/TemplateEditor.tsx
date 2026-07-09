@@ -489,6 +489,7 @@ export default function TemplateEditor({
           }
         />
 
+        <fieldset disabled={!canUpdate} className="[&_input:disabled]:opacity-60 [&_input:disabled]:bg-gray-50 [&_input:disabled]:cursor-not-allowed [&_select:disabled]:opacity-60 [&_select:disabled]:bg-gray-50 [&_select:disabled]:cursor-not-allowed [&_textarea:disabled]:opacity-60 [&_textarea:disabled]:bg-gray-50 [&_textarea:disabled]:cursor-not-allowed">
         {/* Name */}
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -1097,6 +1098,7 @@ export default function TemplateEditor({
             </div>
           </div>
         )}
+        </fieldset>
       </Card>
 
       {/* Fields Table Section */}
@@ -1167,9 +1169,11 @@ export default function TemplateEditor({
                   <th className="px-3 py-3 text-left text-xs font-semibold text-gray-600">
                     Wajib
                   </th>
-                  <th className="w-24 px-3 py-3 text-right text-xs font-semibold text-gray-600">
-                    Aksi
-                  </th>
+                  {(canUpdate || canDelete) && (
+                    <th className="w-24 px-3 py-3 text-right text-xs font-semibold text-gray-600">
+                      Aksi
+                    </th>
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -1218,26 +1222,28 @@ export default function TemplateEditor({
                         <span className="text-gray-400">No</span>
                       )}
                     </td>
-                    <td className="px-3 py-3">
-                      <div className="flex items-center justify-end gap-1">
-                        {canUpdate && (
-                          <button
-                            onClick={() => handleEditField(field)}
-                            className="p-1.5 text-gray-400 hover:text-primary hover:bg-primary/10 rounded transition-colors"
-                          >
-                            <Pencil size={14} />
-                          </button>
-                        )}
-                        {canDelete && (
-                          <button
-                            onClick={() => handleDeleteField(field.id)}
-                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        )}
-                      </div>
-                    </td>
+                    {(canUpdate || canDelete) && (
+                      <td className="px-3 py-3">
+                        <div className="flex items-center justify-end gap-1">
+                          {canUpdate && (
+                            <button
+                              onClick={() => handleEditField(field)}
+                              className="p-1.5 text-gray-400 hover:text-primary hover:bg-primary/10 rounded transition-colors"
+                            >
+                              <Pencil size={14} />
+                            </button>
+                          )}
+                          {canDelete && (
+                            <button
+                              onClick={() => handleDeleteField(field.id)}
+                              className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>

@@ -147,11 +147,10 @@ export default function BaFilesPage() {
               </div>
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-all duration-200 ${
-                  showFilters || activeFilterCount > 0
+                className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-all duration-200 ${showFilters || activeFilterCount > 0
                     ? "bg-primary text-white border-primary"
                     : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                }`}
+                  }`}
               >
                 <Filter size={16} />
                 Filter
@@ -344,12 +343,12 @@ export default function BaFilesPage() {
                                   const rootUrl = DASHBOARD_API_HOST.replace(/\/api$/, "");
                                   const cleanFilePath = f.file_path.replace(/^\//, "");
                                   const fileUrl = `${rootUrl}/${cleanFilePath}`;
-                                  
+
                                   return (
                                     <div key={f.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-white border border-gray-200 rounded-lg shadow-sm">
                                       <div className="flex items-center gap-2 overflow-hidden">
-                                          <FileText size={16} className="text-gray-400 shrink-0" />
-                                          <span className="text-gray-600 font-mono text-xs truncate" title={f.filename}>{f.filename}</span>
+                                        <FileText size={16} className="text-gray-400 shrink-0" />
+                                        <span className="text-gray-600 font-mono text-xs truncate" title={f.filename}>{f.filename}</span>
                                       </div>
                                       <div className="flex items-center gap-2 shrink-0">
                                         <a
@@ -426,7 +425,7 @@ export default function BaFilesPage() {
                         setPageSize(Number(e.target.value));
                         setPage(1);
                       }}
-                      className="text-sm border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-secondary bg-white cursor-pointer"
+                      className="text-sm text-gray-600 border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-secondary bg-white cursor-pointer"
                     >
                       {[10, 25, 50, 100].map((size) => (
                         <option key={size} value={size}>

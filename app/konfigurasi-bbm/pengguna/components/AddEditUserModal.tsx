@@ -6,10 +6,8 @@ import {
   useCreateUser,
   useUpdateUser,
   useRoles,
-  useDeleteRole,
   type User,
 } from "@/hooks/service/user-api";
-import { AddRoleModal } from "./AddRoleModal";
 
 interface AddEditUserModalProps {
   open: boolean;
@@ -30,49 +28,24 @@ export function AddEditUserModal({
   const [fullName, setFullName] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [status, setStatus] = useState<"ACTIVE" | "INACTIVE">("ACTIVE");
+  const [status, setStatus] = useState<"ACTIVE" | "DISABLED">("ACTIVE");
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [addRoleModalOpen, setAddRoleModalOpen] = useState(false);
 
   const { data: rolesData, isLoading: rolesLoading } = useRoles();
   const createMutation = useCreateUser();
   const updateMutation = useUpdateUser();
-  const deleteRoleMutation = useDeleteRole();
 
   const isSaving =
     createMutation.isPending ||
-    updateMutation.isPending ||
-    deleteRoleMutation.isPending;
-
-  const handleDeleteRole = async (
-    e: React.MouseEvent,
-    roleId: string,
-    roleName: string,
-  ) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (
-      window.confirm(
-        `Apakah Anda yakin ingin menghapus role "${roleName}"?\nTindakan ini tidak dapat dibatalkan.`,
-      )
-    ) {
-      try {
-        await deleteRoleMutation.mutateAsync(roleId);
-        // Clean up from selectedRoles if it was selected
-        setSelectedRoles((prev) => prev.filter((r) => r !== roleName));
-      } catch (err: any) {
-        setError(err?.message || "Gagal menghapus role");
-      }
-    }
-  };
+    updateMutation.isPending;
 
   useEffect(() => {
     if (open) {
       if (editingUser) {
         setEmail(editingUser.email);
         setFullName(editingUser.fullName);
-        setStatus(editingUser.status);
+        setStatus("ACTIVE");
         setSelectedRoles(editingUser.roles);
         setPassword(""); // Password not edited here
       } else {
@@ -235,12 +208,12 @@ export function AddEditUserModal({
               <select
                 value={status}
                 onChange={(e) =>
-                  setStatus(e.target.value as "ACTIVE" | "INACTIVE")
+                  setStatus(e.target.value as "ACTIVE" | "DISABLED")
                 }
                 className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all appearance-none"
               >
                 <option value="ACTIVE">Active</option>
-                <option value="INACTIVE">Inactive</option>
+                <option value="DISABLED">Non-aktif</option>
               </select>
             </div>
 
@@ -249,14 +222,6 @@ export function AddEditUserModal({
                 <label className="block text-sm font-medium text-gray-700">
                   Hak Akses (Roles)
                 </label>
-                <button
-                  type="button"
-                  onClick={() => setAddRoleModalOpen(true)}
-                  className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded-lg transition-colors border border-transparent hover:border-primary/30"
-                >
-                  <Plus size={14} />
-                  Tambah Role
-                </button>
               </div>
               {rolesLoading ? (
                 <div className="text-sm text-gray-500 italic">
@@ -283,14 +248,6 @@ export function AddEditUserModal({
                           {role.description}
                         </span>
                       </div>
-                      <button
-                        type="button"
-                        onClick={(e) => handleDeleteRole(e, role.id, role.name)}
-                        className="absolute right-2 top-2 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg opacity-0 group-hover:opacity-100 transition-all focus:opacity-100"
-                        title="Hapus Hak Akses"
-                      >
-                        <Trash2 size={14} />
-                      </button>
                     </label>
                   ))}
                 </div>
@@ -326,15 +283,6 @@ export function AddEditUserModal({
           </button>
         </div>
       </div>
-
-      {/* Add Role Modal Layered Above */}
-      <AddRoleModal
-        open={addRoleModalOpen}
-        onClose={() => setAddRoleModalOpen(false)}
-        onSuccess={() => {
-          // Roles are invalidated via useCreateRole
-        }}
-      />
     </div>
   );
 }

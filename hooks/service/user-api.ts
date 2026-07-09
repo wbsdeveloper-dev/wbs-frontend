@@ -22,10 +22,13 @@ interface ApiResponse<T = unknown> {
   data: T;
   message?: string;
   error?: string;
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
   meta?: {
-    page?: number;
-    limit?: number;
-    total?: number;
     requestId?: string;
     timestamp?: string;
   };
@@ -48,7 +51,7 @@ class UserApiError extends Error {
 async function userFetch<T>(
   path: string,
   options: RequestInit = {},
-): Promise<{ data: T; meta?: ApiResponse["meta"] }> {
+): Promise<{ data: T; meta?: ApiResponse["meta"]; pagination?: ApiResponse["pagination"] }> {
   const url = `${USER_API_HOST}${path}`;
   const accessToken = getAccessToken();
 
@@ -82,8 +85,8 @@ async function userFetch<T>(
     );
   }
 
-  // Support paginated responses which return `meta`
-  return { data: body.data, meta: body.meta };
+  // Support paginated responses
+  return { data: body.data, meta: body.meta, pagination: body.pagination };
 }
 
 // Helper to extract just the data for non-paginated hooks
@@ -109,7 +112,7 @@ export interface User {
   id: string;
   email: string;
   fullName: string;
-  status: "ACTIVE" | "INACTIVE";
+  status: "ACTIVE" | "DISABLED";
   lastLoginAt?: string;
   createdAt?: string;
   roles: string[]; // List of role names or IDs
@@ -128,7 +131,7 @@ export interface CreateUserPayload {
   email: string;
   fullName: string;
   password?: string;
-  status?: "ACTIVE" | "INACTIVE";
+  status?: "ACTIVE" | "DISABLED";
   roles?: string[];
 }
 
@@ -136,7 +139,7 @@ export interface UpdateUserPayload {
   email?: string;
   fullName?: string;
   password?: string;
-  status?: "ACTIVE" | "INACTIVE";
+  status?: "ACTIVE" | "DISABLED";
   roles?: string[];
 }
 
@@ -206,9 +209,9 @@ export async function getUsers(filters?: {
   return {
     users: res.data,
     meta: {
-      page: res.meta?.page ?? 1,
-      limit: res.meta?.limit ?? 20,
-      total: res.meta?.total ?? 0,
+      page: res.pagination?.page ?? res.meta?.page ?? 1,
+      limit: res.pagination?.limit ?? res.meta?.limit ?? 20,
+      total: res.pagination?.total ?? res.meta?.total ?? 0,
     },
   };
 }

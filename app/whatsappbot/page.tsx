@@ -32,6 +32,9 @@ import {
 } from "@/hooks/use-bot-humanize";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import { OutboxLogger } from "./OutboxLogger";
+import { usePrivilege } from "@/hooks/usePrivilege";
+import { useAuth } from "@/components/providers/auth-provider";
+import { useRouter } from "next/navigation";
 
 // MUI Switch brand color shared sx
 const SWITCH_SX = {
@@ -106,6 +109,7 @@ interface BotStatusCardProps {
   onLogout: () => void;
   onSwitchBot: () => void;
   isProcessing: boolean;
+  canUpdate?: boolean;
 }
 
 const BotStatusCard: React.FC<BotStatusCardProps> = ({
@@ -119,6 +123,7 @@ const BotStatusCard: React.FC<BotStatusCardProps> = ({
   onLogout,
   onSwitchBot,
   isProcessing,
+  canUpdate,
 }) => {
   // Format "Last Updated: Today - 14:12" or date
   const formatTime = (t: string | null) => {
@@ -215,7 +220,7 @@ const BotStatusCard: React.FC<BotStatusCardProps> = ({
           </div>
         </div>
 
-        {mode === "connected" && (
+        {canUpdate && mode === "connected" && (
           <button
             onClick={onLogout}
             disabled={isProcessing}
@@ -225,7 +230,7 @@ const BotStatusCard: React.FC<BotStatusCardProps> = ({
           </button>
         )}
 
-        {mode === "standby" && (
+        {canUpdate && mode === "standby" && (
           <button
             onClick={onSwitchBot}
             disabled={isProcessing}
@@ -235,7 +240,7 @@ const BotStatusCard: React.FC<BotStatusCardProps> = ({
           </button>
         )}
 
-        {(mode === "offline" || mode === "connecting") && (
+        {canUpdate && (mode === "offline" || mode === "connecting") && (
           <button
             onClick={onShowQR}
             className="w-[130px] shrink-0 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 hover:border-gray-400 active:scale-95"
@@ -306,6 +311,9 @@ function GroupsSection({
   host: string;
   connected: boolean;
 }) {
+  const { hasPrivilege } = usePrivilege();
+  const canUpdate = hasPrivilege("bot_management", "UPDATE");
+
   const { data: groups, isLoading } = useBotGroups(host, connected);
   const updateGroups = useUpdateGroups(host);
   const syncGroups = useSyncBotToBackend(host);
@@ -363,34 +371,39 @@ function GroupsSection({
       <CardHeader
         title="Konfigurasi Group"
         action={
-          <button
-            onClick={handleSync}
-            disabled={syncGroups.isPending}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-secondary text-white rounded-lg hover:bg-[#118d9f] transition-all disabled:opacity-50"
-          >
-            {syncGroups.isPending ? "Syncing..." : "Sinkronisasi Data"}
-          </button>
+          canUpdate ? (
+            <button
+              onClick={handleSync}
+              disabled={syncGroups.isPending}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-secondary text-white rounded-lg hover:bg-[#118d9f] transition-all disabled:opacity-50"
+            >
+              {syncGroups.isPending ? "Syncing..." : "Sinkronisasi Data"}
+            </button>
+          ) : null
         }
       />
 
       <div className="flex items-center gap-2 mb-2">
-        <button
-          onClick={handleSelectAll}
-          disabled={updateGroups.isPending || activeCount === list.length}
-          className="px-3 py-1.5 text-xs font-medium text-primary bg-secondary/10 rounded-lg hover:bg-secondary/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          Pilih Semua
-        </button>
-        <button
-          onClick={handleUnselectAll}
-          disabled={updateGroups.isPending || activeCount === 0}
-          className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          Batalkan Semua
-        </button>
+        {canUpdate && (
+          <>
+            <button
+              onClick={handleSelectAll}
+              disabled={updateGroups.isPending || activeCount === list.length}
+              className="px-3 py-1.5 text-xs font-medium text-primary bg-secondary/10 rounded-lg hover:bg-secondary/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Pilih Semua
+            </button>
+            <button
+              onClick={handleUnselectAll}
+              disabled={updateGroups.isPending || activeCount === 0}
+              className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Batalkan Semua
+            </button>
+          </>
+        )}
       </div>
-
-      <div className="space-y-1 max-h-[280px] overflow-y-auto pr-1">
+      <fieldset disabled={!canUpdate} className="space-y-1 max-h-[280px] overflow-y-auto pr-1">
         {list.map((group) => (
           <label
             key={group.id}
@@ -411,7 +424,7 @@ function GroupsSection({
             </span>
           </label>
         ))}
-      </div>
+      </fieldset>
 
       <p className="text-xs text-gray-500 text-right mt-3">
         {activeCount} Aktif (dari {list.length})
@@ -431,6 +444,10 @@ function KeywordsSection({
   host: string;
   connected: boolean;
 }) {
+  const { hasPrivilege } = usePrivilege();
+  const canCreate = hasPrivilege("bot_management", "CREATE");
+  const canDelete = hasPrivilege("bot_management", "DELETE");
+
   const { data: keywords, isLoading } = useBotKeywords(host, connected);
   const addKw = useAddKeyword(host);
   const deleteKw = useDeleteKeyword(host);
@@ -485,17 +502,20 @@ function KeywordsSection({
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleAdd()}
             placeholder="Tambahkan kata kunci baru"
-            className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
+            disabled={!canCreate}
+            className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200 disabled:opacity-60 disabled:bg-gray-50"
           />
         </div>
-        <button
-          onClick={handleAdd}
-          disabled={addKw.isPending}
-          className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white text-sm font-medium rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95 disabled:opacity-50"
-        >
-          <Plus size={16} />
-          {addKw.isPending ? "..." : "Tambah"}
-        </button>
+        {canCreate && (
+          <button
+            onClick={handleAdd}
+            disabled={addKw.isPending}
+            className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white text-sm font-medium rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95 disabled:opacity-50"
+          >
+            <Plus size={16} />
+            {addKw.isPending ? "..." : "Tambah"}
+          </button>
+        )}
       </div>
 
       <div className="flex flex-wrap gap-2 mb-2 max-h-60 overflow-y-auto pr-1 scrollbar-thin">
@@ -505,13 +525,15 @@ function KeywordsSection({
             className="inline-flex shrink-0 items-center gap-2 px-3 py-1.5 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200 transition-colors"
           >
             {kw}
-            <button
-              onClick={() => deleteKw.mutate(kw)}
-              disabled={deleteKw.isPending}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
+            {canDelete && (
+              <button
+                onClick={() => deleteKw.mutate(kw)}
+                disabled={deleteKw.isPending}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </span>
         ))}
         {list.length === 0 && (
@@ -614,6 +636,9 @@ function DataCollectionSection({
   host: string;
   connected: boolean;
 }) {
+  const { hasPrivilege } = usePrivilege();
+  const canUpdate = hasPrivilege("bot_management", "UPDATE");
+
   const { data, isLoading } = useDataCollectionStatus(host, connected);
   const toggle = useToggleDataCollection(host);
 
@@ -665,12 +690,14 @@ function DataCollectionSection({
             {enabled ? "Enabled" : "Disabled"}
           </span>
         </div>
-        <Switch
-          checked={enabled}
-          onChange={(e) => toggle.mutate(e.target.checked)}
-          disabled={toggle.isPending}
-          sx={SWITCH_SX}
-        />
+        {canUpdate && (
+          <Switch
+            checked={enabled}
+            onChange={(e) => toggle.mutate(e.target.checked)}
+            disabled={toggle.isPending}
+            sx={SWITCH_SX}
+          />
+        )}
       </div>
 
       <p className="text-sm text-gray-500">
@@ -691,6 +718,9 @@ function HumanizeSection({
   host: string;
   connected: boolean;
 }) {
+  const { hasPrivilege } = usePrivilege();
+  const canUpdate = hasPrivilege("bot_management", "UPDATE");
+
   const { data: config, isLoading } = useHumanizeConfig(host, connected);
   const update = useUpdateHumanize(host);
   const toggleH = useToggleHumanize(host);
@@ -731,17 +761,20 @@ function HumanizeSection({
       <CardHeader
         title="Humanize Settings"
         action={
-          <Switch
-            checked={config.enabled}
-            onChange={(e) => toggleH.mutate(e.target.checked)}
-            disabled={toggleH.isPending}
-            size="small"
-            sx={SWITCH_SX}
-          />
+          canUpdate ? (
+            <Switch
+              checked={config.enabled}
+              onChange={(e) => toggleH.mutate(e.target.checked)}
+              disabled={toggleH.isPending}
+              size="small"
+              sx={SWITCH_SX}
+            />
+          ) : null
         }
       />
 
-      <div
+      <fieldset
+        disabled={!canUpdate}
         className={`space-y-5 transition-opacity duration-200 ${!config.enabled ? "opacity-50 pointer-events-none" : ""}`}
       >
         {/* Processing Delay */}
@@ -844,11 +877,11 @@ function HumanizeSection({
             step={1}
             size="small"
             onChange={(_e, v) => handleSliderChange("offlineChance", v)}
-            disabled={update.isPending}
+            disabled={update.isPending || !canUpdate}
             sx={{ color: "var(--theme-secondary)" }}
           />
         </div>
-      </div>
+      </fieldset>
     </Card>
   );
 }
@@ -858,6 +891,13 @@ function HumanizeSection({
 // ---------------------------------------------------------------------------
 
 const ManajemenBot: React.FC = () => {
+  const router = useRouter();
+  const { hasPrivilege } = usePrivilege();
+  const { isLoading: isAuthLoading } = useAuth();
+  
+  const canRead = hasPrivilege("bot_management", "READ");
+  const canUpdate = hasPrivilege("bot_management", "UPDATE");
+
   const [showPrimaryQR, setShowPrimaryQR] = useState(false);
   const [showSecondaryQR, setShowSecondaryQR] = useState(false);
 
@@ -977,6 +1017,21 @@ const ManajemenBot: React.FC = () => {
       ? `Bot akan diputuskan dari WhatsApp. Semua proses yang sedang berjalan akan dihentikan. Anda perlu scan QR ulang untuk menghubungkan kembali.`
       : `Bot yang sedang aktif akan di-logout terlebih dahulu, kemudian Anda akan diminta scan QR untuk menghubungkan ${confirmAction?.botLabel}. Pastikan tidak ada proses penting yang sedang berjalan.`;
 
+  // Redirect if unauthorized
+  React.useEffect(() => {
+    if (!isAuthLoading && !canRead) {
+      router.push("/landingpage");
+    }
+  }, [isAuthLoading, canRead, router]);
+
+  if (isAuthLoading || !canRead) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <div className="animate-spin w-8 h-8 border-4 border-secondary border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen p-4 md:p-6 lg:p-8">
       {/* Header */}
@@ -1013,6 +1068,7 @@ const ManajemenBot: React.FC = () => {
             isProcessing={
               disconnectPrimary.isPending || disconnectSecondary.isPending
             }
+            canUpdate={canUpdate}
           />
           {effectivePrimaryQR && <QRCard host={BOT_PRIMARY_API} />}
         </div>
@@ -1031,6 +1087,7 @@ const ManajemenBot: React.FC = () => {
             isProcessing={
               disconnectPrimary.isPending || disconnectSecondary.isPending
             }
+            canUpdate={canUpdate}
           />
           {effectiveSecondaryQR && <QRCard host={BOT_SECONDARY_API} />}
         </div>

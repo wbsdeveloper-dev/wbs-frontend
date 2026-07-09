@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import * as htmlToImage from "html-to-image";
+import jsPDF from "jspdf";
 import {
   MapContainer,
   Marker,
@@ -20,6 +22,8 @@ import {
   X,
   Filter,
   Loader2,
+  Image as ImageIcon,
+  FileText,
 } from "lucide-react";
 import FilterAutocomplete from "./FilterAutocomplete";
 import {
@@ -77,6 +81,52 @@ const buildIcons = (legend: MapLegend): Record<string, L.DivIcon> => {
 // ---------------------------------------------------------------------------
 
 export default function Map({ commodity }: { commodity?: string }) {
+  const mapRef = useRef<HTMLDivElement>(null);
+
+  const filterExportButtons = (node: HTMLElement) => {
+    // Exclude the export buttons themselves from the generated image
+    if (node?.classList?.contains("export-buttons-container")) return false;
+    return true;
+  };
+
+  const handleExportImage = async () => {
+    if (!mapRef.current) return;
+    try {
+      const dataUrl = await htmlToImage.toPng(mapRef.current, { 
+        backgroundColor: "#ffffff", 
+        pixelRatio: 2,
+        filter: filterExportButtons as any,
+      });
+      const link = document.createElement("a");
+      link.download = `peta-gas-${new Date().toISOString().split("T")[0]}.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error("Failed to export image", err);
+    }
+  };
+
+  const handleExportPDF = async () => {
+    if (!mapRef.current) return;
+    try {
+      const canvas = await htmlToImage.toCanvas(mapRef.current, { 
+        backgroundColor: "#ffffff", 
+        pixelRatio: 2,
+        filter: filterExportButtons as any,
+      });
+      const imgData = canvas.toDataURL("image/png");
+      
+      const pdf = new jsPDF("l", "mm", "a4");
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      
+      pdf.addImage(imgData, "PNG", 0, 10, pdfWidth, pdfHeight);
+      pdf.save(`peta-gas-${new Date().toISOString().split("T")[0]}.pdf`);
+    } catch (err) {
+      console.error("Failed to export PDF", err);
+    }
+  };
+
   // ---- API data -----------------------------------------------------------
   const { data, isLoading, isError, error } = useMapLocations(
     undefined,
@@ -357,9 +407,30 @@ export default function Map({ commodity }: { commodity?: string }) {
     <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6 mt-4 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:divide-x divide-gray-200">
       {/* Map Section */}
       <div className="lg:col-span-9 lg:pr-6">
-        <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-4">
-          Lokasi Gas Pipa
-        </h3>
+        <div ref={mapRef} className="bg-white pb-2">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-base md:text-lg font-semibold text-gray-900">
+              Lokasi Gas Pipa
+            </h3>
+            <div className="export-buttons-container flex items-center gap-2 bg-gray-100 rounded-lg p-0.5">
+              <button
+                onClick={handleExportImage}
+                className="px-3 py-1.5 rounded-md text-xs font-medium text-emerald-500 hover:bg-emerald-50 flex items-center gap-1.5 transition-all duration-200"
+                title="Export as Image (PNG)"
+              >
+                <ImageIcon size={14} />
+                PNG
+              </button>
+              <button
+                onClick={handleExportPDF}
+                className="px-3 py-1.5 rounded-md text-xs font-medium text-rose-400 hover:bg-rose-50 flex items-center gap-1.5 transition-all duration-200"
+                title="Export as PDF"
+              >
+                <FileText size={14} />
+                PDF
+              </button>
+            </div>
+          </div>
 
         <div className="relative h-[250px] sm:h-[300px] md:h-[350px] lg:h-[400px] w-full">
           <MapContainer
@@ -384,8 +455,8 @@ export default function Map({ commodity }: { commodity?: string }) {
                   <Polyline
                     key={pipe.id}
                     positions={[
-                      [source.lat, source.lng] as LatLngTuple,
-                      [target.lat, target.lng] as LatLngTuple,
+                      [Number(source.lat), Number(source.lng)] as LatLngTuple,
+                      [Number(target.lat), Number(target.lng)] as LatLngTuple,
                     ]}
                     pathOptions={{
                       color: getPipeTypeColor(pipe.relationType),
@@ -414,7 +485,7 @@ export default function Map({ commodity }: { commodity?: string }) {
               return (
                 <Marker
                   key={site.id}
-                  position={[site.lat, site.lng] as LatLngTuple}
+                  position={[Number(site.lat), Number(site.lng)] as LatLngTuple}
                   icon={icon}
                 >
                   <Popup>
@@ -454,7 +525,7 @@ export default function Map({ commodity }: { commodity?: string }) {
                         <div className="flex justify-between text-xs">
                           <span className="text-gray-500">Koordinat:</span>
                           <span className="font-medium text-gray-700">
-                            {site.lat?.toFixed(4)}, {site.lng?.toFixed(4)}
+                            {site.lat != null ? Number(site.lat).toFixed(4) : ""}, {site.lng != null ? Number(site.lng).toFixed(4) : ""}
                           </span>
                         </div>
                       </div>
@@ -571,6 +642,7 @@ export default function Map({ commodity }: { commodity?: string }) {
               </div>
             )}
           </div>
+        </div>
         </div>
       </div>
 

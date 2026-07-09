@@ -1,17 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Users, Shield } from "lucide-react";
 import { useUsers, type User } from "@/hooks/service/user-api";
 import { UserTable } from "./components/UserTable";
 import { AddEditUserModal } from "./components/AddEditUserModal";
 import { ResetPasswordModal } from "./components/ResetPasswordModal";
 import { RoleTable } from "./components/RoleTable";
+import { AddRoleModal } from "./components/AddRoleModal";
 import { usePrivilege } from "@/hooks/usePrivilege";
+import { useAuth } from "@/components/providers/auth-provider";
+import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
 
 export default function PenggunaPage() {
   const [activeTab, setActiveTab] = useState<"users" | "roles">("users");
+  const router = useRouter();
   const { hasPrivilege } = usePrivilege();
+  const { isLoading: isAuthLoading } = useAuth();
+
+  const canRead = hasPrivilege("users", "READ");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
   const [filters, setFilters] = useState<{ search?: string; status?: string }>(
@@ -29,6 +37,7 @@ export default function PenggunaPage() {
   const [resetModalOpen, setResetModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [resetUser, setResetUser] = useState<User | null>(null);
+  const [addRoleModalOpen, setAddRoleModalOpen] = useState(false);
 
   const handleAddUser = () => {
     setEditingUser(null);
@@ -49,6 +58,21 @@ export default function PenggunaPage() {
     setPage(newPage);
     if (newLimit !== limit) setLimit(newLimit);
   };
+
+  // Redirect if unauthorized
+  useEffect(() => {
+    if (!isAuthLoading && !canRead) {
+      router.push("/landingpage");
+    }
+  }, [isAuthLoading, canRead, router]);
+
+  if (isAuthLoading || !canRead) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <Loader2 className="animate-spin text-secondary" size={32} />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen p-4 md:p-6 lg:p-8">
@@ -80,6 +104,15 @@ export default function PenggunaPage() {
             >
               <Plus size={18} />
               Tambah Pengguna
+            </button>
+          )}
+          {activeTab === "roles" && hasPrivilege("users", "CREATE") && (
+            <button
+              onClick={() => setAddRoleModalOpen(true)}
+              className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white text-sm font-medium rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
+            >
+              <Plus size={18} />
+              Tambah Peran
             </button>
           )}
         </div>
@@ -136,6 +169,12 @@ export default function PenggunaPage() {
         open={resetModalOpen}
         onClose={() => setResetModalOpen(false)}
         user={resetUser}
+        onSuccess={() => {}}
+      />
+
+      <AddRoleModal
+        open={addRoleModalOpen}
+        onClose={() => setAddRoleModalOpen(false)}
         onSuccess={() => {}}
       />
 

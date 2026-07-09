@@ -30,6 +30,7 @@ export interface MonitoringRecord {
   waValue?: number | null;
   plnValue?: number | null;
   sheetValue?: number | null;
+  baValue?: number | null;
   finalValue?: number | null;
   finalSource?: string | null;
   delta?: number | null;
@@ -37,6 +38,7 @@ export interface MonitoringRecord {
   waValueBbtud?: number | null;
   plnValueBbtud?: number | null;
   sheetValueBbtud?: number | null;
+  baValueBbtud?: number | null;
   finalValueBbtud?: number | null;
   finalSourceBbtud?: string | null;
   deltaBbtud?: number | null;
@@ -44,6 +46,7 @@ export interface MonitoringRecord {
   waValueMmscfd?: number | null;
   plnValueMmscfd?: number | null;
   sheetValueMmscfd?: number | null;
+  baValueMmscfd?: number | null;
   finalValueMmscfd?: number | null;
   finalSourceMmscfd?: string | null;
   deltaMmscfd?: number | null;
@@ -101,6 +104,7 @@ export interface UpdateMonitoringPayload {
   waValue?: number | null;
   plnValue?: number | null;
   sheetValue?: number | null;
+  baValue?: number | null;
   finalValue?: number | null;
   finalSource?: string | null;
   resolution?: string | null;

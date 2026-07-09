@@ -32,12 +32,14 @@ const StatusBadge = ({
   isEnabled: boolean;
 }) => (
   <span
-    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${isEnabled ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"
-      }`}
+    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
+      isEnabled ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"
+    }`}
   >
     <span
-      className={`w-1.5 h-1.5 rounded-full ${isEnabled ? "bg-green-500" : "bg-red-500"
-        }`}
+      className={`w-1.5 h-1.5 rounded-full ${
+        isEnabled ? "bg-green-500" : "bg-red-500"
+      }`}
     />
     {isEnabled ? "Aktif" : "Nonaktif"}
   </span>
@@ -139,7 +141,7 @@ function DeleteConfirmModal({
         </div>
       </div>
     </div>,
-    document.body
+    document.body,
   );
 }
 
@@ -224,7 +226,7 @@ function DeleteWarningModal({
         </div>
       </div>
     </div>,
-    document.body
+    document.body,
   );
 }
 
@@ -235,7 +237,16 @@ interface SiteTableProps {
   commodity?: string[];
 }
 
-export function DaftarSiteTable({ onEdit, onDelete, commodity }: SiteTableProps) {
+export function DaftarSiteTable({
+  onEdit,
+  onDelete,
+  commodity,
+}: SiteTableProps) {
+  const { hasPrivilege } = usePrivilege();
+  const canUpdate = hasPrivilege("site_management", "UPDATE");
+  const canDelete = hasPrivilege("site_management", "DELETE");
+  const hasAction = canUpdate || canDelete;
+
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(0);
@@ -246,7 +257,10 @@ export function DaftarSiteTable({ onEdit, onDelete, commodity }: SiteTableProps)
   const [pendingDeleteName, setPendingDeleteName] = useState<string>("");
   const [warnedSites, setWarnedSites] = useState<string[]>([]);
 
-  const { data: sites, isLoading } = useSites({ search: debouncedSearch, commodity });
+  const { data: sites, isLoading } = useSites({
+    search: debouncedSearch,
+    commodity,
+  });
   const deleteSiteMutation = useDeleteSite({
     onSuccess: (data: DeleteSiteResponse) => {
       // Note: broad siteKeys.all invalidation is handled by useDeleteSite hook itself
@@ -360,7 +374,7 @@ export function DaftarSiteTable({ onEdit, onDelete, commodity }: SiteTableProps)
                   Lokasi
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Kapasitas
+                  Kapasitas {commodity?.includes("BBM") ? "(kL)" : ""}
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   Komoditas
@@ -368,9 +382,11 @@ export function DaftarSiteTable({ onEdit, onDelete, commodity }: SiteTableProps)
                 <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   Status
                 </th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Aksi
-                </th>
+                {hasAction && (
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Aksi
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -412,7 +428,15 @@ export function DaftarSiteTable({ onEdit, onDelete, commodity }: SiteTableProps)
                       {site.region}
                     </td>
                     <td className="px-4 py-3 text-center text-gray-700">
-                      {site.capacity ? site.capacity + " MW" : "-"}
+                      {site.capacity
+                        ? `${site.capacity} ${
+                            commodity?.includes("BBM")
+                              ? "kL"
+                              : site.site_type === "PEMBANGKIT"
+                                ? "MW"
+                                : "kL"
+                          }`
+                        : "-"}
                     </td>
                     <td className="px-4 py-3 text-center text-gray-700">
                       {site.commodity || "-"}
@@ -423,13 +447,15 @@ export function DaftarSiteTable({ onEdit, onDelete, commodity }: SiteTableProps)
                         isEnabled={site.is_enabled}
                       />
                     </td>
-                    <td className="px-4 py-3 text-center">
-                      <ActionButtons
-                        id={site.id}
-                        onEdit={handleEdit}
-                        onDelete={() => handleDeleteClick(site.id, site.name)}
-                      />
-                    </td>
+                    {hasAction && (
+                      <td className="px-4 py-3 text-center">
+                        <ActionButtons
+                          id={site.id}
+                          onEdit={handleEdit}
+                          onDelete={() => handleDeleteClick(site.id, site.name)}
+                        />
+                      </td>
+                    )}
                   </tr>
                 ))
               )}
@@ -488,7 +514,16 @@ export function DaftarSiteTable({ onEdit, onDelete, commodity }: SiteTableProps)
 }
 
 // Relations Table Component
-export function RelasiOperasionalTable({ onEdit, onDelete, commodity }: SiteTableProps) {
+export function RelasiOperasionalTable({
+  onEdit,
+  onDelete,
+  commodity,
+}: SiteTableProps) {
+  const { hasPrivilege } = usePrivilege();
+  const canUpdate = hasPrivilege("site_management", "UPDATE");
+  const canDelete = hasPrivilege("site_management", "DELETE");
+  const hasAction = canUpdate || canDelete;
+
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(0);
@@ -637,9 +672,11 @@ export function RelasiOperasionalTable({ onEdit, onDelete, commodity }: SiteTabl
                 <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   Status
                 </th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Aksi
-                </th>
+                {hasAction && (
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Aksi
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -687,18 +724,20 @@ export function RelasiOperasionalTable({ onEdit, onDelete, commodity }: SiteTabl
                         isEnabled={relation.status === "ACTIVE"}
                       />
                     </td>
-                    <td className="px-4 py-3 text-center">
-                      <ActionButtons
-                        id={relation.id}
-                        onEdit={handleEdit}
-                        onDelete={() =>
-                          handleDeleteClick(
-                            relation.id,
-                            relation.source_site_name,
-                          )
-                        }
-                      />
-                    </td>
+                    {hasAction && (
+                      <td className="px-4 py-3 text-center">
+                        <ActionButtons
+                          id={relation.id}
+                          onEdit={handleEdit}
+                          onDelete={() =>
+                            handleDeleteClick(
+                              relation.id,
+                              relation.source_site_name,
+                            )
+                          }
+                        />
+                      </td>
+                    )}
                   </tr>
                 ))
               )}

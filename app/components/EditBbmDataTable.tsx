@@ -17,11 +17,16 @@ import {
   ChevronDown,
   Filter,
   X,
+  FileSpreadsheet,
+  FileText,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { BbmRecord } from "@/hooks/service/bbm-api";
 import { usePrivilege } from "@/hooks/usePrivilege";
 import { useDeleteBbmMonthly } from "@/hooks/service/bbm-api";
+import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 interface EditBbmDataTableProps {
   records: BbmRecord[];
@@ -372,6 +377,63 @@ export default function EditBbmDataTable({
     }
   };
 
+  // Export Handlers
+  const handleExportExcel = () => {
+    const dataToExport = sortedRecords.map((r, i) => ({
+      No: i + 1,
+      Bulan: r.reportDate || "-",
+      TBBM: r.tbbm || "-",
+      Pembangkit: r.pembangkit || "-",
+      Produk: r.product || "-",
+      Moda: r.moda || "-",
+      Nominasi: r.nomination ?? "-",
+      Penyaluran: r.realization ?? "-",
+      Penerimaan: r.receipt ?? "-",
+      Renominasi: r.renomination ?? "-",
+      Pemakaian: r.usage ?? "-",
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Realisasi BBM");
+    XLSX.writeFile(workbook, `Realisasi_BBM_${new Date().toISOString().split("T")[0]}.xlsx`);
+  };
+
+  const handleExportPDF = () => {
+    const doc = new jsPDF("l", "mm", "a4");
+    
+    doc.setFontSize(14);
+    doc.text("Tabel Realisasi BBM", 14, 15);
+    doc.setFontSize(10);
+    doc.text(`Dicetak pada: ${new Date().toLocaleString("id-ID")}`, 14, 22);
+
+    const tableColumn = ["No", "Bulan", "TBBM", "Pembangkit", "Produk", "Moda", "Nominasi", "Penyaluran", "Penerimaan", "Renominasi", "Pemakaian"];
+    const tableRows = sortedRecords.map((r, i) => [
+      i + 1,
+      r.reportDate || "-",
+      r.tbbm || "-",
+      r.pembangkit || "-",
+      r.product || "-",
+      r.moda || "-",
+      r.nomination ?? "-",
+      r.realization ?? "-",
+      r.receipt ?? "-",
+      r.renomination ?? "-",
+      r.usage ?? "-",
+    ]);
+
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 28,
+      theme: "grid",
+      styles: { fontSize: 8, cellPadding: 2 },
+      headStyles: { fillColor: [13, 74, 92], textColor: [255, 255, 255] }
+    });
+
+    doc.save(`Realisasi_BBM_${new Date().toISOString().split("T")[0]}.pdf`);
+  };
+
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 py-3 border-b border-gray-200 gap-3">
@@ -382,6 +444,25 @@ export default function EditBbmDataTable({
           </span>
         </div>
         <div className="flex items-center gap-2">
+          <div className="flex items-center bg-gray-50 rounded-lg p-0.5 border border-gray-200 mr-1">
+            <button
+              onClick={handleExportExcel}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-emerald-500 hover:bg-emerald-50 rounded-md transition-all duration-200"
+              title="Export Excel"
+            >
+              <FileSpreadsheet size={15} />
+              <span className="hidden sm:inline">Excel</span>
+            </button>
+            <div className="w-px h-4 bg-gray-300 mx-0.5"></div>
+            <button
+              onClick={handleExportPDF}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-rose-400 hover:bg-rose-50 rounded-md transition-all duration-200"
+              title="Export PDF"
+            >
+              <FileText size={15} />
+              <span className="hidden sm:inline">PDF</span>
+            </button>
+          </div>
           <button
             onClick={() => setShowFilters((v) => !v)}
             className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-all duration-200 ${

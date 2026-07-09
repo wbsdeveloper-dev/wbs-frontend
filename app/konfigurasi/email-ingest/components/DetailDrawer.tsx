@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import type { EmailSource } from "../page";
 import CronScheduleSelector from "@/app/components/ui/CronScheduleSelector";
+import { usePrivilege } from "@/hooks/usePrivilege";
 
 interface DetailDrawerProps {
   email: EmailSource | null;
@@ -34,6 +35,8 @@ export default function DetailDrawer({
 }: DetailDrawerProps) {
   const [formData, setFormData] = useState<EmailSource | null>(null);
   const [isAnimating, setIsAnimating] = useState(false);
+  const { hasPrivilege } = usePrivilege();
+  const canUpdate = hasPrivilege("email_ingest", "UPDATE");
 
   useEffect(() => {
     if (email) {
@@ -137,8 +140,9 @@ export default function DetailDrawer({
                   onChange={(e) =>
                     setFormData({ ...formData, name: e.target.value })
                   }
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200 disabled:opacity-60 disabled:bg-gray-100"
                   placeholder="Contoh: Invoice Telkomsel"
+                  disabled={!canUpdate}
                 />
               </div>
 
@@ -147,6 +151,7 @@ export default function DetailDrawer({
                 onChange={(v) =>
                   setFormData({ ...formData, cronSchedule: v || null })
                 }
+                disabled={!canUpdate}
               />
 
               <div className="pt-2">
@@ -161,6 +166,7 @@ export default function DetailDrawer({
                       })
                     }
                     className="sr-only peer"
+                    disabled={!canUpdate}
                   />
                   <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-secondary rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                   <span className="ml-3 text-sm font-medium text-gray-700">
@@ -188,8 +194,9 @@ export default function DetailDrawer({
                   onChange={(e) =>
                     setFormData({ ...formData, subjectFilter: e.target.value || null })
                   }
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200 disabled:opacity-60 disabled:bg-gray-100"
                   placeholder="e.g. Laporan Harian, Invoice"
+                  disabled={!canUpdate}
                 />
               </div>
 
@@ -203,8 +210,9 @@ export default function DetailDrawer({
                   onChange={(e) =>
                     setFormData({ ...formData, senderFilter: e.target.value || null })
                   }
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200 disabled:opacity-60 disabled:bg-gray-100"
                   placeholder="e.g. noreply@pln.co.id"
+                  disabled={!canUpdate}
                 />
               </div>
 
@@ -218,8 +226,9 @@ export default function DetailDrawer({
                   onChange={(e) =>
                     setFormData({ ...formData, labelFilter: e.target.value || null })
                   }
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200 disabled:opacity-60 disabled:bg-gray-100"
                   placeholder="e.g. INBOX, CATEGORY_PROMOTIONS"
+                  disabled={!canUpdate}
                 />
               </div>
 
@@ -233,8 +242,9 @@ export default function DetailDrawer({
                   onChange={(e) =>
                     setFormData({ ...formData, attachmentFilenameFilter: e.target.value || null })
                   }
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200 disabled:opacity-60 disabled:bg-gray-100"
                   placeholder="e.g. laporan,daily,metering"
+                  disabled={!canUpdate}
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   Comma-separated keywords — hanya attachment dengan nama mengandung keyword ini yang diproses.
@@ -295,20 +305,22 @@ export default function DetailDrawer({
             onClick={handleClose}
             className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
           >
-            Batal
+            {canUpdate ? "Batal" : "Tutup"}
           </button>
-          <button
-            onClick={handleSave}
-            disabled={isUpdatePending}
-            className="flex items-center gap-2 px-6 py-2 text-sm font-medium text-white bg-primary hover:bg-[#0d4a5c] rounded-lg transition-colors ring-2 ring-transparent ring-offset-2 hover:ring-primary/30 focus:outline-none disabled:opacity-50"
-          >
-            {isUpdatePending ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Save className="w-4 h-4" />
-            )}
-            {isUpdatePending ? "Menyimpan..." : "Simpan Perubahan"}
-          </button>
+          {canUpdate && (
+            <button
+              onClick={handleSave}
+              disabled={isUpdatePending}
+              className="flex items-center gap-2 px-6 py-2 text-sm font-medium text-white bg-primary hover:bg-[#0d4a5c] rounded-lg transition-colors ring-2 ring-transparent ring-offset-2 hover:ring-primary/30 focus:outline-none disabled:opacity-50"
+            >
+              {isUpdatePending ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Save className="w-4 h-4" />
+              )}
+              {isUpdatePending ? "Menyimpan..." : "Simpan Perubahan"}
+            </button>
+          )}
         </div>
       </div>
     </>

@@ -20,9 +20,9 @@ export function SiteMappingModal({
   onClose,
   onSuccess,
 }: SiteMappingModalProps) {
-  const { data: dropdowns, isLoading: isLoadingDropdowns } = useDropdowns();
+  const { data: dropdowns, isLoading: isLoadingDropdowns } = useDropdowns({ enabled: open });
   const { data: existingMappings, isLoading: isLoadingMappings } =
-    useMappings("WA");
+    useMappings("WA", { enabled: open });
   const createMappingMutation = useCreateMapping({
     onSuccess: () => {
       onSuccess();

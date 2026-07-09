@@ -179,7 +179,7 @@ function findAnnualTotal(
 const numStr = (val?: number | string | null) => {
     if (val == null) return "";
     const num = typeof val === "string" ? parseFloat(val) : val;
-    return isNaN(num) ? "" : num.toFixed(4);
+    return isNaN(num) ? "" : String(num);
 };
 
 function mapContractToRow(
@@ -325,8 +325,16 @@ function createEmptyRow(rowNumber: number, years: number[] = []): ContractTableR
 // ---------------------------------------------------------------------------
 
 // Cell renderer — edit mode shows bordered input-like box, view mode shows plain text
-function makeRenderCell(isEditMode: boolean) {
+function makeRenderCell(isEditMode: boolean, isNumeric: boolean = false) {
     const RenderCell = (params: GridRenderCellParams) => {
+        let displayValue = params.value;
+        if (isNumeric && displayValue != null && displayValue !== "") {
+            const num = Number(displayValue);
+            if (!isNaN(num)) {
+                displayValue = num.toLocaleString("en-US", { maximumFractionDigits: 6 });
+            }
+        }
+
         if (isEditMode) {
             return (
                 <Box
@@ -347,13 +355,13 @@ function makeRenderCell(isEditMode: boolean) {
                         whiteSpace: "nowrap",
                     }}
                 >
-                    {params.value}
+                    {displayValue}
                 </Box>
             );
         }
         return (
             <span className="text-xs text-gray-700 truncate">
-                {params.value || <span style={{ fontSize: "10px", color: "#aaa" }}>—</span>}
+                {displayValue || <span style={{ fontSize: "10px", color: "#aaa" }}>—</span>}
             </span>
         );
     };
@@ -369,12 +377,15 @@ function buildColumns(
     isEditMode: boolean,
     supplierNames: string[],
     powerplantNames: string[],
+    isExternal: boolean,
     years: number[] = [],
 ): GridColDef[] {
     const renderCell = makeRenderCell(isEditMode);
+    const numericRenderCell = makeRenderCell(isEditMode, true);
 
     // Custom renderCell for volume year columns with grayed-out support
-    const makeVolumeYearRenderCell = (year: number) => {
+    const makeVolumeYearRenderCell = (year: number, options?: { suffix?: string, readOnly?: boolean }) => {
+        const { suffix = "", readOnly = false } = options || {};
         const VolumeYearCell = (params: GridRenderCellParams) => {
             const row = params.row;
             const contractEndYear = row._akhirPerjanjianYear;
@@ -400,6 +411,14 @@ function buildColumns(
                 );
             }
 
+            let displayValue = params.value;
+            if (displayValue != null && displayValue !== "") {
+                const num = Number(displayValue);
+                if (!isNaN(num)) {
+                    displayValue = num.toLocaleString("en-US", { maximumFractionDigits: 6 });
+                }
+            }
+
             // Normal rendering
             if (isEditMode) {
                 return (
@@ -412,7 +431,8 @@ function buildColumns(
                             justifyContent: "center",
                             border: "1px solid #e5e7eb",
                             borderRadius: "6px",
-                            backgroundColor: "#fff",
+                            backgroundColor: readOnly ? "#f9fafb" : "#fff",
+                            color: readOnly ? "#9ca3af" : "inherit",
                             px: 1,
                             mx: "auto",
                             fontSize: "12px",
@@ -421,13 +441,13 @@ function buildColumns(
                             whiteSpace: "nowrap",
                         }}
                     >
-                        {params.value || "—"}
+                        {displayValue ? `${displayValue}${suffix}` : "—"}
                     </Box>
                 );
             }
             return (
                 <span className="text-xs text-gray-700 truncate">
-                    {params.value || <span style={{ fontSize: "10px", color: "#aaa" }}>—</span>}
+                    {displayValue ? `${displayValue}${suffix}` : <span style={{ fontSize: "10px", color: "#aaa" }}>—</span>}
                 </span>
             );
         };
@@ -547,15 +567,15 @@ function buildColumns(
             editable: isEditMode,
             renderCell,
         },
-        {
+        ...(isExternal ? [] : [{
             field: "hargaPJBG",
             headerName: "Harga PJBG",
             width: 100,
             headerAlign: "center",
             align: "center",
             editable: isEditMode,
-            renderCell,
-        },
+            renderCell: numericRenderCell,
+        }] as GridColDef[]),
         {
             field: "hgbt",
             headerName: "HGBT",
@@ -563,7 +583,7 @@ function buildColumns(
             headerAlign: "center",
             align: "center",
             editable: isEditMode,
-            renderCell,
+            renderCell: numericRenderCell,
         },
         {
             field: "volumeJPMH",
@@ -572,13 +592,15 @@ function buildColumns(
             headerAlign: "center",
             align: "center",
             editable: isEditMode,
-            renderCell,
+            renderCell: numericRenderCell,
         },
     ];
 
     // Add dynamic volume year group columns (JPH, TOP, %TOP, Jumlah Kontrak Tahunan, Volume Kepmen)
     for (const year of years) {
         const yearRenderCell = makeVolumeYearRenderCell(year);
+        const topRenderCell = makeVolumeYearRenderCell(year, { readOnly: true });
+        const percentTopRenderCell = makeVolumeYearRenderCell(year, { suffix: "%" });
         cols.push(
             {
                 field: `volume${year}JPH`,
@@ -595,8 +617,8 @@ function buildColumns(
                 width: 120,
                 headerAlign: "center",
                 align: "center",
-                editable: isEditMode,
-                renderCell: yearRenderCell,
+                editable: false,
+                renderCell: topRenderCell,
             },
             {
                 field: `volume${year}PercentTOP`,
@@ -605,7 +627,7 @@ function buildColumns(
                 headerAlign: "center",
                 align: "center",
                 editable: isEditMode,
-                renderCell: yearRenderCell,
+                renderCell: percentTopRenderCell,
             },
             {
                 field: `jumlahKontrakTahunan${year}`,
@@ -660,6 +682,7 @@ export default function ContractTable() {
     const canCreate = hasPrivilege("contracts", "CREATE");
     const canUpdate = hasPrivilege("contracts", "UPDATE");
     const canDelete = hasPrivilege("contracts", "DELETE");
+    const isExternal = hasPrivilege("external", "READ");
 
     // File Upload State
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -833,10 +856,35 @@ export default function ContractTable() {
 
     const processRowUpdate = useCallback(
         (newRow: ContractTableRow) => {
+            const updatedRow = { ...newRow };
+            for (const key of Object.keys(updatedRow)) {
+                if (key.startsWith("volume") && key.endsWith("JPH")) {
+                    const year = key.replace("volume", "").replace("JPH", "");
+                    const jphKey = `volume${year}JPH`;
+                    const pctTopKey = `volume${year}PercentTOP`;
+                    const topKey = `volume${year}TOP`;
+
+                    const jphValStr = updatedRow[jphKey];
+                    const pctTopValStr = updatedRow[pctTopKey];
+                    
+                    if (jphValStr && pctTopValStr) {
+                        const jph = parseFloat(String(jphValStr));
+                        const pctTop = parseFloat(String(pctTopValStr));
+                        if (!isNaN(jph) && !isNaN(pctTop)) {
+                            updatedRow[topKey] = String(jph * (pctTop / 100));
+                        } else {
+                            updatedRow[topKey] = "";
+                        }
+                    } else {
+                        updatedRow[topKey] = "";
+                    }
+                }
+            }
+
             setRows((prev) =>
-                prev.map((row) => (row.id === newRow.id ? newRow : row)),
+                prev.map((row) => (row.id === updatedRow.id ? updatedRow : row)),
             );
-            return newRow;
+            return updatedRow;
         },
         [],
     );
@@ -851,7 +899,7 @@ export default function ContractTable() {
             "No", "Region", "Pemasok", "Pembangkit", "Pemilik KIT",
             "Jenis Dokumen", "No Kontrak Awal", "Jenis Dokumen Tambahan", "No Kontrak Terbaru",
             "Awal Perjanjian", "Tanggal Efektif", "Akhir Perjanjian",
-            "Harga PJBG", "Harga HGBT", "Unit", "Volume JPMH", "TJK"
+            ...(isExternal ? [] : ["Harga PJBG"]), "Harga HGBT", "Unit", "Volume JPMH", "TJK"
         ];
 
         for (const year of yearRange) {
@@ -876,7 +924,7 @@ export default function ContractTable() {
                 "Awal Perjanjian": row.awalPerjanjian,
                 "Tanggal Efektif": row.tanggalEfektif,
                 "Akhir Perjanjian": row.akhirPerjanjian,
-                "Harga PJBG": row.hargaPJBG,
+                ...(!isExternal && { "Harga PJBG": row.hargaPJBG }),
                 "Harga HGBT": row.hgbt,
                 "Unit": row.unitSwitch,
                 "Volume JPMH": row.volumeJPMH,
@@ -1370,7 +1418,7 @@ export default function ContractTable() {
 
     // ---- Column definitions ----
 
-    const baseColumns = buildColumns(isEditMode, supplierNames, powerplantNames, yearRange);
+    const baseColumns = buildColumns(isEditMode, supplierNames, powerplantNames, isExternal, yearRange);
 
     const unitColumn: GridColDef = {
         field: "unitSwitch",
@@ -1546,7 +1594,7 @@ export default function ContractTable() {
                             </button>
                         </div>
                     ) : (
-                        canUpdate && (
+                        (canUpdate || canCreate) && (
                             <button
                                 onClick={() => setIsEditMode(true)}
                                 className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
@@ -1626,6 +1674,10 @@ export default function ContractTable() {
                                             processRowUpdate={processRowUpdate}
                                             isCellEditable={(params) => {
                                                 if (!isEditMode) return false;
+                                                
+                                                // If user only has CREATE privilege, they can only edit newly created rows
+                                                if (!canUpdate && !params.row._isNew) return false;
+
                                                 const field = params.field;
                                                 // Match dynamic year-based fields: volume{year}JPH, volume{year}TOP, volume{year}PercentTOP, jumlahKontrakTahunan{year}, volumeKepmen{year}
                                                 const yearMatch = field.match(/^(?:volume(\d{4})(?:JPH|TOP|PercentTOP)|jumlahKontrakTahunan(\d{4})|volumeKepmen(\d{4}))$/);
@@ -1883,17 +1935,19 @@ export default function ContractTable() {
                                                 >
                                                     <Download size={16} />
                                                 </IconButton>
-                                                <IconButton
-                                                    size="small"
-                                                    sx={{ color: "#ef4444", "&:hover": { color: "#dc2626", backgroundColor: "#fef2f2" } }}
-                                                    title="Hapus Dokumen"
-                                                    onClick={() => {
-                                                        setDocToDelete({ contractId: row._contractId, documentId: doc.id });
-                                                        setDocDeleteConfirmOpen(true);
-                                                    }}
-                                                >
-                                                    <Trash2 size={16} />
-                                                </IconButton>
+                                                {canDelete && (
+                                                    <IconButton
+                                                        size="small"
+                                                        sx={{ color: "#ef4444", "&:hover": { color: "#dc2626", backgroundColor: "#fef2f2" } }}
+                                                        title="Hapus Dokumen"
+                                                        onClick={() => {
+                                                            setDocToDelete({ contractId: row._contractId, documentId: doc.id });
+                                                            setDocDeleteConfirmOpen(true);
+                                                        }}
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </IconButton>
+                                                )}
                                             </div>
                                         </div>
                                     ) : (
@@ -1908,40 +1962,42 @@ export default function ContractTable() {
                                 <Divider />
 
                                 {/* Upload Section */}
-                                <div>
-                                    <Typography variant="subtitle2" sx={{ fontWeight: 600, color: "#374151", mb: 2 }}>
-                                        {doc ? "Unggah Dokumen Baru" : "Unggah Dokumen"}
-                                    </Typography>
-                                    <Button
-                                        variant="outlined"
-                                        fullWidth
-                                        startIcon={isUploadingThis ? <CircularProgress size={16} /> : <Upload size={16} />}
-                                        onClick={() => {
-                                            if (documentModalRowId) {
-                                                handleUploadClick(documentModalRowId);
-                                            }
-                                        }}
-                                        disabled={isUploadingThis}
-                                        sx={{
-                                            textTransform: "none",
-                                            fontWeight: 500,
-                                            borderRadius: "8px",
-                                            color: "var(--theme-primary)",
-                                            borderColor: "var(--theme-primary)",
-                                            "&:hover": {
-                                                borderColor: "#0d4a5c",
-                                                backgroundColor: "#f8fafc"
-                                            }
-                                        }}
-                                    >
-                                        {isUploadingThis
-                                            ? (selectedFileName ? `Mengunggah ${selectedFileName}...` : "Mengunggah...")
-                                            : (selectedFileName ? selectedFileName : "Pilih File")}
-                                    </Button>
-                                    <Typography variant="caption" sx={{ display: 'block', mt: 1, color: "#6b7280", textAlign: 'center' }}>
-                                        Format yang didukung: PDF. Ukuran maksimal: 10MB.
-                                    </Typography>
-                                </div>
+                                {canUpdate && (
+                                    <div>
+                                        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: "#374151", mb: 2 }}>
+                                            {doc ? "Unggah Dokumen Baru" : "Unggah Dokumen"}
+                                        </Typography>
+                                        <Button
+                                            variant="outlined"
+                                            fullWidth
+                                            startIcon={isUploadingThis ? <CircularProgress size={16} /> : <Upload size={16} />}
+                                            onClick={() => {
+                                                if (documentModalRowId) {
+                                                    handleUploadClick(documentModalRowId);
+                                                }
+                                            }}
+                                            disabled={isUploadingThis}
+                                            sx={{
+                                                textTransform: "none",
+                                                fontWeight: 500,
+                                                borderRadius: "8px",
+                                                color: "var(--theme-primary)",
+                                                borderColor: "var(--theme-primary)",
+                                                "&:hover": {
+                                                    borderColor: "#0d4a5c",
+                                                    backgroundColor: "#f8fafc"
+                                                }
+                                            }}
+                                        >
+                                            {isUploadingThis
+                                                ? (selectedFileName ? `Mengunggah ${selectedFileName}...` : "Mengunggah...")
+                                                : (selectedFileName ? selectedFileName : "Pilih File")}
+                                        </Button>
+                                        <Typography variant="caption" sx={{ display: 'block', mt: 1, color: "#6b7280", textAlign: 'center' }}>
+                                            Format yang didukung: PDF. Ukuran maksimal: 10MB.
+                                        </Typography>
+                                    </div>
+                                )}
                             </div>
                         );
                     })()}

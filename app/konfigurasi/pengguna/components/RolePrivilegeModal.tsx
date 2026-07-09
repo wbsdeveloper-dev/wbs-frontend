@@ -19,6 +19,7 @@ interface RolePrivilegeModalProps {
 
 export function RolePrivilegeModal({ open, onClose, role }: RolePrivilegeModalProps) {
   const [mounted, setMounted] = useState(false);
+  const [activeTab, setActiveTab] = useState<"GAS" | "BBM">("GAS");
   
   const { data: resourcesData, isLoading: isLoadingResources } = useRoleResources({
     enabled: open
@@ -71,35 +72,42 @@ export function RolePrivilegeModal({ open, onClose, role }: RolePrivilegeModalPr
 
   const handleToggleRow = (resourceKey: string) => {
     const resourceDef = resourcesData?.find(r => r.key === resourceKey);
-    if (!resourceDef?.actions) return;
+    // If not found in API, assume all actions [CREATE, READ, UPDATE, DELETE]
+    let availableActions = resourceDef?.actions || ["CREATE", "READ", "UPDATE", "DELETE"];
+    
+    if (resourceKey === 'external_gas') {
+      availableActions = ["READ"];
+    }
     
     setPrivilegeMap((prev) => {
       const next = { ...prev };
       const currentActions = next[resourceKey] ? new Set(next[resourceKey]) : new Set<string>();
       
-      // If all are selected, deselect all. Else, select all available actions for this explicit resource.
-      if (currentActions.size === resourceDef.actions.length) {
+      if (currentActions.size === availableActions.length) {
         next[resourceKey] = new Set();
       } else {
-        next[resourceKey] = new Set(resourceDef.actions);
+        next[resourceKey] = new Set(availableActions);
       }
       
       return next;
     });
   };
 
-  const allPossibleActions = Array.from(
-    new Set(resourcesData?.flatMap((r) => r.actions) || [])
-  );
+  const allPossibleActions = ["CREATE", "READ", "UPDATE", "DELETE"];
 
   const handleSave = () => {
     if (!role.id) return;
     
     // Transform Set back to Array for API
-    const privilegesPayload: PrivilegeMapping[] = Object.entries(privilegeMap).map(([resource, actionsSet]) => ({
-      resource,
-      actions: Array.from(actionsSet)
-    })).filter(p => p.actions.length > 0);
+    // Filter out any legacy resources that are no longer valid (not in resourcesData)
+    const validResourceKeys = new Set(resourcesData?.map(r => r.key) || []);
+    const privilegesPayload: PrivilegeMapping[] = Object.entries(privilegeMap)
+      .filter(([resource]) => validResourceKeys.size === 0 || validResourceKeys.has(resource))
+      .map(([resource, actionsSet]) => ({
+        resource,
+        actions: Array.from(actionsSet)
+      }))
+      .filter(p => p.actions.length > 0);
 
     updateMutation.mutate(
       { id: role.id, payload: { privileges: privilegesPayload } },
@@ -111,11 +119,42 @@ export function RolePrivilegeModal({ open, onClose, role }: RolePrivilegeModalPr
     );
   };
 
+  const GAS_RESOURCES = [
+    { key: 'dashboard_gas', label: 'Beranda' },
+    { key: 'notification_gas', label: 'Notifikasi' },
+    { key: 'data_input_gas', label: 'Data Input' },
+    { key: 'data_transportir_gas', label: 'Data Transportir' },
+    { key: 'file_berita_acara_gas', label: 'File Berita Acara' },
+    { key: 'site_management_gas', label: 'Pemasok & Pembangkit' },
+    { key: 'contracts_gas', label: 'Kontrak & Dokumen' },
+    { key: 'users_gas', label: 'Pengguna' },
+    { key: 'email_ingest_gas', label: 'Email Ingest' },
+    { key: 'template_group_gas', label: 'Template Grup' },
+    { key: 'spreadsheet_source_gas', label: 'Spreadsheet' },
+    { key: 'api_keys_gas', label: 'API Keys' },
+    { key: 'system_config_gas', label: 'Data Master' },
+    { key: 'bot_management_gas', label: 'Manajemen Bot' },
+    { key: 'external_gas', label: 'Eksternal (Non EPI)' },
+  ];
+
+  const BBM_RESOURCES = [
+    { key: 'dashboard_bbm', label: 'Beranda' },
+    { key: 'data_input_bbm', label: 'Data Input' },
+    { key: 'kertas_kerja_bbm', label: 'Kertas Kerja' },
+    { key: 'site_management_bbm', label: 'TBBM & Pembangkit' },
+    { key: 'users_bbm', label: 'Pengguna' },
+    { key: 'template_group_bbm', label: 'Template Grup' },
+    { key: 'spreadsheet_source_bbm', label: 'Spreadsheet' },
+    { key: 'system_config_bbm', label: 'Data Master' },
+  ];
+
+  const activeResources = activeTab === "GAS" ? GAS_RESOURCES : BBM_RESOURCES;
+
   return createPortal(
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white rounded-2xl w-full max-w-4xl shadow-2xl flex flex-col max-h-[90vh]">
+      <div className="bg-white rounded-2xl w-full max-w-4xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
               <Shield className="text-primary" size={20} />
@@ -131,6 +170,32 @@ export function RolePrivilegeModal({ open, onClose, role }: RolePrivilegeModalPr
           >
             <X size={20} />
           </button>
+        </div>
+
+        {/* Tabs */}
+        <div className="px-6 pt-4 border-b border-gray-200 shrink-0 bg-gray-50/50">
+          <div className="flex space-x-6">
+            <button
+              onClick={() => setActiveTab("GAS")}
+              className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === "GAS"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              }`}
+            >
+              Gas Pipa
+            </button>
+            <button
+              onClick={() => setActiveTab("BBM")}
+              className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === "BBM"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              }`}
+            >
+              BBM
+            </button>
+          </div>
         </div>
 
         {/* Content */}
@@ -158,9 +223,17 @@ export function RolePrivilegeModal({ open, onClose, role }: RolePrivilegeModalPr
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {resourcesData?.map((resourceDef, i) => {
-                    const resourceKey = resourceDef.key;
-                    const availableActions = resourceDef.actions || [];
+                  {activeResources.map((resDef, i) => {
+                    const resourceKey = resDef.key;
+                    // Usually we get available actions from API, but we know it's CRUD
+                    const resourceFromApi = resourcesData?.find(r => r.key === resourceKey);
+                    let availableActions = resourceFromApi?.actions || allPossibleActions;
+                    
+                    // Khusus untuk Eksternal (Non EPI), hanya ada satu aksi (READ)
+                    if (resourceKey === 'external_gas') {
+                      availableActions = ["READ"];
+                    }
+                    
                     const isEven = i % 2 === 0;
                     const rowSet = privilegeMap[resourceKey] || new Set();
                     const isAllSelected = !!availableActions.length && rowSet.size === availableActions.length;
@@ -175,10 +248,14 @@ export function RolePrivilegeModal({ open, onClose, role }: RolePrivilegeModalPr
                               onChange={() => handleToggleRow(resourceKey)}
                               className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary cursor-pointer"
                             />
-                            <span className="group-hover:text-primary transition-colors">{resourceKey.replace(/_/g, " ")}</span>
+                            <span className="group-hover:text-primary transition-colors">{resDef.label}</span>
                           </label>
                         </td>
                         {allPossibleActions.map(action => {
+                          if (resourceKey === 'external_gas') {
+                            return <td key={action} className="px-4 py-3 border-r border-gray-200 text-center bg-gray-50/50" />;
+                          }
+
                           const isAvailable = availableActions.includes(action);
                           const isChecked = rowSet.has(action);
                           
@@ -213,7 +290,7 @@ export function RolePrivilegeModal({ open, onClose, role }: RolePrivilegeModalPr
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex items-center justify-end gap-3 rounded-b-2xl">
+        <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex items-center justify-end gap-3 shrink-0 rounded-b-2xl">
           <button
             onClick={onClose}
             disabled={updateMutation.isPending}

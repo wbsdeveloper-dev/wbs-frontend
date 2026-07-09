@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Plus, MapPin, ArrowRightLeft, Map } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Plus, MapPin, ArrowRightLeft, Map, Loader2 } from "lucide-react";
 import {
   DaftarSiteTable,
   RelasiOperasionalTable,
@@ -13,6 +13,8 @@ const SiteMap = dynamic(() => import("./components/SiteMap"), { ssr: false });
 import { useQueryClient } from "@tanstack/react-query";
 import { siteKeys } from "@/hooks/service/site-api";
 import { usePrivilege } from "@/hooks/usePrivilege";
+import { useAuth } from "@/components/providers/auth-provider";
+import { useRouter } from "next/navigation";
 
 const tabs = [
   { label: "Daftar Pemasok & Pembangkit", icon: MapPin },
@@ -21,12 +23,17 @@ const tabs = [
 ];
 
 export default function SitePage() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState(0);
   const [addSiteModalOpen, setAddSiteModalOpen] = useState(false);
   const [addRelationModalOpen, setAddRelationModalOpen] = useState(false);
 
   const { hasPrivilege } = usePrivilege();
+  const { isLoading: isAuthLoading } = useAuth();
+
+  const canRead = hasPrivilege("site_management", "READ");
   const canCreate = hasPrivilege("site_management", "CREATE");
+
   const [editingSiteId, setEditingSiteId] = useState<string | null>(null);
   const [editingRelationId, setEditingRelationId] = useState<string | null>(
     null,
@@ -60,6 +67,21 @@ export default function SitePage() {
     setEditingRelationId(id);
     setAddRelationModalOpen(true);
   };
+
+  // Redirect if unauthorized
+  useEffect(() => {
+    if (!isAuthLoading && !canRead) {
+      router.push("/landingpage");
+    }
+  }, [isAuthLoading, canRead, router]);
+
+  if (isAuthLoading || !canRead) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <Loader2 className="animate-spin text-secondary" size={32} />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen p-4 md:p-6 lg:p-8">
