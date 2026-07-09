@@ -17,7 +17,7 @@ export default function PenggunaPage() {
   const [activeTab, setActiveTab] = useState<"users" | "roles">("users");
   const { hasPrivilege } = usePrivilege();
   const { isLoading: isAuthLoading } = useAuth();
-  
+
   const canRead = hasPrivilege("users", "READ");
 
   const [page, setPage] = useState(1);
@@ -112,7 +112,7 @@ export default function PenggunaPage() {
               className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white text-sm font-medium rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
             >
               <Plus size={18} />
-              Tambah Role
+              Tambah Peran
             </button>
           )}
         </div>

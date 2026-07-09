@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { Plus, Loader2 } from "lucide-react";
+import { Plus, Loader2, FileText } from "lucide-react";
 import { useAuth } from "@/components/providers/auth-provider";
 import { usePrivilege } from "@/hooks/usePrivilege";
 import { useRouter } from "next/navigation";
 import UploadKonfigurasiModal from "./components/UploadKonfigurasiModal";
+import InputBAValidasiModal from "../../components/InputBAValidasiModal";
 import TransportirTable from "./components/TransportirTable";
 import { useTransportirResume, TransportirResumeParams } from "@/hooks/service/transportir-api";
 
@@ -18,6 +19,7 @@ export default function DataTransportirPage() {
   const canCreate = hasPrivilege("data_transportir_gas", "CREATE");
 
   const [openModal, setOpenModal] = useState(false);
+  const [openBAModal, setOpenBAModal] = useState(false);
   const [params, setParams] = useState<TransportirResumeParams>({
     page: 1,
     limit: 10,
@@ -63,12 +65,20 @@ export default function DataTransportirPage() {
             </div>
             <div className="flex gap-3">
               {canCreate && (
-                <button
-                  onClick={() => setOpenModal(true)}
-                  className="px-4 py-2 bg-primary text-white rounded-lg flex items-center gap-2 text-sm font-medium hover:bg-[#0d4a5c] transition-colors cursor-pointer shadow-sm"
-                >
-                  <Plus size={16} /> Input Data Transportir
-                </button>
+                <>
+                  <button
+                    onClick={() => setOpenBAModal(true)}
+                    className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg flex items-center gap-2 hover:bg-gray-50 text-sm font-medium transition-colors cursor-pointer shadow-sm"
+                  >
+                    <FileText size={16} /> Input BA & Validasi
+                  </button>
+                  <button
+                    onClick={() => setOpenModal(true)}
+                    className="px-4 py-2 bg-primary text-white rounded-lg flex items-center gap-2 text-sm font-medium hover:bg-[#0d4a5c] transition-colors cursor-pointer shadow-sm"
+                  >
+                    <Plus size={16} /> Input Data Transportir
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -88,6 +98,9 @@ export default function DataTransportirPage() {
 
       {openModal && (
         <UploadKonfigurasiModal setOpenModal={setOpenModal} />
+      )}
+      {openBAModal && (
+        <InputBAValidasiModal setOpenModal={setOpenBAModal} />
       )}
     </div>
   );
