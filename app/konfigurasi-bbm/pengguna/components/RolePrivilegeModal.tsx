@@ -20,7 +20,7 @@ interface RolePrivilegeModalProps {
 export function RolePrivilegeModal({ open, onClose, role }: RolePrivilegeModalProps) {
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState<"GAS" | "BBM">("GAS");
-  
+
   const { data: resourcesData, isLoading: isLoadingResources } = useRoleResources({
     enabled: open
   });
@@ -58,13 +58,13 @@ export function RolePrivilegeModal({ open, onClose, role }: RolePrivilegeModalPr
     setPrivilegeMap((prev) => {
       const next = { ...prev };
       const currentActions = next[resource] ? new Set(next[resource]) : new Set<string>();
-      
+
       if (currentActions.has(action)) {
         currentActions.delete(action);
       } else {
         currentActions.add(action);
       }
-      
+
       next[resource] = currentActions;
       return next;
     });
@@ -74,21 +74,21 @@ export function RolePrivilegeModal({ open, onClose, role }: RolePrivilegeModalPr
     const resourceDef = resourcesData?.find(r => r.key === resourceKey);
     // If not found in API, assume all actions [CREATE, READ, UPDATE, DELETE]
     let availableActions = resourceDef?.actions || ["CREATE", "READ", "UPDATE", "DELETE"];
-    
+
     if (resourceKey === 'external_gas') {
       availableActions = ["READ"];
     }
-    
+
     setPrivilegeMap((prev) => {
       const next = { ...prev };
       const currentActions = next[resourceKey] ? new Set(next[resourceKey]) : new Set<string>();
-      
+
       if (currentActions.size === availableActions.length) {
         next[resourceKey] = new Set();
       } else {
         next[resourceKey] = new Set(availableActions);
       }
-      
+
       return next;
     });
   };
@@ -97,7 +97,7 @@ export function RolePrivilegeModal({ open, onClose, role }: RolePrivilegeModalPr
 
   const handleSave = () => {
     if (!role.id) return;
-    
+
     // Transform Set back to Array for API
     // Filter out any legacy resources that are no longer valid (not in resourcesData)
     const validResourceKeys = new Set(resourcesData?.map(r => r.key) || []);
@@ -176,21 +176,19 @@ export function RolePrivilegeModal({ open, onClose, role }: RolePrivilegeModalPr
           <div className="flex space-x-6">
             <button
               onClick={() => setActiveTab("GAS")}
-              className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === "GAS"
+              className={`pb-3 text-sm font-medium border-b-2 transition-colors ${activeTab === "GAS"
                   ? "border-primary text-primary"
                   : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-              }`}
+                }`}
             >
               Gas Pipa
             </button>
             <button
               onClick={() => setActiveTab("BBM")}
-              className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === "BBM"
+              className={`pb-3 text-sm font-medium border-b-2 transition-colors ${activeTab === "BBM"
                   ? "border-primary text-primary"
                   : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-              }`}
+                }`}
             >
               BBM
             </button>
@@ -227,12 +225,12 @@ export function RolePrivilegeModal({ open, onClose, role }: RolePrivilegeModalPr
                     // Usually we get available actions from API, but we know it's CRUD
                     const resourceFromApi = resourcesData?.find(r => r.key === resourceKey);
                     let availableActions = resourceFromApi?.actions || allPossibleActions;
-                    
+
                     // Khusus untuk Eksternal (Non EPI), hanya ada satu aksi (READ)
                     if (resourceKey === 'external_gas') {
                       availableActions = ["READ"];
                     }
-                    
+
                     const isEven = i % 2 === 0;
                     const rowSet = privilegeMap[resourceKey] || new Set();
                     const isAllSelected = !!availableActions.length && rowSet.size === availableActions.length;
@@ -241,7 +239,7 @@ export function RolePrivilegeModal({ open, onClose, role }: RolePrivilegeModalPr
                       <tr key={resourceKey} className={`hover:bg-secondary/5 transition-colors ${isEven ? 'bg-white' : 'bg-gray-50/50'}`}>
                         <td className="px-4 py-3 border-r border-gray-200 font-medium text-gray-700 uppercase tracking-wide text-xs">
                           <label className="flex items-center gap-2 cursor-pointer w-full h-full group">
-                            <input 
+                            <input
                               type="checkbox"
                               checked={isAllSelected}
                               onChange={() => handleToggleRow(resourceKey)}
@@ -257,7 +255,7 @@ export function RolePrivilegeModal({ open, onClose, role }: RolePrivilegeModalPr
 
                           const isAvailable = availableActions.includes(action);
                           const isChecked = rowSet.has(action);
-                          
+
                           if (!isAvailable) {
                             return (
                               <td key={action} className="px-4 py-3 border-r border-gray-200 text-center bg-gray-50/50">
@@ -300,7 +298,7 @@ export function RolePrivilegeModal({ open, onClose, role }: RolePrivilegeModalPr
           <button
             onClick={handleSave}
             disabled={updateMutation.isPending || isLoading}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-[#0d4a5c] transition-all hover:shadow-md active:scale-95 disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:brightness-90 transition-all hover:shadow-md active:scale-95 disabled:opacity-50"
           >
             {updateMutation.isPending ? (
               <Loader2 size={16} className="animate-spin" />
