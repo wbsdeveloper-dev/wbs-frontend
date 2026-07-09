@@ -28,7 +28,7 @@ export function AddSiteModal({
 }: AddSiteModalProps) {
   const { data: dropdowns, isLoading: isLoadingDropdowns } = useDropdowns({ enabled: open });
   const { data: regions = [], isLoading: isLoadingRegions } = useKertasKerjaMaster("master_region", "GAS PIPA,LNG", { enabled: open });
-  
+
   const createSiteMutation = useCreateSite({
     onSuccess: () => {
       onSuccess();
@@ -345,11 +345,10 @@ export function AddSiteModal({
                 setFormData({ ...formData, name: e.target.value })
               }
               placeholder="Masukkan nama site"
-              className={`w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200 ${
-                errors.name
+              className={`w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200 ${errors.name
                   ? "border-red-300 focus:ring-red-500"
                   : "border-gray-300"
-              }`}
+                }`}
             />
             {errors.name && (
               <p className="text-xs text-red-600 mt-1">{errors.name}</p>
@@ -428,11 +427,10 @@ export function AddSiteModal({
                     })
                   }
                   placeholder="Masukkan kapasitas"
-                  className={`w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200 ${
-                    errors.capacity
+                  className={`w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200 ${errors.capacity
                       ? "border-red-300 focus:ring-red-500"
                       : "border-gray-300"
-                  }`}
+                    }`}
                 />
                 {errors.capacity && (
                   <p className="text-xs text-red-600 mt-1">{errors.capacity}</p>
@@ -497,11 +495,10 @@ export function AddSiteModal({
               disabled={formData.site_type !== "PEMASOK"}
               step="any"
               placeholder="1000"
-              className={`w-full px-4 py-2.5 border rounded-lg text-sm transition-all duration-200 ${
-                formData.site_type !== "PEMASOK"
+              className={`w-full px-4 py-2.5 border rounded-lg text-sm transition-all duration-200 ${formData.site_type !== "PEMASOK"
                   ? "bg-gray-50 border-gray-200 text-gray-400 cursor-not-allowed"
                   : "bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent"
-              }`}
+                }`}
             />
             <p className="text-xs text-gray-500 mt-1">
               Opsional: Faktor konversi untuk satuan

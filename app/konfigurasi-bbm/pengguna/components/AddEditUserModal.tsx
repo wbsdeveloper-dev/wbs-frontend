@@ -201,21 +201,7 @@ export function AddEditUserModal({
               </div>
             )}
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Status
-              </label>
-              <select
-                value={status}
-                onChange={(e) =>
-                  setStatus(e.target.value as "ACTIVE" | "DISABLED")
-                }
-                className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all appearance-none"
-              >
-                <option value="ACTIVE">Active</option>
-                <option value="DISABLED">Non-aktif</option>
-              </select>
-            </div>
+
 
             <div>
               <div className="flex items-center justify-between mb-2">
@@ -269,7 +255,7 @@ export function AddEditUserModal({
           <button
             type="submit"
             form="user-form"
-            className="px-5 py-2.5 text-sm font-medium text-white bg-primary rounded-xl hover:shadow-lg hover:bg-[#0d4a5c] active:scale-95 transition-all flex items-center justify-center min-w-[120px]"
+            className="px-5 py-2.5 text-sm font-medium text-white bg-primary rounded-xl hover:shadow-lg hover:brightness-90 active:scale-95 transition-all flex items-center justify-center min-w-[120px]"
             disabled={isSaving}
           >
             {isSaving ? (

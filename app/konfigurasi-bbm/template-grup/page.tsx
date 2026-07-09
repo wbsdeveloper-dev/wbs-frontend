@@ -116,7 +116,7 @@ export default function TemplateGrupPage() {
   const router = useRouter();
   const { hasPrivilege } = usePrivilege();
   const { isLoading: isAuthLoading } = useAuth();
-  
+
   const canRead = hasPrivilege("template_group", "READ");
   const canCreate = hasPrivilege("template_group", "CREATE");
 
@@ -416,13 +416,12 @@ export default function TemplateGrupPage() {
       {/* Notification Toast */}
       {notification && (
         <div
-          className={`fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg animate-slideIn ${
-            notification.type === "success"
-              ? "bg-green-50 text-green-800 border border-green-200"
-              : notification.type === "error"
-                ? "bg-red-50 text-red-800 border border-red-200"
-                : "bg-blue-50 text-blue-800 border border-blue-200"
-          }`}
+          className={`fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg animate-slideIn ${notification.type === "success"
+            ? "bg-green-50 text-green-800 border border-green-200"
+            : notification.type === "error"
+              ? "bg-red-50 text-red-800 border border-red-200"
+              : "bg-blue-50 text-blue-800 border border-blue-200"
+            }`}
         >
           {notification.type === "success" && <CheckCircle size={18} />}
           {notification.type === "error" && <AlertCircle size={18} />}
@@ -463,7 +462,7 @@ export default function TemplateGrupPage() {
             {canCreate && (
               <button
                 onClick={() => setIsCreateModalOpen(true)}
-                className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white text-sm font-medium rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
+                className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white text-sm font-medium rounded-lg hover:brightness-90 transition-all duration-200 hover:shadow-md active:scale-95"
               >
                 <Plus size={18} />
                 Buat Template
@@ -533,11 +532,10 @@ export default function TemplateGrupPage() {
             <button
               key={tab.key}
               onClick={() => setScopeFilter(tab.key)}
-              className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap ${
-                scopeFilter === tab.key
-                  ? "bg-primary text-white shadow-sm"
-                  : "text-gray-600 hover:bg-gray-100"
-              }`}
+              className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap ${scopeFilter === tab.key
+                ? "bg-primary text-white shadow-sm"
+                : "text-gray-600 hover:bg-gray-100"
+                }`}
             >
               {tab.icon}
               {tab.label}
@@ -583,9 +581,9 @@ export default function TemplateGrupPage() {
 
         {/* Right Panel - Template Editor (70%) or split with Email Panel */}
         {scopeFilter === "EMAIL_INGEST" &&
-        selectedTemplate?.sourceLinks?.some(
-          (l) => l.sourceType === "EMAIL_INGEST",
-        ) ? (
+          selectedTemplate?.sourceLinks?.some(
+            (l) => l.sourceType === "EMAIL_INGEST",
+          ) ? (
           <>
             {/* Editor (50%) */}
             <div className="lg:col-span-4">
@@ -690,9 +688,9 @@ export default function TemplateGrupPage() {
                 onChange={(e) =>
                   setNewTemplateScope(
                     e.target.value as
-                      | "WA_GROUP"
-                      | "SPREADSHEET_SOURCE"
-                      | "EMAIL_INGEST",
+                    | "WA_GROUP"
+                    | "SPREADSHEET_SOURCE"
+                    | "EMAIL_INGEST",
                   )
                 }
                 className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white cursor-pointer pr-10"
@@ -752,7 +750,7 @@ export default function TemplateGrupPage() {
             <button
               onClick={handleCreateTemplate}
               disabled={createTemplateMutation.isPending}
-              className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-primary rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-primary rounded-lg hover:brightness-90 transition-all duration-200 hover:shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {createTemplateMutation.isPending ? (
                 <span className="flex items-center justify-center gap-2">
