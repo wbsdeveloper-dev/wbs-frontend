@@ -105,6 +105,7 @@ export interface TemplateKertasKerja {
   moda_id: string;
   hop_minimum: number;
   average_usage?: number | null;
+  freight_costs?: number | null;
   is_active?: boolean;
   created_at: string;
   updated_at?: string;

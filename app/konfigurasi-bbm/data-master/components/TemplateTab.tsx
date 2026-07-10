@@ -1,5 +1,12 @@
 import React, { useState } from "react";
-import { Plus, Edit2, Trash2, Loader2, AlertCircle } from "lucide-react";
+import {
+  Plus,
+  Edit2,
+  Trash2,
+  Loader2,
+  AlertCircle,
+  Search,
+} from "lucide-react";
 import { Modal } from "@/app/components/ui";
 import {
   useKertasKerjaTemplates,
@@ -46,8 +53,23 @@ export default function TemplateTab() {
     distance: "",
     estimated_delivery_time: "",
     average_usage: "",
+    freight_costs: "",
     is_active: true,
   });
+
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredData = React.useMemo(() => {
+    if (!searchQuery) return data;
+    const query = searchQuery.toLowerCase();
+    return data.filter(
+      (item: any) =>
+        (item.site_name?.toLowerCase() || "").includes(query) ||
+        (item.supplier_name?.toLowerCase() || "").includes(query) ||
+        (item.product_name?.toLowerCase() || "").includes(query) ||
+        (item.moda_name?.toLowerCase() || "").includes(query),
+    );
+  }, [data, searchQuery]);
 
   const handleOpenModal = (item?: any) => {
     setEditingItem(item || null);
@@ -60,6 +82,7 @@ export default function TemplateTab() {
       distance: item?.distance || "",
       estimated_delivery_time: item?.estimated_delivery_time || "",
       average_usage: item?.average_usage || "",
+      freight_costs: item?.freight_costs || "",
       is_active: item?.is_active ?? true,
     });
     setIsModalOpen(true);
@@ -78,6 +101,9 @@ export default function TemplateTab() {
         : null,
       average_usage: formData.average_usage
         ? parseFloat(formData.average_usage)
+        : null,
+      freight_costs: formData.freight_costs
+        ? parseFloat(formData.freight_costs)
         : null,
     };
 
@@ -106,19 +132,34 @@ export default function TemplateTab() {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-medium text-gray-900">
+      <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
+        <h2 className="text-lg font-medium text-gray-900 w-full sm:w-auto">
           Template Kertas Kerja
         </h2>
-        {canCreate && (
-          <button
-            onClick={() => handleOpenModal()}
-            className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white text-sm font-medium rounded-lg hover:brightness-90 transition-all duration-200 hover:shadow-md active:scale-95"
-          >
-            <Plus size={18} />
-            Tambah Template
-          </button>
-        )}
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          <div className="relative w-full sm:w-64">
+            <Search
+              size={16}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+            />
+            <input
+              type="text"
+              placeholder="Cari template..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+            />
+          </div>
+          {canCreate && (
+            <button
+              onClick={() => handleOpenModal()}
+              className="flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:brightness-90 transition-all duration-200 hover:shadow-md active:scale-95 whitespace-nowrap"
+            >
+              <Plus size={18} />
+              Tambah Template
+            </button>
+          )}
+        </div>
       </div>
 
       {isLoading ? (
@@ -146,7 +187,7 @@ export default function TemplateTab() {
                     TBBM
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Product
+                    Produk
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                     Moda
@@ -155,13 +196,16 @@ export default function TemplateTab() {
                     Jarak
                   </th>
                   <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Est. Delivery Time
+                    Est. Waktu Pengiriman
                   </th>
                   <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
                     HOP Min
                   </th>
                   <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
                     Pemakaian Rata2
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Ongkos Angkut (Rp)
                   </th>
                   <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
                     Status
@@ -172,7 +216,7 @@ export default function TemplateTab() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 bg-white">
-                {data.map((item, index) => (
+                {filteredData.map((item: any, index: number) => (
                   <tr
                     key={item.id}
                     className="hover:bg-gray-50/80 transition-colors"
@@ -203,6 +247,15 @@ export default function TemplateTab() {
                     </td>
                     <td className="px-4 py-3 text-center text-gray-600 font-medium">
                       {item.average_usage ?? "-"}
+                    </td>
+                    <td className="px-4 py-3 text-center text-gray-600 font-medium">
+                      {item.freight_costs !== null &&
+                      item.freight_costs !== undefined
+                        ? new Intl.NumberFormat("id-ID", {
+                            style: "currency",
+                            currency: "IDR",
+                          }).format(item.freight_costs)
+                        : "-"}
                     </td>
                     <td className="px-4 py-3 text-center">
                       <span
@@ -235,10 +288,10 @@ export default function TemplateTab() {
                     </td>
                   </tr>
                 ))}
-                {data.length === 0 && (
+                {filteredData.length === 0 && (
                   <tr>
                     <td
-                      colSpan={11}
+                      colSpan={12}
                       className="px-4 py-16 text-center text-gray-500"
                     >
                       Tidak ada data template yang ditemukan
@@ -344,7 +397,7 @@ export default function TemplateTab() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Product
+              Produk
             </label>
             <Autocomplete
               options={products || []}
@@ -428,7 +481,7 @@ export default function TemplateTab() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Distance
+              Jarak
             </label>
             <input
               type="number"
@@ -443,7 +496,7 @@ export default function TemplateTab() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Estimated Delivery Time
+              Est. Waktu Pengiriman
             </label>
             <input
               type="number"
@@ -484,6 +537,21 @@ export default function TemplateTab() {
               value={formData.average_usage}
               onChange={(e) =>
                 setFormData({ ...formData, average_usage: e.target.value })
+              }
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border text-gray-900"
+              placeholder="0.00"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Ongkos Angkut (Rp)
+            </label>
+            <input
+              type="number"
+              step="any"
+              value={formData.freight_costs}
+              onChange={(e) =>
+                setFormData({ ...formData, freight_costs: e.target.value })
               }
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2 border text-gray-900"
               placeholder="0.00"

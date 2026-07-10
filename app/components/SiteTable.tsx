@@ -373,8 +373,13 @@ export function DaftarSiteTable({
                 <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   Lokasi
                 </th>
+                {commodity?.includes("BBM") && (
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Kapasitas (kL)
+                  </th>
+                )}
                 <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Kapasitas {commodity?.includes("BBM") ? "(kL)" : ""}
+                  Kapasitas (MW)
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   Komoditas
@@ -393,7 +398,7 @@ export function DaftarSiteTable({
               {isLoading ? (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={commodity?.includes("BBM") ? 8 : 7}
                     className="px-4 py-8 text-center text-gray-500"
                   >
                     Memuat data...
@@ -402,7 +407,7 @@ export function DaftarSiteTable({
               ) : paginatedSites.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={commodity?.includes("BBM") ? 8 : 7}
                     className="px-4 py-8 text-center text-gray-500"
                   >
                     {searchTerm
@@ -427,15 +432,16 @@ export function DaftarSiteTable({
                     <td className="px-4 py-3 text-center text-gray-700">
                       {site.region}
                     </td>
+                    {commodity?.includes("BBM") && (
+                      <td className="px-4 py-3 text-center text-gray-700">
+                        {site.capacity
+                          ? `${site.capacity} kL`
+                          : "-"}
+                      </td>
+                    )}
                     <td className="px-4 py-3 text-center text-gray-700">
-                      {site.capacity
-                        ? `${site.capacity} ${
-                            commodity?.includes("BBM")
-                              ? "kL"
-                              : site.site_type === "PEMBANGKIT"
-                                ? "MW"
-                                : "kL"
-                          }`
+                      {site.capacity_mw
+                        ? `${site.capacity_mw} MW`
                         : "-"}
                     </td>
                     <td className="px-4 py-3 text-center text-gray-700">

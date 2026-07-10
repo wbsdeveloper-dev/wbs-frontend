@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Plus, Edit2, Trash2, Loader2, AlertCircle, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Edit2, Trash2, Loader2, AlertCircle, ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { Modal } from "@/app/components/ui";
 import { 
   useKertasKerjaMaster, 
@@ -32,9 +32,18 @@ export default function MasterGenericTab({ table, title, comodityFilter }: Maste
   const defaultComodity = comodityFilter ? comodityFilter.split(',')[0].trim() : "BBM";
   const [formData, setFormData] = useState({ name: "", comodity: defaultComodity });
 
+  const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const totalPages = Math.ceil(data.length / itemsPerPage);
+  
+  const filteredData = React.useMemo(() => {
+    if (!searchQuery) return data;
+    return data.filter((item: any) => 
+      item.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [data, searchQuery]);
+
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
   
   React.useEffect(() => {
     if (currentPage > totalPages && totalPages > 0) {
@@ -42,7 +51,7 @@ export default function MasterGenericTab({ table, title, comodityFilter }: Maste
     }
   }, [totalPages, currentPage]);
 
-  const paginatedData = data.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const paginatedData = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const hasComodity = table !== "master_moda" && table !== "master_pola_operasi";
 
@@ -85,17 +94,32 @@ export default function MasterGenericTab({ table, title, comodityFilter }: Maste
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-medium text-gray-900">{title}</h2>
-        {canCreate && (
-          <button
-            onClick={() => handleOpenModal()}
-            className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white text-sm font-medium rounded-lg hover:brightness-90 transition-all duration-200 hover:shadow-md active:scale-95"
-          >
-            <Plus size={18} />
-            Tambah Data
-          </button>
-        )}
+      <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
+        <h2 className="text-lg font-medium text-gray-900 w-full sm:w-auto">{title}</h2>
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          <div className="relative w-full sm:w-64">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input 
+              type="text" 
+              placeholder="Cari..." 
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+            />
+          </div>
+          {canCreate && (
+            <button
+              onClick={() => handleOpenModal()}
+              className="flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:brightness-90 transition-all duration-200 hover:shadow-md active:scale-95 whitespace-nowrap"
+            >
+              <Plus size={18} />
+              Tambah Data
+            </button>
+          )}
+        </div>
       </div>
 
       {isLoading ? (
@@ -164,7 +188,7 @@ export default function MasterGenericTab({ table, title, comodityFilter }: Maste
             <div className="px-4 py-3 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between bg-white gap-4">
               <div className="flex items-center gap-4 text-sm text-gray-500">
                 <span>
-                  Menampilkan {((currentPage - 1) * itemsPerPage) + 1}-{Math.min(currentPage * itemsPerPage, data.length)} dari {data.length} data
+                  Menampilkan {((currentPage - 1) * itemsPerPage) + 1}-{Math.min(currentPage * itemsPerPage, filteredData.length)} dari {filteredData.length} data
                 </span>
                 <div className="flex items-center gap-2">
                   <span>Baris:</span>

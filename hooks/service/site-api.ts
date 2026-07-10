@@ -150,6 +150,7 @@ export interface Site {
   long?: string;
   is_enabled: boolean;
   conversion_factor?: number;
+  capacity_mw?: number;
   owner?: string;
   commodity?: string;
   kit_id?: string;
@@ -169,6 +170,7 @@ export interface CreateSitePayload {
   lat?: string | null;
   long?: string | null;
   conversion_factor?: number | null;
+  capacity_mw?: number | null;
   owner?: string | null;
   commodity?: string | null;
   kit_id?: string | null;
@@ -188,6 +190,7 @@ export interface UpdateSitePayload {
   unit_id?: string | null;
   is_enabled?: boolean;
   conversion_factor?: number | null;
+  capacity_mw?: number | null;
   owner?: string | null;
   commodity?: string | null;
   kit_id?: string | null;

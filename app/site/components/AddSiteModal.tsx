@@ -50,6 +50,7 @@ export function AddSiteModal({
     site_type: "PEMBANGKIT",
     region: "",
     capacity: undefined,
+    capacity_mw: undefined,
     lat: undefined,
     long: undefined,
     conversion_factor: undefined,
@@ -69,6 +70,7 @@ export function AddSiteModal({
       site_type: "PEMBANGKIT",
       region: "",
       capacity: undefined,
+      capacity_mw: undefined,
       lat: undefined,
       long: undefined,
       conversion_factor: undefined,
@@ -95,6 +97,7 @@ export function AddSiteModal({
           site_type: editingSite.site_type,
           region: editingSite.region,
           capacity: editingSite.capacity ?? undefined,
+          capacity_mw: editingSite.capacity_mw ?? undefined,
           lat: editingSite.lat,
           long: editingSite.long,
           conversion_factor: editingSite.conversion_factor,
@@ -145,6 +148,7 @@ export function AddSiteModal({
       site_type: formData.site_type,
       region: formData.region,
       capacity: formData.capacity ?? null,
+      capacity_mw: formData.capacity_mw ?? null,
       lat: formData.lat ?? null,
       long: formData.long ?? null,
       conversion_factor: formData.conversion_factor,
@@ -409,34 +413,58 @@ export function AddSiteModal({
             </div>
           )}
 
-          {formData.site_type != "TRANSPORTIR" &&
-            formData.site_type != "PEMASOK" && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Kapasitas {formData.commodity === "BBM" ? "(kL)" : "(MW)"}
-                </label>
-                <input
-                  type="number"
-                  value={formData.capacity ?? ""}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      capacity: e.target.value
-                        ? Number(e.target.value)
-                        : undefined,
-                    })
-                  }
-                  placeholder="Masukkan kapasitas"
-                  className={`w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200 ${errors.capacity
-                      ? "border-red-300 focus:ring-red-500"
-                      : "border-gray-300"
-                    }`}
-                />
-                {errors.capacity && (
-                  <p className="text-xs text-red-600 mt-1">{errors.capacity}</p>
-                )}
-              </div>
-            )}
+          {/* Kapasitas (kL) */}
+          {(formData.site_type === "PEMBANGKIT" || formData.site_type === "PEMASOK") && formData.commodity === "BBM" && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Kapasitas (kL)
+              </label>
+              <input
+                type="number"
+                value={formData.capacity ?? ""}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    capacity: e.target.value
+                      ? Number(e.target.value)
+                      : undefined,
+                  })
+                }
+                placeholder="Masukkan kapasitas (kL)"
+                className={`w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200 ${errors.capacity
+                    ? "border-red-300 focus:ring-red-500"
+                    : "border-gray-300"
+                  }`}
+              />
+              {errors.capacity && (
+                <p className="text-xs text-red-600 mt-1">{errors.capacity}</p>
+              )}
+            </div>
+          )}
+
+          {/* Kapasitas MW */}
+          {(formData.site_type === "PEMBANGKIT" || formData.site_type === "PEMASOK") && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Kapasitas (MW)
+              </label>
+              <input
+                type="number"
+                step="any"
+                value={formData.capacity_mw ?? ""}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    capacity_mw: e.target.value
+                      ? Number(e.target.value)
+                      : undefined,
+                  })
+                }
+                placeholder="Masukkan kapasitas (MW)"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
+              />
+            </div>
+          )}
 
           {/* Latitude */}
           <div>
