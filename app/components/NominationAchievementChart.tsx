@@ -126,7 +126,7 @@ export default function NominationAchievementChart({
       className="bg-white rounded-2xl p-6 border border-gray-100 flex flex-col h-full shadow-sm"
     >
       <div className="flex justify-between items-center relative z-20">
-        <h3 className="text-lg font-semibold text-gray-900">
+        <h3 className="text-lg font-semibold text-gray-900 whitespace-nowrap truncate flex-1 min-w-0 mr-2">
           Pencapaian Nominasi
         </h3>
         <div className="flex items-center gap-2">
@@ -150,11 +150,10 @@ export default function NominationAchievementChart({
             <div className="flex items-center gap-1">
               <button
                 onClick={() => setShowDateFilter(!showDateFilter)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer ${
-                  showDateFilter
-                    ? "bg-secondary/10 text-primary border border-secondary/30"
-                    : "text-gray-500 hover:bg-gray-100 border border-transparent"
-                }`}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer ${showDateFilter
+                  ? "bg-secondary/10 text-primary border border-secondary/30"
+                  : "text-gray-500 hover:bg-gray-100 border border-transparent"
+                  }`}
               >
                 <Calendar className="w-4 h-4" />
                 <span className="hidden sm:inline">Tanggal</span>
@@ -205,7 +204,7 @@ export default function NominationAchievementChart({
           <div className="mt-3 flex justify-end">
             <button
               onClick={handleApply}
-              className="px-4 py-1.5 bg-secondary text-white text-sm font-medium rounded-lg hover:bg-secondary/90 transition-colors"
+              className="px-4 py-1.5 bg-primary text-white text-sm font-medium rounded-lg hover:brightness-90 transition-colors"
             >
               Terapkan
             </button>
@@ -217,21 +216,19 @@ export default function NominationAchievementChart({
         <div className="inline-flex bg-gray-100 rounded-lg p-0.5 border border-transparent">
           <button
             onClick={() => setTab("Penyaluran")}
-            className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer ${
-              tab === "Penyaluran"
-                ? "bg-primary text-white shadow-sm"
-                : "text-gray-600 hover:text-gray-900"
-            }`}
+            className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer ${tab === "Penyaluran"
+              ? "bg-primary text-white shadow-sm"
+              : "text-gray-600 hover:text-gray-900"
+              }`}
           >
             Penyaluran
           </button>
           <button
             onClick={() => setTab("Pemakaian")}
-            className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer ${
-              tab === "Pemakaian"
-                ? "bg-secondary text-white shadow-sm"
-                : "text-gray-600 hover:text-gray-900"
-            }`}
+            className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer ${tab === "Pemakaian"
+              ? "bg-primary text-white shadow-sm"
+              : "text-gray-600 hover:text-gray-900"
+              }`}
           >
             Pemakaian
           </button>

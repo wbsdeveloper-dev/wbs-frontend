@@ -152,7 +152,7 @@ export default function KertasKerjaPage() {
                             placeholder="Cari region..."
                             value={regionSearch}
                             onChange={(e) => setRegionSearch(e.target.value)}
-                            className="w-full pl-8 pr-3 py-1.5 text-sm bg-gray-50 border border-transparent focus:border-primary focus:ring-1 focus:ring-primary rounded-md outline-none transition-all"
+                            className="w-full pl-8 pr-3 py-1.5 text-sm text-gray-400 bg-gray-50 border border-transparent focus:border-primary focus:ring-1 focus:ring-primary rounded-md outline-none transition-all"
                             autoFocus
                           />
                         </div>
@@ -200,8 +200,8 @@ export default function KertasKerjaPage() {
                 <button
                   onClick={() => setActiveTab("kertas-kerja")}
                   className={`flex items-center gap-2 px-6 py-2.5 rounded-md text-sm font-medium transition-all ${activeTab === "kertas-kerja"
-                      ? "bg-white text-primary shadow-sm"
-                      : "text-gray-600 hover:text-gray-900 hover:bg-gray-200/50"
+                    ? "bg-white text-primary shadow-sm"
+                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-200/50"
                     }`}
                 >
                   <FileText size={16} />
@@ -210,8 +210,8 @@ export default function KertasKerjaPage() {
                 <button
                   onClick={() => setActiveTab("ringkasan")}
                   className={`flex items-center gap-2 px-6 py-2.5 rounded-md text-sm font-medium transition-all ${activeTab === "ringkasan"
-                      ? "bg-white text-primary shadow-sm"
-                      : "text-gray-600 hover:text-gray-900 hover:bg-gray-200/50"
+                    ? "bg-white text-primary shadow-sm"
+                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-200/50"
                     }`}
                 >
                   <PieChart size={16} />

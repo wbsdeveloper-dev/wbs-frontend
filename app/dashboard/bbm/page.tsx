@@ -1052,9 +1052,9 @@ export default function Home() {
               />
             </div>
 
-            <div className="w-[360px] min-w-[360px] md:w-[420px] md:min-w-[420px] flex-shrink-0">
+            <div className="w-[400px] min-w-[400px] md:w-[450px] md:min-w-[450px] flex-shrink-0">
               <TopVolumeList
-                title="Top 5 Penyaluran Pembangkit"
+                title="Top 5 Penyaluran Ke Pembangkit"
                 list={topPembangkitList}
                 unit="KL"
                 description="List top 5 performa pembangkit BBM dengan volume tertinggi"
@@ -1125,21 +1125,19 @@ export default function Home() {
                     <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
                       <button
                         onClick={() => setChartMode("akumulasi")}
-                        className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
-                          chartMode === "akumulasi"
-                            ? "bg-white text-gray-900 shadow-sm"
-                            : "text-gray-500 hover:text-gray-700"
-                        }`}
+                        className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${chartMode === "akumulasi"
+                          ? "bg-white text-gray-900 shadow-sm"
+                          : "text-gray-500 hover:text-gray-700"
+                          }`}
                       >
                         Grafik Akumulasi
                       </button>
                       <button
                         onClick={() => setChartMode("realisasi-moda")}
-                        className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
-                          chartMode === "realisasi-moda"
-                            ? "bg-white text-gray-900 shadow-sm"
-                            : "text-gray-500 hover:text-gray-700"
-                        }`}
+                        className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${chartMode === "realisasi-moda"
+                          ? "bg-white text-gray-900 shadow-sm"
+                          : "text-gray-500 hover:text-gray-700"
+                          }`}
                       >
                         Penyaluran Harian
                       </button>
@@ -1163,54 +1161,54 @@ export default function Home() {
                   graphicSupplier ||
                   graphicProduct ||
                   graphicModa) && (
-                  <div className="flex flex-wrap gap-1.5 mb-6 max-w-xl">
-                    {graphicStart && graphicEnd && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-700 border border-blue-100">
-                        Periode: {graphicStart} s/d {graphicEnd}
-                      </span>
-                    )}
-                    {graphicRegion && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
-                        Region: {graphicRegion}
-                      </span>
-                    )}
-                    {graphicUnit && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
-                        Instansi/Unit: {graphicUnit}
-                      </span>
-                    )}
-                    {graphicUpk && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
-                        Unit Pelaksana: {graphicUpk}
-                      </span>
-                    )}
-                    {graphicKit && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
-                        Jenis Kit: {graphicKit}
-                      </span>
-                    )}
-                    {graphicSupplier && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-100">
-                        Pemasok: {graphicSupplier}
-                      </span>
-                    )}
-                    {graphicPlant && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-orange-50 text-orange-700 border border-orange-100">
-                        Pembangkit: {graphicPlant}
-                      </span>
-                    )}
-                    {graphicProduct && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-purple-50 text-purple-700 border border-purple-100">
-                        Produk: {graphicProduct}
-                      </span>
-                    )}
-                    {graphicModa && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-rose-50 text-rose-700 border border-rose-100">
-                        Moda: {graphicModa}
-                      </span>
-                    )}
-                  </div>
-                )}
+                    <div className="flex flex-wrap gap-1.5 mb-6 max-w-xl">
+                      {graphicStart && graphicEnd && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-700 border border-blue-100">
+                          Periode: {graphicStart} s/d {graphicEnd}
+                        </span>
+                      )}
+                      {graphicRegion && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
+                          Region: {graphicRegion}
+                        </span>
+                      )}
+                      {graphicUnit && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
+                          Instansi/Unit: {graphicUnit}
+                        </span>
+                      )}
+                      {graphicUpk && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
+                          Unit Pelaksana: {graphicUpk}
+                        </span>
+                      )}
+                      {graphicKit && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
+                          Jenis Kit: {graphicKit}
+                        </span>
+                      )}
+                      {graphicSupplier && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-100">
+                          Pemasok: {graphicSupplier}
+                        </span>
+                      )}
+                      {graphicPlant && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-orange-50 text-orange-700 border border-orange-100">
+                          Pembangkit: {graphicPlant}
+                        </span>
+                      )}
+                      {graphicProduct && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-purple-50 text-purple-700 border border-purple-100">
+                          Produk: {graphicProduct}
+                        </span>
+                      )}
+                      {graphicModa && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-rose-50 text-rose-700 border border-rose-100">
+                          Moda: {graphicModa}
+                        </span>
+                      )}
+                    </div>
+                  )}
               </div>
               <div
                 className="w-full flex-1 min-h-0 mt-4 bg-white"
@@ -1491,11 +1489,10 @@ export default function Home() {
                     ].map((item) => (
                       <button
                         key={item.label}
-                        className={`px-3 py-2 text-sm font-medium rounded-md transition-colors text-center ${
-                          graphicPeriod === item.val
-                            ? "bg-primary text-white shadow-sm"
-                            : "bg-gray-50 text-gray-600 hover:bg-gray-100"
-                        }`}
+                        className={`px-3 py-2 text-sm font-medium rounded-md transition-colors text-center ${graphicPeriod === item.val
+                          ? "bg-primary text-white shadow-sm"
+                          : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+                          }`}
                         onClick={() => {
                           setGraphicPeriod(item.val as Periode);
                           setGraphicIntervalMode(item.interval as any);
@@ -1554,11 +1551,10 @@ export default function Home() {
                       return (
                         <button
                           key={mode}
-                          className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                            graphicIntervalMode === mode
-                              ? "bg-primary text-white shadow-sm"
-                              : "bg-gray-50 text-gray-600 hover:bg-gray-100"
-                          }`}
+                          className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${graphicIntervalMode === mode
+                            ? "bg-primary text-white shadow-sm"
+                            : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+                            }`}
                           onClick={() => setGraphicIntervalMode(mode)}
                         >
                           {mode}

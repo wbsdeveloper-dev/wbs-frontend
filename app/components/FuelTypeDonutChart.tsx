@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import {
   PieChart,
   Pie,
@@ -65,8 +65,8 @@ export default function FuelTypeDonutChart({
   const handleExportImage = async () => {
     if (!chartRef.current) return;
     try {
-      const dataUrl = await htmlToImage.toPng(chartRef.current, { 
-        backgroundColor: "#ffffff", 
+      const dataUrl = await htmlToImage.toPng(chartRef.current, {
+        backgroundColor: "#ffffff",
         pixelRatio: 2,
         filter: filterExportButtons as any,
       });
@@ -82,17 +82,17 @@ export default function FuelTypeDonutChart({
   const handleExportPDF = async () => {
     if (!chartRef.current) return;
     try {
-      const canvas = await htmlToImage.toCanvas(chartRef.current, { 
-        backgroundColor: "#ffffff", 
+      const canvas = await htmlToImage.toCanvas(chartRef.current, {
+        backgroundColor: "#ffffff",
         pixelRatio: 2,
         filter: filterExportButtons as any,
       });
       const imgData = canvas.toDataURL("image/png");
-      
+
       const pdf = new jsPDF("p", "mm", "a4");
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      
+
       pdf.addImage(imgData, "PNG", 0, 10, pdfWidth, pdfHeight);
       pdf.save(`volume-bbm-${new Date().toISOString().split("T")[0]}.pdf`);
     } catch (err) {
@@ -130,11 +130,38 @@ export default function FuelTypeDonutChart({
     }
   })();
 
+  const total = useMemo(() => data.reduce((sum, d) => sum + d.value, 0), [data]);
+
+  const chartData = useMemo(() => {
+    if (total === 0) return data;
+    const grouped: any[] = [];
+    let lainLainValue = 0;
+
+    data.forEach((item, index) => {
+      const pct = (item.value / total) * 100;
+      if (pct < 1) {
+        lainLainValue += item.value;
+      } else {
+        grouped.push({ ...item, originalIndex: index });
+      }
+    });
+
+    if (lainLainValue > 0) {
+      grouped.push({
+        name: "Lain-lain",
+        value: lainLainValue,
+        originalIndex: -1
+      });
+    }
+
+    return grouped;
+  }, [data, total]);
+
   return (
     <div ref={chartRef} className="bg-white rounded-xl p-6 border border-gray-200 flex flex-col h-full">
       {/* Header row */}
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+        <h3 className="text-lg font-semibold text-gray-900 whitespace-nowrap truncate flex-1 min-w-0 mr-2">{title}</h3>
         <div className="flex items-center gap-2">
           <div className="export-buttons-container flex items-center bg-gray-100 rounded-lg p-0.5">
             <button
@@ -155,29 +182,28 @@ export default function FuelTypeDonutChart({
           <div className="flex items-center gap-1">
             {/* Date filter toggle */}
             <button
-            onClick={() => setShowDateFilter(!showDateFilter)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer ${
-              showDateFilter
+              onClick={() => setShowDateFilter(!showDateFilter)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer ${showDateFilter
                 ? "bg-secondary/10 text-primary border border-secondary/30"
                 : "text-gray-500 hover:bg-gray-100 border border-transparent"
-            }`}
-          >
-            <Calendar className="w-4 h-4" />
-            <span className="hidden sm:inline">Tanggal</span>
-            {showDateFilter ? (
-              <ChevronUp className="w-3.5 h-3.5" />
-            ) : (
-              <ChevronDown className="w-3.5 h-3.5" />
-            )}
-          </button>
+                }`}
+            >
+              <Calendar className="w-4 h-4" />
+              <span className="hidden sm:inline">Tanggal</span>
+              {showDateFilter ? (
+                <ChevronUp className="w-3.5 h-3.5" />
+              ) : (
+                <ChevronDown className="w-3.5 h-3.5" />
+              )}
+            </button>
 
-          {/* Expand button */}
-          <button
-            onClick={openModalFunction}
-            className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors cursor-pointer"
-          >
-            <Expand className="w-4 h-4" />
-          </button>
+            {/* Expand button */}
+            <button
+              onClick={openModalFunction}
+              className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors cursor-pointer"
+            >
+              <Expand className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </div>
@@ -220,7 +246,7 @@ export default function FuelTypeDonutChart({
           <div className="flex justify-end mt-3">
             <button
               onClick={handleApply}
-              className="px-4 py-1.5 bg-primary text-white text-sm font-medium rounded-md hover:bg-[#0d4a5c] transition-colors"
+              className="px-4 py-1.5 bg-primary text-white text-sm font-medium rounded-md hover:brightness-90 transition-colors"
             >
               Terapkan
             </button>
@@ -234,11 +260,10 @@ export default function FuelTypeDonutChart({
           {tabs.map((type) => (
             <button
               key={type}
-              className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer ${
-                filterType === type
-                  ? "bg-primary text-white shadow-sm"
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
+              className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer ${filterType === type
+                ? "bg-primary text-white shadow-sm"
+                : "text-gray-600 hover:text-gray-900"
+                }`}
               onClick={() => changeFilterType(type)}
             >
               {type}
@@ -252,7 +277,7 @@ export default function FuelTypeDonutChart({
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
-              data={data}
+              data={chartData}
               cx="50%"
               cy="50%"
               innerRadius={60}
@@ -260,10 +285,14 @@ export default function FuelTypeDonutChart({
               paddingAngle={2}
               dataKey="value"
             >
-              {data.map((_, index) => (
+              {chartData.map((entry, index) => (
                 <Cell
                   key={`cell-${index}`}
-                  fill={CHART_COLORS[index % CHART_COLORS.length]}
+                  fill={
+                    entry.originalIndex !== -1
+                      ? CHART_COLORS[entry.originalIndex % CHART_COLORS.length]
+                      : "#cbd5e1" // gray for Lain-lain
+                  }
                 />
               ))}
             </Pie>
@@ -271,11 +300,10 @@ export default function FuelTypeDonutChart({
               content={({ active, payload }) => {
                 if (active && payload && payload.length) {
                   const item = payload[0];
-                  const total = data.reduce((sum, d) => sum + d.value, 0);
                   const pct =
                     total > 0
-                      ? (((item.value as number) / total) * 100).toFixed(1)
-                      : "0.0";
+                      ? (((item.value as number) / total) * 100).toFixed(3)
+                      : "0.000";
                   return (
                     <div className="bg-white px-3 py-2 rounded-lg shadow-lg border border-gray-200 text-sm">
                       <p className="font-medium text-gray-900">{item.name}</p>
@@ -294,13 +322,9 @@ export default function FuelTypeDonutChart({
                 maxHeight: 80,
                 overflowY: "auto",
               }}
-              formatter={(value: string) => {
-                const total = data.reduce((sum, d) => sum + d.value, 0);
-                const entry = data.find((d) => d.name === value);
-                const pct =
-                  entry && total > 0
-                    ? ((entry.value / total) * 100).toFixed(1)
-                    : "0.0";
+              formatter={(value: string, entry: any) => {
+                const val = entry?.payload?.value || 0;
+                const pct = total > 0 ? ((val / total) * 100).toFixed(3) : "0.000";
                 return `${value} (${pct}%)`;
               }}
             />

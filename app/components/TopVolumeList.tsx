@@ -70,17 +70,16 @@ export default function TopVolumeList({
     <div className="bg-white rounded-xl p-1 flex flex-col pb-6 border border-gray-200 h-full">
       {/* Header */}
       <div className="flex justify-between items-center pr-5">
-        <h3 className="text-lg font-semibold text-gray-900 py-4 px-6">
+        <h3 className="text-lg font-semibold text-gray-900 py-4 px-6 whitespace-nowrap truncate flex-1 min-w-0">
           {title}
         </h3>
         {hasDateFilter && (
           <button
             onClick={() => setShowDateFilter(!showDateFilter)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer ${
-              showDateFilter
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer ${showDateFilter
                 ? "bg-secondary/10 text-primary border border-secondary/30"
                 : "text-gray-500 hover:bg-gray-100 border border-transparent"
-            }`}
+              }`}
           >
             <Calendar className="w-4 h-4" />
             <span className="hidden sm:inline">Filter</span>
@@ -127,7 +126,7 @@ export default function TopVolumeList({
               />
             </div>
           </div>
-          
+
           {(onProductChange || onModaChange) && (
             <div className="grid grid-cols-2 gap-3 mb-3">
               {onProductChange && (
@@ -166,11 +165,11 @@ export default function TopVolumeList({
               )}
             </div>
           )}
-          
+
           <div className="flex justify-end mt-3 border-t border-gray-200 pt-3">
             <button
               onClick={handleApply}
-              className="px-4 py-1.5 bg-primary text-white text-sm font-medium rounded-md hover:bg-[#0d4a5c] transition-colors"
+              className="px-4 py-1.5 bg-primary text-white text-sm font-medium rounded-md hover:brightness-90 transition-colors"
             >
               Terapkan
             </button>
@@ -188,9 +187,8 @@ export default function TopVolumeList({
           list.map((value, index) => (
             <div
               key={index}
-              className={`text-gray-900 flex justify-between py-1.5 ${
-                list.length - 1 != index ? "border-b border-gray-400" : ""
-              }`}
+              className={`text-gray-900 flex justify-between py-1.5 ${list.length - 1 != index ? "border-b border-gray-400" : ""
+                }`}
             >
               <div>{value.name}</div>
               <div className="flex gap-1 font-bold">
