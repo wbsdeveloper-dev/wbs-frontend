@@ -159,13 +159,12 @@ export default function Map({ commodity }: { commodity?: string }) {
           index + 1,
           rel.sourceName,
           rel.targetName,
-          rel.commodity || "-",
-          rel.status || "-"
+          rel.commodity || "-"
         ]);
 
         autoTable(pdf, {
           startY: startY,
-          head: [["No", "Pemasok", "Pembangkit", "Komoditas", "Status"]],
+          head: [["No", "Pemasok", "Pembangkit", "Komoditas"]],
           body: regionData,
           theme: 'grid',
           headStyles: { fillColor: [41, 128, 185], textColor: 255 },
