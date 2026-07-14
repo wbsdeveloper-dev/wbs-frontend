@@ -44,6 +44,18 @@ export interface CreateBbmPayload {
 export const bbmKeys = {
   all: ["bbm"] as const,
   monthly: () => [...bbmKeys.all, "monthly"] as const,
+  bulk: () => [...bbmKeys.all, "bulk"] as const,
+  nationalTrend: (
+    type: string,
+    category: string,
+    startDate?: string,
+    endDate?: string,
+    region?: string | null,
+    unit?: string | null,
+    upk?: string | null,
+    moda?: string | null,
+    modeGrafik?: string | null
+  ) => [...bbmKeys.all, "national-trend", type, category, startDate, endDate, region, unit, upk, moda, modeGrafik] as const,
 };
 
 export async function getBbmMonthly(): Promise<BbmRecord[]> {
@@ -78,6 +90,66 @@ export function useBbmMonthly(options?: Partial<UseQueryOptions<BbmRecord[]>>) {
   return useQuery({
     queryKey: bbmKeys.monthly(),
     queryFn: getBbmMonthly,
+    ...options,
+  });
+}
+
+export async function getNationalTrend(
+  type: "penyaluran" | "pemakaian", 
+  category: string,
+  startDate?: string, 
+  endDate?: string,
+  region?: string | null,
+  unit?: string | null,
+  upk?: string | null,
+  moda?: string | null,
+  modeGrafik?: string | null
+): Promise<Array<{ year: number; month: number; product?: string; mode_value?: string; total_volume: string }>> {
+  let url = `${DASHBOARD_API_HOST}/bbm-monthly/national-trend?type=${type}&category=${encodeURIComponent(category)}`;
+  if (startDate) url += `&startDate=${startDate}`;
+  if (endDate) url += `&endDate=${endDate}`;
+  if (region) url += `&region=${encodeURIComponent(region)}`;
+  if (unit) url += `&unit=${encodeURIComponent(unit)}`;
+  if (upk) url += `&upk=${encodeURIComponent(upk)}`;
+  if (moda) url += `&moda=${encodeURIComponent(moda)}`;
+  if (modeGrafik) url += `&modeGrafik=${encodeURIComponent(modeGrafik)}`;
+
+  const accessToken = getAccessToken();
+
+  const res = await fetch(url, {
+    headers: {
+      "Content-Type": "application/json",
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error(`BBM API error: ${res.statusText}`);
+  }
+
+  const body = await res.json();
+  if (!body.success) {
+    throw new Error(body.message || "Unknown BBM API error");
+  }
+
+  return body.data;
+}
+
+export function useNationalTrend(
+  type: "penyaluran" | "pemakaian", 
+  category: string,
+  startDate?: string, 
+  endDate?: string,
+  region?: string | null,
+  unit?: string | null,
+  upk?: string | null,
+  moda?: string | null,
+  modeGrafik?: string | null,
+  options?: Partial<UseQueryOptions<Array<{ year: number; month: number; product?: string; mode_value?: string; total_volume: string }>>>
+) {
+  return useQuery({
+    queryKey: bbmKeys.nationalTrend(type, category, startDate, endDate, region, unit, upk, moda, modeGrafik),
+    queryFn: () => getNationalTrend(type, category, startDate, endDate, region, unit, upk, moda, modeGrafik),
     ...options,
   });
 }

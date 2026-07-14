@@ -141,7 +141,7 @@ export interface DropdownData {
 export interface Site {
   id: string;
   name: string;
-  site_type: "PEMBANGKIT" | "PEMASOK";
+  site_type: "PEMBANGKIT" | "PEMASOK" | "TRANSPORTIR";
   region: string;
   capacity?: number;
   pembangkit_id?: string;
@@ -176,6 +176,18 @@ export interface CreateSitePayload {
   kit_id?: string | null;
   upk_id?: string | null;
   unit_id?: string | null;
+  versions?: Array<{
+    id?: string;
+    name: string;
+    capacity?: number | null;
+    capacity_mw?: number | null;
+    owner?: string | null;
+    lat?: string | null;
+    long?: string | null;
+    valid_from?: string | null;
+    valid_to?: string | null;
+    notes?: string | null;
+  }>;
 }
 
 export interface UpdateSitePayload {
@@ -195,6 +207,18 @@ export interface UpdateSitePayload {
   commodity?: string | null;
   kit_id?: string | null;
   upk_id?: string | null;
+  versions?: Array<{
+    id?: string;
+    name: string;
+    capacity?: number | null;
+    capacity_mw?: number | null;
+    owner?: string | null;
+    lat?: string | null;
+    long?: string | null;
+    valid_from?: string | null;
+    valid_to?: string | null;
+    notes?: string | null;
+  }>;
 }
 
 export interface DeleteSiteResponse {
@@ -267,6 +291,39 @@ export interface CreateMappingPayload {
 }
 
 // ---------------------------------------------------------------------------
+// Types — Site History
+// ---------------------------------------------------------------------------
+
+export interface SiteHistoryRow {
+  id: string;
+  site_id: string;
+  valid_from: string | null;
+  valid_to: string | null;
+  notes: string | null;
+  name: string;
+  capacity?: number;
+  capacity_mw?: number;
+  owner?: string;
+  lat?: string;
+  long?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateSiteHistoryPayload {
+  valid_from?: string | null;
+  valid_to?: string | null;
+  notes?: string | null;
+}
+
+export interface UpdateSiteHistoryPayload {
+  valid_from?: string | null;
+  valid_to?: string | null;
+  notes?: string | null;
+}
+
+
+// ---------------------------------------------------------------------------
 // Helper to build query string
 // ---------------------------------------------------------------------------
 
@@ -299,6 +356,7 @@ export const siteKeys = {
   relation: (id: string) => [...siteKeys.all, "relations", id] as const,
   mappings: (sourceType?: string) =>
     [...siteKeys.all, "mappings", sourceType] as const,
+  history: (siteId: string) => [...siteKeys.all, "history", siteId] as const,
 };
 
 // ---------------------------------------------------------------------------
@@ -388,11 +446,60 @@ export function updateRelation(id: string, payload: UpdateRelationPayload) {
   });
 }
 
-export function deleteRelation(id: string) {
-  return siteFetch<DeleteRelationResponse>(`/site-relations/${id}`, {
+export async function deleteRelation(id: string): Promise<DeleteRelationResponse> {
+  return siteFetch<DeleteRelationResponse>(`/dim/site-relations/${id}`, {
     method: "DELETE",
   });
 }
+
+// ---------------------------------------------------------------------------
+// Raw fetchers — Site History
+// ---------------------------------------------------------------------------
+
+export async function getSiteHistory(
+  siteId: string,
+  siteType: "PEMBANGKIT" | "PEMASOK"
+): Promise<SiteHistoryRow[]> {
+  const path = siteType === "PEMBANGKIT" ? `/dim/plants/${siteId}/history` : `/dim/suppliers/${siteId}/history`;
+  return siteFetch<SiteHistoryRow[]>(path);
+}
+
+export async function createSiteHistory(
+  siteId: string,
+  siteType: "PEMBANGKIT" | "PEMASOK",
+  payload: CreateSiteHistoryPayload
+): Promise<SiteHistoryRow> {
+  const path = siteType === "PEMBANGKIT" ? `/dim/plants/${siteId}/history` : `/dim/suppliers/${siteId}/history`;
+  return siteFetch<SiteHistoryRow>(path, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateSiteHistory(
+  siteId: string,
+  historyId: string,
+  siteType: "PEMBANGKIT" | "PEMASOK",
+  payload: UpdateSiteHistoryPayload
+): Promise<SiteHistoryRow> {
+  const path = siteType === "PEMBANGKIT" ? `/dim/plants/${siteId}/history/${historyId}` : `/dim/suppliers/${siteId}/history/${historyId}`;
+  return siteFetch<SiteHistoryRow>(path, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteSiteHistory(
+  siteId: string,
+  historyId: string,
+  siteType: "PEMBANGKIT" | "PEMASOK"
+): Promise<{ deleted: boolean }> {
+  const path = siteType === "PEMBANGKIT" ? `/dim/plants/${siteId}/history/${historyId}` : `/dim/suppliers/${siteId}/history/${historyId}`;
+  return siteFetch<{ deleted: boolean }>(path, {
+    method: "DELETE",
+  });
+}
+
 
 // ---------------------------------------------------------------------------
 // API functions — Site Mappings
@@ -616,3 +723,60 @@ export function useCreateMapping(
     ...options,
   });
 }
+
+// ---------------------------------------------------------------------------
+// React Query hooks — Site History
+// ---------------------------------------------------------------------------
+
+export function useSiteHistory(
+  siteId: string,
+  siteType: "PEMBANGKIT" | "PEMASOK",
+  options?: Partial<UseQueryOptions<SiteHistoryRow[]>>
+) {
+  return useQuery({
+    queryKey: siteKeys.history(siteId),
+    queryFn: () => getSiteHistory(siteId, siteType),
+    enabled: !!siteId,
+    ...options,
+  });
+}
+
+export function useCreateSiteHistory(
+  options?: Partial<UseMutationOptions<SiteHistoryRow, Error, { siteId: string; siteType: "PEMBANGKIT" | "PEMASOK"; payload: CreateSiteHistoryPayload }>>
+) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ siteId, siteType, payload }) => createSiteHistory(siteId, siteType, payload),
+    onSuccess: (_, { siteId }) => {
+      qc.invalidateQueries({ queryKey: siteKeys.history(siteId) });
+    },
+    ...options,
+  });
+}
+
+export function useUpdateSiteHistory(
+  options?: Partial<UseMutationOptions<SiteHistoryRow, Error, { siteId: string; historyId: string; siteType: "PEMBANGKIT" | "PEMASOK"; payload: UpdateSiteHistoryPayload }>>
+) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ siteId, historyId, siteType, payload }) => updateSiteHistory(siteId, historyId, siteType, payload),
+    onSuccess: (_, { siteId }) => {
+      qc.invalidateQueries({ queryKey: siteKeys.history(siteId) });
+    },
+    ...options,
+  });
+}
+
+export function useDeleteSiteHistory(
+  options?: Partial<UseMutationOptions<{ deleted: boolean }, Error, { siteId: string; historyId: string; siteType: "PEMBANGKIT" | "PEMASOK" }>>
+) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ siteId, historyId, siteType }) => deleteSiteHistory(siteId, historyId, siteType),
+    onSuccess: (_, { siteId }) => {
+      qc.invalidateQueries({ queryKey: siteKeys.history(siteId) });
+    },
+    ...options,
+  });
+}
+

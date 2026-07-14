@@ -7,6 +7,9 @@ import {
   useSites,
   useCreateSite,
   useUpdateSite,
+  useSiteHistory,
+  useCreateSiteHistory,
+  useUpdateSiteHistory,
   type CreateSitePayload,
   type Site,
 } from "@/hooks/service/site-api";
@@ -30,20 +33,15 @@ export function AddSiteModal({
   const { data: regions = [], isLoading: isLoadingRegions } = useKertasKerjaMaster("master_region", "GAS PIPA,LNG", { enabled: open });
 
   const createSiteMutation = useCreateSite({
-    onSuccess: () => {
-      onSuccess();
-      onClose();
-      resetForm();
-    },
+    onSuccess: () => {},
   });
 
   const updateSiteMutation = useUpdateSite({
-    onSuccess: () => {
-      onSuccess();
-      onClose();
-      resetForm();
-    },
+    onSuccess: () => {},
   });
+
+  const createHistoryMutation = useCreateSiteHistory();
+  const updateHistoryMutation = useUpdateSiteHistory();
 
   const [formData, setFormData] = useState<CreateSitePayload>({
     name: "",
@@ -63,6 +61,31 @@ export function AddSiteModal({
   const [plantSearch, setPlantSearch] = useState("");
   const [supplierSearch, setSupplierSearch] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  
+  // History State
+  const [validFrom, setValidFrom] = useState<string>("");
+  const [validTo, setValidTo] = useState<string>("");
+  const [notes, setNotes] = useState<string>("");
+  const [historyId, setHistoryId] = useState<string | null>(null);
+
+  const { data: historyData } = useSiteHistory(editingId || "", formData.site_type === "PEMBANGKIT" ? "PEMBANGKIT" : "PEMASOK", {
+    enabled: !!editingId && (formData.site_type === "PEMBANGKIT" || formData.site_type === "PEMASOK") && open
+  });
+
+  useEffect(() => {
+    if (historyData && historyData.length > 0) {
+      const latest = historyData[0];
+      setValidFrom(latest.valid_from ? latest.valid_from.split('T')[0] : "");
+      setValidTo(latest.valid_to ? latest.valid_to.split('T')[0] : "");
+      setNotes(latest.notes || "");
+      setHistoryId(latest.id);
+    } else {
+      setValidFrom("");
+      setValidTo("");
+      setNotes("");
+      setHistoryId(null);
+    }
+  }, [historyData]);
 
   const resetForm = useCallback(() => {
     setFormData({
@@ -82,6 +105,10 @@ export function AddSiteModal({
     setPlantSearch("");
     setSupplierSearch("");
     setErrors({});
+    setValidFrom("");
+    setValidTo("");
+    setNotes("");
+    setHistoryId(null);
   }, []);
 
   // Load site data for editing
@@ -156,11 +183,42 @@ export function AddSiteModal({
       commodity: formData.commodity || undefined,
     };
 
-    // Use appropriate mutation
-    if (editingId) {
-      updateSiteMutation.mutate({ id: editingId, payload });
-    } else {
-      createSiteMutation.mutate(payload);
+    try {
+      if (editingId) {
+        await updateSiteMutation.mutateAsync({ id: editingId, payload });
+        
+        if (formData.site_type !== "TRANSPORTIR") {
+          const historyPayload = {
+            valid_from: validFrom || null,
+            valid_to: validTo || null,
+            notes: notes || null
+          };
+          if (historyId) {
+            await updateHistoryMutation.mutateAsync({ siteId: editingId, historyId, siteType: formData.site_type, payload: historyPayload });
+          } else if (validFrom || validTo || notes) {
+            await createHistoryMutation.mutateAsync({ siteId: editingId, siteType: formData.site_type, payload: historyPayload });
+          }
+        }
+      } else {
+        const newSite = await createSiteMutation.mutateAsync(payload);
+        
+        if (formData.site_type !== "TRANSPORTIR" && (validFrom || validTo || notes)) {
+          await createHistoryMutation.mutateAsync({ 
+            siteId: newSite.id, 
+            siteType: formData.site_type, 
+            payload: {
+              valid_from: validFrom || null,
+              valid_to: validTo || null,
+              notes: notes || null
+            }
+          });
+        }
+      }
+      onSuccess();
+      onClose();
+      resetForm();
+    } catch (error) {
+      console.error("Failed to save site", error);
     }
   };
 
@@ -532,27 +590,77 @@ export function AddSiteModal({
               Opsional: Faktor konversi untuk satuan
             </p>
           </div>
+          {/* Masa Berlaku (History) */}
+          {formData.site_type !== "TRANSPORTIR" && (
+            <div className="mt-4 p-4 border border-gray-200 rounded-lg bg-gray-50 space-y-4">
+              <h3 className="text-sm font-semibold text-gray-800 border-b pb-2">
+                Masa Berlaku (Cut-off Date)
+              </h3>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Valid From
+                  </label>
+                  <input
+                    type="date"
+                    value={validFrom}
+                    onChange={(e) => setValidFrom(e.target.value)}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Valid To
+                  </label>
+                  <input
+                    type="date"
+                    value={validTo}
+                    onChange={(e) => setValidTo(e.target.value)}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Catatan (Notes)
+                </label>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Opsional: Tambahkan catatan masa berlaku"
+                  rows={2}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
+                />
+              </div>
+            </div>
+          )}
+
         </form>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-gray-200">
+        <div className="p-6 border-t border-gray-200 flex justify-end gap-3 bg-gray-50 rounded-b-2xl">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-all duration-200"
+            className="px-6 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
           >
             Batal
           </button>
           <button
             onClick={handleSubmit}
-            disabled={
-              createSiteMutation.isPending || updateSiteMutation.isPending
-            }
-            className="px-4 py-2.5 text-sm font-medium text-white bg-primary rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            disabled={createSiteMutation.isPending || updateSiteMutation.isPending || createHistoryMutation.isPending || updateHistoryMutation.isPending}
+            className="px-6 py-2.5 text-sm font-medium text-white bg-primary rounded-lg hover:bg-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
-            {createSiteMutation.isPending || updateSiteMutation.isPending
-              ? "Menyimpan..."
-              : "Simpan"}
+            {(createSiteMutation.isPending || updateSiteMutation.isPending || createHistoryMutation.isPending || updateHistoryMutation.isPending) ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Menyimpan...
+              </>
+            ) : (
+              "Simpan"
+            )}
           </button>
         </div>
       </div>
