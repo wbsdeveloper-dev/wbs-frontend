@@ -1184,7 +1184,7 @@ export default function Map() {
                                   </div>
                                   <div className="flex flex-col p-3 bg-white">
                                     <span className="text-[10px] font-bold text-gray-400 mb-1 uppercase">
-                                      Realisasi
+                                      Penyaluran
                                     </span>
                                     <div className="flex items-baseline gap-1">
                                       <span className="font-bold text-emerald-600 text-base">
