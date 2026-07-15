@@ -285,6 +285,7 @@ export default function TemplateEditor({
                 sourceRef: normalizedSourceRef,
                 transform: fieldForm.transform || null,
                 isRequired: fieldForm.isRequired,
+                mathExpression: null,
               }
             : f,
         ),
@@ -300,6 +301,7 @@ export default function TemplateEditor({
         sourceRef: normalizedSourceRef,
         transform: fieldForm.transform || null,
         isRequired: fieldForm.isRequired,
+        mathExpression: null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -842,6 +844,71 @@ export default function TemplateEditor({
                   })
                 )}
               </div>
+            </div>
+          )}
+
+          {/* Email Parsing Settings (for EMAIL_INGEST) */}
+          {formData.scope === "EMAIL_INGEST" && (
+            <div className="lg:col-span-2 space-y-4 pt-4 border-t border-gray-200">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Target Ekstraksi Email</label>
+                <select
+                  value={formData.emailExtractionTarget || "BODY_TEXT"}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      emailExtractionTarget: e.target.value as Template["emailExtractionTarget"],
+                    })
+                  }
+                  className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white cursor-pointer"
+                >
+                  <option value="BODY_TEXT">Body Text (Teks Email)</option>
+                  <option value="ATTACHMENT_SINGLE">Satu Lampiran Tunggal</option>
+                  <option value="ATTACHMENT_MULTI_STREAM">Multi-Stream Lampiran</option>
+                </select>
+              </div>
+
+              {(formData.emailExtractionTarget === "ATTACHMENT_SINGLE" || formData.emailExtractionTarget === "ATTACHMENT_MULTI_STREAM") && (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id={`requires-ocr-${formData.id}`}
+                    checked={formData.requiresOcr || false}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        requiresOcr: e.target.checked,
+                      })
+                    }
+                    className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-secondary cursor-pointer"
+                  />
+                  <label htmlFor={`requires-ocr-${formData.id}`} className="text-sm font-medium text-gray-700 cursor-pointer">
+                    Gunakan OCR (Gambar/PDF ke Teks)
+                  </label>
+                </div>
+              )}
+
+              {formData.emailExtractionTarget === "ATTACHMENT_MULTI_STREAM" && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Pemisah Stream Lampiran (Regex)</label>
+                  <input
+                    type="text"
+                    value={formData.streamConfiguration?.separator || ""}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        streamConfiguration: {
+                          ...formData.streamConfiguration,
+                          separator: e.target.value,
+                        },
+                      })
+                    }
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent"
+                    placeholder="\\n---\\n"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Gunakan regex untuk memisahkan data lampiran menjadi beberapa stream.</p>
+                </div>
+              )}
             </div>
           )}
 

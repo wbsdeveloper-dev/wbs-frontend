@@ -128,6 +128,7 @@ export interface TemplateField {
   transform: string | null;
   isRequired: boolean;
   orderNo: number;
+  mathExpression: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -143,6 +144,9 @@ export interface Template {
   scope: "WA_GROUP" | "SPREADSHEET_SOURCE" | "EMAIL_INGEST";
   status: "DRAFT" | "ACTIVE" | "DEPRECATED";
   parserMode: "RULE_BASED" | "AI_ASSISTED";
+  emailExtractionTarget?: "BODY_TEXT" | "ATTACHMENT_SINGLE" | "ATTACHMENT_MULTI_STREAM";
+  requiresOcr?: boolean;
+  streamConfiguration?: any;
   sourceLinks: SourceLink[];
   version: number;
   isDefault: boolean;
@@ -166,6 +170,9 @@ export interface CreateTemplatePayload {
   name: string;
   scope: "WA_GROUP" | "SPREADSHEET_SOURCE" | "EMAIL_INGEST";
   parserMode?: "RULE_BASED" | "AI_ASSISTED";
+  emailExtractionTarget?: "BODY_TEXT" | "ATTACHMENT_SINGLE" | "ATTACHMENT_MULTI_STREAM";
+  requiresOcr?: boolean;
+  streamConfiguration?: any;
   sourceLinks?: SourceLink[];
   waKeywordHint?: string;
   waSenderHint?: string;
@@ -184,6 +191,7 @@ export interface CreateTemplatePayload {
     transform?: string | null;
     isRequired: boolean;
     orderNo: number;
+    mathExpression?: string | null;
   }[];
 }
 
@@ -191,6 +199,9 @@ export interface UpdateTemplatePayload {
   name?: string;
   scope?: "WA_GROUP" | "SPREADSHEET_SOURCE" | "EMAIL_INGEST";
   parserMode?: "RULE_BASED" | "AI_ASSISTED";
+  emailExtractionTarget?: "BODY_TEXT" | "ATTACHMENT_SINGLE" | "ATTACHMENT_MULTI_STREAM";
+  requiresOcr?: boolean;
+  streamConfiguration?: any;
   isDefault?: boolean;
   sourceLinks?: SourceLink[];
   waKeywordHint?: string | null;
@@ -210,6 +221,7 @@ export interface UpdateTemplatePayload {
     transform?: string | null;
     isRequired: boolean;
     orderNo: number;
+    mathExpression?: string | null;
   }[];
 }
 
@@ -1018,3 +1030,35 @@ export function useTestEmailParse(
     ...options,
   });
 }
+
+// ---------------------------------------------------------------------------
+// Email Inbox (Received Emails)
+// ---------------------------------------------------------------------------
+
+export interface EmailInboxRecord {
+  id: string;
+  email_source_id: string;
+  email_message_id: string;
+  sender: string;
+  subject: string;
+  attachment_refs: Array<{
+    filename: string;
+    mimeType: string;
+    storageRef: string;
+    sizeBytes: number;
+  }> | null;
+  received_at: string;
+  created_at: string;
+  source_name: string | null;
+}
+
+export function useGetEmailInbox(
+  options?: Omit<UseQueryOptions<EmailInboxRecord[], Error>, "queryKey" | "queryFn">,
+) {
+  return useQuery<EmailInboxRecord[], Error>({
+    queryKey: ["email-inbox"],
+    queryFn: () => configFetch<EmailInboxRecord[]>("/config/email-inbox"),
+    ...options,
+  });
+}
+

@@ -226,6 +226,7 @@ export function csvFieldsToTemplateFields(
     transform: field.transform.trim() || null,
     isRequired: field.isRequired.toLowerCase() === "true",
     orderNo: index + 1,
+    mathExpression: null,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   }));
