@@ -420,9 +420,8 @@ export default function Home() {
   const [nationalTrendType, setNationalTrendType] = useState<
     "penyaluran" | "pemakaian"
   >("penyaluran");
-  const [nationalCategory, setNationalCategory] = useState<string>(
-    "BBM Per Year",
-  );
+  const [nationalCategory, setNationalCategory] =
+    useState<string>("BBM Per Year");
   const [nationalModeGrafik, setNationalModeGrafik] = useState<string | null>(
     "Region",
   );
@@ -523,11 +522,19 @@ export default function Home() {
       nationalCategory || "BBM Per Year",
       graphicStart,
       graphicEnd,
-      nationalModeGrafik === "Region" && graphicRegion.length > 0 ? graphicRegion.join(",") : null,
-      nationalModeGrafik === "Instansi" && graphicUnit.length > 0 ? graphicUnit.join(",") : null,
-      nationalModeGrafik === "Unit Pelaksana" && graphicUpk.length > 0 ? graphicUpk.join(",") : null,
-      nationalModeGrafik === "Moda Transportasi" && graphicModa.length > 0 ? graphicModa.join(",") : null,
-      nationalModeGrafik
+      nationalModeGrafik === "Region" && graphicRegion.length > 0
+        ? graphicRegion.join(",")
+        : null,
+      nationalModeGrafik === "Instansi" && graphicUnit.length > 0
+        ? graphicUnit.join(",")
+        : null,
+      nationalModeGrafik === "Unit Pelaksana" && graphicUpk.length > 0
+        ? graphicUpk.join(",")
+        : null,
+      nationalModeGrafik === "Moda Transportasi" && graphicModa.length > 0
+        ? graphicModa.join(",")
+        : null,
+      nationalModeGrafik,
     );
 
   // 1. Card Volume BBM Donut Chart (Real Data)
@@ -668,20 +675,29 @@ export default function Home() {
   const filterPlantOptions = useMemo(() => {
     if (!pembangkitData) return [];
     let data = pembangkitData;
-    if (graphicRegion.length > 0) data = data.filter((p) => graphicRegion.includes(p.region || ""));
+    if (graphicRegion.length > 0)
+      data = data.filter((p) => graphicRegion.includes(p.region || ""));
 
-    const selectedUnitIds = graphicUnit.length > 0
-      ? masterUnitData?.filter((u) => graphicUnit.includes(u.name)).map((u) => u.id) || []
-      : [];
-    const selectedUpkIds = graphicUpk.length > 0
-      ? masterUpkData?.filter((u) => graphicUpk.includes(u.name)).map((u) => u.id) || []
-      : [];
+    const selectedUnitIds =
+      graphicUnit.length > 0
+        ? masterUnitData
+            ?.filter((u) => graphicUnit.includes(u.name))
+            .map((u) => u.id) || []
+        : [];
+    const selectedUpkIds =
+      graphicUpk.length > 0
+        ? masterUpkData
+            ?.filter((u) => graphicUpk.includes(u.name))
+            .map((u) => u.id) || []
+        : [];
     const selectedKitId = graphicKit
       ? masterKitData?.find((k) => k.name === graphicKit)?.id
       : null;
 
-    if (selectedUnitIds.length > 0) data = data.filter((p) => selectedUnitIds.includes(p.unit_id || ""));
-    if (selectedUpkIds.length > 0) data = data.filter((p) => selectedUpkIds.includes(p.upk_id || ""));
+    if (selectedUnitIds.length > 0)
+      data = data.filter((p) => selectedUnitIds.includes(p.unit_id || ""));
+    if (selectedUpkIds.length > 0)
+      data = data.filter((p) => selectedUpkIds.includes(p.upk_id || ""));
     if (selectedKitId) data = data.filter((p) => p.kit_id === selectedKitId);
 
     return Array.from(new Set(data.map((p) => p.name))).sort();
@@ -731,12 +747,18 @@ export default function Home() {
     if (pembangkitData) {
       pembangkitData.forEach((p) => plantLookup.set(p.name, p));
     }
-    const selectedUnitIds = graphicUnit.length > 0
-      ? masterUnitData?.filter((u) => graphicUnit.includes(u.name)).map((u) => u.id) || []
-      : [];
-    const selectedUpkIds = graphicUpk.length > 0
-      ? masterUpkData?.filter((u) => graphicUpk.includes(u.name)).map((u) => u.id) || []
-      : [];
+    const selectedUnitIds =
+      graphicUnit.length > 0
+        ? masterUnitData
+            ?.filter((u) => graphicUnit.includes(u.name))
+            .map((u) => u.id) || []
+        : [];
+    const selectedUpkIds =
+      graphicUpk.length > 0
+        ? masterUpkData
+            ?.filter((u) => graphicUpk.includes(u.name))
+            .map((u) => u.id) || []
+        : [];
     const selectedKitId = graphicKit
       ? masterKitData?.find((k) => k.name === graphicKit)?.id
       : null;
@@ -747,17 +769,30 @@ export default function Home() {
         const isPlantInRegion = filterPlantOptions.includes(record.pembangkit);
         if (!isSupplierInRegion && !isPlantInRegion) return false;
       }
-      if (selectedUnitIds.length > 0 || selectedUpkIds.length > 0 || selectedKitId) {
+      if (
+        selectedUnitIds.length > 0 ||
+        selectedUpkIds.length > 0 ||
+        selectedKitId
+      ) {
         const plantInfo = plantLookup.get(record.pembangkit);
         if (!plantInfo) return false;
-        if (selectedUnitIds.length > 0 && !selectedUnitIds.includes(plantInfo.unit_id || "")) return false;
-        if (selectedUpkIds.length > 0 && !selectedUpkIds.includes(plantInfo.upk_id || "")) return false;
+        if (
+          selectedUnitIds.length > 0 &&
+          !selectedUnitIds.includes(plantInfo.unit_id || "")
+        )
+          return false;
+        if (
+          selectedUpkIds.length > 0 &&
+          !selectedUpkIds.includes(plantInfo.upk_id || "")
+        )
+          return false;
         if (selectedKitId && plantInfo.kit_id !== selectedKitId) return false;
       }
       if (graphicSupplier && record.tbbm !== graphicSupplier) return false;
       if (graphicPlant && record.pembangkit !== graphicPlant) return false;
       if (graphicProduct && record.product !== graphicProduct) return false;
-      if (graphicModa.length > 0 && !graphicModa.includes(record.moda || "")) return false;
+      if (graphicModa.length > 0 && !graphicModa.includes(record.moda || ""))
+        return false;
 
       const startMonth = graphicStart ? graphicStart.substring(0, 7) : null;
       const endMonth = graphicEnd ? graphicEnd.substring(0, 7) : null;
@@ -966,10 +1001,15 @@ export default function Home() {
         moda: graphicModa.length > 0 ? graphicModa.join(",") : undefined,
         tbbm:
           graphicSupplier ||
-          (graphicRegion.length > 0 ? filterSupplierOptions.join(",") : undefined),
+          (graphicRegion.length > 0
+            ? filterSupplierOptions.join(",")
+            : undefined),
         pembangkit:
           graphicPlant ||
-          (graphicRegion.length > 0 || graphicUnit.length > 0 || graphicUpk.length > 0 || graphicKit
+          (graphicRegion.length > 0 ||
+          graphicUnit.length > 0 ||
+          graphicUpk.length > 0 ||
+          graphicKit
             ? filterPlantOptions.join(",")
             : undefined),
         interval:
@@ -1075,9 +1115,9 @@ export default function Home() {
               />
             </div>
 
-            <div className="w-[360px] min-w-[360px] md:w-[420px] md:min-w-[420px] flex-shrink-0">
+            <div className="w-[400px] min-w-[400px] md:w-[450px] md:min-w-[450px] flex-shrink-0">
               <TopVolumeList
-                title="Top 5 Penyaluran Pembangkit"
+                title="Top 5 Penyaluran Ke Pembangkit"
                 list={topPembangkitList}
                 unit="KL"
                 description="List top 5 performa pembangkit BBM dengan volume tertinggi"
@@ -1248,7 +1288,6 @@ export default function Home() {
                         Produk: {graphicProduct}
                       </span>
                     )}
-
                   </div>
                 )}
               </div>
@@ -1488,7 +1527,12 @@ export default function Home() {
                 {chartMode === "nasional" && (
                   <FilterAutocomplete
                     label="Mode Grafik"
-                    options={["Region", "Instansi", "Unit Pelaksana", "Moda Transportasi"]}
+                    options={[
+                      "Region",
+                      "Instansi",
+                      "Unit Pelaksana",
+                      "Moda Transportasi",
+                    ]}
                     value={nationalModeGrafik}
                     onChange={(val) => {
                       setNationalModeGrafik(val);
@@ -1503,7 +1547,8 @@ export default function Home() {
                 )}
 
                 {/* Region Select */}
-                {(chartMode !== "nasional" || nationalModeGrafik === "Region") && (
+                {(chartMode !== "nasional" ||
+                  nationalModeGrafik === "Region") && (
                   <FilterAutocomplete
                     label="Region"
                     options={filterRegionOptions}
@@ -1519,7 +1564,8 @@ export default function Home() {
                 )}
 
                 {/* Instansi / Unit Select */}
-                {(chartMode !== "nasional" || nationalModeGrafik === "Instansi") && (
+                {(chartMode !== "nasional" ||
+                  nationalModeGrafik === "Instansi") && (
                   <FilterAutocomplete
                     label="Instansi / Unit"
                     options={filterUnitOptions}
@@ -1535,7 +1581,8 @@ export default function Home() {
                 )}
 
                 {/* Unit Pelaksana Select */}
-                {(chartMode !== "nasional" || nationalModeGrafik === "Unit Pelaksana") && (
+                {(chartMode !== "nasional" ||
+                  nationalModeGrafik === "Unit Pelaksana") && (
                   <FilterAutocomplete
                     label="Unit Pelaksana"
                     options={filterUpkOptions}
@@ -1597,7 +1644,8 @@ export default function Home() {
                 )}
 
                 {/* Moda Transportasi Select */}
-                {(chartMode !== "nasional" || nationalModeGrafik === "Moda Transportasi") && (
+                {(chartMode !== "nasional" ||
+                  nationalModeGrafik === "Moda Transportasi") && (
                   <FilterAutocomplete
                     label="Moda Transportasi"
                     options={filterModaOptions}
@@ -1613,106 +1661,110 @@ export default function Home() {
                   <>
                     {/* Period Selectors */}
                     <p className="block text-sm font-medium text-gray-700 mt-2 mb-2">
-                    Periode
-                  </p>
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {[
-                      { label: "1 Minggu", val: "1W", interval: "Hari" },
-                      { label: "1 Bulan", val: "1M", interval: "Hari" },
-                      { label: "1 Tahun", val: "1Y", interval: "Bulan" },
-                      { label: "3 Tahun", val: "3Y", interval: "Tahun" },
-                    ].map((item) => (
-                      <button
-                        key={item.label}
-                        className={`px-3 py-2 text-sm font-medium rounded-md transition-colors text-center ${
-                          graphicPeriod === item.val
-                            ? "bg-primary text-white shadow-sm"
-                            : "bg-gray-50 text-gray-600 hover:bg-gray-100"
-                        }`}
-                        onClick={() => {
-                          setGraphicPeriod(item.val as Periode);
-                          setGraphicIntervalMode(item.interval as any);
-
-                          const now = new Date();
-                          let newStart = "";
-                          let newEnd = "";
-
-                          if (item.val === "1W") {
-                            const start = new Date(now);
-                            start.setDate(now.getDate() - 7);
-                            newStart = formatLocalISODate(start);
-                            newEnd = formatLocalISODate(now);
-                          } else if (item.val === "1M") {
-                            const start = new Date(now);
-                            start.setDate(now.getDate() - 31);
-                            newStart = formatLocalISODate(start);
-                            newEnd = formatLocalISODate(now);
-                          } else if (item.val === "1Y") {
-                            const start = new Date(now.getFullYear(), 0, 1);
-                            const end = new Date(now.getFullYear(), 11, 31);
-                            newStart = formatLocalISODate(start);
-                            newEnd = formatLocalISODate(end);
-                          } else if (item.val === "3Y") {
-                            const start = new Date(now.getFullYear() - 2, 0, 1);
-                            const end = new Date(now.getFullYear(), 11, 31);
-                            newStart = formatLocalISODate(start);
-                            newEnd = formatLocalISODate(end);
-                          }
-
-                          if (newStart && newEnd) {
-                            setGraphicStart(newStart);
-                            setGraphicEnd(newEnd);
-                          }
-                        }}
-                      >
-                        {item.label}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Interval Selectors */}
-                  <p className="block text-sm font-medium text-gray-700 mb-2">
-                    Interval
-                  </p>
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {(["Tahun", "Bulan", "Hari"] as const).map((mode) => {
-                      if (
-                        graphicPeriod === "1W" &&
-                        (mode === "Tahun" || mode === "Bulan")
-                      )
-                        return null;
-                      if (graphicPeriod === "1M" && mode === "Tahun")
-                        return null;
-
-                      return (
+                      Periode
+                    </p>
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {[
+                        { label: "1 Minggu", val: "1W", interval: "Hari" },
+                        { label: "1 Bulan", val: "1M", interval: "Hari" },
+                        { label: "1 Tahun", val: "1Y", interval: "Bulan" },
+                        { label: "3 Tahun", val: "3Y", interval: "Tahun" },
+                      ].map((item) => (
                         <button
-                          key={mode}
-                          className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                            graphicIntervalMode === mode
+                          key={item.label}
+                          className={`px-3 py-2 text-sm font-medium rounded-md transition-colors text-center ${
+                            graphicPeriod === item.val
                               ? "bg-primary text-white shadow-sm"
                               : "bg-gray-50 text-gray-600 hover:bg-gray-100"
                           }`}
-                          onClick={() => setGraphicIntervalMode(mode)}
-                        >
-                          {mode}
-                        </button>
-                      );
-                    })}
-                  </div>
+                          onClick={() => {
+                            setGraphicPeriod(item.val as Periode);
+                            setGraphicIntervalMode(item.interval as any);
 
-                  <DateRangeFilter
-                    startDate={graphicStart}
-                    endDate={graphicEnd}
-                    setStartDate={setGraphicStart}
-                    setEndDate={setGraphicEnd}
-                    periode={graphicPeriod}
-                    isSingleDate={false}
-                    mode={
-                      graphicPeriod === "3Y" ? "Tahun" : graphicIntervalMode
-                    }
-                  />
-                </>
-              )}
+                            const now = new Date();
+                            let newStart = "";
+                            let newEnd = "";
+
+                            if (item.val === "1W") {
+                              const start = new Date(now);
+                              start.setDate(now.getDate() - 7);
+                              newStart = formatLocalISODate(start);
+                              newEnd = formatLocalISODate(now);
+                            } else if (item.val === "1M") {
+                              const start = new Date(now);
+                              start.setDate(now.getDate() - 31);
+                              newStart = formatLocalISODate(start);
+                              newEnd = formatLocalISODate(now);
+                            } else if (item.val === "1Y") {
+                              const start = new Date(now.getFullYear(), 0, 1);
+                              const end = new Date(now.getFullYear(), 11, 31);
+                              newStart = formatLocalISODate(start);
+                              newEnd = formatLocalISODate(end);
+                            } else if (item.val === "3Y") {
+                              const start = new Date(
+                                now.getFullYear() - 2,
+                                0,
+                                1,
+                              );
+                              const end = new Date(now.getFullYear(), 11, 31);
+                              newStart = formatLocalISODate(start);
+                              newEnd = formatLocalISODate(end);
+                            }
+
+                            if (newStart && newEnd) {
+                              setGraphicStart(newStart);
+                              setGraphicEnd(newEnd);
+                            }
+                          }}
+                        >
+                          {item.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Interval Selectors */}
+                    <p className="block text-sm font-medium text-gray-700 mb-2">
+                      Interval
+                    </p>
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {(["Tahun", "Bulan", "Hari"] as const).map((mode) => {
+                        if (
+                          graphicPeriod === "1W" &&
+                          (mode === "Tahun" || mode === "Bulan")
+                        )
+                          return null;
+                        if (graphicPeriod === "1M" && mode === "Tahun")
+                          return null;
+
+                        return (
+                          <button
+                            key={mode}
+                            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                              graphicIntervalMode === mode
+                                ? "bg-primary text-white shadow-sm"
+                                : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+                            }`}
+                            onClick={() => setGraphicIntervalMode(mode)}
+                          >
+                            {mode}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <DateRangeFilter
+                      startDate={graphicStart}
+                      endDate={graphicEnd}
+                      setStartDate={setGraphicStart}
+                      setEndDate={setGraphicEnd}
+                      periode={graphicPeriod}
+                      isSingleDate={false}
+                      mode={
+                        graphicPeriod === "3Y" ? "Tahun" : graphicIntervalMode
+                      }
+                    />
+                  </>
+                )}
               </div>
             </div>
           </div>

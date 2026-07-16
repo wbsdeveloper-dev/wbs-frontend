@@ -3,6 +3,7 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import * as htmlToImage from "html-to-image";
 import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import {
   MapContainer,
   Marker,
@@ -121,6 +122,64 @@ export default function Map({ commodity }: { commodity?: string }) {
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
       
       pdf.addImage(imgData, "PNG", 0, 10, pdfWidth, pdfHeight);
+
+      pdf.addPage();
+      pdf.setFontSize(14);
+      pdf.text("Breakdown Relasi Pemasok ke Pembangkit Berdasarkan Region", 14, 15);
+
+      const relationships = filteredPipes.reduce((acc, pipe) => {
+        const source = getSiteById(pipe.sourceSiteId);
+        const target = getSiteById(pipe.targetSiteId);
+        if (!source || !target) return acc;
+        
+        const region = target.region || source.region || "Unknown Region";
+        
+        if (!acc[region]) {
+          acc[region] = [];
+        }
+        
+        acc[region].push({
+          sourceName: source.name,
+          targetName: target.name,
+          commodity: pipe.commodity,
+          status: pipe.status
+        });
+        
+        return acc;
+      }, {} as Record<string, any[]>);
+
+      let startY = 25;
+      
+      Object.keys(relationships).sort().forEach((region) => {
+        pdf.setFontSize(12);
+        pdf.text(`Region: ${region}`, 14, startY);
+        startY += 5;
+        
+        const regionData = relationships[region].map((rel, index) => [
+          index + 1,
+          rel.sourceName,
+          rel.targetName,
+          rel.commodity || "-"
+        ]);
+
+        autoTable(pdf, {
+          startY: startY,
+          head: [["No", "Pemasok", "Pembangkit", "Komoditas"]],
+          body: regionData,
+          theme: 'grid',
+          headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+          styles: { fontSize: 10 },
+          margin: { left: 14, right: 14 },
+        });
+        
+        startY = (pdf as any).lastAutoTable.finalY + 15;
+        
+        if (startY > pdf.internal.pageSize.getHeight() - 20) {
+          pdf.addPage();
+          startY = 20;
+        }
+      });
+
       pdf.save(`peta-gas-${new Date().toISOString().split("T")[0]}.pdf`);
     } catch (err) {
       console.error("Failed to export PDF", err);
@@ -531,7 +590,13 @@ export default function Map({ commodity }: { commodity?: string }) {
                       </div>
                       {connected.length > 0 && (
                         <div className="mt-2 pt-2 border-t border-gray-200">
-                          <p className="text-xs text-gray-500 mb-1">Relasi:</p>
+                          <p className="text-xs text-gray-500 mb-1">
+                            {site.siteType === "PEMBANGKIT"
+                              ? "Pemasok:"
+                              : site.siteType === "PEMASOK"
+                              ? "Pembangkit:"
+                              : "Relasi:"}
+                          </p>
                           <ul className="text-xs text-gray-700 space-y-0.5">
                             {connected.map((c) => (
                               <li

@@ -30,11 +30,11 @@ export default function KertasKerjaPage() {
   const [selectedUnit, setSelectedUnit] = useState("");
   const [selectedUnitPelaksana, setSelectedUnitPelaksana] = useState("");
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  
+
   const { data: regions = [] } = useKertasKerjaMaster("master_region");
   const { data: units = [] } = useKertasKerjaMaster("master_unit");
   const { data: upks = [] } = useKertasKerjaMaster("master_unit_pelaksana");
-  
+
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const { data: templates = [] } = useKertasKerjaTemplates();
   const { refetch: refetchRecords } = useKertasKerjaRecords();
@@ -60,7 +60,10 @@ export default function KertasKerjaPage() {
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (regionRef.current && !regionRef.current.contains(event.target as Node)) {
+      if (
+        regionRef.current &&
+        !regionRef.current.contains(event.target as Node)
+      ) {
         setIsRegionDropdownOpen(false);
       }
       if (unitRef.current && !unitRef.current.contains(event.target as Node)) {
@@ -152,9 +155,9 @@ export default function KertasKerjaPage() {
                     className="pl-3 pr-8 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 cursor-pointer appearance-none"
                     style={{
                       backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-                      backgroundRepeat: 'no-repeat',
-                      backgroundPosition: 'right 0.5rem center',
-                      backgroundSize: '1.25em 1.25em'
+                      backgroundRepeat: "no-repeat",
+                      backgroundPosition: "right 0.5rem center",
+                      backgroundSize: "1.25em 1.25em",
                     }}
                   >
                     {Array.from({ length: 11 }).map((_, i) => {
@@ -167,18 +170,27 @@ export default function KertasKerjaPage() {
                     })}
                   </select>
                 </div>
-                
+
                 {/* Region Filter */}
-                <div className="flex items-center gap-3 relative" ref={regionRef}>
+                <div
+                  className="flex items-center gap-3 relative"
+                  ref={regionRef}
+                >
                   <span className="text-sm font-medium text-gray-700 whitespace-nowrap">
                     Filter Region:
                   </span>
                   <div className="relative">
                     <button
-                      onClick={() => setIsRegionDropdownOpen(!isRegionDropdownOpen)}
+                      onClick={() =>
+                        setIsRegionDropdownOpen(!isRegionDropdownOpen)
+                      }
                       className="flex items-center justify-between pl-3 pr-2 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 min-w-[160px]"
                     >
-                      <span className={selectedRegion ? "text-gray-900" : "text-gray-500"}>
+                      <span
+                        className={
+                          selectedRegion ? "text-gray-900" : "text-gray-500"
+                        }
+                      >
                         {selectedRegion || "Semua Region"}
                       </span>
                       <ChevronDown
@@ -191,7 +203,10 @@ export default function KertasKerjaPage() {
                       <div className="absolute top-full left-0 mt-1 w-full min-w-[220px] bg-white rounded-lg shadow-lg border border-gray-100 z-50 overflow-hidden flex flex-col">
                         <div className="p-2 border-b border-gray-100 sticky top-0 bg-white">
                           <div className="relative">
-                            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                            <Search
+                              size={14}
+                              className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400"
+                            />
                             <input
                               type="text"
                               placeholder="Cari region..."
@@ -215,7 +230,9 @@ export default function KertasKerjaPage() {
                             {!selectedRegion && <Check size={14} />}
                           </button>
                           {filteredRegions.length === 0 ? (
-                            <div className="px-3 py-4 text-center text-sm text-gray-500">Region tidak ditemukan</div>
+                            <div className="px-3 py-4 text-center text-sm text-gray-500">
+                              Region tidak ditemukan
+                            </div>
                           ) : (
                             filteredRegions.map((r: any) => (
                               <button
@@ -228,7 +245,9 @@ export default function KertasKerjaPage() {
                                 className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-md transition-colors ${selectedRegion === r.name ? "bg-primary/10 text-primary font-medium" : "text-gray-700 hover:bg-gray-100"}`}
                               >
                                 {r.name}
-                                {selectedRegion === r.name && <Check size={14} />}
+                                {selectedRegion === r.name && (
+                                  <Check size={14} />
+                                )}
                               </button>
                             ))
                           )}
@@ -248,7 +267,11 @@ export default function KertasKerjaPage() {
                       onClick={() => setIsUnitDropdownOpen(!isUnitDropdownOpen)}
                       className="flex items-center justify-between pl-3 pr-2 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 min-w-[160px]"
                     >
-                      <span className={selectedUnit ? "text-gray-900" : "text-gray-500"}>
+                      <span
+                        className={
+                          selectedUnit ? "text-gray-900" : "text-gray-500"
+                        }
+                      >
                         {selectedUnit || "Semua Unit"}
                       </span>
                       <ChevronDown
@@ -261,7 +284,10 @@ export default function KertasKerjaPage() {
                       <div className="absolute top-full left-0 mt-1 w-full min-w-[220px] bg-white rounded-lg shadow-lg border border-gray-100 z-50 overflow-hidden flex flex-col">
                         <div className="p-2 border-b border-gray-100 sticky top-0 bg-white">
                           <div className="relative">
-                            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                            <Search
+                              size={14}
+                              className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400"
+                            />
                             <input
                               type="text"
                               placeholder="Cari unit induk..."
@@ -285,7 +311,9 @@ export default function KertasKerjaPage() {
                             {!selectedUnit && <Check size={14} />}
                           </button>
                           {filteredUnits.length === 0 ? (
-                            <div className="px-3 py-4 text-center text-sm text-gray-500">Unit tidak ditemukan</div>
+                            <div className="px-3 py-4 text-center text-sm text-gray-500">
+                              Unit tidak ditemukan
+                            </div>
                           ) : (
                             filteredUnits.map((u: any) => (
                               <button
@@ -318,7 +346,13 @@ export default function KertasKerjaPage() {
                       onClick={() => setIsUpkDropdownOpen(!isUpkDropdownOpen)}
                       className="flex items-center justify-between pl-3 pr-2 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 min-w-[160px]"
                     >
-                      <span className={selectedUnitPelaksana ? "text-gray-900" : "text-gray-500"}>
+                      <span
+                        className={
+                          selectedUnitPelaksana
+                            ? "text-gray-900"
+                            : "text-gray-500"
+                        }
+                      >
                         {selectedUnitPelaksana || "Semua Pelaksana"}
                       </span>
                       <ChevronDown
@@ -331,7 +365,10 @@ export default function KertasKerjaPage() {
                       <div className="absolute top-full left-0 mt-1 w-full min-w-[220px] bg-white rounded-lg shadow-lg border border-gray-100 z-50 overflow-hidden flex flex-col">
                         <div className="p-2 border-b border-gray-100 sticky top-0 bg-white">
                           <div className="relative">
-                            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                            <Search
+                              size={14}
+                              className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400"
+                            />
                             <input
                               type="text"
                               placeholder="Cari unit pelaksana..."
@@ -355,7 +392,9 @@ export default function KertasKerjaPage() {
                             {!selectedUnitPelaksana && <Check size={14} />}
                           </button>
                           {filteredUpks.length === 0 ? (
-                            <div className="px-3 py-4 text-center text-sm text-gray-500">Unit pelaksana tidak ditemukan</div>
+                            <div className="px-3 py-4 text-center text-sm text-gray-500">
+                              Unit pelaksana tidak ditemukan
+                            </div>
                           ) : (
                             filteredUpks.map((u: any) => (
                               <button
@@ -368,7 +407,9 @@ export default function KertasKerjaPage() {
                                 className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-md transition-colors ${selectedUnitPelaksana === u.name ? "bg-primary/10 text-primary font-medium" : "text-gray-700 hover:bg-gray-100"}`}
                               >
                                 {u.name}
-                                {selectedUnitPelaksana === u.name && <Check size={14} />}
+                                {selectedUnitPelaksana === u.name && (
+                                  <Check size={14} />
+                                )}
                               </button>
                             ))
                           )}
@@ -383,20 +424,22 @@ export default function KertasKerjaPage() {
               <div className="flex bg-gray-100 p-1 rounded-lg w-fit">
                 <button
                   onClick={() => setActiveTab("kertas-kerja")}
-                  className={`flex items-center gap-2 px-6 py-2.5 rounded-md text-sm font-medium transition-all ${activeTab === "kertas-kerja"
+                  className={`flex items-center gap-2 px-6 py-2.5 rounded-md text-sm font-medium transition-all ${
+                    activeTab === "kertas-kerja"
                       ? "bg-white text-primary shadow-sm"
                       : "text-gray-600 hover:text-gray-900 hover:bg-gray-200/50"
-                    }`}
+                  }`}
                 >
                   <FileText size={16} />
                   Kertas Kerja
                 </button>
                 <button
                   onClick={() => setActiveTab("ringkasan")}
-                  className={`flex items-center gap-2 px-6 py-2.5 rounded-md text-sm font-medium transition-all ${activeTab === "ringkasan"
+                  className={`flex items-center gap-2 px-6 py-2.5 rounded-md text-sm font-medium transition-all ${
+                    activeTab === "ringkasan"
                       ? "bg-white text-primary shadow-sm"
                       : "text-gray-600 hover:text-gray-900 hover:bg-gray-200/50"
-                    }`}
+                  }`}
                 >
                   <PieChart size={16} />
                   Ringkasan
@@ -414,8 +457,8 @@ export default function KertasKerjaPage() {
               />
             )}
             {activeTab === "ringkasan" && (
-              <RingkasanTable 
-                selectedRegion={selectedRegion} 
+              <RingkasanTable
+                selectedRegion={selectedRegion}
                 selectedUnit={selectedUnit}
                 selectedUnitPelaksana={selectedUnitPelaksana}
                 selectedYear={selectedYear}

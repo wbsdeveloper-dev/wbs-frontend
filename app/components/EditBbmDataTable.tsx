@@ -347,11 +347,10 @@ export default function EditBbmDataTable({
     align?: "left" | "center" | "right";
   }) => (
     <th
-      className={`px-4 py-3 text-${align} text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap ${
-        field
+      className={`px-4 py-3 text-${align} text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap ${field
           ? "cursor-pointer select-none hover:bg-gray-100 transition-colors"
           : ""
-      }`}
+        }`}
       onClick={field ? () => handleSort(field) : undefined}
     >
       <span className="inline-flex items-center justify-center">
@@ -401,7 +400,7 @@ export default function EditBbmDataTable({
 
   const handleExportPDF = () => {
     const doc = new jsPDF("l", "mm", "a4");
-    
+
     doc.setFontSize(14);
     doc.text("Tabel Realisasi BBM", 14, 15);
     doc.setFontSize(10);
@@ -465,11 +464,10 @@ export default function EditBbmDataTable({
           </div>
           <button
             onClick={() => setShowFilters((v) => !v)}
-            className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-all duration-200 ${
-              showFilters || activeFilterCount > 0
+            className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-all duration-200 ${showFilters || activeFilterCount > 0
                 ? "bg-primary text-white border-primary"
                 : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-            }`}
+              }`}
           >
             <Filter size={16} />
             Filter
@@ -589,7 +587,7 @@ export default function EditBbmDataTable({
             </button>
             <button
               onClick={handleApplyFilters}
-              className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-[#0d4a5c] transition-all duration-200"
+              className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:brightness-90 transition-all duration-200"
             >
               <Search size={14} />
               Terapkan Filter
@@ -717,9 +715,8 @@ export default function EditBbmDataTable({
                     key={rowId}
                     onMouseEnter={() => setHoveredGroupId(groupKey)}
                     onMouseLeave={() => setHoveredGroupId(null)}
-                    className={`transition-colors ${
-                      hoveredGroupId === groupKey ? "bg-gray-50" : ""
-                    }`}
+                    className={`transition-colors ${hoveredGroupId === groupKey ? "bg-gray-50" : ""
+                      }`}
                   >
                     <td className="px-4 py-3 text-center text-gray-700">
                       {startIndex + index + 1}

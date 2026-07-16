@@ -283,54 +283,60 @@ export default function GasDashboard() {
             </div>
 
             {/* Cards Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+            <div className="flex overflow-x-auto gap-4 mb-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
               {isDistLoading ? (
-                <div className="bg-white rounded-xl p-6 flex items-center justify-center">
+                <div className="bg-white rounded-xl p-6 flex items-center justify-center w-[360px] min-w-[360px] md:w-[420px] md:min-w-[420px] flex-shrink-0">
                   <Loader2 className="animate-spin text-secondary" size={32} />
                 </div>
               ) : (
-                <FuelTypeDonutChart
-                  openModalFunction={open}
-                  data={dataPieChart}
-                  changeFilterType={setFilterType}
-                  filterType={filterType}
-                  startDate={distributionStartDate}
-                  endDate={distributionEndDate}
-                  onStartDateChange={setDistributionStartDate}
-                  onEndDateChange={setDistributionEndDate}
-                />
+                <div className="w-[360px] min-w-[360px] md:w-[420px] md:min-w-[420px] flex-shrink-0">
+                  <FuelTypeDonutChart
+                    openModalFunction={open}
+                    data={dataPieChart}
+                    changeFilterType={setFilterType}
+                    filterType={filterType}
+                    startDate={distributionStartDate}
+                    endDate={distributionEndDate}
+                    onStartDateChange={setDistributionStartDate}
+                    onEndDateChange={setDistributionEndDate}
+                  />
+                </div>
               )}
               {isSuppliersLoading ? (
-                <div className="bg-white rounded-xl p-6 flex items-center justify-center">
+                <div className="bg-white rounded-xl p-6 flex items-center justify-center w-[360px] min-w-[360px] md:w-[420px] md:min-w-[420px] flex-shrink-0">
                   <Loader2 className="animate-spin text-secondary" size={32} />
                 </div>
               ) : (
-                <TopVolumeList
-                  title="Top 5 Volume Pemasok"
-                  list={topPemasokList}
-                  unit={topSuppliersData?.unit || "%"}
-                  description={`List top 5 performa pemasok dengan perhitungan Realisasi/TOP ${topSuppliersData?.unit}`}
-                  startDate={topSuppliersStart}
-                  endDate={topSuppliersEnd}
-                  onStartDateChange={setTopSuppliersStart}
-                  onEndDateChange={setTopSuppliersEnd}
-                />
+                <div className="w-[360px] min-w-[360px] md:w-[420px] md:min-w-[420px] flex-shrink-0">
+                  <TopVolumeList
+                    title="Top 5 Volume Pemasok"
+                    list={topPemasokList}
+                    unit={topSuppliersData?.unit || "%"}
+                    description={`List top 5 performa pemasok dengan perhitungan Realisasi/TOP ${topSuppliersData?.unit}`}
+                    startDate={topSuppliersStart}
+                    endDate={topSuppliersEnd}
+                    onStartDateChange={setTopSuppliersStart}
+                    onEndDateChange={setTopSuppliersEnd}
+                  />
+                </div>
               )}
               {isPlantsLoading ? (
-                <div className="bg-white rounded-xl p-6 flex items-center justify-center">
+                <div className="bg-white rounded-xl p-6 flex items-center justify-center w-[360px] min-w-[360px] md:w-[420px] md:min-w-[420px] flex-shrink-0">
                   <Loader2 className="animate-spin text-secondary" size={32} />
                 </div>
               ) : (
-                <TopVolumeList
-                  title="Top 5 Volume Pembangkit"
-                  list={topPembangkitList}
-                  unit={topPlantsData?.unit || "BBTUD"}
-                  description={`List top 5 performa pembangkit dengan satuan ${topPlantsData?.unit}`}
-                  startDate={topPlantsStart}
-                  endDate={topPlantsEnd}
-                  onStartDateChange={setTopPlantsStart}
-                  onEndDateChange={setTopPlantsEnd}
-                />
+                <div className="w-[360px] min-w-[360px] md:w-[420px] md:min-w-[420px] flex-shrink-0">
+                  <TopVolumeList
+                    title="Top 5 Volume Pembangkit"
+                    list={topPembangkitList}
+                    unit={topPlantsData?.unit || "BBTUD"}
+                    description={`List top 5 performa pembangkit dengan satuan ${topPlantsData?.unit}`}
+                    startDate={topPlantsStart}
+                    endDate={topPlantsEnd}
+                    onStartDateChange={setTopPlantsStart}
+                    onEndDateChange={setTopPlantsEnd}
+                  />
+                </div>
               )}
             </div>
 

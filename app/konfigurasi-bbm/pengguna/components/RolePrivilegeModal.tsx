@@ -19,7 +19,6 @@ interface RolePrivilegeModalProps {
 
 export function RolePrivilegeModal({ open, onClose, role }: RolePrivilegeModalProps) {
   const [mounted, setMounted] = useState(false);
-  const [activeTab, setActiveTab] = useState<"GAS" | "BBM">("GAS");
 
   const { data: resourcesData, isLoading: isLoadingResources } = useRoleResources({
     enabled: open
@@ -119,23 +118,6 @@ export function RolePrivilegeModal({ open, onClose, role }: RolePrivilegeModalPr
     );
   };
 
-  const GAS_RESOURCES = [
-    { key: 'dashboard_gas', label: 'Beranda' },
-    { key: 'data_input_gas', label: 'Data Input' },
-    { key: 'data_transportir_gas', label: 'Data Transportir' },
-    { key: 'file_berita_acara_gas', label: 'File Berita Acara' },
-    { key: 'site_management_gas', label: 'Pemasok & Pembangkit' },
-    { key: 'contracts_gas', label: 'Kontrak & Dokumen' },
-    { key: 'users_gas', label: 'Pengguna' },
-    { key: 'email_ingest_gas', label: 'Email Ingest' },
-    { key: 'template_group_gas', label: 'Template Grup' },
-    { key: 'spreadsheet_source_gas', label: 'Spreadsheet' },
-    { key: 'api_keys_gas', label: 'API Keys' },
-    { key: 'system_config_gas', label: 'Data Master' },
-    { key: 'bot_management_gas', label: 'Manajemen Bot' },
-    { key: 'external_gas', label: 'Eksternal (Non EPI)' },
-  ];
-
   const BBM_RESOURCES = [
     { key: 'dashboard_bbm', label: 'Beranda' },
     { key: 'data_input_bbm', label: 'Data Input' },
@@ -147,7 +129,7 @@ export function RolePrivilegeModal({ open, onClose, role }: RolePrivilegeModalPr
     { key: 'system_config_bbm', label: 'Data Master' },
   ];
 
-  const activeResources = activeTab === "GAS" ? GAS_RESOURCES : BBM_RESOURCES;
+  const activeResources = BBM_RESOURCES;
 
   return createPortal(
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
@@ -174,24 +156,9 @@ export function RolePrivilegeModal({ open, onClose, role }: RolePrivilegeModalPr
         {/* Tabs */}
         <div className="px-6 pt-4 border-b border-gray-200 shrink-0 bg-gray-50/50">
           <div className="flex space-x-6">
-            <button
-              onClick={() => setActiveTab("GAS")}
-              className={`pb-3 text-sm font-medium border-b-2 transition-colors ${activeTab === "GAS"
-                  ? "border-primary text-primary"
-                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                }`}
-            >
-              Gas Pipa
-            </button>
-            <button
-              onClick={() => setActiveTab("BBM")}
-              className={`pb-3 text-sm font-medium border-b-2 transition-colors ${activeTab === "BBM"
-                  ? "border-primary text-primary"
-                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                }`}
-            >
+            <div className="pb-3 text-sm font-medium border-b-2 border-primary text-primary">
               BBM
-            </button>
+            </div>
           </div>
         </div>
 
