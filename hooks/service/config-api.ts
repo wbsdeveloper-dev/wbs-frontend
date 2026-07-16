@@ -417,6 +417,13 @@ export function updateTemplate(id: string, payload: UpdateTemplatePayload) {
   });
 }
 
+export function testTemplateParse(payload: { inboxId: string; template: any; fields: any[] }) {
+  return configFetch<{ extractedText: string; parsedResult: any; reconciliationPreview: any[]; context: any }>(`/config/templates/test-parse`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
 export function activateTemplate(id: string) {
   return configFetch<Template>(`/config/templates/${id}/activate`, {
     method: "POST",
@@ -581,6 +588,21 @@ export function useUpdateTemplate(
       qc.invalidateQueries({ queryKey: configKeys._templatesBase() });
       qc.invalidateQueries({ queryKey: configKeys.template(variables.id) });
     },
+    ...options,
+  });
+}
+
+export function useTestTemplateParse(
+  options?: Partial<
+    UseMutationOptions<
+      { extractedText: string; parsedResult: any },
+      Error,
+      { inboxId: string; template: any; fields: any[] }
+    >
+  >,
+) {
+  return useMutation({
+    mutationFn: (payload) => testTemplateParse(payload),
     ...options,
   });
 }

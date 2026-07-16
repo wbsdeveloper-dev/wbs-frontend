@@ -16,6 +16,7 @@ import {
   Upload,
   Download,
   Info,
+  Bug,
 } from "lucide-react";
 import { downloadFieldsCSV } from "../utils/csvExport";
 import CSVImportModal from "./CSVImportModal";
@@ -25,6 +26,7 @@ import { Tooltip } from "@mui/material";
 import type { Template, TemplateField } from "@/hooks/service/config-api";
 import { useAiModels, useEmailSources } from "@/hooks/service/config-api";
 import { usePrivilege } from "@/hooks/usePrivilege";
+import { TestExtractionModal } from "../../../konfigurasi/template-grup/components/TestExtractionModal";
 
 interface TemplateEditorProps {
   template: Template;
@@ -149,6 +151,7 @@ export default function TemplateEditor({
   const [isCSVImportModalOpen, setIsCSVImportModalOpen] = useState(false);
   const { data: aiModels = [], isLoading: isLoadingModels } = useAiModels();
   const { data: emailSources = [] } = useEmailSources();
+  const [isTestModalOpen, setIsTestModalOpen] = useState(false);
   const [isFieldModalOpen, setIsFieldModalOpen] = useState(false);
   const [editingField, setEditingField] = useState<TemplateField | null>(null);
   const [testInput, setTestInput] = useState("");
@@ -467,6 +470,15 @@ export default function TemplateEditor({
                   title="Hapus Template"
                 >
                   <Trash2 size={16} />
+                </button>
+              )}
+              {canUpdate && formData.scope === "EMAIL_INGEST" && (
+                <button
+                  onClick={() => setIsTestModalOpen(true)}
+                  className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-secondary bg-secondary/10 border border-transparent rounded-lg hover:bg-secondary/20 transition-all duration-200"
+                >
+                  <Bug size={16} />
+                  Uji Coba Ekstraksi
                 </button>
               )}
               {canUpdate && (
@@ -888,6 +900,29 @@ export default function TemplateEditor({
                 </div>
               )}
 
+              {formData.requiresOcr && (formData.emailExtractionTarget === "ATTACHMENT_SINGLE" || formData.emailExtractionTarget === "ATTACHMENT_MULTI_STREAM") && (
+                <div className="mt-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Halaman PDF Spesifik (Opsional)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={formData.streamConfiguration?.pageNumber || ""}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        streamConfiguration: {
+                          ...formData.streamConfiguration,
+                          pageNumber: e.target.value ? parseInt(e.target.value, 10) : undefined,
+                        },
+                      })
+                    }
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent"
+                    placeholder="Contoh: 1"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Kosongkan atau isi 1 untuk membaca halaman pertama saja. Isi halaman spesifik jika data berada di halaman lain.</p>
+                </div>
+              )}
+
               {formData.emailExtractionTarget === "ATTACHMENT_MULTI_STREAM" && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Pemisah Stream Lampiran (Regex)</label>
@@ -904,9 +939,65 @@ export default function TemplateEditor({
                       })
                     }
                     className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent"
-                    placeholder="\\n---\\n"
+                    placeholder="\n---\n"
                   />
                   <p className="text-xs text-gray-500 mt-1">Gunakan regex untuk memisahkan data lampiran menjadi beberapa stream.</p>
+                </div>
+              )}
+
+              {/* --- Metric type override --- */}
+              {(formData.emailExtractionTarget === "ATTACHMENT_SINGLE" || formData.emailExtractionTarget === "ATTACHMENT_MULTI_STREAM") && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Override Jenis Metrik (Opsional)</label>
+                  <input
+                    type="text"
+                    value={formData.streamConfiguration?.metricType || ""}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        streamConfiguration: {
+                          ...formData.streamConfiguration,
+                          metricType: e.target.value || undefined,
+                        },
+                      })
+                    }
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent"
+                    placeholder="Contoh: ENERGY_BBTUD"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Paksa nilai <code>metric_type</code> menjadi nilai ini — menggantikan apapun yang dibaca oleh AI/Regex.
+                    Kosongkan jika tidak ingin mengganti.
+                  </p>
+                </div>
+              )}
+
+              {/* --- Konversi ke BBTUD --- */}
+              {(formData.emailExtractionTarget === "ATTACHMENT_SINGLE" || formData.emailExtractionTarget === "ATTACHMENT_MULTI_STREAM") && (
+                <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                  <input
+                    type="checkbox"
+                    id={`convert-bbtud-${formData.id}`}
+                    checked={!!formData.streamConfiguration?.convertToBbtud}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        streamConfiguration: {
+                          ...formData.streamConfiguration,
+                          convertToBbtud: e.target.checked,
+                        },
+                      })
+                    }
+                    className="w-4 h-4 text-amber-600 border-gray-300 rounded focus:ring-amber-500 cursor-pointer mt-0.5"
+                  />
+                  <div>
+                    <label htmlFor={`convert-bbtud-${formData.id}`} className="text-sm font-medium text-amber-800 cursor-pointer">
+                      Konversi Nilai ke BBTUD (÷ 1000)
+                    </label>
+                    <p className="text-xs text-amber-700 mt-0.5">
+                      Jika dicentang, nilai yang diekstrak akan dibagi 1000 dan satuan (<code>unit</code>) diubah menjadi <strong>BBTUD</strong>.
+                      Cocok untuk mengonversi data MMBTU → BBTUD.
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
@@ -1801,6 +1892,12 @@ export default function TemplateEditor({
           </div>
         </div>
       </Modal>
+
+      <TestExtractionModal
+        isOpen={isTestModalOpen}
+        onClose={() => setIsTestModalOpen(false)}
+        templateData={formData}
+      />
     </div>
   );
 }

@@ -230,6 +230,9 @@ export default function TemplateGrupPage() {
           aiOutputSchema: updatedTemplate.aiOutputSchema,
           decimalSeparator: updatedTemplate.decimalSeparator,
           commodity: updatedTemplate.commodity,
+          emailExtractionTarget: updatedTemplate.emailExtractionTarget,
+          requiresOcr: updatedTemplate.requiresOcr,
+          streamConfiguration: updatedTemplate.streamConfiguration,
           fields: updatedTemplate.fields.map((f, i) => ({
             fieldKey: f.fieldKey,
             sourceKind: f.sourceKind,
