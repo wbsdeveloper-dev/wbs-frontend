@@ -780,3 +780,49 @@ export function useDeleteSiteHistory(
   });
 }
 
+export function bulkUpdateSites(payload: { sites: any[] }) {
+  return siteFetch<any>("/sites/bulk", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function useBulkUpdateSites(
+  options?: Partial<UseMutationOptions<any, Error, { sites: any[] }>>,
+) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload) => bulkUpdateSites(payload),
+    onSuccess: (...args) => {
+      qc.invalidateQueries({ queryKey: siteKeys.all });
+      options?.onSuccess?.(...args);
+    },
+    ...options,
+  });
+}
+
+export async function downloadSiteTemplate(): Promise<void> {
+  const url = `${SITE_API_HOST}/sites/download-template`;
+  const accessToken = getAccessToken();
+  
+  const res = await fetch(url, {
+    headers: {
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to download template: ${res.statusText}`);
+  }
+
+  const blob = await res.blob();
+  const downloadUrl = window.URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = downloadUrl;
+  a.download = "Template_Site_BBM_Bulk.xlsx";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.URL.revokeObjectURL(downloadUrl);
+}
+

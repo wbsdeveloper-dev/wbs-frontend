@@ -351,3 +351,49 @@ export function useBulkUpsertKertasKerjaRecords(
     ...options,
   });
 }
+
+export function bulkUpsertTemplates(payload: { templates: any[] }) {
+  return apiFetchData<any[]>("/kertas-kerja/templates/bulk", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function useBulkUpsertKertasKerjaTemplates(
+  options?: Partial<UseMutationOptions<any[], Error, { templates: any[] }>>,
+) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload) => bulkUpsertTemplates(payload),
+    onSuccess: (...args) => {
+      qc.invalidateQueries({ queryKey: kertasKerjaKeys.templates() });
+      options?.onSuccess?.(...args);
+    },
+    ...options,
+  });
+}
+
+export async function downloadTemplateKertasKerja(): Promise<void> {
+  const url = `${API_HOST}/kertas-kerja/templates/download-template`;
+  const accessToken = getAccessToken();
+  
+  const res = await fetch(url, {
+    headers: {
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to download template: ${res.statusText}`);
+  }
+
+  const blob = await res.blob();
+  const downloadUrl = window.URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = downloadUrl;
+  a.download = "Template_Kertas_Kerja_Bulk.xlsx";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.URL.revokeObjectURL(downloadUrl);
+}

@@ -6,6 +6,8 @@ import {
   Loader2,
   AlertCircle,
   Search,
+  FileSpreadsheet,
+  Upload,
 } from "lucide-react";
 import { Modal } from "@/app/components/ui";
 import {
@@ -14,10 +16,12 @@ import {
   useUpdateKertasKerjaTemplate,
   useDeleteKertasKerjaTemplate,
   useKertasKerjaMaster,
+  downloadTemplateKertasKerja,
 } from "@/hooks/service/kertas-kerja-api";
 import { useDropdowns } from "@/hooks/service/site-api";
 import { Autocomplete, TextField } from "@mui/material";
 import { usePrivilege } from "@/hooks/usePrivilege";
+import BulkUploadTemplateModal from "@/app/components/BulkUploadTemplateModal";
 
 export default function TemplateTab() {
   const { hasPrivilege } = usePrivilege();
@@ -43,6 +47,15 @@ export default function TemplateTab() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
+  const [isBulkUploadOpen, setIsBulkUploadOpen] = useState(false);
+
+  const handleDownloadTemplate = async () => {
+    try {
+      await downloadTemplateKertasKerja();
+    } catch (err: any) {
+      alert(err.message || "Gagal mengunduh template");
+    }
+  };
 
   const [formData, setFormData] = useState({
     site_id: "",
@@ -151,13 +164,29 @@ export default function TemplateTab() {
             />
           </div>
           {canCreate && (
-            <button
-              onClick={() => handleOpenModal()}
-              className="flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:brightness-90 transition-all duration-200 hover:shadow-md active:scale-95 whitespace-nowrap"
-            >
-              <Plus size={18} />
-              Tambah Template
-            </button>
+            <div className="flex gap-2 w-full sm:w-auto">
+              <button
+                onClick={handleDownloadTemplate}
+                className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-all duration-200 hover:shadow-md active:scale-95 whitespace-nowrap"
+              >
+                <FileSpreadsheet size={16} className="text-green-600" />
+                Download Template
+              </button>
+              <button
+                onClick={() => setIsBulkUploadOpen(true)}
+                className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-all duration-200 hover:shadow-md active:scale-95 whitespace-nowrap"
+              >
+                <Upload size={16} className="text-primary" />
+                Tambah Multi Data
+              </button>
+              <button
+                onClick={() => handleOpenModal()}
+                className="flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:brightness-90 transition-all duration-200 hover:shadow-md active:scale-95 whitespace-nowrap"
+              >
+                <Plus size={18} />
+                Tambah Template
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -592,6 +621,16 @@ export default function TemplateTab() {
           </div>
         </form>
       </Modal>
+
+      {isBulkUploadOpen && (
+        <BulkUploadTemplateModal
+          plants={sites}
+          suppliers={suppliers}
+          products={products}
+          modas={modas}
+          setOpenModal={setIsBulkUploadOpen}
+        />
+      )}
     </div>
   );
 }
