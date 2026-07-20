@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useGetEmailInbox, useTestTemplateParse } from "../../../../hooks/service/config-api";
 import type { UpdateTemplatePayload } from "../../../../hooks/service/config-api";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface TestExtractionModalProps {
   isOpen: boolean;
@@ -63,7 +64,13 @@ function ReconciliationRow({ row, index }: { row: any; index: number }) {
 
 export function TestExtractionModal({ isOpen, onClose, templateData }: TestExtractionModalProps) {
   const { data: inbox } = useGetEmailInbox();
-  const testParseMutation = useTestTemplateParse();
+  const qc = useQueryClient();
+  const testParseMutation = useTestTemplateParse({
+    onSuccess: () => {
+      // Invalidate email inbox so is_processed reflects correctly
+      qc.invalidateQueries({ queryKey: ["email-inbox"] });
+    },
+  });
   const [selectedInboxId, setSelectedInboxId] = useState<string>("");
   const [activeTab, setActiveTab] = useState<"preview" | "raw" | "ocr">("preview");
 
@@ -147,6 +154,31 @@ export function TestExtractionModal({ isOpen, onClose, templateData }: TestExtra
           {/* Results */}
           {testParseMutation.isSuccess && result && (
             <div className="flex flex-col gap-3 flex-1">
+              {/* Save status banner */}
+              {result.saved && (
+                <div className={`p-3 rounded-lg border text-sm ${
+                  result.saved.errors?.length > 0
+                    ? "bg-amber-50 border-amber-200 text-amber-800"
+                    : result.saved.count > 0
+                    ? "bg-green-50 border-green-200 text-green-800"
+                    : "bg-gray-50 border-gray-200 text-gray-600"
+                }`}>
+                  {result.saved.count > 0 ? (
+                    <p className="font-medium">
+                      ✅ {result.saved.count} record berhasil disimpan ke <code>reconciliation_results</code> ({"pln_value"} diisi) dan email ditandai <code>is_processed = true</code>.
+                    </p>
+                  ) : (
+                    <p className="font-medium">⚠️ Tidak ada record yang berhasil disimpan ke database.</p>
+                  )}
+                  {result.saved.errors?.length > 0 && (
+                    <ul className="mt-1 list-disc list-inside text-xs opacity-80">
+                      {result.saved.errors.map((e: string, i: number) => (
+                        <li key={i}>{e}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
               {/* Tabs */}
               <div className="flex gap-1 border-b border-gray-200">
                 {[

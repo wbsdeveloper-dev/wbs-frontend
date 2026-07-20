@@ -595,7 +595,7 @@ export function useUpdateTemplate(
 export function useTestTemplateParse(
   options?: Partial<
     UseMutationOptions<
-      { extractedText: string; parsedResult: any },
+      { extractedText: string; parsedResult: any; reconciliationPreview: any[]; context: any; saved: { count: number; errors: string[] } },
       Error,
       { inboxId: string; template: any; fields: any[] }
     >
