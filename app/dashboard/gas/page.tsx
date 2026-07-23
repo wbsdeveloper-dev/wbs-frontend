@@ -41,6 +41,17 @@ function getCurrentMonthRange() {
   };
 }
 
+// Helper to get date range from 2 days ago to today
+function getTwoDaysAgoRange() {
+  const now = new Date();
+  const start = new Date();
+  start.setDate(now.getDate() - 2);
+  return {
+    startDate: start.toISOString().split("T")[0],
+    endDate: now.toISOString().split("T")[0],
+  };
+}
+
 export default function GasDashboard() {
   const router = useRouter();
   const { hasPrivilege } = usePrivilege();
@@ -58,15 +69,21 @@ export default function GasDashboard() {
 
   const todayDate = useMemo(() => new Date().toISOString().split("T")[0], []);
   const { startDate, endDate } = useMemo(() => getCurrentMonthRange(), []);
-  const [distributionStartDate, setDistributionStartDate] = useState(startDate);
-  const [distributionEndDate, setDistributionEndDate] = useState(endDate);
+  const { startDate: twoDaysAgoStart, endDate: twoDaysAgoEnd } = useMemo(
+    () => getTwoDaysAgoRange(),
+    []
+  );
+  const [distributionStartDate, setDistributionStartDate] = useState(twoDaysAgoStart);
+  const [distributionEndDate, setDistributionEndDate] = useState(twoDaysAgoEnd);
   const [startDateFilter, setStartDateFilter] = useState<string | null>(
     todayDate,
   );
   const [endDateFilter, setEndDateFilter] = useState<string | null>(todayDate);
 
   // Chart flow state
-  const [granularity, setGranularity] = useState<"hour" | "day" | "month" | "year">("hour");
+  const [granularity, setGranularity] = useState<
+    "hour" | "day" | "month" | "year"
+  >("hour");
   const [chartBy, setChartBy] = useState<"supplier" | "plant">("supplier");
   const [selectedPemasokId, setSelectedPemasokId] = useState<
     string | undefined
@@ -84,10 +101,46 @@ export default function GasDashboard() {
   );
 
   // Top suppliers/plants date filters
-  const [topSuppliersStart, setTopSuppliersStart] = useState(startDate);
-  const [topSuppliersEnd, setTopSuppliersEnd] = useState(endDate);
-  const [topPlantsStart, setTopPlantsStart] = useState(startDate);
-  const [topPlantsEnd, setTopPlantsEnd] = useState(endDate);
+  const [topSuppliersStart, setTopSuppliersStart] = useState(twoDaysAgoStart);
+  const [topSuppliersEnd, setTopSuppliersEnd] = useState(twoDaysAgoEnd);
+  const [topPlantsStart, setTopPlantsStart] = useState(twoDaysAgoStart);
+  const [topPlantsEnd, setTopPlantsEnd] = useState(twoDaysAgoEnd);
+
+  const formattedTopSuppliersPeriod = useMemo(() => {
+    try {
+      const start = new Date(topSuppliersStart + "T00:00:00").toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      });
+      const end = new Date(topSuppliersEnd + "T00:00:00").toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      });
+      return `${start} - ${end}`;
+    } catch {
+      return `${topSuppliersStart} - ${topSuppliersEnd}`;
+    }
+  }, [topSuppliersStart, topSuppliersEnd]);
+
+  const formattedTopPlantsPeriod = useMemo(() => {
+    try {
+      const start = new Date(topPlantsStart + "T00:00:00").toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      });
+      const end = new Date(topPlantsEnd + "T00:00:00").toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      });
+      return `${start} - ${end}`;
+    } catch {
+      return `${topPlantsStart} - ${topPlantsEnd}`;
+    }
+  }, [topPlantsStart, topPlantsEnd]);
 
   // Fetch top suppliers and plants
   const { data: topSuppliersData, isLoading: isSuppliersLoading } =
@@ -311,8 +364,8 @@ export default function GasDashboard() {
                   <TopVolumeList
                     title="Top 5 Volume Pemasok"
                     list={topPemasokList}
-                    unit={topSuppliersData?.unit || "%"}
-                    description={`List top 5 performa pemasok dengan perhitungan Realisasi/TOP ${topSuppliersData?.unit}`}
+                    unit={topSuppliersData?.unit || "BBTUD"}
+                    description={`List top 5 performa pemasok dengan satuan ${topSuppliersData?.unit || "BBTUD"} per tanggal ${formattedTopSuppliersPeriod}`}
                     startDate={topSuppliersStart}
                     endDate={topSuppliersEnd}
                     onStartDateChange={setTopSuppliersStart}
@@ -330,7 +383,7 @@ export default function GasDashboard() {
                     title="Top 5 Volume Pembangkit"
                     list={topPembangkitList}
                     unit={topPlantsData?.unit || "BBTUD"}
-                    description={`List top 5 performa pembangkit dengan satuan ${topPlantsData?.unit}`}
+                    description={`List top 5 performa pembangkit dengan satuan ${topPlantsData?.unit || "BBTUD"} per tanggal ${formattedTopPlantsPeriod}`}
                     startDate={topPlantsStart}
                     endDate={topPlantsEnd}
                     onStartDateChange={setTopPlantsStart}

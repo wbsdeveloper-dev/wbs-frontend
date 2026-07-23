@@ -148,6 +148,7 @@ export interface Template {
   requiresOcr?: boolean;
   streamConfiguration?: any;
   sourceLinks: SourceLink[];
+  spreadsheetSourceId?: string | null;
   version: number;
   isDefault: boolean;
   waKeywordHint: string | null;
@@ -174,6 +175,7 @@ export interface CreateTemplatePayload {
   requiresOcr?: boolean;
   streamConfiguration?: any;
   sourceLinks?: SourceLink[];
+  spreadsheetSourceId?: string | null;
   waKeywordHint?: string;
   waSenderHint?: string;
   sheetTabHint?: string;
@@ -204,6 +206,7 @@ export interface UpdateTemplatePayload {
   streamConfiguration?: any;
   isDefault?: boolean;
   sourceLinks?: SourceLink[];
+  spreadsheetSourceId?: string | null;
   waKeywordHint?: string | null;
   waSenderHint?: string | null;
   sheetTabHint?: string | null;
@@ -417,8 +420,19 @@ export function updateTemplate(id: string, payload: UpdateTemplatePayload) {
   });
 }
 
+export interface TestTemplateParseResult {
+  extractedText: string;
+  parsedResult: any;
+  reconciliationPreview: any[];
+  context: any;
+  saved?: {
+    count: number;
+    errors: string[];
+  };
+}
+
 export function testTemplateParse(payload: { inboxId: string; template: any; fields: any[] }) {
-  return configFetch<{ extractedText: string; parsedResult: any; reconciliationPreview: any[]; context: any }>(`/config/templates/test-parse`, {
+  return configFetch<TestTemplateParseResult>(`/config/templates/test-parse`, {
     method: "POST",
     body: JSON.stringify(payload),
   });
@@ -595,7 +609,7 @@ export function useUpdateTemplate(
 export function useTestTemplateParse(
   options?: Partial<
     UseMutationOptions<
-      { extractedText: string; parsedResult: any; reconciliationPreview: any[]; context: any; saved: { count: number; errors: string[] } },
+      TestTemplateParseResult,
       Error,
       { inboxId: string; template: any; fields: any[] }
     >

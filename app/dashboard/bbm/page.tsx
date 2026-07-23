@@ -436,6 +436,7 @@ export default function Home() {
   const [distributionStartDate, setDistributionStartDate] =
     useState(initialStart);
   const [distributionEndDate, setDistributionEndDate] = useState(initialEnd);
+  const [distributionModa, setDistributionModa] = useState<string | null>(null);
 
   const [nominationStartDate, setNominationStartDate] = useState(initialStart);
   const [nominationEndDate, setNominationEndDate] = useState(initialEnd);
@@ -551,6 +552,7 @@ export default function Home() {
     const filtered = bbmMonthlyData.filter((record) => {
       if (startMonth && record.reportDate < startMonth) return false;
       if (endMonth && record.reportDate > endMonth) return false;
+      if (distributionModa && record.moda !== distributionModa) return false;
       return true;
     });
 
@@ -589,7 +591,13 @@ export default function Home() {
       }))
       .filter((item) => item.value > 0)
       .sort((a, b) => b.value - a.value); // Sort descending
-  }, [bbmMonthlyData, filterType, distributionStartDate, distributionEndDate]);
+  }, [
+    bbmMonthlyData,
+    filterType,
+    distributionStartDate,
+    distributionEndDate,
+    distributionModa,
+  ]);
 
   // Data for Pencapaian Nominasi
   const nominationData = useMemo(() => {
@@ -1100,6 +1108,9 @@ export default function Home() {
                 title="Volume BBM"
                 descriptionPrefix="Visualisasi volume BBM"
                 tabs={["TBBM", "Pembangkit"]}
+                moda={distributionModa}
+                onModaChange={setDistributionModa}
+                modaOptions={filterModaOptions}
               />
             </div>
 
@@ -1797,6 +1808,9 @@ export default function Home() {
         tabs={["TBBM", "Pembangkit"]}
         descriptionPrefix="Visualisasi volume BBM"
         unit="KL"
+        moda={distributionModa}
+        onModaChange={setDistributionModa}
+        modaOptions={filterModaOptions}
       />
     </div>
   );

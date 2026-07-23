@@ -73,10 +73,73 @@ const createSoftIcon = (color: string) =>
     popupAnchor: [0, -10],
   });
 
+const createPembangkitIcon = (color: string) =>
+  L.divIcon({
+    className: "",
+    html: `
+      <div style="
+        background: ${color};
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        border: 2px solid white;
+        box-shadow: 0 0 0 2px ${color}33, 0 2px 4px rgba(0,0,0,0.15);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      ">
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2 20h20"/>
+          <path d="M20 18v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/>
+          <path d="M3 18v-8l7-5v13"/>
+          <path d="M14 10V4h3v3"/>
+        </svg>
+      </div>
+    `,
+    iconSize: [24, 24],
+    iconAnchor: [12, 12],
+    popupAnchor: [0, -12],
+  });
+
+const createTbbmIcon = (color: string) =>
+  L.divIcon({
+    className: "",
+    html: `
+      <div style="
+        background: ${color};
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        border: 2px solid white;
+        box-shadow: 0 0 0 2px ${color}33, 0 2px 4px rgba(0,0,0,0.15);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      ">
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="3" x2="15" y1="22" y2="22"/>
+          <path d="M4 9h8"/>
+          <path d="M4 22V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v18"/>
+          <path d="M5 15h6"/>
+          <path d="M12 9h4a2 2 0 0 1 2 2v3a2 2 0 0 0 2 2v0a2 2 0 0 1 2 2v4"/>
+        </svg>
+      </div>
+    `,
+    iconSize: [24, 24],
+    iconAnchor: [12, 12],
+    popupAnchor: [0, -12],
+  });
+
 const buildIcons = (legend: MapLegend): Record<string, L.DivIcon> => {
   const icons: Record<string, L.DivIcon> = {};
   legend.siteTypes.forEach((st) => {
-    icons[st.type] = createSoftIcon(st.color);
+    if (st.type === "PEMBANGKIT") {
+      icons[st.type] = createPembangkitIcon(st.color);
+    } else if (st.type === "PEMASOK") {
+      icons[st.type] = createTbbmIcon(st.color);
+    } else {
+      icons[st.type] = createSoftIcon(st.color);
+    }
   });
   return icons;
 };
@@ -128,60 +191,69 @@ export default function Map() {
 
       pdf.addPage();
       pdf.setFontSize(14);
-      pdf.text("Breakdown Relasi TBBM ke Pembangkit Berdasarkan Region", 14, 15);
+      pdf.text(
+        "Breakdown Relasi TBBM ke Pembangkit Berdasarkan Region",
+        14,
+        15,
+      );
 
-      const relationships = filteredPipes.reduce((acc, pipe) => {
-        const source = getSiteById(pipe.sourceSiteId);
-        const target = getSiteById(pipe.targetSiteId);
-        if (!source || !target) return acc;
+      const relationships = filteredPipes.reduce(
+        (acc, pipe) => {
+          const source = getSiteById(pipe.sourceSiteId);
+          const target = getSiteById(pipe.targetSiteId);
+          if (!source || !target) return acc;
 
-        const region = target.region || source.region || "Unknown Region";
+          const region = target.region || source.region || "Unknown Region";
 
-        if (!acc[region]) {
-          acc[region] = [];
-        }
+          if (!acc[region]) {
+            acc[region] = [];
+          }
 
-        acc[region].push({
-          sourceName: source.name,
-          targetName: target.name,
-          commodity: pipe.commodity,
-          status: pipe.status
-        });
+          acc[region].push({
+            sourceName: source.name,
+            targetName: target.name,
+            commodity: pipe.commodity,
+            status: pipe.status,
+          });
 
-        return acc;
-      }, {} as Record<string, any[]>);
+          return acc;
+        },
+        {} as Record<string, any[]>,
+      );
 
       let startY = 25;
 
-      Object.keys(relationships).sort().forEach((region) => {
-        pdf.setFontSize(12);
-        pdf.text(`Region: ${region}`, 14, startY);
-        startY += 5;
+      Object.keys(relationships)
+        .sort()
+        .forEach((region) => {
+          pdf.setFontSize(12);
+          pdf.text(`Region: ${region}`, 14, startY);
+          startY += 5;
 
-        const regionData = relationships[region].map((rel, index) => [
-          index + 1,
-          rel.sourceName,
-          rel.targetName,
-          rel.commodity || "-"
-        ]);
+          const regionData = relationships[region].map((rel, index) => [
+            index + 1,
+            rel.targetName,
+            rel.sourceName,
+            rel.commodity || "-",
+          ]);
 
-        autoTable(pdf, {
-          startY: startY,
-          head: [["No", "TBBM", "Pembangkit", "Komoditas"]],
-          body: regionData,
-          theme: 'grid',
-          headStyles: { fillColor: [41, 128, 185], textColor: 255 },
-          styles: { fontSize: 10 },
-          margin: { left: 14, right: 14 },
+          autoTable(pdf, {
+            startY: startY,
+            head: [["No", "Pembangkit", "TBBM", "Komoditas"]],
+            body: regionData,
+            theme: "grid",
+            headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+            styles: { fontSize: 10 },
+            margin: { left: 14, right: 14 },
+          });
+
+          startY = (pdf as any).lastAutoTable.finalY + 15;
+
+          if (startY > pdf.internal.pageSize.getHeight() - 20) {
+            pdf.addPage();
+            startY = 20;
+          }
         });
-
-        startY = (pdf as any).lastAutoTable.finalY + 15;
-
-        if (startY > pdf.internal.pageSize.getHeight() - 20) {
-          pdf.addPage();
-          startY = 20;
-        }
-      });
 
       pdf.save(`peta-bbm-${new Date().toISOString().split("T")[0]}.pdf`);
     } catch (err) {
@@ -625,19 +697,19 @@ export default function Map() {
                         <div className="mt-2 pt-2 border-t border-gray-200 space-y-1">
                           {(site.siteType === "PEMASOK" ||
                             site.siteType === "PEMBANGKIT") && (
-                              <div className="flex justify-between text-xs">
-                                <span className="text-gray-500">
-                                  {site.siteType === "PEMASOK"
-                                    ? "Jumlah Pembangkit:"
-                                    : "Jumlah TBBM:"}
-                                </span>
-                                <span className="font-medium text-gray-700">
-                                  {site.siteType === "PEMASOK"
-                                    ? summary?.pembangkitList?.length || 0
-                                    : summary?.pemasokList?.length || 0}
-                                </span>
-                              </div>
-                            )}
+                            <div className="flex justify-between text-xs">
+                              <span className="text-gray-500">
+                                {site.siteType === "PEMASOK"
+                                  ? "Jumlah Pembangkit:"
+                                  : "Jumlah TBBM:"}
+                              </span>
+                              <span className="font-medium text-gray-700">
+                                {site.siteType === "PEMASOK"
+                                  ? summary?.pembangkitList?.length || 0
+                                  : summary?.pemasokList?.length || 0}
+                              </span>
+                            </div>
+                          )}
                           <div className="flex justify-between text-xs">
                             <span className="text-gray-500">Region:</span>
                             <span className="font-medium text-gray-700">
@@ -808,10 +880,11 @@ export default function Map() {
                         <button
                           key={st.type}
                           onClick={() => toggleSiteType(st.type)}
-                          className={`flex items-center gap-2 w-full py-1 px-1.5 rounded-md transition-all ${isVisible
-                            ? `bg-opacity-10`
-                            : "bg-gray-100 opacity-60"
-                            }`}
+                          className={`flex items-center gap-2 w-full py-1 px-1.5 rounded-md transition-all ${
+                            isVisible
+                              ? `bg-opacity-10`
+                              : "bg-gray-100 opacity-60"
+                          }`}
                           style={
                             isVisible
                               ? { backgroundColor: `${st.color}1A` }
@@ -844,9 +917,7 @@ export default function Map() {
                     customLegend.pipeTypes.length > 0 && (
                       <div className="pt-1 border-t border-gray-200">
                         <div className="flex items-center justify-between mb-1">
-                          <p className="text-[10px] text-gray-500">
-                            Relasi
-                          </p>
+                          <p className="text-[10px] text-gray-500">Relasi</p>
                           <button
                             onClick={() => setShowPipes(!showPipes)}
                             className="p-1 hover:bg-gray-100 rounded transition-colors"
@@ -858,18 +929,19 @@ export default function Map() {
                             )}
                           </button>
                         </div>
-                        {showPipes && customLegend.pipeTypes.map((pt) => (
-                          <div
-                            key={pt.type}
-                            className="flex items-center gap-1.5 text-xs text-gray-600 py-0.5"
-                          >
-                            <span
-                              className="w-6 h-0.5"
-                              style={{ backgroundColor: pt.color }}
-                            />
-                            {pt.label}
-                          </div>
-                        ))}
+                        {showPipes &&
+                          customLegend.pipeTypes.map((pt) => (
+                            <div
+                              key={pt.type}
+                              className="flex items-center gap-1.5 text-xs text-gray-600 py-0.5"
+                            >
+                              <span
+                                className="w-6 h-0.5"
+                                style={{ backgroundColor: pt.color }}
+                              />
+                              {pt.label}
+                            </div>
+                          ))}
                       </div>
                     )}
                 </div>
@@ -946,10 +1018,11 @@ export default function Map() {
                 <div className="flex flex-wrap gap-1.5">
                   <button
                     onClick={() => setSelectedModes([])}
-                    className={`px-3 py-1 text-xs font-medium rounded-md transition-all duration-200 cursor-pointer ${selectedModes.length === 0
-                      ? "bg-primary text-white"
-                      : "text-gray-600 hover:text-secondary hover:bg-gray-50"
-                      }`}
+                    className={`px-3 py-1 text-xs font-medium rounded-md transition-all duration-200 cursor-pointer ${
+                      selectedModes.length === 0
+                        ? "bg-primary text-white"
+                        : "text-gray-600 hover:text-secondary hover:bg-gray-50"
+                    }`}
                   >
                     All
                   </button>
@@ -963,10 +1036,11 @@ export default function Map() {
                             : [...prev, mode],
                         );
                       }}
-                      className={`px-3 py-1 text-xs font-medium rounded-md transition-all duration-200 cursor-pointer ${selectedModes.includes(mode)
-                        ? "bg-primary text-white"
-                        : "text-gray-600 hover:text-secondary hover:bg-gray-50"
-                        }`}
+                      className={`px-3 py-1 text-xs font-medium rounded-md transition-all duration-200 cursor-pointer ${
+                        selectedModes.includes(mode)
+                          ? "bg-primary text-white"
+                          : "text-gray-600 hover:text-secondary hover:bg-gray-50"
+                      }`}
                     >
                       {mode}
                     </button>
@@ -979,10 +1053,11 @@ export default function Map() {
                 <div className="flex flex-wrap gap-1.5">
                   <button
                     onClick={() => setSelectedProducts([])}
-                    className={`px-3 py-1 text-xs font-medium rounded-md transition-all duration-200 cursor-pointer ${selectedProducts.length === 0
-                      ? "bg-primary text-white"
-                      : "text-gray-600 hover:text-secondary hover:bg-gray-50"
-                      }`}
+                    className={`px-3 py-1 text-xs font-medium rounded-md transition-all duration-200 cursor-pointer ${
+                      selectedProducts.length === 0
+                        ? "bg-primary text-white"
+                        : "text-gray-600 hover:text-secondary hover:bg-gray-50"
+                    }`}
                   >
                     All
                   </button>
@@ -997,10 +1072,11 @@ export default function Map() {
                               : [...prev, prod],
                           );
                         }}
-                        className={`px-3 py-1 text-xs font-medium rounded-md transition-all duration-200 cursor-pointer ${selectedProducts.includes(prod)
-                          ? "bg-primary text-white"
-                          : "text-gray-600 hover:text-secondary hover:bg-gray-50"
-                          }`}
+                        className={`px-3 py-1 text-xs font-medium rounded-md transition-all duration-200 cursor-pointer ${
+                          selectedProducts.includes(prod)
+                            ? "bg-primary text-white"
+                            : "text-gray-600 hover:text-secondary hover:bg-gray-50"
+                        }`}
                       >
                         {prod}
                       </button>
@@ -1039,10 +1115,10 @@ export default function Map() {
 
               const filteredModalList = modalSearchQuery
                 ? modalSiteList.list.filter((site) =>
-                  site.name
-                    .toLowerCase()
-                    .includes(modalSearchQuery.toLowerCase()),
-                )
+                    site.name
+                      .toLowerCase()
+                      .includes(modalSearchQuery.toLowerCase()),
+                  )
                 : modalSiteList.list;
 
               let grandNom = 0;
@@ -1215,114 +1291,114 @@ export default function Map() {
                                 {/* Product Breakdown */}
                                 {(siteActiveProds.length > 0 ||
                                   siteActiveModas.length > 0) && (
-                                    <div className="p-3">
-                                      <p className="text-[10px] font-bold text-gray-400 mb-2 uppercase">
-                                        Produk & Moda Realisasi
-                                      </p>
-                                      <div className="flex flex-col gap-3">
-                                        {siteActiveProds.map((prod) => (
-                                          <div
-                                            key={prod}
-                                            className="flex flex-col gap-2"
-                                          >
-                                            <div className="flex items-center gap-4">
-                                              <span className="font-bold text-gray-800 text-sm w-8">
-                                                {prod}
-                                              </span>
-                                              <div className="flex items-center gap-4 text-xs">
-                                                <div className="flex flex-col items-center">
-                                                  <span className="text-[9px] font-bold text-gray-400 uppercase">
-                                                    Nom
-                                                  </span>
-                                                  <span className="font-medium text-gray-600">
-                                                    {(
-                                                      p[`totalNominasi${prod}`] ||
-                                                      0
-                                                    ).toLocaleString()}
-                                                  </span>
-                                                </div>
-                                                <div className="flex flex-col items-center">
-                                                  <span className="text-[9px] font-bold text-gray-400 uppercase">
-                                                    Real
-                                                  </span>
-                                                  <span className="font-bold text-emerald-600">
-                                                    {(
-                                                      p[
+                                  <div className="p-3">
+                                    <p className="text-[10px] font-bold text-gray-400 mb-2 uppercase">
+                                      Produk & Moda Realisasi
+                                    </p>
+                                    <div className="flex flex-col gap-3">
+                                      {siteActiveProds.map((prod) => (
+                                        <div
+                                          key={prod}
+                                          className="flex flex-col gap-2"
+                                        >
+                                          <div className="flex items-center gap-4">
+                                            <span className="font-bold text-gray-800 text-sm w-8">
+                                              {prod}
+                                            </span>
+                                            <div className="flex items-center gap-4 text-xs">
+                                              <div className="flex flex-col items-center">
+                                                <span className="text-[9px] font-bold text-gray-400 uppercase">
+                                                  Nom
+                                                </span>
+                                                <span className="font-medium text-gray-600">
+                                                  {(
+                                                    p[`totalNominasi${prod}`] ||
+                                                    0
+                                                  ).toLocaleString()}
+                                                </span>
+                                              </div>
+                                              <div className="flex flex-col items-center">
+                                                <span className="text-[9px] font-bold text-gray-400 uppercase">
+                                                  Real
+                                                </span>
+                                                <span className="font-bold text-emerald-600">
+                                                  {(
+                                                    p[
                                                       `totalRealisasi${prod}`
-                                                      ] || 0
-                                                    ).toLocaleString()}
-                                                  </span>
-                                                </div>
-                                                <div className="flex flex-col items-center">
-                                                  <span className="text-[9px] font-bold text-gray-400 uppercase">
-                                                    Pem
-                                                  </span>
-                                                  <span className="font-medium text-gray-600">
-                                                    {(
-                                                      p[
+                                                    ] || 0
+                                                  ).toLocaleString()}
+                                                </span>
+                                              </div>
+                                              <div className="flex flex-col items-center">
+                                                <span className="text-[9px] font-bold text-gray-400 uppercase">
+                                                  Pem
+                                                </span>
+                                                <span className="font-medium text-gray-600">
+                                                  {(
+                                                    p[
                                                       `totalPemakaian${prod}`
-                                                      ] || 0
-                                                    ).toLocaleString()}
-                                                  </span>
-                                                </div>
+                                                    ] || 0
+                                                  ).toLocaleString()}
+                                                </span>
                                               </div>
                                             </div>
-                                            {/* Moda specifically for this product */}
-                                            {(() => {
-                                              const productActiveModas =
-                                                MODES.filter(
-                                                  (moda) =>
-                                                    (p[
-                                                      `totalRealisasi${prod}_${moda}`
-                                                    ] || 0) > 0,
-                                                );
-
-                                              if (productActiveModas.length === 0)
-                                                return null;
-
-                                              return (
-                                                <div className="flex gap-2 flex-wrap ml-12">
-                                                  {productActiveModas.map(
-                                                    (moda) => (
-                                                      <div
-                                                        key={moda}
-                                                        className="flex items-center gap-1.5 bg-emerald-50 px-2 py-1 rounded-full border border-emerald-200 text-[10px]"
-                                                      >
-                                                        {moda
-                                                          .toLowerCase()
-                                                          .includes("kapal") ? (
-                                                          <Ship
-                                                            size={10}
-                                                            className="text-emerald-600"
-                                                          />
-                                                        ) : (
-                                                          <Truck
-                                                            size={10}
-                                                            className="text-emerald-600"
-                                                          />
-                                                        )}
-                                                        <span className="text-emerald-700 font-medium">
-                                                          {moda}
-                                                        </span>
-                                                        <span className="font-bold text-emerald-700">
-                                                          {(
-                                                            p[
-                                                            `totalRealisasi${prod}_${moda}`
-                                                            ] || 0
-                                                          ).toLocaleString()}{" "}
-                                                          kL
-                                                        </span>
-                                                      </div>
-                                                    ),
-                                                  )}
-                                                </div>
-                                              );
-                                            })()}
                                           </div>
-                                        ))}
-                                      </div>
+                                          {/* Moda specifically for this product */}
+                                          {(() => {
+                                            const productActiveModas =
+                                              MODES.filter(
+                                                (moda) =>
+                                                  (p[
+                                                    `totalRealisasi${prod}_${moda}`
+                                                  ] || 0) > 0,
+                                              );
+
+                                            if (productActiveModas.length === 0)
+                                              return null;
+
+                                            return (
+                                              <div className="flex gap-2 flex-wrap ml-12">
+                                                {productActiveModas.map(
+                                                  (moda) => (
+                                                    <div
+                                                      key={moda}
+                                                      className="flex items-center gap-1.5 bg-emerald-50 px-2 py-1 rounded-full border border-emerald-200 text-[10px]"
+                                                    >
+                                                      {moda
+                                                        .toLowerCase()
+                                                        .includes("kapal") ? (
+                                                        <Ship
+                                                          size={10}
+                                                          className="text-emerald-600"
+                                                        />
+                                                      ) : (
+                                                        <Truck
+                                                          size={10}
+                                                          className="text-emerald-600"
+                                                        />
+                                                      )}
+                                                      <span className="text-emerald-700 font-medium">
+                                                        {moda}
+                                                      </span>
+                                                      <span className="font-bold text-emerald-700">
+                                                        {(
+                                                          p[
+                                                            `totalRealisasi${prod}_${moda}`
+                                                          ] || 0
+                                                        ).toLocaleString()}{" "}
+                                                        kL
+                                                      </span>
+                                                    </div>
+                                                  ),
+                                                )}
+                                              </div>
+                                            );
+                                          })()}
+                                        </div>
+                                      ))}
                                     </div>
-                                  )}
+                                  </div>
+                                )}
                               </li>
                             );
                           })}
@@ -1420,44 +1496,44 @@ export default function Map() {
                                   {MODES.filter(
                                     (m) => prodModaSummary[prod][m] > 0,
                                   ).length > 0 && (
-                                      <div className="p-3 bg-emerald-50/50">
-                                        <div className="flex flex-col gap-2">
-                                          {MODES.filter(
-                                            (m) => prodModaSummary[prod][m] > 0,
-                                          ).map((moda) => (
-                                            <div
-                                              key={moda}
-                                              className="flex justify-between items-center"
-                                            >
-                                              <div className="flex items-center gap-1.5 text-xs">
-                                                {moda
-                                                  .toLowerCase()
-                                                  .includes("kapal") ? (
-                                                  <Ship
-                                                    size={12}
-                                                    className="text-emerald-500"
-                                                  />
-                                                ) : (
-                                                  <Truck
-                                                    size={12}
-                                                    className="text-emerald-500"
-                                                  />
-                                                )}
-                                                <span className="text-emerald-700 font-medium">
-                                                  {moda}
-                                                </span>
-                                              </div>
-                                              <span className="font-bold text-emerald-700 text-xs">
-                                                {prodModaSummary[prod][
-                                                  moda
-                                                ].toLocaleString()}{" "}
-                                                kL
+                                    <div className="p-3 bg-emerald-50/50">
+                                      <div className="flex flex-col gap-2">
+                                        {MODES.filter(
+                                          (m) => prodModaSummary[prod][m] > 0,
+                                        ).map((moda) => (
+                                          <div
+                                            key={moda}
+                                            className="flex justify-between items-center"
+                                          >
+                                            <div className="flex items-center gap-1.5 text-xs">
+                                              {moda
+                                                .toLowerCase()
+                                                .includes("kapal") ? (
+                                                <Ship
+                                                  size={12}
+                                                  className="text-emerald-500"
+                                                />
+                                              ) : (
+                                                <Truck
+                                                  size={12}
+                                                  className="text-emerald-500"
+                                                />
+                                              )}
+                                              <span className="text-emerald-700 font-medium">
+                                                {moda}
                                               </span>
                                             </div>
-                                          ))}
-                                        </div>
+                                            <span className="font-bold text-emerald-700 text-xs">
+                                              {prodModaSummary[prod][
+                                                moda
+                                              ].toLocaleString()}{" "}
+                                              kL
+                                            </span>
+                                          </div>
+                                        ))}
                                       </div>
-                                    )}
+                                    </div>
+                                  )}
                                   <div className="flex justify-between items-center p-3 border-t border-gray-100">
                                     <span className="text-gray-600 font-medium">
                                       Pemakaian

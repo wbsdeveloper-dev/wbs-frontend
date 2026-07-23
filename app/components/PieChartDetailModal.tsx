@@ -31,6 +31,10 @@ interface PieChartDetailModalProps {
   tabs?: string[];
   descriptionPrefix?: string;
   unit?: string;
+  /** Optional moda filter support */
+  moda?: string | null;
+  onModaChange?: (value: string | null) => void;
+  modaOptions?: string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -51,6 +55,9 @@ export default function PieChartDetailModal({
   tabs = ["Pemasok", "Pembangkit"],
   descriptionPrefix = "Visualisasi konsumsi gas",
   unit = "BBTU",
+  moda,
+  onModaChange,
+  modaOptions = [],
 }: PieChartDetailModalProps) {
   const total = useMemo(() => data.reduce((sum, d) => sum + d.value, 0), [data]);
 
@@ -147,6 +154,22 @@ export default function PieChartDetailModal({
                          transition-all duration-200"
             />
           </div>
+
+          {/* Moda select */}
+          {onModaChange && (
+            <select
+              value={moda || ""}
+              onChange={(e) => onModaChange(e.target.value || null)}
+              className="px-3 py-1.5 rounded-lg text-sm border border-gray-300 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-secondary/40 focus:border-secondary transition-all duration-200"
+            >
+              <option value="">Semua Moda</option>
+              {modaOptions.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
       </div>
 

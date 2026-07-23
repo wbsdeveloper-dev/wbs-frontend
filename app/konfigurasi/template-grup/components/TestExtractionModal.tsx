@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useGetEmailInbox, useTestTemplateParse } from "../../../../hooks/service/config-api";
-import type { UpdateTemplatePayload } from "../../../../hooks/service/config-api";
+import type { UpdateTemplatePayload, EmailInboxRecord } from "../../../../hooks/service/config-api";
 import { useQueryClient } from "@tanstack/react-query";
 
 interface TestExtractionModalProps {
@@ -66,9 +66,17 @@ export function TestExtractionModal({ isOpen, onClose, templateData }: TestExtra
   const { data: inbox } = useGetEmailInbox();
   const qc = useQueryClient();
   const testParseMutation = useTestTemplateParse({
-    onSuccess: () => {
+    onSuccess: (data) => {
       // Invalidate email inbox so is_processed reflects correctly
       qc.invalidateQueries({ queryKey: ["email-inbox"] });
+
+      console.log("=== OUTPUT FORMAT AFTER AI PROCESSING (parsedResult) ===");
+      console.log(data?.parsedResult);
+      console.log("======================================================");
+
+      console.log("=== DATA BEFORE SAVE TO RECONCILIATION (reconciliationPreview) ===");
+      console.log(data?.reconciliationPreview);
+      console.log("==================================================================");
     },
   });
   const [selectedInboxId, setSelectedInboxId] = useState<string>("");
@@ -77,7 +85,7 @@ export function TestExtractionModal({ isOpen, onClose, templateData }: TestExtra
   if (!isOpen) return null;
 
   const filteredInbox = inbox?.filter(
-    (item: any) => templateData.spreadsheetSourceId ? item.email_source_id === templateData.spreadsheetSourceId : true
+    (item: EmailInboxRecord) => templateData.spreadsheetSourceId ? item.email_source_id === templateData.spreadsheetSourceId : true
   ) || [];
 
   const handleTest = () => {
@@ -89,7 +97,7 @@ export function TestExtractionModal({ isOpen, onClose, templateData }: TestExtra
     });
   };
 
-  const result = testParseMutation.data as any;
+  const result = testParseMutation.data;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 overflow-y-auto">
