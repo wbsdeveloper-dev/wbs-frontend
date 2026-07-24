@@ -93,8 +93,8 @@ export default function Map({ commodity }: { commodity?: string }) {
   const handleExportImage = async () => {
     if (!mapRef.current) return;
     try {
-      const dataUrl = await htmlToImage.toPng(mapRef.current, { 
-        backgroundColor: "#ffffff", 
+      const dataUrl = await htmlToImage.toPng(mapRef.current, {
+        backgroundColor: "#ffffff",
         pixelRatio: 2,
         filter: filterExportButtons as any,
       });
@@ -110,70 +110,70 @@ export default function Map({ commodity }: { commodity?: string }) {
   const handleExportPDF = async () => {
     if (!mapRef.current) return;
     try {
-      const canvas = await htmlToImage.toCanvas(mapRef.current, { 
-        backgroundColor: "#ffffff", 
+      const canvas = await htmlToImage.toCanvas(mapRef.current, {
+        backgroundColor: "#ffffff",
         pixelRatio: 2,
         filter: filterExportButtons as any,
       });
       const imgData = canvas.toDataURL("image/png");
-      
+
       const pdf = new jsPDF("l", "mm", "a4");
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      
+
       pdf.addImage(imgData, "PNG", 0, 10, pdfWidth, pdfHeight);
 
       pdf.addPage();
       pdf.setFontSize(14);
-      pdf.text("Breakdown Relasi Pemasok ke Pembangkit Berdasarkan Region", 14, 15);
+      pdf.text("Breakdown Relasi Pembangkit dan Pemasok Berdasarkan Region", 14, 15);
 
       const relationships = filteredPipes.reduce((acc, pipe) => {
         const source = getSiteById(pipe.sourceSiteId);
         const target = getSiteById(pipe.targetSiteId);
         if (!source || !target) return acc;
-        
+
         const region = target.region || source.region || "Unknown Region";
-        
+
         if (!acc[region]) {
           acc[region] = [];
         }
-        
+
         acc[region].push({
           sourceName: source.name,
           targetName: target.name,
           commodity: pipe.commodity,
           status: pipe.status
         });
-        
+
         return acc;
       }, {} as Record<string, any[]>);
 
       let startY = 25;
-      
+
       Object.keys(relationships).sort().forEach((region) => {
         pdf.setFontSize(12);
         pdf.text(`Region: ${region}`, 14, startY);
         startY += 5;
-        
+
         const regionData = relationships[region].map((rel, index) => [
           index + 1,
-          rel.sourceName,
           rel.targetName,
+          rel.sourceName,
           rel.commodity || "-"
         ]);
 
         autoTable(pdf, {
           startY: startY,
-          head: [["No", "Pemasok", "Pembangkit", "Komoditas"]],
+          head: [["No", "Pembangkit", "Pemasok", "Komoditas"]],
           body: regionData,
           theme: 'grid',
           headStyles: { fillColor: [41, 128, 185], textColor: 255 },
           styles: { fontSize: 10 },
           margin: { left: 14, right: 14 },
         });
-        
+
         startY = (pdf as any).lastAutoTable.finalY + 15;
-        
+
         if (startY > pdf.internal.pageSize.getHeight() - 20) {
           pdf.addPage();
           startY = 20;
@@ -491,223 +491,223 @@ export default function Map({ commodity }: { commodity?: string }) {
             </div>
           </div>
 
-        <div className="relative h-[250px] sm:h-[300px] md:h-[350px] lg:h-[400px] w-full">
-          <MapContainer
-            center={[-2.5, 118]}
-            zoom={5}
-            scrollWheelZoom={true}
-            className="h-full w-full rounded-lg z-0"
-          >
-            <TileLayer
-              attribution="&copy; OpenStreetMap contributors"
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
+          <div className="relative h-[250px] sm:h-[300px] md:h-[350px] lg:h-[400px] w-full">
+            <MapContainer
+              center={[-2.5, 118]}
+              zoom={5}
+              scrollWheelZoom={true}
+              className="h-full w-full rounded-lg z-0"
+            >
+              <TileLayer
+                attribution="&copy; OpenStreetMap contributors"
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
 
-            {/* PIPES */}
-            {showPipes &&
-              filteredPipes.map((pipe) => {
-                const source = getSiteById(pipe.sourceSiteId);
-                const target = getSiteById(pipe.targetSiteId);
-                if (!source || !target) return null;
+              {/* PIPES */}
+              {showPipes &&
+                filteredPipes.map((pipe) => {
+                  const source = getSiteById(pipe.sourceSiteId);
+                  const target = getSiteById(pipe.targetSiteId);
+                  if (!source || !target) return null;
 
-                return (
-                  <Polyline
-                    key={pipe.id}
-                    positions={[
-                      [Number(source.lat), Number(source.lng)] as LatLngTuple,
-                      [Number(target.lat), Number(target.lng)] as LatLngTuple,
-                    ]}
-                    pathOptions={{
-                      color: getPipeTypeColor(pipe.relationType),
-                      weight: 3,
-                      opacity: 0.8,
-                    }}
-                  >
-                    <Tooltip sticky>
-                      <div className="text-xs">
-                        <p className="font-medium">
-                          {source.name} → {target.name}
-                        </p>
-                        <p>Komoditas: {pipe.commodity}</p>
-                        <p>Status: {pipe.status}</p>
-                      </div>
-                    </Tooltip>
-                  </Polyline>
-                );
-              })}
-
-            {/* SITE MARKERS */}
-            {filteredSites.map((site) => {
-              const icon = icons[site.siteType];
-              const connected = getConnectedSites(site.id);
-
-              return (
-                <Marker
-                  key={site.id}
-                  position={[Number(site.lat), Number(site.lng)] as LatLngTuple}
-                  icon={icon}
-                >
-                  <Popup>
-                    <div className="min-w-[180px]">
-                      <p
-                        className="font-semibold text-sm"
-                        style={{ color: getSiteTypeColor(site.siteType) }}
-                      >
-                        {getSiteTypeLabel(site.siteType)}
-                      </p>
-                      <p className="text-sm font-medium text-gray-800">
-                        {site.name}
-                      </p>
-                      <div className="mt-2 pt-2 border-t border-gray-200 space-y-1">
-                        <div className="flex justify-between text-xs">
-                          <span className="text-gray-500">Region:</span>
-                          <span className="font-medium text-gray-700">
-                            {site.region}
-                          </span>
-                        </div>
-                        {site.siteType === "PEMBANGKIT" && site.capacity && (
-                          <div className="flex justify-between text-xs">
-                            <span className="text-gray-500">Kapasitas:</span>
-                            <span className="font-medium text-primary">
-                              {parseFloat(site.capacity).toLocaleString()} MW
-                            </span>
-                          </div>
-                        )}
-                        {site.siteType === "PEMBANGKIT" && site.owner && (
-                          <div className="flex justify-between text-xs">
-                            <span className="text-gray-500">Kepemilikan:</span>
-                            <span className="font-medium text-gray-700">
-                              {site.owner}
-                            </span>
-                          </div>
-                        )}
-                        <div className="flex justify-between text-xs">
-                          <span className="text-gray-500">Koordinat:</span>
-                          <span className="font-medium text-gray-700">
-                            {site.lat != null ? Number(site.lat).toFixed(4) : ""}, {site.lng != null ? Number(site.lng).toFixed(4) : ""}
-                          </span>
-                        </div>
-                      </div>
-                      {connected.length > 0 && (
-                        <div className="mt-2 pt-2 border-t border-gray-200">
-                          <p className="text-xs text-gray-500 mb-1">
-                            {site.siteType === "PEMBANGKIT"
-                              ? "Pemasok:"
-                              : site.siteType === "PEMASOK"
-                              ? "Pembangkit:"
-                              : "Relasi:"}
-                          </p>
-                          <ul className="text-xs text-gray-700 space-y-0.5">
-                            {connected.map((c) => (
-                              <li
-                                key={c.id}
-                                className="flex items-center gap-1"
-                              >
-                                <span
-                                  className="w-1.5 h-1.5 rounded-full"
-                                  style={{
-                                    backgroundColor: getSiteTypeColor(
-                                      c.siteType,
-                                    ),
-                                  }}
-                                />
-                                {c.name}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
-                  </Popup>
-                </Marker>
-              );
-            })}
-          </MapContainer>
-
-          {/* INTERACTIVE LEGEND - Collapsible */}
-          <div className="absolute bottom-2 left-2 sm:bottom-4 sm:left-4 z-1000">
-            {!legendExpanded ? (
-              <button
-                onClick={() => setLegendExpanded(true)}
-                className="flex items-center gap-2 bg-white/95 backdrop-blur rounded-lg shadow-lg px-3 py-2 text-xs hover:bg-white transition-all"
-              >
-                <Layers size={16} className="text-primary" />
-                <span className="text-gray-700 font-medium">Legend</span>
-                <ChevronUp size={14} className="text-gray-400" />
-              </button>
-            ) : (
-              <div className="bg-white/95 backdrop-blur rounded-lg shadow-lg px-3 py-2 sm:px-4 sm:py-3 text-xs space-y-2 min-w-[140px]">
-                {/* Header with collapse button */}
-                <div className="flex items-center justify-between border-b border-gray-200 pb-1.5 mb-1">
-                  <span className="text-gray-700 font-semibold text-xs">
-                    Keterangan Map
-                  </span>
-                  <button
-                    onClick={() => setLegendExpanded(false)}
-                    className="p-1 hover:bg-gray-100 rounded transition-colors"
-                  >
-                    <ChevronDown size={14} className="text-gray-500" />
-                  </button>
-                </div>
-
-                {/* Site type toggles — driven by legend */}
-                {data.legend.siteTypes.map((st) => {
-                  const isVisible = visibleSiteTypes[st.type] ?? true;
                   return (
-                    <button
-                      key={st.type}
-                      onClick={() => toggleSiteType(st.type)}
-                      className={`flex items-center gap-2 w-full py-1 px-1.5 rounded-md transition-all ${isVisible ? `bg-opacity-10` : "bg-gray-100 opacity-60"
-                        }`}
-                      style={
-                        isVisible
-                          ? { backgroundColor: `${st.color}1A` }
-                          : undefined
-                      }
+                    <Polyline
+                      key={pipe.id}
+                      positions={[
+                        [Number(source.lat), Number(source.lng)] as LatLngTuple,
+                        [Number(target.lat), Number(target.lng)] as LatLngTuple,
+                      ]}
+                      pathOptions={{
+                        color: getPipeTypeColor(pipe.relationType),
+                        weight: 3,
+                        opacity: 0.8,
+                      }}
                     >
-                      <span
-                        className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full`}
-                        style={{
-                          backgroundColor: st.color,
-                          boxShadow: isVisible
-                            ? `0 0 0 4px ${st.color}33`
-                            : "none",
-                        }}
-                      />
-                      <span className="text-gray-700 text-xs flex-1 text-left">
-                        {st.label}
-                      </span>
-                      {isVisible ? (
-                        <Eye size={14} style={{ color: st.color }} />
-                      ) : (
-                        <EyeOff size={14} className="text-gray-400" />
-                      )}
-                    </button>
+                      <Tooltip sticky>
+                        <div className="text-xs">
+                          <p className="font-medium">
+                            {source.name} → {target.name}
+                          </p>
+                          <p>Komoditas: {pipe.commodity}</p>
+                          <p>Status: {pipe.status}</p>
+                        </div>
+                      </Tooltip>
+                    </Polyline>
                   );
                 })}
 
-                {/* Pipe type legend items */}
-                {data.legend.pipeTypes.length > 0 && (
-                  <div className="pt-1 border-t border-gray-200">
-                    <p className="text-[10px] text-gray-500 mb-1">Jenis Pipa</p>
-                    {data.legend.pipeTypes.map((pt) => (
-                      <div
-                        key={pt.type}
-                        className="flex items-center gap-1.5 text-xs text-gray-600 py-0.5"
+              {/* SITE MARKERS */}
+              {filteredSites.map((site) => {
+                const icon = icons[site.siteType];
+                const connected = getConnectedSites(site.id);
+
+                return (
+                  <Marker
+                    key={site.id}
+                    position={[Number(site.lat), Number(site.lng)] as LatLngTuple}
+                    icon={icon}
+                  >
+                    <Popup>
+                      <div className="min-w-[180px]">
+                        <p
+                          className="font-semibold text-sm"
+                          style={{ color: getSiteTypeColor(site.siteType) }}
+                        >
+                          {getSiteTypeLabel(site.siteType)}
+                        </p>
+                        <p className="text-sm font-medium text-gray-800">
+                          {site.name}
+                        </p>
+                        <div className="mt-2 pt-2 border-t border-gray-200 space-y-1">
+                          <div className="flex justify-between text-xs">
+                            <span className="text-gray-500">Region:</span>
+                            <span className="font-medium text-gray-700">
+                              {site.region}
+                            </span>
+                          </div>
+                          {site.siteType === "PEMBANGKIT" && site.capacity && (
+                            <div className="flex justify-between text-xs">
+                              <span className="text-gray-500">Kapasitas:</span>
+                              <span className="font-medium text-primary">
+                                {parseFloat(site.capacity).toLocaleString()} MW
+                              </span>
+                            </div>
+                          )}
+                          {site.siteType === "PEMBANGKIT" && site.owner && (
+                            <div className="flex justify-between text-xs">
+                              <span className="text-gray-500">Kepemilikan:</span>
+                              <span className="font-medium text-gray-700">
+                                {site.owner}
+                              </span>
+                            </div>
+                          )}
+                          <div className="flex justify-between text-xs">
+                            <span className="text-gray-500">Koordinat:</span>
+                            <span className="font-medium text-gray-700">
+                              {site.lat != null ? Number(site.lat).toFixed(4) : ""}, {site.lng != null ? Number(site.lng).toFixed(4) : ""}
+                            </span>
+                          </div>
+                        </div>
+                        {connected.length > 0 && (
+                          <div className="mt-2 pt-2 border-t border-gray-200">
+                            <p className="text-xs text-gray-500 mb-1">
+                              {site.siteType === "PEMBANGKIT"
+                                ? "Pemasok:"
+                                : site.siteType === "PEMASOK"
+                                  ? "Pembangkit:"
+                                  : "Relasi:"}
+                            </p>
+                            <ul className="text-xs text-gray-700 space-y-0.5">
+                              {connected.map((c) => (
+                                <li
+                                  key={c.id}
+                                  className="flex items-center gap-1"
+                                >
+                                  <span
+                                    className="w-1.5 h-1.5 rounded-full"
+                                    style={{
+                                      backgroundColor: getSiteTypeColor(
+                                        c.siteType,
+                                      ),
+                                    }}
+                                  />
+                                  {c.name}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    </Popup>
+                  </Marker>
+                );
+              })}
+            </MapContainer>
+
+            {/* INTERACTIVE LEGEND - Collapsible */}
+            <div className="absolute bottom-2 left-2 sm:bottom-4 sm:left-4 z-1000">
+              {!legendExpanded ? (
+                <button
+                  onClick={() => setLegendExpanded(true)}
+                  className="flex items-center gap-2 bg-white/95 backdrop-blur rounded-lg shadow-lg px-3 py-2 text-xs hover:bg-white transition-all"
+                >
+                  <Layers size={16} className="text-primary" />
+                  <span className="text-gray-700 font-medium">Legend</span>
+                  <ChevronUp size={14} className="text-gray-400" />
+                </button>
+              ) : (
+                <div className="bg-white/95 backdrop-blur rounded-lg shadow-lg px-3 py-2 sm:px-4 sm:py-3 text-xs space-y-2 min-w-[140px]">
+                  {/* Header with collapse button */}
+                  <div className="flex items-center justify-between border-b border-gray-200 pb-1.5 mb-1">
+                    <span className="text-gray-700 font-semibold text-xs">
+                      Keterangan Map
+                    </span>
+                    <button
+                      onClick={() => setLegendExpanded(false)}
+                      className="p-1 hover:bg-gray-100 rounded transition-colors"
+                    >
+                      <ChevronDown size={14} className="text-gray-500" />
+                    </button>
+                  </div>
+
+                  {/* Site type toggles — driven by legend */}
+                  {data.legend.siteTypes.map((st) => {
+                    const isVisible = visibleSiteTypes[st.type] ?? true;
+                    return (
+                      <button
+                        key={st.type}
+                        onClick={() => toggleSiteType(st.type)}
+                        className={`flex items-center gap-2 w-full py-1 px-1.5 rounded-md transition-all ${isVisible ? `bg-opacity-10` : "bg-gray-100 opacity-60"
+                          }`}
+                        style={
+                          isVisible
+                            ? { backgroundColor: `${st.color}1A` }
+                            : undefined
+                        }
                       >
                         <span
-                          className="w-6 h-0.5"
-                          style={{ backgroundColor: pt.color }}
+                          className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full`}
+                          style={{
+                            backgroundColor: st.color,
+                            boxShadow: isVisible
+                              ? `0 0 0 4px ${st.color}33`
+                              : "none",
+                          }}
                         />
-                        {pt.label}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
+                        <span className="text-gray-700 text-xs flex-1 text-left">
+                          {st.label}
+                        </span>
+                        {isVisible ? (
+                          <Eye size={14} style={{ color: st.color }} />
+                        ) : (
+                          <EyeOff size={14} className="text-gray-400" />
+                        )}
+                      </button>
+                    );
+                  })}
+
+                  {/* Pipe type legend items */}
+                  {data.legend.pipeTypes.length > 0 && (
+                    <div className="pt-1 border-t border-gray-200">
+                      <p className="text-[10px] text-gray-500 mb-1">Jenis Pipa</p>
+                      {data.legend.pipeTypes.map((pt) => (
+                        <div
+                          key={pt.type}
+                          className="flex items-center gap-1.5 text-xs text-gray-600 py-0.5"
+                        >
+                          <span
+                            className="w-6 h-0.5"
+                            style={{ backgroundColor: pt.color }}
+                          />
+                          {pt.label}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
         </div>
       </div>
 

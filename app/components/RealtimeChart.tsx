@@ -64,6 +64,7 @@ export interface RealtimeChartProps {
   onFilterByChange?: (by: FilterBy | null) => void;
   onPemasokChange?: (pemasokId: string | null) => void;
   onPembangkitChange?: (pembangkitId: string | null) => void;
+  onRegionChange?: (region: string | null) => void;
   onDateRangeChange?: (
     startDate: string | null,
     endDate: string | null,
@@ -692,6 +693,7 @@ export default function RealtimeChart({
   onFilterByChange,
   onPemasokChange,
   onPembangkitChange,
+  onRegionChange,
   onDateRangeChange,
 }: RealtimeChartProps = {}) {
   const chartRef = useRef<HTMLDivElement>(null);
@@ -750,6 +752,7 @@ export default function RealtimeChart({
   const [pemasok, setPemasok] = useState<string[]>(["Semua Pemasok"]);
   const [pembangkit, setPembangkit] = useState<string | null>(null);
   const [transportir, setTransportir] = useState<string | null>(null);
+  const [region, setRegion] = useState<string | null>("Semua Region");
   const [openModal, setOpenModal] = useState(false);
   const [note, setNote] = useState("");
   const [selectedPemasokId, setSelectedPemasokId] = useState<
@@ -923,6 +926,14 @@ export default function RealtimeChart({
   }, [startDate, endDate, onDateRangeChange]);
 
   // Derive filter options from API data or fallback to hardcoded
+  const regionOptions = useMemo(() => {
+    let opts = ["Region 1", "Region 2"];
+    if (filtersData?.regions) {
+      opts = filtersData.regions;
+    }
+    return ["Semua Region", ...opts];
+  }, [filtersData]);
+
   const pemasokOptions = useMemo(() => {
     let opts = ["Pemasok A", "Pemasok B"];
     if (filtersData?.pemasok) {
@@ -1701,6 +1712,18 @@ export default function RealtimeChart({
             Filter Grafik
           </p>
           <div className="flex flex-col gap-3">
+            <FilterAutocomplete
+              label="Region"
+              options={regionOptions}
+              value={region}
+              onChange={(val) => {
+                setRegion(val);
+                if (onRegionChange) {
+                  onRegionChange(val === "Semua Region" ? null : (val as string));
+                }
+              }}
+              placeholder="Pilih Region"
+            />
             {chartMode !== "transportir" && (
               <FilterAutocomplete
                 label="Filter Berdasar"

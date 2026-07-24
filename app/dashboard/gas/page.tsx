@@ -18,8 +18,10 @@ import {
   useChartFlow,
   useFilters,
   useEvents,
+  useMapLocations,
 } from "@/hooks/service/dashboard-api";
 import { useContracts } from "@/hooks/service/contract-api";
+import { useSites } from "@/hooks/service/site-api";
 import type { Granularity, Periode } from "@/app/components/RealtimeChart";
 
 // Components
@@ -91,6 +93,9 @@ export default function GasDashboard() {
   const [selectedPembangkitId, setSelectedPembangkitId] = useState<
     string | undefined
   >(undefined);
+  const [selectedRegion, setSelectedRegion] = useState<
+    string | undefined
+  >(undefined);
 
   // Fetch distribution data based on filter type
   const distributionBy = filterType === "Pemasok" ? "supplier" : "plant";
@@ -98,6 +103,7 @@ export default function GasDashboard() {
     distributionStartDate,
     distributionEndDate,
     distributionBy as "supplier" | "plant",
+    selectedRegion,
   );
 
   // Top suppliers/plants date filters
@@ -144,11 +150,12 @@ export default function GasDashboard() {
 
   // Fetch top suppliers and plants
   const { data: topSuppliersData, isLoading: isSuppliersLoading } =
-    useTopSuppliers(topSuppliersStart, topSuppliersEnd, 5);
+    useTopSuppliers(topSuppliersStart, topSuppliersEnd, 5, selectedRegion);
   const { data: topPlantsData, isLoading: isPlantsLoading } = useTopPlants(
     topPlantsStart,
     topPlantsEnd,
     5,
+    selectedRegion,
   );
 
   // Fetch chart flow data
@@ -159,6 +166,7 @@ export default function GasDashboard() {
     chartBy,
     selectedPemasokId,
     selectedPembangkitId,
+    selectedRegion,
   );
 
   // Fetch filter options — when a pemasok or pembangkit is selected,
@@ -166,7 +174,42 @@ export default function GasDashboard() {
   const { data: filtersData } = useFilters(
     selectedPemasokId,
     selectedPembangkitId,
+    selectedRegion,
   );
+
+  // Fetch all sites to help with frontend region filtering (includes sites without coordinates)
+  const { data: allSites } = useSites({ commodity: "LNG,GAS PIPA" });
+
+  // Filter filtersData locally if a region is selected
+  const filteredFiltersData = useMemo(() => {
+    if (!filtersData) return null;
+    if (!selectedRegion || !allSites) return filtersData;
+
+    const selectedRegionLower = selectedRegion.toLowerCase();
+    const regionSites = allSites.filter(s => s.region?.toLowerCase() === selectedRegionLower);
+    const regionSiteIds = new Set(regionSites.map(s => s.id));
+
+    return {
+      ...filtersData,
+      pemasok: filtersData.pemasok.filter(p => regionSiteIds.has(p.id)),
+      pembangkit: filtersData.pembangkit.filter(p => regionSiteIds.has(p.id)),
+    };
+  }, [filtersData, selectedRegion, allSites]);
+
+  // Filter chartFlowData locally if a region is selected
+  const filteredChartFlowData = useMemo(() => {
+    if (!chartFlowData) return null;
+    if (!selectedRegion || !allSites) return chartFlowData;
+
+    const selectedRegionLower = selectedRegion.toLowerCase();
+    const regionSites = allSites.filter(s => s.region?.toLowerCase() === selectedRegionLower);
+    const regionSiteIds = new Set(regionSites.map(s => s.id));
+
+    return {
+      ...chartFlowData,
+      series: chartFlowData.series.filter(s => regionSiteIds.has(s.siteId))
+    };
+  }, [chartFlowData, selectedRegion, allSites]);
 
   // Fetch contract from contracts table, filtered by selected pemasok/pembangkit.
   // Enabled whenever at least pemasok OR pembangkit is chosen, so the contract
@@ -250,6 +293,12 @@ export default function GasDashboard() {
 
   const handlePembangkitChange = useCallback((pembangkitId: string | null) => {
     setSelectedPembangkitId(pembangkitId ?? undefined);
+  }, []);
+
+  const handleRegionChange = useCallback((region: string | null) => {
+    setSelectedRegion(region ?? undefined);
+    setSelectedPemasokId(undefined);
+    setSelectedPembangkitId(undefined);
   }, []);
 
   const handleDateRangeChange = useCallback(
@@ -396,14 +445,15 @@ export default function GasDashboard() {
             <div className="mb-6">
               <RealtimeChart
                 contractData={contractsData ?? null}
-                chartFlowData={chartFlowData ?? null}
-                filtersData={filtersData ?? null}
+                chartFlowData={filteredChartFlowData ?? null}
+                filtersData={filteredFiltersData ?? null}
                 isLoading={isChartLoading}
                 isContractLoading={isContractLoading}
                 onFilterByChange={handleFilterByChange}
                 onPeriodChange={handlePeriodChange}
                 onPemasokChange={handlePemasokChange}
                 onPembangkitChange={handlePembangkitChange}
+                onRegionChange={handleRegionChange}
                 onDateRangeChange={handleDateRangeChange}
               />
             </div>
