@@ -12,6 +12,7 @@ import {
 import { Expand, Calendar, ChevronDown, ChevronUp, Image as ImageIcon, FileText } from "lucide-react";
 import * as htmlToImage from "html-to-image";
 import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import { CHART_COLORS } from "@/app/_constants";
 
 interface DataPieChart {
@@ -39,6 +40,7 @@ type Props = {
   moda?: string | null;
   onModaChange?: (value: string | null) => void;
   modaOptions?: string[];
+  unit?: string;
 };
 
 export default function FuelTypeDonutChart({
@@ -57,6 +59,7 @@ export default function FuelTypeDonutChart({
   moda,
   onModaChange,
   modaOptions = [],
+  unit = "BBTU",
 }: Props) {
   const [showDateFilter, setShowDateFilter] = useState(false);
   const [tempStartDate, setTempStartDate] = useState(startDate);
@@ -102,7 +105,74 @@ export default function FuelTypeDonutChart({
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
       pdf.addImage(imgData, "PNG", 0, 10, pdfWidth, pdfHeight);
-      pdf.save(`volume-bbm-${new Date().toISOString().split("T")[0]}.pdf`);
+
+      // Add a new page for the detail list
+      pdf.addPage();
+
+      // Add detailed table title
+      pdf.setFontSize(12);
+      pdf.setTextColor(17, 24, 39); // text-gray-900
+      pdf.setFont("helvetica", "bold");
+      pdf.text(`Detail List ${filterType || "Pembangkit"}`, 14, 15);
+
+      const totalVolume = data.reduce((sum, d) => sum + d.value, 0);
+
+      const tableBody = data.flatMap((item, index) => {
+        const pct = totalVolume > 0 ? ((item.value / totalVolume) * 100).toFixed(2) : "0.00";
+        const rows: any[] = [
+          {
+            nameCell: { content: `   ${item.name}`, styles: { fontStyle: "bold", textColor: [17, 24, 39] } },
+            pctCell: { content: `(${pct}%)`, styles: { textColor: [107, 114, 128] } },
+            volCell: { content: `${item.value.toLocaleString("id-ID", { maximumFractionDigits: 2 })} ${unit}`, styles: { fontStyle: "bold", textColor: [17, 24, 39] } },
+            originalIndex: index,
+          },
+        ];
+
+        if (item.modaRealisasi && Object.keys(item.modaRealisasi).length > 0) {
+          Object.entries(item.modaRealisasi as Record<string, number>)
+            .filter(([_, val]) => val > 0)
+            .forEach(([moda, val]) => {
+              rows.push({
+                nameCell: { content: `      - ${moda.toLowerCase()}`, styles: { textColor: [107, 114, 128] } },
+                pctCell: { content: "" },
+                volCell: { content: `${val.toLocaleString("id-ID", { maximumFractionDigits: 2 })} ${unit}`, styles: { fontStyle: "bold", textColor: [55, 65, 81] } },
+                originalIndex: -1,
+              });
+            });
+        }
+        return rows;
+      });
+
+      autoTable(pdf, {
+        startY: 20,
+        columns: [
+          { dataKey: "nameCell" },
+          { dataKey: "pctCell" },
+          { dataKey: "volCell" },
+        ],
+        body: tableBody,
+        theme: "plain",
+        styles: {
+          fontSize: 10,
+          cellPadding: { top: 2, right: 2, bottom: 2, left: 4 },
+        },
+        columnStyles: {
+          nameCell: { cellWidth: 100 },
+          pctCell: { cellWidth: 30, halign: "right" },
+          volCell: { cellWidth: 50, halign: "right" },
+        },
+        didDrawCell: (hookData) => {
+          const raw = hookData.row.raw as any;
+          if (hookData.column.dataKey === "nameCell" && raw.originalIndex !== -1) {
+            const colorHex = CHART_COLORS[raw.originalIndex % CHART_COLORS.length];
+            pdf.setFillColor(colorHex);
+            pdf.circle(hookData.cell.x + 4, hookData.cell.y + hookData.cell.height / 2, 1.5, "F");
+          }
+        },
+      });
+
+      const safeTitle = (title || "export").toLowerCase().replace(/\s+/g, "-");
+      pdf.save(`${safeTitle}-${new Date().toISOString().split("T")[0]}.pdf`);
     } catch (err) {
       console.error("Failed to export PDF", err);
     }
