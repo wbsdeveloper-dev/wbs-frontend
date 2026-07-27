@@ -1098,3 +1098,33 @@ export function useGetEmailInbox(
   });
 }
 
+export async function downloadEmailAttachment(storageRef: string, fileName: string) {
+  const accessToken = getAccessToken();
+  const url = `${CONFIG_API_HOST}/config/email-inbox/attachment/download?storageRef=${encodeURIComponent(storageRef)}&fileName=${encodeURIComponent(fileName)}`;
+
+  const res = await fetch(url, {
+    method: "GET",
+    headers: {
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error("Gagal mengunduh attachment");
+  }
+
+  const blob = await res.blob();
+  const windowUrl = window.URL || window.webkitURL;
+  const blobUrl = windowUrl.createObjectURL(blob);
+
+  const anchor = document.createElement("a");
+  anchor.href = blobUrl;
+  anchor.download = fileName;
+  document.body.appendChild(anchor);
+  anchor.click();
+
+  // Clean up
+  document.body.removeChild(anchor);
+  windowUrl.revokeObjectURL(blobUrl);
+}
+

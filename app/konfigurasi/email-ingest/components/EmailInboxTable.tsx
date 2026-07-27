@@ -4,10 +4,22 @@ import React from "react";
 
 import { Paperclip, Loader2 } from "lucide-react";
 
-import { useGetEmailInbox, type EmailInboxRecord } from "@/hooks/service/config-api";
+import { useGetEmailInbox, downloadEmailAttachment, type EmailInboxRecord } from "@/hooks/service/config-api";
 
 export default function EmailInboxTable() {
   const { data: inbox = [], isLoading, isError } = useGetEmailInbox();
+  const [downloadingRef, setDownloadingRef] = React.useState<string | null>(null);
+
+  const handleDownload = async (storageRef: string, filename: string) => {
+    try {
+      setDownloadingRef(storageRef);
+      await downloadEmailAttachment(storageRef, filename);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Gagal mengunduh file");
+    } finally {
+      setDownloadingRef(null);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -49,7 +61,7 @@ export default function EmailInboxTable() {
             <th className="px-4 py-3 text-sm font-semibold text-gray-900">Nama Rule</th>
             <th className="px-4 py-3 text-sm font-semibold text-gray-900">Pengirim</th>
             <th className="px-4 py-3 text-sm font-semibold text-gray-900 min-w-[250px]">Subjek</th>
-            <th className="px-4 py-3 text-sm font-semibold text-gray-900 text-right w-[120px]">Attachment</th>
+            <th className="px-4 py-3 text-sm font-semibold text-gray-900 text-right w-[150px]">Attachment</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-200">
@@ -73,10 +85,27 @@ export default function EmailInboxTable() {
               </td>
               <td className="px-4 py-3 text-right">
                 {email.attachment_refs && email.attachment_refs.length > 0 ? (
-                  <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-50 text-green-700 border border-green-200">
-                    <Paperclip className="h-3 w-3 mr-1" />
-                    {email.attachment_refs.length} File
-                  </span>
+                  <div className="flex flex-col items-end gap-1">
+                    {email.attachment_refs.map((att, idx) => {
+                      const isDownloading = downloadingRef === att.storageRef;
+                      return (
+                        <button
+                          key={idx}
+                          onClick={() => handleDownload(att.storageRef, att.filename)}
+                          disabled={downloadingRef !== null}
+                          className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 hover:text-green-800 disabled:opacity-50 transition-colors"
+                          title={att.filename}
+                        >
+                          {isDownloading ? (
+                            <Loader2 className="h-3 w-3 mr-1 animate-spin text-green-700" />
+                          ) : (
+                            <Paperclip className="h-3 w-3 mr-1 flex-shrink-0" />
+                          )}
+                          <span className="truncate max-w-[120px]">{att.filename}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 ) : (
                   <span className="text-xs text-gray-400">-</span>
                 )}
