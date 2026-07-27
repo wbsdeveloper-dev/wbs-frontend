@@ -1167,6 +1167,7 @@ export default function Home() {
                 moda={distributionModa}
                 onModaChange={setDistributionModa}
                 modaOptions={filterModaOptions}
+                unit="KL"
               />
             </div>
 
