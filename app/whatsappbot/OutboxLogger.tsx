@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import { AlertCircle, Clock, CheckCircle2, RefreshCw } from "lucide-react";
+import { AlertCircle, Clock, CheckCircle2, RefreshCw, Trash2 } from "lucide-react";
 import Card, { CardHeader } from "@/app/components/ui/Card";
-import { useBotOutbox, type OutboxMessage } from "@/hooks/use-bot-outbox";
+import { useBotOutbox, clearBotOutbox, type OutboxMessage } from "@/hooks/use-bot-outbox";
 import { useBotGroups } from "@/hooks/use-bot-groups";
 
 export function OutboxLogger({
@@ -101,20 +101,35 @@ export function OutboxLogger({
     }
   };
 
+  const [isClearing, setIsClearing] = useState(false);
+
+  const handleClear = async () => {
+    if (!confirm("Apakah Anda yakin ingin mengosongkan antrian pesan keluar?")) return;
+    try {
+      setIsClearing(true);
+      await clearBotOutbox(host, statusFilter);
+      refetch();
+    } catch (err: any) {
+      alert("Gagal mengosongkan antrian: " + (err.message || String(err)));
+    } finally {
+      setIsClearing(false);
+    }
+  };
+
   return (
     <Card className="mt-8 overflow-hidden flex flex-col">
       <CardHeader
         title="Antrian Pesan Keluar"
         description="Pantau antrian pesan dan status pengiriman bot"
         action={
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <select
               value={statusFilter}
               onChange={(e) => {
                 setStatusFilter(e.target.value);
                 setPage(1);
               }}
-              className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-secondary"
+              className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-secondary cursor-pointer"
             >
               <option value="all">Semua Status</option>
               <option value="pending">Pending</option>
@@ -123,12 +138,20 @@ export function OutboxLogger({
             </select>
             <button
               onClick={() => refetch()}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors cursor-pointer"
             >
               <RefreshCw
                 className={`w-3.5 h-3.5 ${isRefetching ? "animate-spin" : ""}`}
               />
               Refresh
+            </button>
+            <button
+              onClick={handleClear}
+              disabled={isClearing || items.length === 0}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              {isClearing ? "Clearing..." : "Bersihkan Antrian"}
             </button>
           </div>
         }
