@@ -296,12 +296,12 @@ export const dashboardKeys = {
   all: ["dashboard"] as const,
   mapLocations: (region?: string, commodity?: string) =>
     [...dashboardKeys.all, "map-locations", region, commodity] as const,
-  distribution: (startDate: string, endDate: string, by: string) =>
-    [...dashboardKeys.all, "distribution", startDate, endDate, by] as const,
-  topSuppliers: (startDate: string, endDate: string, limit?: number) =>
-    [...dashboardKeys.all, "top-suppliers", startDate, endDate, limit] as const,
-  topPlants: (startDate: string, endDate: string, limit?: number) =>
-    [...dashboardKeys.all, "top-plants", startDate, endDate, limit] as const,
+  distribution: (startDate: string, endDate: string, by: string, region?: string) =>
+    [...dashboardKeys.all, "distribution", startDate, endDate, by, region] as const,
+  topSuppliers: (startDate: string, endDate: string, limit?: number, region?: string, commodity?: string) =>
+    [...dashboardKeys.all, "top-suppliers", startDate, endDate, limit, region, commodity] as const,
+  topPlants: (startDate: string, endDate: string, limit?: number, region?: string, commodity?: string) =>
+    [...dashboardKeys.all, "top-plants", startDate, endDate, limit, region, commodity] as const,
   chartFlow: (
     startDate: string,
     endDate: string,
@@ -309,6 +309,8 @@ export const dashboardKeys = {
     by: string,
     pemasokId?: string,
     pembangkitId?: string,
+    region?: string,
+    commodity?: string,
   ) =>
     [
       ...dashboardKeys.all,
@@ -319,13 +321,15 @@ export const dashboardKeys = {
       by,
       pemasokId,
       pembangkitId,
+      region,
+      commodity,
     ] as const,
   contractInfo: (pemasokId?: string, pembangkitId?: string) =>
     [...dashboardKeys.all, "contract-info", pemasokId, pembangkitId] as const,
   events: (startDate: string, endDate: string, limit?: number, page?: number, siteId?: string, severity?: string) =>
     [...dashboardKeys.all, "events", startDate, endDate, limit, page, siteId, severity] as const,
-  filters: (pemasokId?: string, pembangkitId?: string) =>
-    [...dashboardKeys.all, "filters", pemasokId, pembangkitId] as const,
+  filters: (pemasokId?: string, pembangkitId?: string, region?: string, commodity?: string) =>
+    [...dashboardKeys.all, "filters", pemasokId, pembangkitId, region, commodity] as const,
   summary: (startDate: string, endDate: string) =>
     [...dashboardKeys.all, "summary", startDate, endDate] as const,
 };
@@ -353,9 +357,9 @@ export async function getMapLocations(region?: string, commodity?: string) {
   );
 }
 
-export async function getDistribution(startDate: string, endDate: string, by: "supplier" | "plant") {
+export async function getDistribution(startDate: string, endDate: string, by: "supplier" | "plant", region?: string) {
   return dashboardFetch<DistributionResponse>(
-    `/dashboard/distribution${buildQuery({ startDate, endDate, by })}`,
+    `/dashboard/distribution${buildQuery({ startDate, endDate, by, region })}`,
   );
 }
 
@@ -363,9 +367,11 @@ export async function getTopSuppliers(
   startDate: string,
   endDate: string,
   limit?: number,
+  region?: string,
+  commodity?: string,
 ) {
   return dashboardFetch<TopResponse>(
-    `/dashboard/top-suppliers${buildQuery({ startDate, endDate, limit })}`,
+    `/dashboard/top-suppliers${buildQuery({ startDate, endDate, limit, region, commodity })}`,
   );
 }
 
@@ -373,9 +379,11 @@ export async function getTopPlants(
   startDate: string,
   endDate: string,
   limit?: number,
+  region?: string,
+  commodity?: string,
 ) {
   return dashboardFetch<TopResponse>(
-    `/dashboard/top-plants${buildQuery({ startDate, endDate, limit })}`,
+    `/dashboard/top-plants${buildQuery({ startDate, endDate, limit, region, commodity })}`,
   );
 }
 
@@ -386,9 +394,11 @@ export async function getChartFlow(
   by: "supplier" | "plant",
   pemasokId?: string,
   pembangkitId?: string,
+  region?: string,
+  commodity?: string,
 ) {
   return dashboardFetch<ChartFlowResponse>(
-    `/dashboard/chart/flow${buildQuery({ startDate, endDate, granularity, by, pemasokId, pembangkitId })}`,
+    `/dashboard/chart/flow${buildQuery({ startDate, endDate, granularity, by, pemasokId, pembangkitId, region, commodity })}`,
   );
 }
 
@@ -463,9 +473,9 @@ export async function deleteEvent(id: string) {
   });
 }
 
-export async function getFilters(pemasokId?: string, pembangkitId?: string) {
+export async function getFilters(pemasokId?: string, pembangkitId?: string, region?: string, commodity?: string) {
   return dashboardFetch<DashboardFilters>(
-    `/dashboard/filters${buildQuery({ pemasokId, pembangkitId })}`,
+    `/dashboard/filters${buildQuery({ pemasokId, pembangkitId, region, commodity })}`,
   );
 }
 
@@ -495,11 +505,12 @@ export function useDistribution(
   startDate: string,
   endDate: string,
   by: "supplier" | "plant",
+  region?: string,
   options?: Partial<UseQueryOptions<DistributionResponse>>,
 ) {
   return useQuery({
-    queryKey: dashboardKeys.distribution(startDate, endDate, by),
-    queryFn: () => getDistribution(startDate, endDate, by),
+    queryKey: dashboardKeys.distribution(startDate, endDate, by, region),
+    queryFn: () => getDistribution(startDate, endDate, by, region),
     ...options,
   });
 }
@@ -508,11 +519,13 @@ export function useTopSuppliers(
   startDate: string,
   endDate: string,
   limit?: number,
+  region?: string,
+  commodity?: string,
   options?: Partial<UseQueryOptions<TopResponse>>,
 ) {
   return useQuery({
-    queryKey: dashboardKeys.topSuppliers(startDate, endDate, limit),
-    queryFn: () => getTopSuppliers(startDate, endDate, limit),
+    queryKey: dashboardKeys.topSuppliers(startDate, endDate, limit, region, commodity),
+    queryFn: () => getTopSuppliers(startDate, endDate, limit, region, commodity),
     ...options,
   });
 }
@@ -521,11 +534,13 @@ export function useTopPlants(
   startDate: string,
   endDate: string,
   limit?: number,
+  region?: string,
+  commodity?: string,
   options?: Partial<UseQueryOptions<TopResponse>>,
 ) {
   return useQuery({
-    queryKey: dashboardKeys.topPlants(startDate, endDate, limit),
-    queryFn: () => getTopPlants(startDate, endDate, limit),
+    queryKey: dashboardKeys.topPlants(startDate, endDate, limit, region, commodity),
+    queryFn: () => getTopPlants(startDate, endDate, limit, region, commodity),
     ...options,
   });
 }
@@ -537,6 +552,8 @@ export function useChartFlow(
   by: "supplier" | "plant",
   pemasokId?: string,
   pembangkitId?: string,
+  region?: string,
+  commodity?: string,
   options?: Partial<UseQueryOptions<ChartFlowResponse>>,
 ) {
   return useQuery({
@@ -547,6 +564,8 @@ export function useChartFlow(
       by,
       pemasokId,
       pembangkitId,
+      region,
+      commodity,
     ),
     queryFn: () =>
       getChartFlow(
@@ -556,6 +575,8 @@ export function useChartFlow(
         by,
         pemasokId,
         pembangkitId,
+        region,
+        commodity,
       ),
     ...options,
   });
@@ -621,11 +642,13 @@ export function useDeleteEvent(
 export function useFilters(
   pemasokId?: string,
   pembangkitId?: string,
+  region?: string,
+  commodity?: string,
   options?: Partial<UseQueryOptions<DashboardFilters>>,
 ) {
   return useQuery({
-    queryKey: dashboardKeys.filters(pemasokId, pembangkitId),
-    queryFn: () => getFilters(pemasokId, pembangkitId),
+    queryKey: dashboardKeys.filters(pemasokId, pembangkitId, region, commodity),
+    queryFn: () => getFilters(pemasokId, pembangkitId, region, commodity),
     staleTime: 5 * 60 * 1000, // filters change rarely
     ...options,
   });

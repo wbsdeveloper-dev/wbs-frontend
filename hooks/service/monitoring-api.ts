@@ -21,6 +21,7 @@ export interface MonitoringRecord {
   reportDate: string;
   siteId: string;
   siteName: string;
+  commodity?: string | null;
   supplierId?: string | null;
   supplierName: string | null;
   metricType?: string;
@@ -83,6 +84,7 @@ export interface MonitoringParams {
   periodType?: string;
   startDate?: string;
   endDate?: string;
+  commodity?: string;
 }
 
 // ---------------------------------------------------------------------------

@@ -128,6 +128,7 @@ export interface TemplateField {
   transform: string | null;
   isRequired: boolean;
   orderNo: number;
+  mathExpression: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -143,7 +144,11 @@ export interface Template {
   scope: "WA_GROUP" | "SPREADSHEET_SOURCE" | "EMAIL_INGEST";
   status: "DRAFT" | "ACTIVE" | "DEPRECATED";
   parserMode: "RULE_BASED" | "AI_ASSISTED";
+  emailExtractionTarget?: "BODY_TEXT" | "ATTACHMENT_SINGLE" | "ATTACHMENT_MULTI_STREAM";
+  requiresOcr?: boolean;
+  streamConfiguration?: any;
   sourceLinks: SourceLink[];
+  spreadsheetSourceId?: string | null;
   version: number;
   isDefault: boolean;
   waKeywordHint: string | null;
@@ -166,7 +171,11 @@ export interface CreateTemplatePayload {
   name: string;
   scope: "WA_GROUP" | "SPREADSHEET_SOURCE" | "EMAIL_INGEST";
   parserMode?: "RULE_BASED" | "AI_ASSISTED";
+  emailExtractionTarget?: "BODY_TEXT" | "ATTACHMENT_SINGLE" | "ATTACHMENT_MULTI_STREAM";
+  requiresOcr?: boolean;
+  streamConfiguration?: any;
   sourceLinks?: SourceLink[];
+  spreadsheetSourceId?: string | null;
   waKeywordHint?: string;
   waSenderHint?: string;
   sheetTabHint?: string;
@@ -184,6 +193,7 @@ export interface CreateTemplatePayload {
     transform?: string | null;
     isRequired: boolean;
     orderNo: number;
+    mathExpression?: string | null;
   }[];
 }
 
@@ -191,8 +201,12 @@ export interface UpdateTemplatePayload {
   name?: string;
   scope?: "WA_GROUP" | "SPREADSHEET_SOURCE" | "EMAIL_INGEST";
   parserMode?: "RULE_BASED" | "AI_ASSISTED";
+  emailExtractionTarget?: "BODY_TEXT" | "ATTACHMENT_SINGLE" | "ATTACHMENT_MULTI_STREAM";
+  requiresOcr?: boolean;
+  streamConfiguration?: any;
   isDefault?: boolean;
   sourceLinks?: SourceLink[];
+  spreadsheetSourceId?: string | null;
   waKeywordHint?: string | null;
   waSenderHint?: string | null;
   sheetTabHint?: string | null;
@@ -210,6 +224,7 @@ export interface UpdateTemplatePayload {
     transform?: string | null;
     isRequired: boolean;
     orderNo: number;
+    mathExpression?: string | null;
   }[];
 }
 
@@ -405,6 +420,24 @@ export function updateTemplate(id: string, payload: UpdateTemplatePayload) {
   });
 }
 
+export interface TestTemplateParseResult {
+  extractedText: string;
+  parsedResult: any;
+  reconciliationPreview: any[];
+  context: any;
+  saved?: {
+    count: number;
+    errors: string[];
+  };
+}
+
+export function testTemplateParse(payload: { inboxId: string; template: any; fields: any[] }) {
+  return configFetch<TestTemplateParseResult>(`/config/templates/test-parse`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
 export function activateTemplate(id: string) {
   return configFetch<Template>(`/config/templates/${id}/activate`, {
     method: "POST",
@@ -569,6 +602,21 @@ export function useUpdateTemplate(
       qc.invalidateQueries({ queryKey: configKeys._templatesBase() });
       qc.invalidateQueries({ queryKey: configKeys.template(variables.id) });
     },
+    ...options,
+  });
+}
+
+export function useTestTemplateParse(
+  options?: Partial<
+    UseMutationOptions<
+      TestTemplateParseResult,
+      Error,
+      { inboxId: string; template: any; fields: any[] }
+    >
+  >,
+) {
+  return useMutation({
+    mutationFn: (payload) => testTemplateParse(payload),
     ...options,
   });
 }
@@ -1018,3 +1066,100 @@ export function useTestEmailParse(
     ...options,
   });
 }
+
+// ---------------------------------------------------------------------------
+// Email Inbox (Received Emails)
+// ---------------------------------------------------------------------------
+
+export interface EmailInboxRecord {
+  id: string;
+  email_source_id: string;
+  email_message_id: string;
+  sender: string;
+  subject: string;
+  attachment_refs: Array<{
+    filename: string;
+    mimeType: string;
+    storageRef: string;
+    sizeBytes: number;
+  }> | null;
+  received_at: string;
+  created_at: string;
+  source_name: string | null;
+}
+
+export function useGetEmailInbox(
+  options?: Omit<UseQueryOptions<EmailInboxRecord[], Error>, "queryKey" | "queryFn">,
+) {
+  return useQuery<EmailInboxRecord[], Error>({
+    queryKey: ["email-inbox"],
+    queryFn: () => configFetch<EmailInboxRecord[]>("/config/email-inbox"),
+    ...options,
+  });
+}
+
+export async function downloadEmailAttachment(storageRef: string, fileName: string) {
+  const accessToken = getAccessToken();
+  const url = `${CONFIG_API_HOST}/config/email-inbox/attachment/download?storageRef=${encodeURIComponent(storageRef)}&fileName=${encodeURIComponent(fileName)}`;
+
+  const res = await fetch(url, {
+    method: "GET",
+    headers: {
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error("Gagal mengunduh attachment");
+  }
+
+  const blob = await res.blob();
+  const windowUrl = window.URL || window.webkitURL;
+  const blobUrl = windowUrl.createObjectURL(blob);
+
+  const anchor = document.createElement("a");
+  anchor.href = blobUrl;
+  anchor.download = fileName;
+  document.body.appendChild(anchor);
+  anchor.click();
+
+  // Clean up
+  document.body.removeChild(anchor);
+  windowUrl.revokeObjectURL(blobUrl);
+}
+
+export async function previewEmailAttachment(storageRef: string, fileName: string) {
+  const accessToken = getAccessToken();
+  const url = `${CONFIG_API_HOST}/config/email-inbox/attachment/download?storageRef=${encodeURIComponent(storageRef)}&fileName=${encodeURIComponent(fileName)}`;
+
+  const res = await fetch(url, {
+    method: "GET",
+    headers: {
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error("Gagal memuat attachment untuk pratinjau");
+  }
+
+  const blob = await res.blob();
+  const windowUrl = window.URL || window.webkitURL;
+  
+  // Set accurate mime type for standard files so browser previews them
+  let mimeType = blob.type;
+  if (fileName.toLowerCase().endsWith(".pdf")) {
+    mimeType = "application/pdf";
+  } else if (fileName.toLowerCase().endsWith(".png")) {
+    mimeType = "image/png";
+  } else if (fileName.toLowerCase().endsWith(".jpg") || fileName.toLowerCase().endsWith(".jpeg")) {
+    mimeType = "image/jpeg";
+  } else if (fileName.toLowerCase().endsWith(".txt")) {
+    mimeType = "text/plain";
+  }
+  
+  const previewBlob = new Blob([blob], { type: mimeType });
+  const blobUrl = windowUrl.createObjectURL(previewBlob);
+  window.open(blobUrl, "_blank");
+}
+

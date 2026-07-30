@@ -384,8 +384,8 @@ function buildColumns(
     const numericRenderCell = makeRenderCell(isEditMode, true);
 
     // Custom renderCell for volume year columns with grayed-out support
-    const makeVolumeYearRenderCell = (year: number, options?: { suffix?: string, readOnly?: boolean }) => {
-        const { suffix = "", readOnly = false } = options || {};
+    const makeVolumeYearRenderCell = (year: number, options?: { suffix?: string, readOnly?: boolean, fractionDigits?: number }) => {
+        const { suffix = "", readOnly = false, fractionDigits } = options || {};
         const VolumeYearCell = (params: GridRenderCellParams) => {
             const row = params.row;
             const contractEndYear = row._akhirPerjanjianYear;
@@ -415,7 +415,11 @@ function buildColumns(
             if (displayValue != null && displayValue !== "") {
                 const num = Number(displayValue);
                 if (!isNaN(num)) {
-                    displayValue = num.toLocaleString("en-US", { maximumFractionDigits: 6 });
+                    if (fractionDigits !== undefined) {
+                        displayValue = num.toLocaleString("en-US", { minimumFractionDigits: fractionDigits, maximumFractionDigits: fractionDigits });
+                    } else {
+                        displayValue = num.toLocaleString("en-US", { maximumFractionDigits: 6 });
+                    }
                 }
             }
 
@@ -599,7 +603,7 @@ function buildColumns(
     // Add dynamic volume year group columns (JPH, TOP, %TOP, Jumlah Kontrak Tahunan, Volume Kepmen)
     for (const year of years) {
         const yearRenderCell = makeVolumeYearRenderCell(year);
-        const topRenderCell = makeVolumeYearRenderCell(year, { readOnly: true });
+        const topRenderCell = makeVolumeYearRenderCell(year, { readOnly: true, fractionDigits: 2 });
         const percentTopRenderCell = makeVolumeYearRenderCell(year, { suffix: "%" });
         cols.push(
             {
@@ -940,7 +944,15 @@ export default function ContractTable() {
                     rowData[`Volume Kepmen ${year}`] = "—";
                 } else {
                     rowData[`Volume ${year} JPH`] = row[`volume${year}JPH`];
-                    rowData[`Volume ${year} TOP`] = row[`volume${year}TOP`];
+                    
+                    const topValue = row[`volume${year}TOP`];
+                    if (topValue !== null && topValue !== undefined && topValue !== "") {
+                        const topNum = Number(topValue);
+                        rowData[`Volume ${year} TOP`] = !isNaN(topNum) ? topNum.toFixed(2) : topValue;
+                    } else {
+                        rowData[`Volume ${year} TOP`] = topValue;
+                    }
+                    
                     rowData[`Volume ${year} % TOP`] = row[`volume${year}PercentTOP`];
                     rowData[`Jumlah Kontrak Tahunan ${year}`] = row[`jumlahKontrakTahunan${year}`];
                     rowData[`Volume Kepmen ${year}`] = row[`volumeKepmen${year}`];

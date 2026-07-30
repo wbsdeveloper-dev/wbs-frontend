@@ -16,6 +16,8 @@ import RingkasanPembangkit from "./RingkasanPembangkit";
 interface RingkasanTableProps {
   selectedRegion: string;
   selectedYear: number;
+  selectedUnit?: string;
+  selectedUnitPelaksana?: string;
 }
 
 type GroupingType = "Regional" | "TBBM" | "Pembangkit";
@@ -23,6 +25,8 @@ type GroupingType = "Regional" | "TBBM" | "Pembangkit";
 export default function RingkasanTable({
   selectedRegion,
   selectedYear,
+  selectedUnit,
+  selectedUnitPelaksana,
 }: RingkasanTableProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeSubTab, setActiveSubTab] = useState<GroupingType>("Regional");
@@ -35,10 +39,13 @@ export default function RingkasanTable({
   const isLoading = templatesLoading || recordsLoading;
 
   const filteredTemplates = useMemo(() => {
-    return selectedRegion
-      ? templates.filter((t) => t.site_region === selectedRegion)
-      : templates;
-  }, [templates, selectedRegion]);
+    return templates.filter((t) => {
+      if (selectedRegion && t.site_region !== selectedRegion) return false;
+      if (selectedUnit && t.unit_name !== selectedUnit) return false;
+      if (selectedUnitPelaksana && t.upk_name !== selectedUnitPelaksana) return false;
+      return true;
+    });
+  }, [templates, selectedRegion, selectedUnit, selectedUnitPelaksana]);
 
   const shortYear = String(selectedYear).slice(-2);
   const allMonths = [

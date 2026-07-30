@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import {
   PieChart,
   Pie,
@@ -12,6 +12,7 @@ import {
 import { Expand, Calendar, ChevronDown, ChevronUp, Image as ImageIcon, FileText } from "lucide-react";
 import * as htmlToImage from "html-to-image";
 import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import { CHART_COLORS } from "@/app/_constants";
 
 interface DataPieChart {
@@ -35,6 +36,11 @@ type Props = {
   descriptionPrefix?: string;
   descriptionFuelType?: string;
   tabs?: string[];
+  /** Optional moda filter support */
+  moda?: string | null;
+  onModaChange?: (value: string | null) => void;
+  modaOptions?: string[];
+  unit?: string;
 };
 
 export default function FuelTypeDonutChart({
@@ -50,10 +56,15 @@ export default function FuelTypeDonutChart({
   descriptionPrefix = "Visualisasi konsumsi gas",
   descriptionFuelType = "gas",
   tabs = ["Pemasok", "Pembangkit"],
+  moda,
+  onModaChange,
+  modaOptions = [],
+  unit = "BBTU",
 }: Props) {
   const [showDateFilter, setShowDateFilter] = useState(false);
   const [tempStartDate, setTempStartDate] = useState(startDate);
   const [tempEndDate, setTempEndDate] = useState(endDate);
+  const [tempModa, setTempModa] = useState(moda);
 
   const chartRef = useRef<HTMLDivElement>(null);
 
@@ -65,8 +76,8 @@ export default function FuelTypeDonutChart({
   const handleExportImage = async () => {
     if (!chartRef.current) return;
     try {
-      const dataUrl = await htmlToImage.toPng(chartRef.current, { 
-        backgroundColor: "#ffffff", 
+      const dataUrl = await htmlToImage.toPng(chartRef.current, {
+        backgroundColor: "#ffffff",
         pixelRatio: 2,
         filter: filterExportButtons as any,
       });
@@ -82,19 +93,86 @@ export default function FuelTypeDonutChart({
   const handleExportPDF = async () => {
     if (!chartRef.current) return;
     try {
-      const canvas = await htmlToImage.toCanvas(chartRef.current, { 
-        backgroundColor: "#ffffff", 
+      const canvas = await htmlToImage.toCanvas(chartRef.current, {
+        backgroundColor: "#ffffff",
         pixelRatio: 2,
         filter: filterExportButtons as any,
       });
       const imgData = canvas.toDataURL("image/png");
-      
+
       const pdf = new jsPDF("p", "mm", "a4");
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      
+
       pdf.addImage(imgData, "PNG", 0, 10, pdfWidth, pdfHeight);
-      pdf.save(`volume-bbm-${new Date().toISOString().split("T")[0]}.pdf`);
+
+      // Add a new page for the detail list
+      pdf.addPage();
+
+      // Add detailed table title
+      pdf.setFontSize(12);
+      pdf.setTextColor(17, 24, 39); // text-gray-900
+      pdf.setFont("helvetica", "bold");
+      pdf.text(`Detail List ${filterType || "Pembangkit"}`, 14, 15);
+
+      const totalVolume = data.reduce((sum, d) => sum + d.value, 0);
+
+      const tableBody = data.flatMap((item, index) => {
+        const pct = totalVolume > 0 ? ((item.value / totalVolume) * 100).toFixed(2) : "0.00";
+        const rows: any[] = [
+          {
+            nameCell: { content: `   ${item.name}`, styles: { fontStyle: "bold", textColor: [17, 24, 39] } },
+            pctCell: { content: `(${pct}%)`, styles: { textColor: [107, 114, 128] } },
+            volCell: { content: `${item.value.toLocaleString("id-ID", { maximumFractionDigits: 2 })} ${unit}`, styles: { fontStyle: "bold", textColor: [17, 24, 39] } },
+            originalIndex: index,
+          },
+        ];
+
+        if (item.modaRealisasi && Object.keys(item.modaRealisasi).length > 0) {
+          Object.entries(item.modaRealisasi as Record<string, number>)
+            .filter(([_, val]) => val > 0)
+            .forEach(([moda, val]) => {
+              rows.push({
+                nameCell: { content: `      - ${moda.toLowerCase()}`, styles: { textColor: [107, 114, 128] } },
+                pctCell: { content: "" },
+                volCell: { content: `${val.toLocaleString("id-ID", { maximumFractionDigits: 2 })} ${unit}`, styles: { fontStyle: "bold", textColor: [55, 65, 81] } },
+                originalIndex: -1,
+              });
+            });
+        }
+        return rows;
+      });
+
+      autoTable(pdf, {
+        startY: 20,
+        columns: [
+          { dataKey: "nameCell" },
+          { dataKey: "pctCell" },
+          { dataKey: "volCell" },
+        ],
+        body: tableBody,
+        theme: "plain",
+        styles: {
+          fontSize: 10,
+          cellPadding: { top: 2, right: 2, bottom: 2, left: 4 },
+        },
+        columnStyles: {
+          nameCell: { cellWidth: 100 },
+          pctCell: { cellWidth: 30, halign: "right" },
+          volCell: { cellWidth: 50, halign: "right" },
+        },
+        didDrawCell: (hookData) => {
+          const raw = hookData.row.raw as any;
+          if (hookData.column.dataKey === "nameCell" && raw.originalIndex !== -1) {
+            const colorHex = CHART_COLORS[raw.originalIndex % CHART_COLORS.length];
+            pdf.setFillColor(colorHex);
+            pdf.circle(hookData.cell.x + 4, hookData.cell.y + hookData.cell.height / 2, 1.5, "F");
+          }
+        },
+      });
+
+      const safeTitle = (title || "export").toLowerCase().replace(/\s+/g, "-");
+      pdf.save(`${safeTitle}-${new Date().toISOString().split("T")[0]}.pdf`);
     } catch (err) {
       console.error("Failed to export PDF", err);
     }
@@ -103,11 +181,13 @@ export default function FuelTypeDonutChart({
   useEffect(() => {
     setTempStartDate(startDate);
     setTempEndDate(endDate);
-  }, [startDate, endDate]);
+    setTempModa(moda);
+  }, [startDate, endDate, moda]);
 
   const handleApply = () => {
     if (onStartDateChange && tempStartDate) onStartDateChange(tempStartDate);
     if (onEndDateChange && tempEndDate) onEndDateChange(tempEndDate);
+    if (onModaChange) onModaChange(tempModa || null);
     setShowDateFilter(false);
   };
 
@@ -130,11 +210,38 @@ export default function FuelTypeDonutChart({
     }
   })();
 
+  const total = useMemo(() => data.reduce((sum, d) => sum + d.value, 0), [data]);
+
+  const chartData = useMemo(() => {
+    if (total === 0) return data;
+    const grouped: any[] = [];
+    let lainLainValue = 0;
+
+    data.forEach((item, index) => {
+      const pct = (item.value / total) * 100;
+      if (pct < 1) {
+        lainLainValue += item.value;
+      } else {
+        grouped.push({ ...item, originalIndex: index });
+      }
+    });
+
+    if (lainLainValue > 0) {
+      grouped.push({
+        name: "Lain-lain",
+        value: lainLainValue,
+        originalIndex: -1
+      });
+    }
+
+    return grouped;
+  }, [data, total]);
+
   return (
     <div ref={chartRef} className="bg-white rounded-xl p-6 border border-gray-200 flex flex-col h-full">
       {/* Header row */}
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+        <h3 className="text-lg font-semibold text-gray-900 whitespace-nowrap truncate flex-1 min-w-0 mr-2">{title}</h3>
         <div className="flex items-center gap-2">
           <div className="export-buttons-container flex items-center bg-gray-100 rounded-lg p-0.5">
             <button
@@ -155,38 +262,38 @@ export default function FuelTypeDonutChart({
           <div className="flex items-center gap-1">
             {/* Date filter toggle */}
             <button
-            onClick={() => setShowDateFilter(!showDateFilter)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer ${
-              showDateFilter
+              onClick={() => setShowDateFilter(!showDateFilter)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer ${showDateFilter
                 ? "bg-secondary/10 text-primary border border-secondary/30"
                 : "text-gray-500 hover:bg-gray-100 border border-transparent"
-            }`}
-          >
-            <Calendar className="w-4 h-4" />
-            <span className="hidden sm:inline">Tanggal</span>
-            {showDateFilter ? (
-              <ChevronUp className="w-3.5 h-3.5" />
-            ) : (
-              <ChevronDown className="w-3.5 h-3.5" />
-            )}
-          </button>
+                }`}
+            >
+              <Calendar className="w-4 h-4" />
+              <span className="hidden sm:inline">
+                {onModaChange ? "Filter" : "Tanggal"}
+              </span>
+              {showDateFilter ? (
+                <ChevronUp className="w-3.5 h-3.5" />
+              ) : (
+                <ChevronDown className="w-3.5 h-3.5" />
+              )}
+            </button>
 
-          {/* Expand button */}
-          <button
-            onClick={openModalFunction}
-            className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors cursor-pointer"
-          >
-            <Expand className="w-4 h-4" />
-          </button>
+            {/* Expand button */}
+            <button
+              onClick={openModalFunction}
+              className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors cursor-pointer"
+            >
+              <Expand className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Collapsible date picker */}
-      {/* Collapsible Date Range Filter */}
+      {/* Collapsible date picker & filters */}
       {showDateFilter && (
         <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200 animate-in slide-in-from-top-1">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 mb-3">
             <div>
               <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
                 Tanggal Awal
@@ -217,10 +324,31 @@ export default function FuelTypeDonutChart({
               />
             </div>
           </div>
-          <div className="flex justify-end mt-3">
+
+          {onModaChange && (
+            <div className="mb-3">
+              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
+                Moda Transportasi
+              </label>
+              <select
+                value={tempModa || ""}
+                onChange={(e) => setTempModa(e.target.value || null)}
+                className="w-full px-3 py-2 rounded-lg text-sm border border-gray-300 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-secondary/40 focus:border-secondary transition-all duration-200"
+              >
+                <option value="">Semua Moda</option>
+                {modaOptions.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <div className="flex justify-end mt-3 border-t border-gray-200 pt-3">
             <button
               onClick={handleApply}
-              className="px-4 py-1.5 bg-primary text-white text-sm font-medium rounded-md hover:bg-[#0d4a5c] transition-colors"
+              className="px-4 py-1.5 bg-primary text-white text-sm font-medium rounded-md hover:brightness-90 transition-colors"
             >
               Terapkan
             </button>
@@ -234,11 +362,10 @@ export default function FuelTypeDonutChart({
           {tabs.map((type) => (
             <button
               key={type}
-              className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer ${
-                filterType === type
-                  ? "bg-primary text-white shadow-sm"
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
+              className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer ${filterType === type
+                ? "bg-primary text-white shadow-sm"
+                : "text-gray-600 hover:text-gray-900"
+                }`}
               onClick={() => changeFilterType(type)}
             >
               {type}
@@ -252,7 +379,7 @@ export default function FuelTypeDonutChart({
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
-              data={data}
+              data={chartData}
               cx="50%"
               cy="50%"
               innerRadius={60}
@@ -260,10 +387,14 @@ export default function FuelTypeDonutChart({
               paddingAngle={2}
               dataKey="value"
             >
-              {data.map((_, index) => (
+              {chartData.map((entry, index) => (
                 <Cell
                   key={`cell-${index}`}
-                  fill={CHART_COLORS[index % CHART_COLORS.length]}
+                  fill={
+                    entry.originalIndex !== -1
+                      ? CHART_COLORS[entry.originalIndex % CHART_COLORS.length]
+                      : "#cbd5e1" // gray for Lain-lain
+                  }
                 />
               ))}
             </Pie>
@@ -271,11 +402,10 @@ export default function FuelTypeDonutChart({
               content={({ active, payload }) => {
                 if (active && payload && payload.length) {
                   const item = payload[0];
-                  const total = data.reduce((sum, d) => sum + d.value, 0);
                   const pct =
                     total > 0
-                      ? (((item.value as number) / total) * 100).toFixed(1)
-                      : "0.0";
+                      ? (((item.value as number) / total) * 100).toFixed(2)
+                      : "0.00";
                   return (
                     <div className="bg-white px-3 py-2 rounded-lg shadow-lg border border-gray-200 text-sm">
                       <p className="font-medium text-gray-900">{item.name}</p>
@@ -294,13 +424,9 @@ export default function FuelTypeDonutChart({
                 maxHeight: 80,
                 overflowY: "auto",
               }}
-              formatter={(value: string) => {
-                const total = data.reduce((sum, d) => sum + d.value, 0);
-                const entry = data.find((d) => d.name === value);
-                const pct =
-                  entry && total > 0
-                    ? ((entry.value / total) * 100).toFixed(1)
-                    : "0.0";
+              formatter={(value: string, entry: any) => {
+                const val = entry?.payload?.value || 0;
+                const pct = total > 0 ? ((val / total) * 100).toFixed(2) : "0.00";
                 return `${value} (${pct}%)`;
               }}
             />

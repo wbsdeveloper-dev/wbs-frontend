@@ -27,8 +27,14 @@ import { useRouter } from "next/navigation";
 export default function KertasKerjaPage() {
   const [activeTab, setActiveTab] = useState("kertas-kerja");
   const [selectedRegion, setSelectedRegion] = useState("");
+  const [selectedUnit, setSelectedUnit] = useState("");
+  const [selectedUnitPelaksana, setSelectedUnitPelaksana] = useState("");
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+
   const { data: regions = [] } = useKertasKerjaMaster("master_region");
+  const { data: units = [] } = useKertasKerjaMaster("master_unit");
+  const { data: upks = [] } = useKertasKerjaMaster("master_unit_pelaksana");
+
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const { data: templates = [] } = useKertasKerjaTemplates();
   const { refetch: refetchRecords } = useKertasKerjaRecords();
@@ -44,6 +50,14 @@ export default function KertasKerjaPage() {
   const [regionSearch, setRegionSearch] = useState("");
   const regionRef = useRef<HTMLDivElement>(null);
 
+  const [isUnitDropdownOpen, setIsUnitDropdownOpen] = useState(false);
+  const [unitSearch, setUnitSearch] = useState("");
+  const unitRef = useRef<HTMLDivElement>(null);
+
+  const [isUpkDropdownOpen, setIsUpkDropdownOpen] = useState(false);
+  const [upkSearch, setUpkSearch] = useState("");
+  const upkRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -52,6 +66,12 @@ export default function KertasKerjaPage() {
       ) {
         setIsRegionDropdownOpen(false);
       }
+      if (unitRef.current && !unitRef.current.contains(event.target as Node)) {
+        setIsUnitDropdownOpen(false);
+      }
+      if (upkRef.current && !upkRef.current.contains(event.target as Node)) {
+        setIsUpkDropdownOpen(false);
+      }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -59,6 +79,14 @@ export default function KertasKerjaPage() {
 
   const filteredRegions = regions.filter((r: any) =>
     r.name.toLowerCase().includes(regionSearch.toLowerCase()),
+  );
+
+  const filteredUnits = units.filter((u: any) =>
+    u.name.toLowerCase().includes(unitSearch.toLowerCase()),
+  );
+
+  const filteredUpks = upks.filter((u: any) =>
+    u.name.toLowerCase().includes(upkSearch.toLowerCase()),
   );
 
   // Redirect if unauthorized
@@ -127,9 +155,9 @@ export default function KertasKerjaPage() {
                     className="pl-3 pr-8 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 cursor-pointer appearance-none"
                     style={{
                       backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-                      backgroundRepeat: 'no-repeat',
-                      backgroundPosition: 'right 0.5rem center',
-                      backgroundSize: '1.25em 1.25em'
+                      backgroundRepeat: "no-repeat",
+                      backgroundPosition: "right 0.5rem center",
+                      backgroundSize: "1.25em 1.25em",
                     }}
                   >
                     {Array.from({ length: 11 }).map((_, i) => {
@@ -142,107 +170,276 @@ export default function KertasKerjaPage() {
                     })}
                   </select>
                 </div>
-                
+
                 {/* Region Filter */}
-                <div className="flex items-center gap-3 relative" ref={regionRef}>
+                <div
+                  className="flex items-center gap-3 relative"
+                  ref={regionRef}
+                >
                   <span className="text-sm font-medium text-gray-700 whitespace-nowrap">
                     Filter Region:
                   </span>
-                <div className="relative">
-                  <button
-                    onClick={() =>
-                      setIsRegionDropdownOpen(!isRegionDropdownOpen)
-                    }
-                    className="flex items-center justify-between pl-3 pr-2 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 min-w-[200px]"
-                  >
-                    <span
-                      className={
-                        selectedRegion ? "text-gray-900" : "text-gray-500"
+                  <div className="relative">
+                    <button
+                      onClick={() =>
+                        setIsRegionDropdownOpen(!isRegionDropdownOpen)
                       }
+                      className="flex items-center justify-between pl-3 pr-2 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 min-w-[160px]"
                     >
-                      {selectedRegion || "Semua Region"}
-                    </span>
-                    <ChevronDown
-                      size={16}
-                      className={`text-gray-500 transition-transform ${isRegionDropdownOpen ? "rotate-180" : ""}`}
-                    />
-                  </button>
+                      <span
+                        className={
+                          selectedRegion ? "text-gray-900" : "text-gray-500"
+                        }
+                      >
+                        {selectedRegion || "Semua Region"}
+                      </span>
+                      <ChevronDown
+                        size={16}
+                        className={`text-gray-500 transition-transform ${isRegionDropdownOpen ? "rotate-180" : ""}`}
+                      />
+                    </button>
 
-                  {isRegionDropdownOpen && (
-                    <div className="absolute top-full left-0 mt-1 w-full min-w-[220px] bg-white rounded-lg shadow-lg border border-gray-100 z-50 overflow-hidden flex flex-col">
-                      <div className="p-2 border-b border-gray-100 sticky top-0 bg-white">
-                        <div className="relative">
-                          <Search
-                            size={14}
-                            className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400"
-                          />
-                          <input
-                            type="text"
-                            placeholder="Cari region..."
-                            value={regionSearch}
-                            onChange={(e) => setRegionSearch(e.target.value)}
-                            className="w-full pl-8 pr-3 py-1.5 text-sm bg-gray-50 border border-transparent focus:border-primary focus:ring-1 focus:ring-primary rounded-md outline-none transition-all"
-                            autoFocus
-                          />
+                    {isRegionDropdownOpen && (
+                      <div className="absolute top-full left-0 mt-1 w-full min-w-[220px] bg-white rounded-lg shadow-lg border border-gray-100 z-50 overflow-hidden flex flex-col">
+                        <div className="p-2 border-b border-gray-100 sticky top-0 bg-white">
+                          <div className="relative">
+                            <Search
+                              size={14}
+                              className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400"
+                            />
+                            <input
+                              type="text"
+                              placeholder="Cari region..."
+                              value={regionSearch}
+                              onChange={(e) => setRegionSearch(e.target.value)}
+                              className="w-full pl-8 pr-3 py-1.5 text-sm text-gray-900 placeholder:text-gray-500 bg-white border border-gray-300 focus:border-primary focus:ring-1 focus:ring-primary rounded-md outline-none transition-all shadow-sm"
+                              autoFocus
+                            />
+                          </div>
+                        </div>
+                        <div className="max-h-[240px] overflow-y-auto p-1 custom-scrollbar">
+                          <button
+                            onClick={() => {
+                              setSelectedRegion("");
+                              setIsRegionDropdownOpen(false);
+                              setRegionSearch("");
+                            }}
+                            className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-md transition-colors ${!selectedRegion ? "bg-primary/10 text-primary font-medium" : "text-gray-700 hover:bg-gray-100"}`}
+                          >
+                            Semua Region
+                            {!selectedRegion && <Check size={14} />}
+                          </button>
+                          {filteredRegions.length === 0 ? (
+                            <div className="px-3 py-4 text-center text-sm text-gray-500">
+                              Region tidak ditemukan
+                            </div>
+                          ) : (
+                            filteredRegions.map((r: any) => (
+                              <button
+                                key={r.id}
+                                onClick={() => {
+                                  setSelectedRegion(r.name);
+                                  setIsRegionDropdownOpen(false);
+                                  setRegionSearch("");
+                                }}
+                                className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-md transition-colors ${selectedRegion === r.name ? "bg-primary/10 text-primary font-medium" : "text-gray-700 hover:bg-gray-100"}`}
+                              >
+                                {r.name}
+                                {selectedRegion === r.name && (
+                                  <Check size={14} />
+                                )}
+                              </button>
+                            ))
+                          )}
                         </div>
                       </div>
-                      <div className="max-h-[240px] overflow-y-auto p-1 custom-scrollbar">
-                        <button
-                          onClick={() => {
-                            setSelectedRegion("");
-                            setIsRegionDropdownOpen(false);
-                            setRegionSearch("");
-                          }}
-                          className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-md transition-colors ${!selectedRegion ? "bg-primary/10 text-primary font-medium" : "text-gray-700 hover:bg-gray-100"}`}
-                        >
-                          Semua Region
-                          {!selectedRegion && <Check size={14} />}
-                        </button>
-                        {filteredRegions.length === 0 ? (
-                          <div className="px-3 py-4 text-center text-sm text-gray-500">
-                            Region tidak ditemukan
+                    )}
+                  </div>
+                </div>
+
+                {/* Unit Induk Filter */}
+                <div className="flex items-center gap-3 relative" ref={unitRef}>
+                  <span className="text-sm font-medium text-gray-700 whitespace-nowrap">
+                    Unit Induk:
+                  </span>
+                  <div className="relative">
+                    <button
+                      onClick={() => setIsUnitDropdownOpen(!isUnitDropdownOpen)}
+                      className="flex items-center justify-between pl-3 pr-2 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 min-w-[160px]"
+                    >
+                      <span
+                        className={
+                          selectedUnit ? "text-gray-900" : "text-gray-500"
+                        }
+                      >
+                        {selectedUnit || "Semua Unit"}
+                      </span>
+                      <ChevronDown
+                        size={16}
+                        className={`text-gray-500 transition-transform ${isUnitDropdownOpen ? "rotate-180" : ""}`}
+                      />
+                    </button>
+
+                    {isUnitDropdownOpen && (
+                      <div className="absolute top-full left-0 mt-1 w-full min-w-[220px] bg-white rounded-lg shadow-lg border border-gray-100 z-50 overflow-hidden flex flex-col">
+                        <div className="p-2 border-b border-gray-100 sticky top-0 bg-white">
+                          <div className="relative">
+                            <Search
+                              size={14}
+                              className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400"
+                            />
+                            <input
+                              type="text"
+                              placeholder="Cari unit induk..."
+                              value={unitSearch}
+                              onChange={(e) => setUnitSearch(e.target.value)}
+                              className="w-full pl-8 pr-3 py-1.5 text-sm text-gray-900 placeholder:text-gray-500 bg-white border border-gray-300 focus:border-primary focus:ring-1 focus:ring-primary rounded-md outline-none transition-all shadow-sm"
+                              autoFocus
+                            />
                           </div>
-                        ) : (
-                          filteredRegions.map((r: any) => (
-                            <button
-                              key={r.id}
-                              onClick={() => {
-                                setSelectedRegion(r.name);
-                                setIsRegionDropdownOpen(false);
-                                setRegionSearch("");
-                              }}
-                              className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-md transition-colors ${selectedRegion === r.name ? "bg-primary/10 text-primary font-medium" : "text-gray-700 hover:bg-gray-100"}`}
-                            >
-                              {r.name}
-                              {selectedRegion === r.name && <Check size={14} />}
-                            </button>
-                          ))
-                        )}
+                        </div>
+                        <div className="max-h-[240px] overflow-y-auto p-1 custom-scrollbar">
+                          <button
+                            onClick={() => {
+                              setSelectedUnit("");
+                              setIsUnitDropdownOpen(false);
+                              setUnitSearch("");
+                            }}
+                            className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-md transition-colors ${!selectedUnit ? "bg-primary/10 text-primary font-medium" : "text-gray-700 hover:bg-gray-100"}`}
+                          >
+                            Semua Unit
+                            {!selectedUnit && <Check size={14} />}
+                          </button>
+                          {filteredUnits.length === 0 ? (
+                            <div className="px-3 py-4 text-center text-sm text-gray-500">
+                              Unit tidak ditemukan
+                            </div>
+                          ) : (
+                            filteredUnits.map((u: any) => (
+                              <button
+                                key={u.id}
+                                onClick={() => {
+                                  setSelectedUnit(u.name);
+                                  setIsUnitDropdownOpen(false);
+                                  setUnitSearch("");
+                                }}
+                                className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-md transition-colors ${selectedUnit === u.name ? "bg-primary/10 text-primary font-medium" : "text-gray-700 hover:bg-gray-100"}`}
+                              >
+                                {u.name}
+                                {selectedUnit === u.name && <Check size={14} />}
+                              </button>
+                            ))
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
+                </div>
+
+                {/* Unit Pelaksana Filter */}
+                <div className="flex items-center gap-3 relative" ref={upkRef}>
+                  <span className="text-sm font-medium text-gray-700 whitespace-nowrap">
+                    Unit Pelaksana:
+                  </span>
+                  <div className="relative">
+                    <button
+                      onClick={() => setIsUpkDropdownOpen(!isUpkDropdownOpen)}
+                      className="flex items-center justify-between pl-3 pr-2 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 min-w-[160px]"
+                    >
+                      <span
+                        className={
+                          selectedUnitPelaksana
+                            ? "text-gray-900"
+                            : "text-gray-500"
+                        }
+                      >
+                        {selectedUnitPelaksana || "Semua Pelaksana"}
+                      </span>
+                      <ChevronDown
+                        size={16}
+                        className={`text-gray-500 transition-transform ${isUpkDropdownOpen ? "rotate-180" : ""}`}
+                      />
+                    </button>
+
+                    {isUpkDropdownOpen && (
+                      <div className="absolute top-full left-0 mt-1 w-full min-w-[220px] bg-white rounded-lg shadow-lg border border-gray-100 z-50 overflow-hidden flex flex-col">
+                        <div className="p-2 border-b border-gray-100 sticky top-0 bg-white">
+                          <div className="relative">
+                            <Search
+                              size={14}
+                              className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400"
+                            />
+                            <input
+                              type="text"
+                              placeholder="Cari unit pelaksana..."
+                              value={upkSearch}
+                              onChange={(e) => setUpkSearch(e.target.value)}
+                              className="w-full pl-8 pr-3 py-1.5 text-sm text-gray-900 placeholder:text-gray-500 bg-white border border-gray-300 focus:border-primary focus:ring-1 focus:ring-primary rounded-md outline-none transition-all shadow-sm"
+                              autoFocus
+                            />
+                          </div>
+                        </div>
+                        <div className="max-h-[240px] overflow-y-auto p-1 custom-scrollbar">
+                          <button
+                            onClick={() => {
+                              setSelectedUnitPelaksana("");
+                              setIsUpkDropdownOpen(false);
+                              setUpkSearch("");
+                            }}
+                            className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-md transition-colors ${!selectedUnitPelaksana ? "bg-primary/10 text-primary font-medium" : "text-gray-700 hover:bg-gray-100"}`}
+                          >
+                            Semua Pelaksana
+                            {!selectedUnitPelaksana && <Check size={14} />}
+                          </button>
+                          {filteredUpks.length === 0 ? (
+                            <div className="px-3 py-4 text-center text-sm text-gray-500">
+                              Unit pelaksana tidak ditemukan
+                            </div>
+                          ) : (
+                            filteredUpks.map((u: any) => (
+                              <button
+                                key={u.id}
+                                onClick={() => {
+                                  setSelectedUnitPelaksana(u.name);
+                                  setIsUpkDropdownOpen(false);
+                                  setUpkSearch("");
+                                }}
+                                className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-md transition-colors ${selectedUnitPelaksana === u.name ? "bg-primary/10 text-primary font-medium" : "text-gray-700 hover:bg-gray-100"}`}
+                              >
+                                {u.name}
+                                {selectedUnitPelaksana === u.name && (
+                                  <Check size={14} />
+                                )}
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
 
               {/* Tabs */}
               <div className="flex bg-gray-100 p-1 rounded-lg w-fit">
                 <button
                   onClick={() => setActiveTab("kertas-kerja")}
-                  className={`flex items-center gap-2 px-6 py-2.5 rounded-md text-sm font-medium transition-all ${activeTab === "kertas-kerja"
+                  className={`flex items-center gap-2 px-6 py-2.5 rounded-md text-sm font-medium transition-all ${
+                    activeTab === "kertas-kerja"
                       ? "bg-white text-primary shadow-sm"
                       : "text-gray-600 hover:text-gray-900 hover:bg-gray-200/50"
-                    }`}
+                  }`}
                 >
                   <FileText size={16} />
                   Kertas Kerja
                 </button>
                 <button
                   onClick={() => setActiveTab("ringkasan")}
-                  className={`flex items-center gap-2 px-6 py-2.5 rounded-md text-sm font-medium transition-all ${activeTab === "ringkasan"
+                  className={`flex items-center gap-2 px-6 py-2.5 rounded-md text-sm font-medium transition-all ${
+                    activeTab === "ringkasan"
                       ? "bg-white text-primary shadow-sm"
                       : "text-gray-600 hover:text-gray-900 hover:bg-gray-200/50"
-                    }`}
+                  }`}
                 >
                   <PieChart size={16} />
                   Ringkasan
@@ -253,13 +450,17 @@ export default function KertasKerjaPage() {
             {activeTab === "kertas-kerja" && (
               <KertasKerjaTable
                 selectedRegion={selectedRegion}
+                selectedUnit={selectedUnit}
+                selectedUnitPelaksana={selectedUnitPelaksana}
                 selectedYear={selectedYear}
                 canUpdate={canUpdate}
               />
             )}
             {activeTab === "ringkasan" && (
-              <RingkasanTable 
-                selectedRegion={selectedRegion} 
+              <RingkasanTable
+                selectedRegion={selectedRegion}
+                selectedUnit={selectedUnit}
+                selectedUnitPelaksana={selectedUnitPelaksana}
                 selectedYear={selectedYear}
               />
             )}

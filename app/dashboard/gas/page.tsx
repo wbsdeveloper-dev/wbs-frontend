@@ -18,8 +18,10 @@ import {
   useChartFlow,
   useFilters,
   useEvents,
+  useMapLocations,
 } from "@/hooks/service/dashboard-api";
 import { useContracts } from "@/hooks/service/contract-api";
+import { useSites } from "@/hooks/service/site-api";
 import type { Granularity, Periode } from "@/app/components/RealtimeChart";
 
 // Components
@@ -41,6 +43,17 @@ function getCurrentMonthRange() {
   };
 }
 
+// Helper to get date range from 2 days ago to today
+function getTwoDaysAgoRange() {
+  const now = new Date();
+  const start = new Date();
+  start.setDate(now.getDate() - 2);
+  return {
+    startDate: start.toISOString().split("T")[0],
+    endDate: now.toISOString().split("T")[0],
+  };
+}
+
 export default function GasDashboard() {
   const router = useRouter();
   const { hasPrivilege } = usePrivilege();
@@ -58,20 +71,32 @@ export default function GasDashboard() {
 
   const todayDate = useMemo(() => new Date().toISOString().split("T")[0], []);
   const { startDate, endDate } = useMemo(() => getCurrentMonthRange(), []);
-  const [distributionStartDate, setDistributionStartDate] = useState(startDate);
-  const [distributionEndDate, setDistributionEndDate] = useState(endDate);
+  const { startDate: twoDaysAgoStart, endDate: twoDaysAgoEnd } = useMemo(
+    () => getTwoDaysAgoRange(),
+    []
+  );
+  const [distributionStartDate, setDistributionStartDate] = useState(twoDaysAgoStart);
+  const [distributionEndDate, setDistributionEndDate] = useState(twoDaysAgoEnd);
   const [startDateFilter, setStartDateFilter] = useState<string | null>(
     todayDate,
   );
   const [endDateFilter, setEndDateFilter] = useState<string | null>(todayDate);
 
   // Chart flow state
-  const [granularity, setGranularity] = useState<"hour" | "day" | "month" | "year">("hour");
+  const [granularity, setGranularity] = useState<
+    "hour" | "day" | "month" | "year"
+  >("hour");
   const [chartBy, setChartBy] = useState<"supplier" | "plant">("supplier");
   const [selectedPemasokId, setSelectedPemasokId] = useState<
     string | undefined
   >(undefined);
   const [selectedPembangkitId, setSelectedPembangkitId] = useState<
+    string | undefined
+  >(undefined);
+  const [selectedRegion, setSelectedRegion] = useState<
+    string | undefined
+  >(undefined);
+  const [selectedCommodity, setSelectedCommodity] = useState<
     string | undefined
   >(undefined);
 
@@ -81,21 +106,113 @@ export default function GasDashboard() {
     distributionStartDate,
     distributionEndDate,
     distributionBy as "supplier" | "plant",
+    selectedRegion,
   );
 
   // Top suppliers/plants date filters
-  const [topSuppliersStart, setTopSuppliersStart] = useState(startDate);
-  const [topSuppliersEnd, setTopSuppliersEnd] = useState(endDate);
-  const [topPlantsStart, setTopPlantsStart] = useState(startDate);
-  const [topPlantsEnd, setTopPlantsEnd] = useState(endDate);
+  const [topSuppliersStart, setTopSuppliersStart] = useState(twoDaysAgoStart);
+  const [topSuppliersEnd, setTopSuppliersEnd] = useState(twoDaysAgoEnd);
+  const [topPlantsStart, setTopPlantsStart] = useState(twoDaysAgoStart);
+  const [topPlantsEnd, setTopPlantsEnd] = useState(twoDaysAgoEnd);
 
-  // Fetch top suppliers and plants
+  // Top LNG suppliers/plants date filters
+  const [topLngSuppliersStart, setTopLngSuppliersStart] = useState(twoDaysAgoStart);
+  const [topLngSuppliersEnd, setTopLngSuppliersEnd] = useState(twoDaysAgoEnd);
+  const [topLngPlantsStart, setTopLngPlantsStart] = useState(twoDaysAgoStart);
+  const [topLngPlantsEnd, setTopLngPlantsEnd] = useState(twoDaysAgoEnd);
+
+  const formattedTopSuppliersPeriod = useMemo(() => {
+    try {
+      const start = new Date(topSuppliersStart + "T00:00:00").toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      });
+      const end = new Date(topSuppliersEnd + "T00:00:00").toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      });
+      return `${start} - ${end}`;
+    } catch {
+      return `${topSuppliersStart} - ${topSuppliersEnd}`;
+    }
+  }, [topSuppliersStart, topSuppliersEnd]);
+
+  const formattedTopPlantsPeriod = useMemo(() => {
+    try {
+      const start = new Date(topPlantsStart + "T00:00:00").toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      });
+      const end = new Date(topPlantsEnd + "T00:00:00").toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      });
+      return `${start} - ${end}`;
+    } catch {
+      return `${topPlantsStart} - ${topPlantsEnd}`;
+    }
+  }, [topPlantsStart, topPlantsEnd]);
+
+  const formattedTopLngSuppliersPeriod = useMemo(() => {
+    try {
+      const start = new Date(topLngSuppliersStart + "T00:00:00").toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      });
+      const end = new Date(topLngSuppliersEnd + "T00:00:00").toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      });
+      return `${start} - ${end}`;
+    } catch {
+      return `${topLngSuppliersStart} - ${topLngSuppliersEnd}`;
+    }
+  }, [topLngSuppliersStart, topLngSuppliersEnd]);
+
+  const formattedTopLngPlantsPeriod = useMemo(() => {
+    try {
+      const start = new Date(topLngPlantsStart + "T00:00:00").toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      });
+      const end = new Date(topLngPlantsEnd + "T00:00:00").toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      });
+      return `${start} - ${end}`;
+    } catch {
+      return `${topLngPlantsStart} - ${topLngPlantsEnd}`;
+    }
+  }, [topLngPlantsStart, topLngPlantsEnd]);
+
+  // Fetch top suppliers and plants (GAS PIPA)
   const { data: topSuppliersData, isLoading: isSuppliersLoading } =
-    useTopSuppliers(topSuppliersStart, topSuppliersEnd, 5);
+    useTopSuppliers(topSuppliersStart, topSuppliersEnd, 5, selectedRegion, "GAS PIPA");
   const { data: topPlantsData, isLoading: isPlantsLoading } = useTopPlants(
     topPlantsStart,
     topPlantsEnd,
     5,
+    selectedRegion,
+    "GAS PIPA",
+  );
+
+  // Fetch top LNG suppliers and plants
+  const { data: topLngSuppliersData, isLoading: isLngSuppliersLoading } =
+    useTopSuppliers(topLngSuppliersStart, topLngSuppliersEnd, 5, selectedRegion, "LNG");
+  const { data: topLngPlantsData, isLoading: isLngPlantsLoading } = useTopPlants(
+    topLngPlantsStart,
+    topLngPlantsEnd,
+    5,
+    selectedRegion,
+    "LNG",
   );
 
   // Fetch chart flow data
@@ -106,6 +223,8 @@ export default function GasDashboard() {
     chartBy,
     selectedPemasokId,
     selectedPembangkitId,
+    selectedRegion,
+    selectedCommodity,
   );
 
   // Fetch filter options — when a pemasok or pembangkit is selected,
@@ -113,7 +232,43 @@ export default function GasDashboard() {
   const { data: filtersData } = useFilters(
     selectedPemasokId,
     selectedPembangkitId,
+    selectedRegion,
+    selectedCommodity,
   );
+
+  // Fetch all sites to help with frontend region filtering (includes sites without coordinates)
+  const { data: allSites } = useSites({ commodity: "LNG,GAS PIPA" });
+
+  // Filter filtersData locally if a region is selected
+  const filteredFiltersData = useMemo(() => {
+    if (!filtersData) return null;
+    if (!selectedRegion || !allSites) return filtersData;
+
+    const selectedRegionLower = selectedRegion.toLowerCase();
+    const regionSites = allSites.filter(s => s.region?.toLowerCase() === selectedRegionLower);
+    const regionSiteIds = new Set(regionSites.map(s => s.id));
+
+    return {
+      ...filtersData,
+      pemasok: filtersData.pemasok.filter(p => regionSiteIds.has(p.id)),
+      pembangkit: filtersData.pembangkit.filter(p => regionSiteIds.has(p.id)),
+    };
+  }, [filtersData, selectedRegion, allSites]);
+
+  // Filter chartFlowData locally if a region is selected
+  const filteredChartFlowData = useMemo(() => {
+    if (!chartFlowData) return null;
+    if (!selectedRegion || !allSites) return chartFlowData;
+
+    const selectedRegionLower = selectedRegion.toLowerCase();
+    const regionSites = allSites.filter(s => s.region?.toLowerCase() === selectedRegionLower);
+    const regionSiteIds = new Set(regionSites.map(s => s.id));
+
+    return {
+      ...chartFlowData,
+      series: chartFlowData.series.filter(s => regionSiteIds.has(s.siteId))
+    };
+  }, [chartFlowData, selectedRegion, allSites]);
 
   // Fetch contract from contracts table, filtered by selected pemasok/pembangkit.
   // Enabled whenever at least pemasok OR pembangkit is chosen, so the contract
@@ -199,6 +354,18 @@ export default function GasDashboard() {
     setSelectedPembangkitId(pembangkitId ?? undefined);
   }, []);
 
+  const handleRegionChange = useCallback((region: string | null) => {
+    setSelectedRegion(region ?? undefined);
+    setSelectedPemasokId(undefined);
+    setSelectedPembangkitId(undefined);
+  }, []);
+
+  const handleCommodityChange = useCallback((commodity: string | null) => {
+    setSelectedCommodity(commodity ?? undefined);
+    setSelectedPemasokId(undefined);
+    setSelectedPembangkitId(undefined);
+  }, []);
+
   const handleDateRangeChange = useCallback(
     (startDate: string | null, endDate: string | null) => {
       setStartDateFilter(startDate);
@@ -246,6 +413,24 @@ export default function GasDashboard() {
     }));
   }, [topPlantsData]);
 
+  const topLngPemasokList = useMemo(() => {
+    if (!topLngSuppliersData?.items) return [];
+    return topLngSuppliersData.items.map(
+      (item: { name: string; value: number }) => ({
+        name: item.name,
+        volume: `${item.value.toFixed(1)}`,
+      }),
+    );
+  }, [topLngSuppliersData]);
+
+  const topLngPembangkitList = useMemo(() => {
+    if (!topLngPlantsData?.items) return [];
+    return topLngPlantsData.items.map((item: { name: string; value: number }) => ({
+      name: item.name,
+      volume: `${item.value.toFixed(2)}`,
+    }));
+  }, [topLngPlantsData]);
+
   if (isAuthLoading || !canRead) {
     return (
       <div className="flex h-screen items-center justify-center bg-gray-50">
@@ -283,68 +468,112 @@ export default function GasDashboard() {
             </div>
 
             {/* Cards Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+            <div className="flex overflow-x-auto gap-4 mb-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
               {isDistLoading ? (
-                <div className="bg-white rounded-xl p-6 flex items-center justify-center">
+                <div className="bg-white rounded-xl p-6 flex items-center justify-center w-[360px] min-w-[360px] md:w-[420px] md:min-w-[420px] flex-shrink-0">
                   <Loader2 className="animate-spin text-secondary" size={32} />
                 </div>
               ) : (
-                <FuelTypeDonutChart
-                  openModalFunction={open}
-                  data={dataPieChart}
-                  changeFilterType={setFilterType}
-                  filterType={filterType}
-                  startDate={distributionStartDate}
-                  endDate={distributionEndDate}
-                  onStartDateChange={setDistributionStartDate}
-                  onEndDateChange={setDistributionEndDate}
-                />
+                <div className="w-[360px] min-w-[360px] md:w-[420px] md:min-w-[420px] flex-shrink-0">
+                  <FuelTypeDonutChart
+                    openModalFunction={open}
+                    data={dataPieChart}
+                    changeFilterType={setFilterType}
+                    filterType={filterType}
+                    startDate={distributionStartDate}
+                    endDate={distributionEndDate}
+                    onStartDateChange={setDistributionStartDate}
+                    onEndDateChange={setDistributionEndDate}
+                  />
+                </div>
               )}
               {isSuppliersLoading ? (
-                <div className="bg-white rounded-xl p-6 flex items-center justify-center">
+                <div className="bg-white rounded-xl p-6 flex items-center justify-center w-[360px] min-w-[360px] md:w-[420px] md:min-w-[420px] flex-shrink-0">
                   <Loader2 className="animate-spin text-secondary" size={32} />
                 </div>
               ) : (
-                <TopVolumeList
-                  title="Top 5 Volume Pemasok"
-                  list={topPemasokList}
-                  unit={topSuppliersData?.unit || "%"}
-                  description={`List top 5 performa pemasok dengan perhitungan Realisasi/TOP ${topSuppliersData?.unit}`}
-                  startDate={topSuppliersStart}
-                  endDate={topSuppliersEnd}
-                  onStartDateChange={setTopSuppliersStart}
-                  onEndDateChange={setTopSuppliersEnd}
-                />
+                <div className="w-[360px] min-w-[360px] md:w-[420px] md:min-w-[420px] flex-shrink-0">
+                  <TopVolumeList
+                    title="Top 5 Volume Pemasok"
+                    list={topPemasokList}
+                    unit={topSuppliersData?.unit || "BBTUD"}
+                    description={`List top 5 performa pemasok dengan satuan ${topSuppliersData?.unit || "BBTUD"} per tanggal ${formattedTopSuppliersPeriod}`}
+                    startDate={topSuppliersStart}
+                    endDate={topSuppliersEnd}
+                    onStartDateChange={setTopSuppliersStart}
+                    onEndDateChange={setTopSuppliersEnd}
+                  />
+                </div>
               )}
               {isPlantsLoading ? (
-                <div className="bg-white rounded-xl p-6 flex items-center justify-center">
+                <div className="bg-white rounded-xl p-6 flex items-center justify-center w-[360px] min-w-[360px] md:w-[420px] md:min-w-[420px] flex-shrink-0">
                   <Loader2 className="animate-spin text-secondary" size={32} />
                 </div>
               ) : (
-                <TopVolumeList
-                  title="Top 5 Volume Pembangkit"
-                  list={topPembangkitList}
-                  unit={topPlantsData?.unit || "BBTUD"}
-                  description={`List top 5 performa pembangkit dengan satuan ${topPlantsData?.unit}`}
-                  startDate={topPlantsStart}
-                  endDate={topPlantsEnd}
-                  onStartDateChange={setTopPlantsStart}
-                  onEndDateChange={setTopPlantsEnd}
-                />
+                <div className="w-[360px] min-w-[360px] md:w-[420px] md:min-w-[420px] flex-shrink-0">
+                  <TopVolumeList
+                    title="Top 5 Volume Pembangkit"
+                    list={topPembangkitList}
+                    unit={topPlantsData?.unit || "BBTUD"}
+                    description={`List top 5 performa pembangkit dengan satuan ${topPlantsData?.unit || "BBTUD"} per tanggal ${formattedTopPlantsPeriod}`}
+                    startDate={topPlantsStart}
+                    endDate={topPlantsEnd}
+                    onStartDateChange={setTopPlantsStart}
+                    onEndDateChange={setTopPlantsEnd}
+                  />
+                </div>
+              )}
+              {isLngSuppliersLoading ? (
+                <div className="bg-white rounded-xl p-6 flex items-center justify-center w-[360px] min-w-[360px] md:w-[420px] md:min-w-[420px] flex-shrink-0">
+                  <Loader2 className="animate-spin text-secondary" size={32} />
+                </div>
+              ) : (
+                <div className="w-[360px] min-w-[360px] md:w-[420px] md:min-w-[420px] flex-shrink-0">
+                  <TopVolumeList
+                    title="Top 5 Volume Pemasok (LNG)"
+                    list={topLngPemasokList}
+                    unit={topLngSuppliersData?.unit || "BBTUD"}
+                    description={`List top 5 performa pemasok LNG dengan satuan ${topLngSuppliersData?.unit || "BBTUD"} per tanggal ${formattedTopLngSuppliersPeriod}`}
+                    startDate={topLngSuppliersStart}
+                    endDate={topLngSuppliersEnd}
+                    onStartDateChange={setTopLngSuppliersStart}
+                    onEndDateChange={setTopLngSuppliersEnd}
+                  />
+                </div>
+              )}
+              {isLngPlantsLoading ? (
+                <div className="bg-white rounded-xl p-6 flex items-center justify-center w-[360px] min-w-[360px] md:w-[420px] md:min-w-[420px] flex-shrink-0">
+                  <Loader2 className="animate-spin text-secondary" size={32} />
+                </div>
+              ) : (
+                <div className="w-[360px] min-w-[360px] md:w-[420px] md:min-w-[420px] flex-shrink-0">
+                  <TopVolumeList
+                    title="Top 5 Volume Pembangkit (LNG)"
+                    list={topLngPembangkitList}
+                    unit={topLngPlantsData?.unit || "BBTUD"}
+                    description={`List top 5 performa pembangkit LNG dengan satuan ${topLngPlantsData?.unit || "BBTUD"} per tanggal ${formattedTopLngPlantsPeriod}`}
+                    startDate={topLngPlantsStart}
+                    endDate={topLngPlantsEnd}
+                    onStartDateChange={setTopLngPlantsStart}
+                    onEndDateChange={setTopLngPlantsEnd}
+                  />
+                </div>
               )}
             </div>
 
             <div className="mb-6">
               <RealtimeChart
                 contractData={contractsData ?? null}
-                chartFlowData={chartFlowData ?? null}
-                filtersData={filtersData ?? null}
+                chartFlowData={filteredChartFlowData ?? null}
+                filtersData={filteredFiltersData ?? null}
                 isLoading={isChartLoading}
                 isContractLoading={isContractLoading}
                 onFilterByChange={handleFilterByChange}
                 onPeriodChange={handlePeriodChange}
                 onPemasokChange={handlePemasokChange}
                 onPembangkitChange={handlePembangkitChange}
+                onRegionChange={handleRegionChange}
+                onCommodityChange={handleCommodityChange}
                 onDateRangeChange={handleDateRangeChange}
               />
             </div>

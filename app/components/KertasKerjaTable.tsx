@@ -17,10 +17,12 @@ import {
 interface KertasKerjaTableProps {
   selectedRegion: string;
   selectedYear: number;
+  selectedUnit?: string;
+  selectedUnitPelaksana?: string;
   canUpdate?: boolean;
 }
 
-export default function KertasKerjaTable({ selectedRegion, selectedYear, canUpdate = true }: KertasKerjaTableProps) {
+export default function KertasKerjaTable({ selectedRegion, selectedYear, selectedUnit, selectedUnitPelaksana, canUpdate = true }: KertasKerjaTableProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showInactive, setShowInactive] = useState(false);
   const [localRecords, setLocalRecords] = useState<Record<string, RecordKertasKerja>>({});
@@ -31,8 +33,13 @@ export default function KertasKerjaTable({ selectedRegion, selectedYear, canUpda
   const upsertMutation = useBulkUpsertKertasKerjaRecords();
   const { data: polaOperasiList = [] } = useKertasKerjaMaster("master_pola_operasi");
   
-  const filteredTemplates = (selectedRegion ? templates.filter(t => t.site_region === selectedRegion) : templates)
-    .filter(t => showInactive ? true : t.is_active !== false);
+  const filteredTemplates = templates.filter(t => {
+    if (selectedRegion && t.site_region !== selectedRegion) return false;
+    if (selectedUnit && t.unit_name !== selectedUnit) return false;
+    if (selectedUnitPelaksana && t.upk_name !== selectedUnitPelaksana) return false;
+    if (!showInactive && t.is_active === false) return false;
+    return true;
+  });
 
   const availableUnits = Array.from(
     new Set(filteredTemplates.map(t => t.unit_name).filter(Boolean))
@@ -196,7 +203,7 @@ const handleExportExcel = () => {
       const row1 = [
         "NO.", "UNIT PELAKSANA", "JENIS KIT", "PEMBANGKIT", "JENIS BBM", "MODA ANGKUTAN", 
         "TBBM", "", "",
-        "TANGKI TIMBUN", "", "",
+        "TANGKI TIMBUN", "", "", "",
         "HOP MINIMUM"
       ];
       displayedMonths.forEach(m => {
@@ -213,7 +220,7 @@ const handleExportExcel = () => {
       const row2: any[] = [];
       for (let i = 0; i < 6; i++) row2.push("");
       row2.push("NAMA", "JARAK (km)", "Estimasi Pengiriman");
-      row2.push("KAP. (kL)", "PEMAKAIAN RATA2 BULAN-1", "HOP (Hari)");
+      row2.push("KAP. (kL)", "PEMAKAIAN RATA2 BULAN-1", "FREIGHT COST (Rp)", "HOP (Hari)");
       row2.push("");
       displayedMonths.forEach(() => { row2.push("", "", "", ""); });
       row2.push("TERIMA (kL)"); for (let i = 1; i < numMonths; i++) row2.push("");
@@ -234,7 +241,7 @@ const handleExportExcel = () => {
       const row3: any[] = [];
       for (let i = 0; i < 6; i++) row3.push("");
       row3.push("", "", "Hari");
-      row3.push("", "", "");
+      row3.push("", "", "", "");
       row3.push("");
       displayedMonths.forEach(() => { row3.push("", "", "", ""); });
       displayedMonths.forEach(m => row3.push(m));
@@ -293,6 +300,7 @@ const handleExportExcel = () => {
             
             trData.push(template.site_capacity ?? "-");
             trData.push(template.average_usage ?? "-");
+            trData.push(template.freight_costs ?? "-");
             const calcHop = template.site_capacity && template.average_usage ? Math.round(template.site_capacity / template.average_usage) : "-";
             trData.push(calcHop);
             trData.push(template.hop_minimum ?? "-");
@@ -331,7 +339,7 @@ const handleExportExcel = () => {
           const tpData: any[] = [];
           tpData.push("");
           tpData.push(`TOTAL ${product} ${upkName}`);
-          for (let i = 0; i < 11; i++) tpData.push("");
+          for (let i = 0; i < 12; i++) tpData.push("");
           
           displayedMonths.forEach(m => {
             tpData.push(getSum(productTemplates, m, "stock"));
@@ -364,7 +372,7 @@ const handleExportExcel = () => {
         const tsData: any[] = [];
         tsData.push("");
         tsData.push(`TOTAL BBM ${upkName}`);
-        for (let i = 0; i < 11; i++) tsData.push("");
+        for (let i = 0; i < 12; i++) tsData.push("");
         
         displayedMonths.forEach(m => {
           tsData.push(getSum(siteTemplates, m, "stock"));
@@ -404,8 +412,8 @@ const handleExportExcel = () => {
       merges.push({ s: { r: 0, c: 4 }, e: { r: 2, c: 4 } });
       merges.push({ s: { r: 0, c: 5 }, e: { r: 2, c: 5 } });
       merges.push({ s: { r: 0, c: 6 }, e: { r: 0, c: 8 } });
-      merges.push({ s: { r: 0, c: 9 }, e: { r: 0, c: 11 } });
-      merges.push({ s: { r: 0, c: 12 }, e: { r: 2, c: 12 } });
+      merges.push({ s: { r: 0, c: 9 }, e: { r: 0, c: 12 } });
+      merges.push({ s: { r: 0, c: 13 }, e: { r: 2, c: 13 } });
       if (merges.length > 0) ws["!merges"] = merges;
 
       const safeSheetName = unit.substring(0, 31).replace(/[\\/*?:\[\]]/g, '');
@@ -445,6 +453,7 @@ const handleExportExcel = () => {
         { content: "Estimasi Pengiriman", rowSpan: 3 },
         { content: "TANGKI TIMBUN", rowSpan: 3 },
         { content: "PEMAKAIAN RATA2 BULAN-1", rowSpan: 3 },
+        { content: "FREIGHT COST (Rp)", rowSpan: 3 },
         { content: "HOP (Hari)", rowSpan: 3 },
         { content: "HOP MINIMUM", rowSpan: 3 }
       ];
@@ -537,6 +546,7 @@ const handleExportExcel = () => {
             
             trData.push(template.site_capacity ?? "-");
             trData.push(template.average_usage ?? "-");
+            trData.push(template.freight_costs ?? "-");
             const calcHop = template.site_capacity && template.average_usage ? Math.round(template.site_capacity / template.average_usage) : "-";
             trData.push(calcHop);
             trData.push(template.hop_minimum ?? "-");
@@ -578,12 +588,13 @@ const handleExportExcel = () => {
           const tsData: any[] = [];
           tsData.push({ content: "TOTAL S.D", colSpan: 2, styles: { halign: 'center', fontStyle: 'bold' } });
           tsData.push(upkName || "-");
-          tsData.push("", product, "", "", "", "");
+          tsData.push("", product, "", "", "", "", "");
           
           const sumCap = siteTemplates.reduce((s, t) => s + (t.site_capacity || 0), 0);
           const sumUsage = siteTemplates.reduce((s, t) => s + (t.average_usage || 0), 0);
           tsData.push(sumCap > 0 ? sumCap : "-");
           tsData.push(sumUsage > 0 ? sumUsage : "-");
+          tsData.push("-");
           tsData.push(sumCap > 0 && sumUsage > 0 ? Math.round(sumCap / sumUsage) : "-");
           tsData.push("-");
 
@@ -616,12 +627,13 @@ const handleExportExcel = () => {
         
         const totData: any[] = [];
         totData.push({ content: "TOTAL", colSpan: 2, styles: { halign: 'center', fontStyle: 'bold' } });
-        totData.push(upkName || "-", "", "", "", "", "", "");
+        totData.push(upkName || "-", "", "", "", "", "", "", "");
         
         const sumCap = siteTemplates.reduce((s, t) => s + (t.site_capacity || 0), 0);
         const sumUsage = siteTemplates.reduce((s, t) => s + (t.average_usage || 0), 0);
         totData.push(sumCap > 0 ? sumCap : "-");
         totData.push(sumUsage > 0 ? sumUsage : "-");
+        totData.push("-");
         totData.push(sumCap > 0 && sumUsage > 0 ? Math.round(sumCap / sumUsage) : "-");
         totData.push("-");
 
@@ -773,7 +785,7 @@ const handleExportExcel = () => {
               <th className="border border-slate-200 p-2 font-bold uppercase text-[10px] bg-slate-100" colSpan={3}>
                 TBBM
               </th>
-              <th className="border border-slate-200 p-2 font-bold uppercase text-[10px] bg-slate-100" colSpan={3}>
+              <th className="border border-slate-200 p-2 font-bold uppercase text-[10px] bg-slate-100" colSpan={4}>
                 TANGKI TIMBUN
               </th>
               <th className="border border-slate-200 p-2 font-bold uppercase text-[10px]" rowSpan={3}>
@@ -836,6 +848,9 @@ const handleExportExcel = () => {
               </th>
               <th className="border border-slate-200 p-2 font-bold bg-slate-100" rowSpan={2}>
                 PEMAKAIAN RATA2<br />BULAN-1
+              </th>
+              <th className="border border-slate-200 p-2 font-bold bg-slate-100" rowSpan={2}>
+                FREIGHT COST<br />(Rp)
               </th>
               <th className="border border-slate-200 p-2 font-bold bg-slate-100" rowSpan={2}>
                 HOP<br />(Hari)
@@ -982,6 +997,13 @@ const handleExportExcel = () => {
                       </td>
                       <td className="border border-gray-200 p-1">
                         <InputCell 
+                          defaultValue={template.freight_costs !== null && template.freight_costs !== undefined ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(template.freight_costs) : "-"} 
+                          readOnly 
+                          className="text-right" 
+                        />
+                      </td>
+                      <td className="border border-gray-200 p-1">
+                        <InputCell 
                           defaultValue={
                             template.site_capacity && template.average_usage 
                               ? Math.round(template.site_capacity / template.average_usage) 
@@ -1121,7 +1143,7 @@ const handleExportExcel = () => {
                         <td className="border-r border-teal-200 p-1.5 sticky left-[40px] z-10 bg-teal-50 shadow-[2px_0_8px_-3px_rgba(0,0,0,0.1)] text-left" colSpan={3}>
                           TOTAL {product} {upkName}
                         </td>
-                        <td className="border-r border-teal-200 p-1.5 text-center" colSpan={9}>-</td>
+                        <td className="border-r border-teal-200 p-1.5 text-center" colSpan={10}>-</td>
                         
                         {displayedMonths.map(m => (
                           <React.Fragment key={`tot-g1-${m}`}>
@@ -1160,7 +1182,7 @@ const handleExportExcel = () => {
                     <td className="border-r border-amber-300 p-1.5 sticky left-[40px] z-10 bg-amber-50 shadow-[2px_0_8px_-3px_rgba(0,0,0,0.1)] text-left" colSpan={3}>
                       TOTAL BBM {upkName}
                     </td>
-                    <td className="border-r border-amber-300 p-1.5 text-center" colSpan={9}>-</td>
+                    <td className="border-r border-amber-300 p-1.5 text-center" colSpan={10}>-</td>
                     
                     {displayedMonths.map(m => (
                       <React.Fragment key={`tota-g1-${m}`}>

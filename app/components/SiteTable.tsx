@@ -22,6 +22,7 @@ import {
   type DeleteRelationResponse,
 } from "@/hooks/service/site-api";
 import { usePrivilege } from "@/hooks/usePrivilege";
+import FilterAutocomplete from "./FilterAutocomplete";
 
 // Status badge component
 const StatusBadge = ({
@@ -249,6 +250,7 @@ export function DaftarSiteTable({
 
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [selectedCommodity, setSelectedCommodity] = useState<string>("");
   const [currentPage, setCurrentPage] = useState(0);
   const [itemsPerPage] = useState(5);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -257,9 +259,13 @@ export function DaftarSiteTable({
   const [pendingDeleteName, setPendingDeleteName] = useState<string>("");
   const [warnedSites, setWarnedSites] = useState<string[]>([]);
 
+  const effectiveCommodity = selectedCommodity
+    ? selectedCommodity
+    : commodity;
+
   const { data: sites, isLoading } = useSites({
     search: debouncedSearch,
-    commodity,
+    commodity: effectiveCommodity,
   });
   const deleteSiteMutation = useDeleteSite({
     onSuccess: (data: DeleteSiteResponse) => {
@@ -330,6 +336,8 @@ export function DaftarSiteTable({
     }
   };
 
+  const commodityOptions = commodity && commodity.length > 0 ? commodity : ["GAS PIPA", "LNG", "BBM"];
+
   // Pagination logic
   const totalPages = Math.ceil((sites?.length || 0) / itemsPerPage);
   const startIndex = currentPage * itemsPerPage;
@@ -340,22 +348,37 @@ export function DaftarSiteTable({
     <>
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
         {/* Table Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-3 border-b border-gray-200">
           <div className="flex items-center gap-1.5">
             <Menu size={20} className="text-gray-500" />
             <span className="text-sm font-medium text-gray-700">
               Tabel Daftar Pemasok & Pembangkit
             </span>
           </div>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Cari Pemasok / Pembangkit..."
-              className="w-48 md:w-56 pl-8 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
-            />
+          <div className="flex items-center gap-3">
+            <div className="w-52">
+              <FilterAutocomplete
+                label=""
+                options={["Semua Komoditas", ...commodityOptions]}
+                value={selectedCommodity || "Semua Komoditas"}
+                onChange={(val) => {
+                  const valStr = typeof val === "string" ? val : val || "";
+                  setSelectedCommodity(valStr === "Semua Komoditas" ? "" : valStr);
+                  setCurrentPage(0);
+                }}
+                placeholder="Pilih Komoditas"
+              />
+            </div>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Cari Pemasok / Pembangkit..."
+                className="w-48 md:w-56 pl-8 pr-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
+              />
+            </div>
           </div>
         </div>
 
@@ -373,8 +396,13 @@ export function DaftarSiteTable({
                 <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   Lokasi
                 </th>
+                {commodity?.includes("BBM") && (
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Kapasitas (kL)
+                  </th>
+                )}
                 <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Kapasitas {commodity?.includes("BBM") ? "(kL)" : ""}
+                  Kapasitas (MW)
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   Komoditas
@@ -393,7 +421,7 @@ export function DaftarSiteTable({
               {isLoading ? (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={commodity?.includes("BBM") ? 8 : 7}
                     className="px-4 py-8 text-center text-gray-500"
                   >
                     Memuat data...
@@ -402,7 +430,7 @@ export function DaftarSiteTable({
               ) : paginatedSites.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={commodity?.includes("BBM") ? 8 : 7}
                     className="px-4 py-8 text-center text-gray-500"
                   >
                     {searchTerm
@@ -427,15 +455,16 @@ export function DaftarSiteTable({
                     <td className="px-4 py-3 text-center text-gray-700">
                       {site.region}
                     </td>
+                    {commodity?.includes("BBM") && (
+                      <td className="px-4 py-3 text-center text-gray-700">
+                        {site.capacity
+                          ? `${site.capacity} kL`
+                          : "-"}
+                      </td>
+                    )}
                     <td className="px-4 py-3 text-center text-gray-700">
-                      {site.capacity
-                        ? `${site.capacity} ${
-                            commodity?.includes("BBM")
-                              ? "kL"
-                              : site.site_type === "PEMBANGKIT"
-                                ? "MW"
-                                : "kL"
-                          }`
+                      {site.capacity_mw
+                        ? `${site.capacity_mw} MW`
                         : "-"}
                     </td>
                     <td className="px-4 py-3 text-center text-gray-700">
@@ -526,6 +555,7 @@ export function RelasiOperasionalTable({
 
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [selectedCommodity, setSelectedCommodity] = useState<string>("");
   const [currentPage, setCurrentPage] = useState(0);
   const [itemsPerPage] = useState(5);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -567,11 +597,17 @@ export function RelasiOperasionalTable({
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  // Filter relations based on search term
+  const effectiveCommodities = selectedCommodity
+    ? [selectedCommodity]
+    : commodity && commodity.length > 0
+      ? commodity
+      : [];
+
+  // Filter relations based on search term & commodity
   const filteredRelations =
     relations?.filter((relation) => {
-      if (commodity && commodity.length > 0) {
-        if (!commodity.includes(relation.commodity)) {
+      if (effectiveCommodities.length > 0) {
+        if (!effectiveCommodities.includes(relation.commodity)) {
           return false;
         }
       }
@@ -622,6 +658,8 @@ export function RelasiOperasionalTable({
     }
   };
 
+  const commodityOptions = commodity && commodity.length > 0 ? commodity : ["GAS PIPA", "LNG", "BBM"];
+
   // Pagination logic
   const totalPages = Math.ceil((filteredRelations?.length || 0) / itemsPerPage);
   const startIndex = currentPage * itemsPerPage;
@@ -633,22 +671,37 @@ export function RelasiOperasionalTable({
     <>
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
         {/* Table Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-3 border-b border-gray-200">
           <div className="flex items-center gap-1.5">
             <Menu size={20} className="text-gray-500" />
             <span className="text-sm font-medium text-gray-700">
               Tabel Daftar Relasi
             </span>
           </div>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Cari relasi..."
-              className="w-48 md:w-56 pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
-            />
+          <div className="flex items-center gap-3">
+            <div className="w-52">
+              <FilterAutocomplete
+                label=""
+                options={["Semua Komoditas", ...commodityOptions]}
+                value={selectedCommodity || "Semua Komoditas"}
+                onChange={(val) => {
+                  const valStr = typeof val === "string" ? val : val || "";
+                  setSelectedCommodity(valStr === "Semua Komoditas" ? "" : valStr);
+                  setCurrentPage(0);
+                }}
+                placeholder="Pilih Komoditas"
+              />
+            </div>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Cari relasi..."
+                className="w-48 md:w-56 pl-8 pr-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
+              />
+            </div>
           </div>
         </div>
 

@@ -1,4 +1,5 @@
 "use client";
+import { useMemo } from "react";
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { CHART_COLORS } from "@/app/_constants";
@@ -30,6 +31,10 @@ interface PieChartDetailModalProps {
   tabs?: string[];
   descriptionPrefix?: string;
   unit?: string;
+  /** Optional moda filter support */
+  moda?: string | null;
+  onModaChange?: (value: string | null) => void;
+  modaOptions?: string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -50,8 +55,36 @@ export default function PieChartDetailModal({
   tabs = ["Pemasok", "Pembangkit"],
   descriptionPrefix = "Visualisasi konsumsi gas",
   unit = "BBTU",
+  moda,
+  onModaChange,
+  modaOptions = [],
 }: PieChartDetailModalProps) {
-  const total = data.reduce((sum, d) => sum + d.value, 0);
+  const total = useMemo(() => data.reduce((sum, d) => sum + d.value, 0), [data]);
+
+  const chartData = useMemo(() => {
+    if (total === 0) return data;
+    const grouped: any[] = [];
+    let lainLainValue = 0;
+    
+    data.forEach((item, index) => {
+      const pct = (item.value / total) * 100;
+      if (pct < 1) {
+        lainLainValue += item.value;
+      } else {
+        grouped.push({ ...item, originalIndex: index });
+      }
+    });
+
+    if (lainLainValue > 0) {
+      grouped.push({
+        name: "Lain-lain",
+        value: lainLainValue,
+        originalIndex: -1
+      });
+    }
+
+    return grouped;
+  }, [data, total]);
 
   /** Format YYYY-MM-DD → human-readable Indonesian date */
   const formattedDate = (() => {
@@ -121,6 +154,22 @@ export default function PieChartDetailModal({
                          transition-all duration-200"
             />
           </div>
+
+          {/* Moda select */}
+          {onModaChange && (
+            <select
+              value={moda || ""}
+              onChange={(e) => onModaChange(e.target.value || null)}
+              className="px-3 py-1.5 rounded-lg text-sm border border-gray-300 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-secondary/40 focus:border-secondary transition-all duration-200"
+            >
+              <option value="">Semua Moda</option>
+              {modaOptions.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
       </div>
 
@@ -130,7 +179,7 @@ export default function PieChartDetailModal({
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie
-                data={data}
+                data={chartData}
                 cx="50%"
                 cy="50%"
                 innerRadius={80}
@@ -138,10 +187,14 @@ export default function PieChartDetailModal({
                 paddingAngle={2}
                 dataKey="value"
               >
-                {data.map((_: DataItem, index: number) => (
+                {chartData.map((entry: any, index: number) => (
                   <Cell
                     key={`cell-${index}`}
-                    fill={CHART_COLORS[index % CHART_COLORS.length]}
+                    fill={
+                      entry.originalIndex !== -1
+                        ? CHART_COLORS[entry.originalIndex % CHART_COLORS.length]
+                        : "#cbd5e1" // gray for Lain-lain
+                    }
                   />
                 ))}
               </Pie>
@@ -151,8 +204,8 @@ export default function PieChartDetailModal({
                     const item = payload[0];
                     const pct =
                       total > 0
-                        ? (((item.value as number) / total) * 100).toFixed(1)
-                        : "0.0";
+                        ? (((item.value as number) / total) * 100).toFixed(2)
+                        : "0.00";
                     return (
                       <div className="bg-white px-3 py-2 rounded-lg shadow-lg border border-gray-200 text-sm">
                         <p className="font-medium text-gray-900">{item.name}</p>
@@ -180,7 +233,7 @@ export default function PieChartDetailModal({
           <div className="p-4 md:p-6 text-gray-900 h-[300px] md:h-[400px] overflow-auto border border-gray-200 rounded-lg">
             {data.map((item: DataItem, index: number) => {
               const pct =
-                total > 0 ? ((item.value / total) * 100).toFixed(1) : "0.0";
+                total > 0 ? ((item.value / total) * 100).toFixed(2) : "0.00";
               return (
                 <div
                   key={index}

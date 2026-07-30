@@ -64,6 +64,8 @@ export interface RealtimeChartProps {
   onFilterByChange?: (by: FilterBy | null) => void;
   onPemasokChange?: (pemasokId: string | null) => void;
   onPembangkitChange?: (pembangkitId: string | null) => void;
+  onRegionChange?: (region: string | null) => void;
+  onCommodityChange?: (commodity: string | null) => void;
   onDateRangeChange?: (
     startDate: string | null,
     endDate: string | null,
@@ -692,6 +694,8 @@ export default function RealtimeChart({
   onFilterByChange,
   onPemasokChange,
   onPembangkitChange,
+  onRegionChange,
+  onCommodityChange,
   onDateRangeChange,
 }: RealtimeChartProps = {}) {
   const chartRef = useRef<HTMLDivElement>(null);
@@ -750,6 +754,8 @@ export default function RealtimeChart({
   const [pemasok, setPemasok] = useState<string[]>(["Semua Pemasok"]);
   const [pembangkit, setPembangkit] = useState<string | null>(null);
   const [transportir, setTransportir] = useState<string | null>(null);
+  const [region, setRegion] = useState<string | null>("Semua Region");
+  const [commodity, setCommodity] = useState<string | null>("Semua Komoditas");
   const [openModal, setOpenModal] = useState(false);
   const [note, setNote] = useState("");
   const [selectedPemasokId, setSelectedPemasokId] = useState<
@@ -923,31 +929,47 @@ export default function RealtimeChart({
   }, [startDate, endDate, onDateRangeChange]);
 
   // Derive filter options from API data or fallback to hardcoded
+  const regionOptions = useMemo(() => {
+    let opts = ["Region 1", "Region 2"];
+    if (filtersData?.regions) {
+      opts = filtersData.regions;
+    }
+    return ["Semua Region", ...opts];
+  }, [filtersData]);
+
   const pemasokOptions = useMemo(() => {
     let opts = ["Pemasok A", "Pemasok B"];
     if (filtersData?.pemasok) {
       opts = filtersData.pemasok
         .filter(
-          (p: FilterOption) =>
-            p.commodity?.toUpperCase() === "LNG" ||
-            p.commodity?.toUpperCase() === "GAS PIPA",
+          (p: FilterOption) => {
+            const comp = p.commodity?.toUpperCase();
+            if (commodity && commodity !== "Semua Komoditas") {
+              return comp === commodity.toUpperCase();
+            }
+            return comp === "LNG" || comp === "GAS PIPA";
+          },
         )
         .map((p: FilterOption) => p.name);
     }
     return ["Semua Pemasok", ...opts];
-  }, [filtersData]);
+  }, [filtersData, commodity]);
 
   const pembangkitOptions = useMemo(() => {
     if (filtersData?.pembangkit)
       return filtersData.pembangkit
         .filter(
-          (p: FilterOption) =>
-            p.commodity?.toUpperCase() === "LNG" ||
-            p.commodity?.toUpperCase() === "GAS PIPA",
+          (p: FilterOption) => {
+            const comp = p.commodity?.toUpperCase();
+            if (commodity && commodity !== "Semua Komoditas") {
+              return comp === commodity.toUpperCase();
+            }
+            return comp === "LNG" || comp === "GAS PIPA";
+          },
         )
         .map((p: FilterOption) => p.name);
     return ["Pembangkit 1", "Pembangkit 2"];
-  }, [filtersData]);
+  }, [filtersData, commodity]);
 
   const transportirOptions = useMemo(() => {
     if (filtersData?.transportir)
@@ -1701,6 +1723,34 @@ export default function RealtimeChart({
             Filter Grafik
           </p>
           <div className="flex flex-col gap-3">
+            {chartMode !== "transportir" && (
+              <FilterAutocomplete
+                label="Komoditas"
+                options={["Semua Komoditas", "GAS PIPA", "LNG"]}
+                value={commodity}
+                onChange={(val) => {
+                  setCommodity(val);
+                  if (onCommodityChange) {
+                    onCommodityChange(
+                      val === "Semua Komoditas" ? null : (val as string),
+                    );
+                  }
+                }}
+                placeholder="Pilih Komoditas"
+              />
+            )}
+            <FilterAutocomplete
+              label="Region"
+              options={regionOptions}
+              value={region}
+              onChange={(val) => {
+                setRegion(val);
+                if (onRegionChange) {
+                  onRegionChange(val === "Semua Region" ? null : (val as string));
+                }
+              }}
+              placeholder="Pilih Region"
+            />
             {chartMode !== "transportir" && (
               <FilterAutocomplete
                 label="Filter Berdasar"

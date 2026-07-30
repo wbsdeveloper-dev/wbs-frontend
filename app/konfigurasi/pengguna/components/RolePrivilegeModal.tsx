@@ -19,8 +19,7 @@ interface RolePrivilegeModalProps {
 
 export function RolePrivilegeModal({ open, onClose, role }: RolePrivilegeModalProps) {
   const [mounted, setMounted] = useState(false);
-  const [activeTab, setActiveTab] = useState<"GAS" | "BBM">("GAS");
-  
+
   const { data: resourcesData, isLoading: isLoadingResources } = useRoleResources({
     enabled: open
   });
@@ -137,18 +136,7 @@ export function RolePrivilegeModal({ open, onClose, role }: RolePrivilegeModalPr
     { key: 'external_gas', label: 'Eksternal (Non EPI)' },
   ];
 
-  const BBM_RESOURCES = [
-    { key: 'dashboard_bbm', label: 'Beranda' },
-    { key: 'data_input_bbm', label: 'Data Input' },
-    { key: 'kertas_kerja_bbm', label: 'Kertas Kerja' },
-    { key: 'site_management_bbm', label: 'TBBM & Pembangkit' },
-    { key: 'users_bbm', label: 'Pengguna' },
-    { key: 'template_group_bbm', label: 'Template Grup' },
-    { key: 'spreadsheet_source_bbm', label: 'Spreadsheet' },
-    { key: 'system_config_bbm', label: 'Data Master' },
-  ];
-
-  const activeResources = activeTab === "GAS" ? GAS_RESOURCES : BBM_RESOURCES;
+  const activeResources = GAS_RESOURCES;
 
   return createPortal(
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
@@ -175,26 +163,9 @@ export function RolePrivilegeModal({ open, onClose, role }: RolePrivilegeModalPr
         {/* Tabs */}
         <div className="px-6 pt-4 border-b border-gray-200 shrink-0 bg-gray-50/50">
           <div className="flex space-x-6">
-            <button
-              onClick={() => setActiveTab("GAS")}
-              className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === "GAS"
-                  ? "border-primary text-primary"
-                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-              }`}
-            >
+            <div className="pb-3 text-sm font-medium border-b-2 border-primary text-primary">
               Gas Pipa
-            </button>
-            <button
-              onClick={() => setActiveTab("BBM")}
-              className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === "BBM"
-                  ? "border-primary text-primary"
-                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-              }`}
-            >
-              BBM
-            </button>
+            </div>
           </div>
         </div>
 

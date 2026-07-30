@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Plus, Trash2, Loader2, AlertCircle } from "lucide-react";
+import { Plus, Trash2, Loader2, AlertCircle, Search } from "lucide-react";
 import { Modal } from "@/app/components/ui";
 import { Autocomplete, TextField } from "@mui/material";
 import { 
@@ -25,6 +25,17 @@ export default function CtmsMappingTab() {
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  
+  const filteredData = React.useMemo(() => {
+    if (!searchQuery) return data;
+    const query = searchQuery.toLowerCase();
+    return data.filter((item: any) => 
+      (item.ctms_name?.toLowerCase() || "").includes(query) ||
+      (item.site_name?.toLowerCase() || "").includes(query) ||
+      (item.site_type?.toLowerCase() || "").includes(query)
+    );
+  }, [data, searchQuery]);
   
   const [formData, setFormData] = useState({ ctms_name: "", site_name: "", site_type: "" });
 
@@ -72,17 +83,29 @@ export default function CtmsMappingTab() {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-medium text-gray-900">Mapping CTMS</h2>
-        {canCreate && (
-          <button
-            onClick={() => handleOpenModal()}
-            className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white text-sm font-medium rounded-lg hover:brightness-90 transition-all duration-200 hover:shadow-md active:scale-95"
-          >
-            <Plus size={18} />
-            Tambah Mapping
-          </button>
-        )}
+      <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
+        <h2 className="text-lg font-medium text-gray-900 w-full sm:w-auto">Mapping CTMS</h2>
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          <div className="relative w-full sm:w-64">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input 
+              type="text" 
+              placeholder="Cari mapping..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+            />
+          </div>
+          {canCreate && (
+            <button
+              onClick={() => handleOpenModal()}
+              className="flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:brightness-90 transition-all duration-200 hover:shadow-md active:scale-95 whitespace-nowrap"
+            >
+              <Plus size={18} />
+              Tambah Mapping
+            </button>
+          )}
+        </div>
       </div>
 
       {isLoading ? (
@@ -107,7 +130,7 @@ export default function CtmsMappingTab() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {data.map((item: any) => (
+                {filteredData.map((item: any) => (
                   <tr key={item.id} className="hover:bg-gray-50/50 transition-colors">
                     <td className="px-4 py-3 font-medium text-gray-900">{item.ctms_name}</td>
                     <td className="px-4 py-3 text-gray-600">{item.site_name}</td>
@@ -133,7 +156,7 @@ export default function CtmsMappingTab() {
                     </td>
                   </tr>
                 ))}
-                {data.length === 0 && (
+                {filteredData.length === 0 && (
                   <tr>
                     <td colSpan={4} className="px-4 py-16 text-center text-gray-500">
                       Tidak ada data yang ditemukan

@@ -1,7 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, MapPin, ArrowRightLeft, Map } from "lucide-react";
+import {
+  Plus,
+  MapPin,
+  ArrowRightLeft,
+  Map,
+  FileSpreadsheet,
+  Upload,
+} from "lucide-react";
 import {
   DaftarSiteTable,
   RelasiOperasionalTable,
@@ -11,11 +18,12 @@ import { AddRelationModal } from "./components/AddRelationModal";
 import dynamic from "next/dynamic";
 const SiteMap = dynamic(() => import("./components/SiteMap"), { ssr: false });
 import { useQueryClient } from "@tanstack/react-query";
-import { siteKeys } from "@/hooks/service/site-api";
+import { siteKeys, downloadSiteTemplate } from "@/hooks/service/site-api";
 import { usePrivilege } from "@/hooks/usePrivilege";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
+import BulkUploadSiteModal from "@/app/components/BulkUploadSiteModal";
 
 const tabs = [
   { label: "Daftar TBBM & Pembangkit", icon: MapPin },
@@ -27,6 +35,15 @@ export default function SitePage() {
   const [activeTab, setActiveTab] = useState(0);
   const [addSiteModalOpen, setAddSiteModalOpen] = useState(false);
   const [addRelationModalOpen, setAddRelationModalOpen] = useState(false);
+  const [bulkUploadOpen, setBulkUploadOpen] = useState(false);
+
+  const handleDownloadTemplate = async () => {
+    try {
+      await downloadSiteTemplate();
+    } catch (err: any) {
+      alert(err.message || "Gagal mengunduh template");
+    }
+  };
 
   const router = useRouter();
   const { hasPrivilege } = usePrivilege();
@@ -116,10 +133,11 @@ export default function SitePage() {
               <button
                 key={idx}
                 onClick={() => setActiveTab(idx)}
-                className={`relative flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all duration-200 cursor-pointer ${isActive
+                className={`relative flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all duration-200 cursor-pointer ${
+                  isActive
                     ? "text-primary"
                     : "text-gray-500 hover:text-gray-700"
-                  }`}
+                }`}
               >
                 <Icon size={16} />
                 {tab.label}
@@ -132,10 +150,28 @@ export default function SitePage() {
         </div>
 
         <div className="flex gap-2 mb-2">
+          {activeTab === 0 && canCreate && (
+            <>
+              <button
+                onClick={handleDownloadTemplate}
+                className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-all duration-200 hover:shadow-md active:scale-95 whitespace-nowrap"
+              >
+                <FileSpreadsheet size={16} className="text-green-600" />
+                Download Template
+              </button>
+              <button
+                onClick={() => setBulkUploadOpen(true)}
+                className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-all duration-200 hover:shadow-md active:scale-95 whitespace-nowrap"
+              >
+                <Upload size={16} className="text-primary" />
+                Update Multi Data
+              </button>
+            </>
+          )}
           {activeTab !== 2 && canCreate && (
             <button
               onClick={handleAddButtonClick}
-              className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white text-sm font-medium rounded-lg hover:brightness-90 transition-all duration-200 hover:shadow-md active:scale-95"
+              className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white text-sm font-medium rounded-lg hover:brightness-90 transition-all duration-200 hover:shadow-md active:scale-95 whitespace-nowrap"
             >
               <Plus size={18} />
               {activeTab === 0
@@ -189,6 +225,13 @@ export default function SitePage() {
         onSuccess={handleAddRelationSuccess}
         editingId={editingRelationId}
       />
+
+      {bulkUploadOpen && (
+        <BulkUploadSiteModal
+          setOpenModal={setBulkUploadOpen}
+          onSuccess={handleAddSiteSuccess}
+        />
+      )}
 
       {/* CSS Animations */}
       <style jsx global>{`

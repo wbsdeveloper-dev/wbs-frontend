@@ -246,7 +246,7 @@ export default function EditRecordPage() {
             />
             <ReadOnlyField
               label="Sumber Final"
-              value={form.finalSource ?? ""}
+              value={mapSourceToLabel(form.finalSource)}
             />
           </div>
         </div>
@@ -323,6 +323,17 @@ export default function EditRecordPage() {
     </div>
   );
 }
+
+const mapSourceToLabel = (source: string | null | undefined): string => {
+  if (!source) return "-";
+  const upper = source.toUpperCase();
+  if (upper === "BA_VALUE" || upper === "BA_VALIDATION" || upper === "USE_BA") return "Tervalidasi BA";
+  if (upper === "MANUAL" || upper === "MANUAL_INPUT") return "Manual";
+  if (upper === "PLN_EMAIL" || upper === "EMAIL" || upper === "USE_PLN") return "Email";
+  if (upper === "SPREADSHEET" || upper === "SHEET" || upper === "USE_SHEET") return "Spreadsheet";
+  if (upper === "WA" || upper === "WHATSAPP" || upper === "USE_WA") return "Whatsapp";
+  return source;
+};
 
 // ---------------------------------------------------------------------------
 // Reusable form field components

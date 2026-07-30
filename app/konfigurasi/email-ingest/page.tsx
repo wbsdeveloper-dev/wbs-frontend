@@ -18,6 +18,7 @@ import {
   Loader2,
 } from "lucide-react";
 import EmailTable from "./components/EmailTable";
+import EmailInboxTable from "./components/EmailInboxTable";
 import DetailDrawer from "./components/DetailDrawer";
 import Card, { CardHeader } from "@/app/components/ui/Card";
 import { Modal } from "@/app/components/ui";
@@ -72,6 +73,7 @@ export default function EmailIngestPage() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
+  const [activeTab, setActiveTab] = useState<"rules" | "inbox">("rules");
   const [notification, setNotification] = useState<{ type: "success" | "error" | "info"; message: string } | null>(null);
 
   const { data: oauthStatus, isLoading: isOauthLoading } = useGetEmailOAuthStatus();
@@ -373,6 +375,32 @@ export default function EmailIngestPage() {
         </p>
       </div>
 
+    {/* Tabs */}
+    <div className="flex space-x-1 border-b border-gray-200 mb-6 animate-fadeIn">
+      <button
+        onClick={() => setActiveTab("rules")}
+        className={`py-2 px-4 border-b-2 font-medium text-sm transition-colors ${
+          activeTab === "rules"
+            ? "border-primary text-primary"
+            : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+        }`}
+      >
+        Konfigurasi Rule
+      </button>
+      <button
+        onClick={() => setActiveTab("inbox")}
+        className={`py-2 px-4 border-b-2 font-medium text-sm transition-colors ${
+          activeTab === "inbox"
+            ? "border-primary text-primary"
+            : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+        }`}
+      >
+        Email Masuk
+      </button>
+    </div>
+
+    {activeTab === "rules" ? (
+      <>
       {/* Global Email Connection Card */}
       <Card className="mb-6 animate-fadeIn" style={{ animationDelay: "50ms" }}>
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center p-2 gap-4">
@@ -572,6 +600,12 @@ export default function EmailIngestPage() {
           </Card>
         </div>
       </div>
+      </>
+    ) : (
+      <div className="animate-fadeIn">
+        <EmailInboxTable />
+      </div>
+    )}
 
       {/* Detail Drawer */}
       <DetailDrawer

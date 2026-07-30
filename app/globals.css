@@ -6,12 +6,14 @@
   
   /* Default Theme (Gas Pipa) */
   --theme-primary: #115d72;
+  --theme-primary-dark: #0d4a5c;
   --theme-secondary: #14a2bb;
 }
 
 body[data-theme="bbm"] {
   /* BBM Theme (Orange) */
   --theme-primary: #ea580c;
+  --theme-primary-dark: #c2410c;
   --theme-secondary: #fb923c;
 }
 
@@ -22,6 +24,7 @@ body[data-theme="bbm"] {
   --font-mono: var(--font-geist-mono);
   
   --color-primary: var(--theme-primary);
+  --color-primary-dark: var(--theme-primary-dark);
   --color-secondary: var(--theme-secondary);
 }
 

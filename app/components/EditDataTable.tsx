@@ -183,6 +183,17 @@ const StatusBadge = ({ status }: { status: string }) => {
   );
 };
 
+const mapSourceToBadgeStatus = (source: string | null | undefined): string => {
+  if (!source) return "UNKNOWN";
+  const upper = source.toUpperCase();
+  if (upper === "BA_VALUE" || upper === "BA_VALIDATION" || upper === "USE_BA") return "BA_VALIDATION";
+  if (upper === "MANUAL" || upper === "MANUAL_INPUT") return "MANUAL";
+  if (upper === "PLN_EMAIL" || upper === "EMAIL" || upper === "USE_PLN") return "EMAIL";
+  if (upper === "SPREADSHEET" || upper === "SHEET" || upper === "USE_SHEET") return "SPREADSHEET";
+  if (upper === "WA" || upper === "WHATSAPP" || upper === "USE_WA") return "WHATSAPP";
+  return upper;
+};
+
 // ---------------------------------------------------------------------------
 // Action buttons
 // ---------------------------------------------------------------------------
@@ -351,6 +362,7 @@ export default function EditDataTable({
     filters.periodType ?? "",
   );
   const [localStatus, setLocalStatus] = useState(filters.status ?? "");
+  const [localCommodity, setLocalCommodity] = useState(filters.commodity ?? "");
 
   const activeFilterCount = [
     filters.id,
@@ -359,6 +371,7 @@ export default function EditDataTable({
     filters.startDate || filters.endDate,
     filters.periodType,
     filters.status,
+    filters.commodity,
   ].filter(Boolean).length;
 
   const handleApplyFilters = () => {
@@ -370,6 +383,7 @@ export default function EditDataTable({
       ...(localEndDate ? { endDate: localEndDate } : {}),
       ...(localPeriodType ? { periodType: localPeriodType } : {}),
       ...(localStatus ? { status: localStatus } : {}),
+      ...(localCommodity ? { commodity: localCommodity } : {}),
     });
   };
 
@@ -381,6 +395,7 @@ export default function EditDataTable({
     setLocalEndDate("");
     setLocalPeriodType("");
     setLocalStatus("");
+    setLocalCommodity("");
     onFilterChange?.({});
   };
 
@@ -427,6 +442,7 @@ export default function EditDataTable({
       Tanggal: r.reportDate || "-",
       Pemasok: r.supplierName || "-",
       Pembangkit: r.siteName || "-",
+      Komoditas: r.commodity || "-",
       Periode: r.periodType || "-",
       Jam: r.periodValue || "-",
       MMSCFD: r.finalValueMmscfd ?? "-",
@@ -451,12 +467,13 @@ export default function EditDataTable({
     doc.setFontSize(10);
     doc.text(`Dicetak pada: ${new Date().toLocaleString("id-ID")}`, 14, 22);
 
-    const tableColumn = ["No", "Tanggal", "Pemasok", "Pembangkit", "Periode", "Jam", "MMSCFD", "BBTUD", "Status"];
+    const tableColumn = ["No", "Tanggal", "Pemasok", "Pembangkit", "Komoditas", "Periode", "Jam", "MMSCFD", "BBTUD", "Status"];
     const tableRows = allRecords.map((r, i) => [
       i + 1,
       r.reportDate || "-",
       r.supplierName || "-",
       r.siteName || "-",
+      r.commodity || "-",
       r.periodType || "-",
       r.periodValue || "-",
       r.finalValueMmscfd ?? "-",
@@ -667,6 +684,22 @@ export default function EditDataTable({
                 </div>
               </div>
 
+              {/* Komoditas filter */}
+              <div>
+                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
+                  Komoditas
+                </label>
+                <select
+                  value={localCommodity}
+                  onChange={(e) => setLocalCommodity(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200 bg-white"
+                >
+                  <option value="">Semua</option>
+                  <option value="GAS PIPA">Gas Pipa</option>
+                  <option value="LNG">LNG</option>
+                </select>
+              </div>
+
               {/* Status filter */}
               <div>
                 <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
@@ -865,11 +898,12 @@ export default function EditDataTable({
                     <Th label="Tanggal" field="reportDate" rowSpan={2} />
                     <Th label="Pemasok" field="supplierName" align="left" rowSpan={2} />
                     <Th label="Pembangkit" field="siteName" align="left" rowSpan={2} />
+                    <Th label="Komoditas" field="commodity" rowSpan={2} />
                     <Th label="Periode" field="periodType" rowSpan={2} />
                     <Th label="Jam" field="periodValue" rowSpan={2} />
                     <Th label="MMSCFD" field="finalValueMmscfd" rowSpan={2} />
                     <Th label="BBTUD" field="finalValueBbtud" rowSpan={2} />
-                    <Th label="Sumber Data" field="status" rowSpan={2} />
+                    <Th label="Sumber Data" field="finalSourceBbtud" rowSpan={2} />
                     <Th label="BA" colSpan={2} />
                     <Th label="WA" colSpan={2} />
                     <Th label="EMAIL" colSpan={2} />
@@ -896,11 +930,12 @@ export default function EditDataTable({
                   <Th label="Tanggal" field="reportDate" />
                   <Th label="Pemasok" field="supplierName" align="left" />
                   <Th label="Pembangkit" field="siteName" align="left" />
+                  <Th label="Komoditas" field="commodity" />
                   <Th label="Periode" field="periodType" />
                   <Th label="Jam" field="periodValue" />
                   <Th label="MMSCFD" field="finalValueMmscfd" />
                   <Th label="BBTUD" field="finalValueBbtud" />
-                  <Th label="Sumber Data" field="status" />
+                  <Th label="Sumber Data" field="finalSourceBbtud" />
                   {hasAction && <Th label="Aksi" />}
                 </tr>
               )}
@@ -909,7 +944,7 @@ export default function EditDataTable({
               {isLoading ? (
                 <tr>
                   <td
-                    colSpan={hasAction ? (viewMode === "detail" ? 20 : 10) : (viewMode === "detail" ? 19 : 9)}
+                    colSpan={hasAction ? (viewMode === "detail" ? 21 : 11) : (viewMode === "detail" ? 20 : 10)}
                     className="px-4 py-8 text-center text-gray-500"
                   >
                     <div className="flex items-center justify-center gap-2">
@@ -924,7 +959,7 @@ export default function EditDataTable({
               ) : records.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={hasAction ? (viewMode === "detail" ? 20 : 10) : (viewMode === "detail" ? 19 : 9)}
+                    colSpan={hasAction ? (viewMode === "detail" ? 21 : 11) : (viewMode === "detail" ? 20 : 10)}
                     className="px-4 py-8 text-center text-gray-500"
                   >
                     Tidak ada data monitoring
@@ -948,6 +983,9 @@ export default function EditDataTable({
                     <td className="px-4 py-3 text-gray-900">
                       {record.siteName}
                     </td>
+                    <td className="px-4 py-3 text-center text-gray-700 whitespace-nowrap">
+                      {record.commodity || "-"}
+                    </td>
                     <td className="px-4 py-3 text-center text-gray-700">
                       {formatNormalizeText(record.periodType)}
                     </td>
@@ -961,7 +999,7 @@ export default function EditDataTable({
                       {fmt4(record.finalValueBbtud)}
                     </td>
                     <td className="px-4 py-3 text-center">
-                      <StatusBadge status={record.status} />
+                      <StatusBadge status={mapSourceToBadgeStatus(record.finalSourceBbtud || record.finalSourceMmscfd)} />
                     </td>
                     {viewMode === "detail" && (
                       <>
