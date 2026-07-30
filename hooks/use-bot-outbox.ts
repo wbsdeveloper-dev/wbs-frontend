@@ -57,3 +57,28 @@ export function useBotOutbox(
     refetchInterval: 5000,
   });
 }
+
+export async function clearBotOutbox(
+  host: string,
+  status?: string,
+): Promise<{ clearedCount: number }> {
+  const options = getBotApiOptions(host);
+  const res = await fetch(`${options.baseUrl}/api/bot/outbox/clear`, {
+    method: "POST",
+    headers: {
+      ...options.headers,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      status: status && status !== "all" ? status : undefined,
+    }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to clear outbox: ${res.statusText}`);
+  }
+
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || "Unknown error");
+  return json.data;
+}
