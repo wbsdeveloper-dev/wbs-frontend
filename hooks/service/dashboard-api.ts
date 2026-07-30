@@ -298,10 +298,10 @@ export const dashboardKeys = {
     [...dashboardKeys.all, "map-locations", region, commodity] as const,
   distribution: (startDate: string, endDate: string, by: string, region?: string) =>
     [...dashboardKeys.all, "distribution", startDate, endDate, by, region] as const,
-  topSuppliers: (startDate: string, endDate: string, limit?: number, region?: string) =>
-    [...dashboardKeys.all, "top-suppliers", startDate, endDate, limit, region] as const,
-  topPlants: (startDate: string, endDate: string, limit?: number, region?: string) =>
-    [...dashboardKeys.all, "top-plants", startDate, endDate, limit, region] as const,
+  topSuppliers: (startDate: string, endDate: string, limit?: number, region?: string, commodity?: string) =>
+    [...dashboardKeys.all, "top-suppliers", startDate, endDate, limit, region, commodity] as const,
+  topPlants: (startDate: string, endDate: string, limit?: number, region?: string, commodity?: string) =>
+    [...dashboardKeys.all, "top-plants", startDate, endDate, limit, region, commodity] as const,
   chartFlow: (
     startDate: string,
     endDate: string,
@@ -310,6 +310,7 @@ export const dashboardKeys = {
     pemasokId?: string,
     pembangkitId?: string,
     region?: string,
+    commodity?: string,
   ) =>
     [
       ...dashboardKeys.all,
@@ -321,13 +322,14 @@ export const dashboardKeys = {
       pemasokId,
       pembangkitId,
       region,
+      commodity,
     ] as const,
   contractInfo: (pemasokId?: string, pembangkitId?: string) =>
     [...dashboardKeys.all, "contract-info", pemasokId, pembangkitId] as const,
   events: (startDate: string, endDate: string, limit?: number, page?: number, siteId?: string, severity?: string) =>
     [...dashboardKeys.all, "events", startDate, endDate, limit, page, siteId, severity] as const,
-  filters: (pemasokId?: string, pembangkitId?: string, region?: string) =>
-    [...dashboardKeys.all, "filters", pemasokId, pembangkitId, region] as const,
+  filters: (pemasokId?: string, pembangkitId?: string, region?: string, commodity?: string) =>
+    [...dashboardKeys.all, "filters", pemasokId, pembangkitId, region, commodity] as const,
   summary: (startDate: string, endDate: string) =>
     [...dashboardKeys.all, "summary", startDate, endDate] as const,
 };
@@ -366,9 +368,10 @@ export async function getTopSuppliers(
   endDate: string,
   limit?: number,
   region?: string,
+  commodity?: string,
 ) {
   return dashboardFetch<TopResponse>(
-    `/dashboard/top-suppliers${buildQuery({ startDate, endDate, limit, region })}`,
+    `/dashboard/top-suppliers${buildQuery({ startDate, endDate, limit, region, commodity })}`,
   );
 }
 
@@ -377,9 +380,10 @@ export async function getTopPlants(
   endDate: string,
   limit?: number,
   region?: string,
+  commodity?: string,
 ) {
   return dashboardFetch<TopResponse>(
-    `/dashboard/top-plants${buildQuery({ startDate, endDate, limit, region })}`,
+    `/dashboard/top-plants${buildQuery({ startDate, endDate, limit, region, commodity })}`,
   );
 }
 
@@ -391,9 +395,10 @@ export async function getChartFlow(
   pemasokId?: string,
   pembangkitId?: string,
   region?: string,
+  commodity?: string,
 ) {
   return dashboardFetch<ChartFlowResponse>(
-    `/dashboard/chart/flow${buildQuery({ startDate, endDate, granularity, by, pemasokId, pembangkitId, region })}`,
+    `/dashboard/chart/flow${buildQuery({ startDate, endDate, granularity, by, pemasokId, pembangkitId, region, commodity })}`,
   );
 }
 
@@ -468,9 +473,9 @@ export async function deleteEvent(id: string) {
   });
 }
 
-export async function getFilters(pemasokId?: string, pembangkitId?: string, region?: string) {
+export async function getFilters(pemasokId?: string, pembangkitId?: string, region?: string, commodity?: string) {
   return dashboardFetch<DashboardFilters>(
-    `/dashboard/filters${buildQuery({ pemasokId, pembangkitId, region })}`,
+    `/dashboard/filters${buildQuery({ pemasokId, pembangkitId, region, commodity })}`,
   );
 }
 
@@ -515,11 +520,12 @@ export function useTopSuppliers(
   endDate: string,
   limit?: number,
   region?: string,
+  commodity?: string,
   options?: Partial<UseQueryOptions<TopResponse>>,
 ) {
   return useQuery({
-    queryKey: dashboardKeys.topSuppliers(startDate, endDate, limit, region),
-    queryFn: () => getTopSuppliers(startDate, endDate, limit, region),
+    queryKey: dashboardKeys.topSuppliers(startDate, endDate, limit, region, commodity),
+    queryFn: () => getTopSuppliers(startDate, endDate, limit, region, commodity),
     ...options,
   });
 }
@@ -529,11 +535,12 @@ export function useTopPlants(
   endDate: string,
   limit?: number,
   region?: string,
+  commodity?: string,
   options?: Partial<UseQueryOptions<TopResponse>>,
 ) {
   return useQuery({
-    queryKey: dashboardKeys.topPlants(startDate, endDate, limit, region),
-    queryFn: () => getTopPlants(startDate, endDate, limit, region),
+    queryKey: dashboardKeys.topPlants(startDate, endDate, limit, region, commodity),
+    queryFn: () => getTopPlants(startDate, endDate, limit, region, commodity),
     ...options,
   });
 }
@@ -546,6 +553,7 @@ export function useChartFlow(
   pemasokId?: string,
   pembangkitId?: string,
   region?: string,
+  commodity?: string,
   options?: Partial<UseQueryOptions<ChartFlowResponse>>,
 ) {
   return useQuery({
@@ -557,6 +565,7 @@ export function useChartFlow(
       pemasokId,
       pembangkitId,
       region,
+      commodity,
     ),
     queryFn: () =>
       getChartFlow(
@@ -567,6 +576,7 @@ export function useChartFlow(
         pemasokId,
         pembangkitId,
         region,
+        commodity,
       ),
     ...options,
   });
@@ -633,11 +643,12 @@ export function useFilters(
   pemasokId?: string,
   pembangkitId?: string,
   region?: string,
+  commodity?: string,
   options?: Partial<UseQueryOptions<DashboardFilters>>,
 ) {
   return useQuery({
-    queryKey: dashboardKeys.filters(pemasokId, pembangkitId, region),
-    queryFn: () => getFilters(pemasokId, pembangkitId, region),
+    queryKey: dashboardKeys.filters(pemasokId, pembangkitId, region, commodity),
+    queryFn: () => getFilters(pemasokId, pembangkitId, region, commodity),
     staleTime: 5 * 60 * 1000, // filters change rarely
     ...options,
   });

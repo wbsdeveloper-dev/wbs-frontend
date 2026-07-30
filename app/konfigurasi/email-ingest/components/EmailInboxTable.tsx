@@ -2,13 +2,14 @@
 
 import React from "react";
 
-import { Paperclip, Loader2 } from "lucide-react";
+import { Paperclip, Loader2, Eye, Download } from "lucide-react";
 
-import { useGetEmailInbox, downloadEmailAttachment, type EmailInboxRecord } from "@/hooks/service/config-api";
+import { useGetEmailInbox, downloadEmailAttachment, previewEmailAttachment, type EmailInboxRecord } from "@/hooks/service/config-api";
 
 export default function EmailInboxTable() {
   const { data: inbox = [], isLoading, isError } = useGetEmailInbox();
   const [downloadingRef, setDownloadingRef] = React.useState<string | null>(null);
+  const [previewingRef, setPreviewingRef] = React.useState<string | null>(null);
 
   const handleDownload = async (storageRef: string, filename: string) => {
     try {
@@ -18,6 +19,17 @@ export default function EmailInboxTable() {
       alert(err instanceof Error ? err.message : "Gagal mengunduh file");
     } finally {
       setDownloadingRef(null);
+    }
+  };
+
+  const handlePreview = async (storageRef: string, filename: string) => {
+    try {
+      setPreviewingRef(storageRef);
+      await previewEmailAttachment(storageRef, filename);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Gagal memuat pratinjau file");
+    } finally {
+      setPreviewingRef(null);
     }
   };
 
@@ -85,24 +97,43 @@ export default function EmailInboxTable() {
               </td>
               <td className="px-4 py-3 text-right">
                 {email.attachment_refs && email.attachment_refs.length > 0 ? (
-                  <div className="flex flex-col items-end gap-1">
+                  <div className="flex flex-col items-end gap-1.5">
                     {email.attachment_refs.map((att, idx) => {
                       const isDownloading = downloadingRef === att.storageRef;
+                      const isPreviewing = previewingRef === att.storageRef;
                       return (
-                        <button
-                          key={idx}
-                          onClick={() => handleDownload(att.storageRef, att.filename)}
-                          disabled={downloadingRef !== null}
-                          className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 hover:text-green-800 disabled:opacity-50 transition-colors"
-                          title={att.filename}
-                        >
-                          {isDownloading ? (
-                            <Loader2 className="h-3 w-3 mr-1 animate-spin text-green-700" />
-                          ) : (
-                            <Paperclip className="h-3 w-3 mr-1 flex-shrink-0" />
-                          )}
-                          <span className="truncate max-w-[120px]">{att.filename}</span>
-                        </button>
+                        <div key={idx} className="flex items-center gap-1.5 justify-end w-full max-w-[280px]">
+                          <span
+                            className="text-xs text-gray-700 truncate flex-grow text-left"
+                            title={att.filename}
+                          >
+                            {att.filename}
+                          </span>
+                          <button
+                            onClick={() => handlePreview(att.storageRef, att.filename)}
+                            disabled={downloadingRef !== null || previewingRef !== null}
+                            className="p-1 rounded bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50 transition-colors"
+                            title="Pratinjau"
+                          >
+                            {isPreviewing ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin text-slate-600" />
+                            ) : (
+                              <Eye className="h-3.5 w-3.5" />
+                            )}
+                          </button>
+                          <button
+                            onClick={() => handleDownload(att.storageRef, att.filename)}
+                            disabled={downloadingRef !== null || previewingRef !== null}
+                            className="p-1 rounded bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 hover:text-green-800 disabled:opacity-50 transition-colors"
+                            title="Unduh"
+                          >
+                            {isDownloading ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin text-green-700" />
+                            ) : (
+                              <Download className="h-3.5 w-3.5" />
+                            )}
+                          </button>
+                        </div>
                       );
                     })}
                   </div>

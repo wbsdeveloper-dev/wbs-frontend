@@ -96,6 +96,9 @@ export default function GasDashboard() {
   const [selectedRegion, setSelectedRegion] = useState<
     string | undefined
   >(undefined);
+  const [selectedCommodity, setSelectedCommodity] = useState<
+    string | undefined
+  >(undefined);
 
   // Fetch distribution data based on filter type
   const distributionBy = filterType === "Pemasok" ? "supplier" : "plant";
@@ -111,6 +114,12 @@ export default function GasDashboard() {
   const [topSuppliersEnd, setTopSuppliersEnd] = useState(twoDaysAgoEnd);
   const [topPlantsStart, setTopPlantsStart] = useState(twoDaysAgoStart);
   const [topPlantsEnd, setTopPlantsEnd] = useState(twoDaysAgoEnd);
+
+  // Top LNG suppliers/plants date filters
+  const [topLngSuppliersStart, setTopLngSuppliersStart] = useState(twoDaysAgoStart);
+  const [topLngSuppliersEnd, setTopLngSuppliersEnd] = useState(twoDaysAgoEnd);
+  const [topLngPlantsStart, setTopLngPlantsStart] = useState(twoDaysAgoStart);
+  const [topLngPlantsEnd, setTopLngPlantsEnd] = useState(twoDaysAgoEnd);
 
   const formattedTopSuppliersPeriod = useMemo(() => {
     try {
@@ -148,14 +157,62 @@ export default function GasDashboard() {
     }
   }, [topPlantsStart, topPlantsEnd]);
 
-  // Fetch top suppliers and plants
+  const formattedTopLngSuppliersPeriod = useMemo(() => {
+    try {
+      const start = new Date(topLngSuppliersStart + "T00:00:00").toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      });
+      const end = new Date(topLngSuppliersEnd + "T00:00:00").toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      });
+      return `${start} - ${end}`;
+    } catch {
+      return `${topLngSuppliersStart} - ${topLngSuppliersEnd}`;
+    }
+  }, [topLngSuppliersStart, topLngSuppliersEnd]);
+
+  const formattedTopLngPlantsPeriod = useMemo(() => {
+    try {
+      const start = new Date(topLngPlantsStart + "T00:00:00").toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      });
+      const end = new Date(topLngPlantsEnd + "T00:00:00").toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      });
+      return `${start} - ${end}`;
+    } catch {
+      return `${topLngPlantsStart} - ${topLngPlantsEnd}`;
+    }
+  }, [topLngPlantsStart, topLngPlantsEnd]);
+
+  // Fetch top suppliers and plants (GAS PIPA)
   const { data: topSuppliersData, isLoading: isSuppliersLoading } =
-    useTopSuppliers(topSuppliersStart, topSuppliersEnd, 5, selectedRegion);
+    useTopSuppliers(topSuppliersStart, topSuppliersEnd, 5, selectedRegion, "GAS PIPA");
   const { data: topPlantsData, isLoading: isPlantsLoading } = useTopPlants(
     topPlantsStart,
     topPlantsEnd,
     5,
     selectedRegion,
+    "GAS PIPA",
+  );
+
+  // Fetch top LNG suppliers and plants
+  const { data: topLngSuppliersData, isLoading: isLngSuppliersLoading } =
+    useTopSuppliers(topLngSuppliersStart, topLngSuppliersEnd, 5, selectedRegion, "LNG");
+  const { data: topLngPlantsData, isLoading: isLngPlantsLoading } = useTopPlants(
+    topLngPlantsStart,
+    topLngPlantsEnd,
+    5,
+    selectedRegion,
+    "LNG",
   );
 
   // Fetch chart flow data
@@ -167,6 +224,7 @@ export default function GasDashboard() {
     selectedPemasokId,
     selectedPembangkitId,
     selectedRegion,
+    selectedCommodity,
   );
 
   // Fetch filter options — when a pemasok or pembangkit is selected,
@@ -175,6 +233,7 @@ export default function GasDashboard() {
     selectedPemasokId,
     selectedPembangkitId,
     selectedRegion,
+    selectedCommodity,
   );
 
   // Fetch all sites to help with frontend region filtering (includes sites without coordinates)
@@ -301,6 +360,12 @@ export default function GasDashboard() {
     setSelectedPembangkitId(undefined);
   }, []);
 
+  const handleCommodityChange = useCallback((commodity: string | null) => {
+    setSelectedCommodity(commodity ?? undefined);
+    setSelectedPemasokId(undefined);
+    setSelectedPembangkitId(undefined);
+  }, []);
+
   const handleDateRangeChange = useCallback(
     (startDate: string | null, endDate: string | null) => {
       setStartDateFilter(startDate);
@@ -347,6 +412,24 @@ export default function GasDashboard() {
       volume: `${item.value.toFixed(2)}`,
     }));
   }, [topPlantsData]);
+
+  const topLngPemasokList = useMemo(() => {
+    if (!topLngSuppliersData?.items) return [];
+    return topLngSuppliersData.items.map(
+      (item: { name: string; value: number }) => ({
+        name: item.name,
+        volume: `${item.value.toFixed(1)}`,
+      }),
+    );
+  }, [topLngSuppliersData]);
+
+  const topLngPembangkitList = useMemo(() => {
+    if (!topLngPlantsData?.items) return [];
+    return topLngPlantsData.items.map((item: { name: string; value: number }) => ({
+      name: item.name,
+      volume: `${item.value.toFixed(2)}`,
+    }));
+  }, [topLngPlantsData]);
 
   if (isAuthLoading || !canRead) {
     return (
@@ -440,6 +523,42 @@ export default function GasDashboard() {
                   />
                 </div>
               )}
+              {isLngSuppliersLoading ? (
+                <div className="bg-white rounded-xl p-6 flex items-center justify-center w-[360px] min-w-[360px] md:w-[420px] md:min-w-[420px] flex-shrink-0">
+                  <Loader2 className="animate-spin text-secondary" size={32} />
+                </div>
+              ) : (
+                <div className="w-[360px] min-w-[360px] md:w-[420px] md:min-w-[420px] flex-shrink-0">
+                  <TopVolumeList
+                    title="Top 5 Volume Pemasok (LNG)"
+                    list={topLngPemasokList}
+                    unit={topLngSuppliersData?.unit || "BBTUD"}
+                    description={`List top 5 performa pemasok LNG dengan satuan ${topLngSuppliersData?.unit || "BBTUD"} per tanggal ${formattedTopLngSuppliersPeriod}`}
+                    startDate={topLngSuppliersStart}
+                    endDate={topLngSuppliersEnd}
+                    onStartDateChange={setTopLngSuppliersStart}
+                    onEndDateChange={setTopLngSuppliersEnd}
+                  />
+                </div>
+              )}
+              {isLngPlantsLoading ? (
+                <div className="bg-white rounded-xl p-6 flex items-center justify-center w-[360px] min-w-[360px] md:w-[420px] md:min-w-[420px] flex-shrink-0">
+                  <Loader2 className="animate-spin text-secondary" size={32} />
+                </div>
+              ) : (
+                <div className="w-[360px] min-w-[360px] md:w-[420px] md:min-w-[420px] flex-shrink-0">
+                  <TopVolumeList
+                    title="Top 5 Volume Pembangkit (LNG)"
+                    list={topLngPembangkitList}
+                    unit={topLngPlantsData?.unit || "BBTUD"}
+                    description={`List top 5 performa pembangkit LNG dengan satuan ${topLngPlantsData?.unit || "BBTUD"} per tanggal ${formattedTopLngPlantsPeriod}`}
+                    startDate={topLngPlantsStart}
+                    endDate={topLngPlantsEnd}
+                    onStartDateChange={setTopLngPlantsStart}
+                    onEndDateChange={setTopLngPlantsEnd}
+                  />
+                </div>
+              )}
             </div>
 
             <div className="mb-6">
@@ -454,6 +573,7 @@ export default function GasDashboard() {
                 onPemasokChange={handlePemasokChange}
                 onPembangkitChange={handlePembangkitChange}
                 onRegionChange={handleRegionChange}
+                onCommodityChange={handleCommodityChange}
                 onDateRangeChange={handleDateRangeChange}
               />
             </div>

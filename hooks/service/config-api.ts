@@ -1128,3 +1128,38 @@ export async function downloadEmailAttachment(storageRef: string, fileName: stri
   windowUrl.revokeObjectURL(blobUrl);
 }
 
+export async function previewEmailAttachment(storageRef: string, fileName: string) {
+  const accessToken = getAccessToken();
+  const url = `${CONFIG_API_HOST}/config/email-inbox/attachment/download?storageRef=${encodeURIComponent(storageRef)}&fileName=${encodeURIComponent(fileName)}`;
+
+  const res = await fetch(url, {
+    method: "GET",
+    headers: {
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error("Gagal memuat attachment untuk pratinjau");
+  }
+
+  const blob = await res.blob();
+  const windowUrl = window.URL || window.webkitURL;
+  
+  // Set accurate mime type for standard files so browser previews them
+  let mimeType = blob.type;
+  if (fileName.toLowerCase().endsWith(".pdf")) {
+    mimeType = "application/pdf";
+  } else if (fileName.toLowerCase().endsWith(".png")) {
+    mimeType = "image/png";
+  } else if (fileName.toLowerCase().endsWith(".jpg") || fileName.toLowerCase().endsWith(".jpeg")) {
+    mimeType = "image/jpeg";
+  } else if (fileName.toLowerCase().endsWith(".txt")) {
+    mimeType = "text/plain";
+  }
+  
+  const previewBlob = new Blob([blob], { type: mimeType });
+  const blobUrl = windowUrl.createObjectURL(previewBlob);
+  window.open(blobUrl, "_blank");
+}
+
