@@ -119,6 +119,13 @@ export default function KertasKerjaPage() {
               </Link>
 
               <div>
+                <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
+                  <span>Dashboard</span>
+                  <span className="text-gray-400">/</span>
+                  <span>Manajemen Data BBM</span>
+                  <span className="text-gray-400">/</span>
+                  <span className="text-primary font-medium">Kertas Kerja</span>
+                </div>
                 <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
                   Kertas Kerja BBM
                 </h1>

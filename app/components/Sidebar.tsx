@@ -107,6 +107,16 @@ export default function Sidebar() {
           path: "/edit/ba-files",
           resource: "file_berita_acara_gas",
         },
+        {
+          title: "File Email",
+          path: "/edit/email-files",
+          resource: "email_ingest_gas",
+        },
+        {
+          title: "Monitor Rekonsiliasi",
+          path: "/reconciliation-monitor",
+          resource: "data_input_gas",
+        },
       ],
     },
     {
