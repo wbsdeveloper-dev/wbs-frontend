@@ -19,15 +19,25 @@ import {
   Eye,
   X,
   Activity,
+  Trash2,
+  Loader2,
 } from "lucide-react";
 import Card, { CardHeader } from "@/app/components/ui/Card";
 import {
   useReconciliationJobs,
+  useDeleteReconciliationJob,
+  useDeleteReconciliationJobsBulk,
   type ReconciliationJob,
   type ReconciliationJobsParams,
 } from "@/hooks/service/use-reconciliation-jobs";
+import { usePrivilege } from "@/hooks/usePrivilege";
 
 export default function ReconciliationMonitorPage() {
+  const { hasPrivilege } = usePrivilege();
+  const canDelete = hasPrivilege("data_management", "DELETE");
+  const deleteJobMutation = useDeleteReconciliationJob();
+  const bulkDeleteJobsMutation = useDeleteReconciliationJobsBulk();
+
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -39,6 +49,12 @@ export default function ReconciliationMonitorPage() {
   const [autoRefresh, setAutoRefresh] = useState(true);
 
   const [selectedJob, setSelectedJob] = useState<ReconciliationJob | null>(null);
+  const [jobToDelete, setJobToDelete] = useState<ReconciliationJob | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const [selectedJobIds, setSelectedJobIds] = useState<string[]>([]);
+  const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
 
   const queryParams: ReconciliationJobsParams = {
     page,
@@ -108,6 +124,52 @@ export default function ReconciliationMonitorPage() {
         ? new Date(job.created_at).toLocaleDateString("id-ID")
         : "-")
     );
+  };
+
+  const handleConfirmDeleteJob = async () => {
+    if (!jobToDelete) return;
+    try {
+      setIsDeleting(true);
+      await deleteJobMutation.mutateAsync(jobToDelete.id);
+      if (selectedJob?.id === jobToDelete.id) {
+        setSelectedJob(null);
+      }
+      setJobToDelete(null);
+      refetch();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Gagal menghapus activity rekonsiliasi");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleToggleSelectAll = () => {
+    if (selectedJobIds.length === items.length && items.length > 0) {
+      setSelectedJobIds([]);
+    } else {
+      setSelectedJobIds(items.map((job) => job.id));
+    }
+  };
+
+  const handleToggleSelectRow = (id: string) => {
+    setSelectedJobIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const handleConfirmBulkDeleteJob = async () => {
+    if (selectedJobIds.length === 0) return;
+    try {
+      setIsBulkDeleting(true);
+      await bulkDeleteJobsMutation.mutateAsync(selectedJobIds);
+      setSelectedJobIds([]);
+      setIsBulkDeleteModalOpen(false);
+      refetch();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Gagal menghapus activity rekonsiliasi terpilih");
+    } finally {
+      setIsBulkDeleting(false);
+    }
   };
 
   // Helper to resolve Source Badge
@@ -218,6 +280,13 @@ export default function ReconciliationMonitorPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
+          <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
+            <span>Dashboard</span>
+            <span className="text-gray-400">/</span>
+            <span>Manajemen Data</span>
+            <span className="text-gray-400">/</span>
+            <span className="text-primary font-medium">Monitor Rekonsiliasi</span>
+          </div>
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight flex items-center gap-2.5">
             <Activity className="w-7 h-7 text-secondary animate-pulse" />
             Monitor Proses Rekonsiliasi Real-Time
@@ -344,10 +413,10 @@ export default function ReconciliationMonitorPage() {
           title="Daftar Aktivitas Pemrosesan Rekonsiliasi"
           description="Rincian status proses rekonsiliasi data dari semua sumber beserta detail Pembangkit dan Pemasok"
           action={
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
               {/* Filter Sumber Data */}
-              <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 px-2.5 py-1.5 rounded-lg text-xs">
-                <Filter className="w-3.5 h-3.5 text-gray-400" />
+              <div className="flex items-center gap-1 bg-gray-50 border border-gray-200 px-2 py-1 rounded-md text-xs">
+                <Filter className="w-3 h-3 text-gray-400" />
                 <span className="font-semibold text-gray-600">Sumber:</span>
                 <select
                   value={sourceFilter}
@@ -355,20 +424,20 @@ export default function ReconciliationMonitorPage() {
                     setSourceFilter(e.target.value);
                     setPage(1);
                   }}
-                  className="bg-transparent text-gray-800 font-medium focus:outline-none cursor-pointer"
+                  className="bg-transparent text-gray-800 font-medium focus:outline-none cursor-pointer text-xs"
                 >
-                  <option value="all">Semua Sumber</option>
+                  <option value="all">Semua</option>
                   <option value="WA">WhatsApp</option>
                   <option value="EMAIL">Email PLN</option>
                   <option value="SPREADSHEET">Spreadsheet</option>
-                  <option value="MANUAL">Input Manual</option>
-                  <option value="BA">Validasi BA</option>
+                  <option value="MANUAL">Manual</option>
+                  <option value="BA">BA</option>
                 </select>
               </div>
 
               {/* Filter Status */}
-              <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 px-2.5 py-1.5 rounded-lg text-xs">
-                <Filter className="w-3.5 h-3.5 text-gray-400" />
+              <div className="flex items-center gap-1 bg-gray-50 border border-gray-200 px-2 py-1 rounded-md text-xs">
+                <Filter className="w-3 h-3 text-gray-400" />
                 <span className="font-semibold text-gray-600">Status:</span>
                 <select
                   value={statusFilter}
@@ -376,46 +445,57 @@ export default function ReconciliationMonitorPage() {
                     setStatusFilter(e.target.value);
                     setPage(1);
                   }}
-                  className="bg-transparent text-gray-800 font-medium focus:outline-none cursor-pointer"
+                  className="bg-transparent text-gray-800 font-medium focus:outline-none cursor-pointer text-xs"
                 >
-                  <option value="all">Semua Status</option>
-                  <option value="RUNNING">Sedang Diproses (Running)</option>
-                  <option value="PENDING">Dalam Antrian (Pending)</option>
-                  <option value="RETRY_WAIT">Menunggu Retry</option>
-                  <option value="DONE">Selesai (Done)</option>
-                  <option value="FAILED">Gagal (Failed)</option>
+                  <option value="all">Semua</option>
+                  <option value="RUNNING">Running</option>
+                  <option value="PENDING">Pending</option>
+                  <option value="RETRY_WAIT">Retry</option>
+                  <option value="DONE">Done</option>
+                  <option value="FAILED">Failed</option>
                 </select>
               </div>
 
               {/* Text Search Pembangkit */}
               <div className="relative">
-                <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-2.5" />
+                <Search className="w-3 h-3 text-gray-400 absolute left-2 top-2" />
                 <input
                   type="text"
-                  placeholder="Cari Pembangkit..."
+                  placeholder="Pembangkit..."
                   value={siteSearch}
                   onChange={(e) => {
                     setSiteSearch(e.target.value);
                     setPage(1);
                   }}
-                  className="pl-8 pr-3 py-1.5 text-xs border border-gray-200 rounded-lg text-gray-800 focus:outline-none focus:ring-1 focus:ring-secondary w-36"
+                  className="pl-6 pr-2 py-1 text-xs border border-gray-200 rounded-md text-gray-800 focus:outline-none focus:ring-1 focus:ring-secondary w-28"
                 />
               </div>
 
               {/* Text Search Pemasok */}
               <div className="relative">
-                <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-2.5" />
+                <Search className="w-3 h-3 text-gray-400 absolute left-2 top-2" />
                 <input
                   type="text"
-                  placeholder="Cari Pemasok..."
+                  placeholder="Pemasok..."
                   value={supplierSearch}
                   onChange={(e) => {
                     setSupplierSearch(e.target.value);
                     setPage(1);
                   }}
-                  className="pl-8 pr-3 py-1.5 text-xs border border-gray-200 rounded-lg text-gray-800 focus:outline-none focus:ring-1 focus:ring-secondary w-36"
+                  className="pl-6 pr-2 py-1 text-xs border border-gray-200 rounded-md text-gray-800 focus:outline-none focus:ring-1 focus:ring-secondary w-28"
                 />
               </div>
+
+              {/* Bulk Delete Button */}
+              {canDelete && selectedJobIds.length > 0 && (
+                <button
+                  onClick={() => setIsBulkDeleteModalOpen(true)}
+                  className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-md shadow-sm transition-all animate-fadeIn"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  Hapus ({selectedJobIds.length})
+                </button>
+              )}
             </div>
           }
         />
@@ -424,6 +504,17 @@ export default function ReconciliationMonitorPage() {
           <table className="w-full text-left text-sm whitespace-nowrap">
             <thead className="bg-gray-50 text-gray-600 font-medium text-xs">
               <tr>
+                {canDelete && (
+                  <th className="px-3 py-3 w-10 text-center">
+                    <input
+                      type="checkbox"
+                      checked={selectedJobIds.length === items.length && items.length > 0}
+                      onChange={handleToggleSelectAll}
+                      className="w-4 h-4 rounded text-secondary focus:ring-secondary cursor-pointer"
+                      title="Pilih Semua di Halaman Ini"
+                    />
+                  </th>
+                )}
                 <th className="px-4 py-3">Waktu dibuat</th>
                 <th className="px-4 py-3">Sumber Data</th>
                 <th className="px-4 py-3">Pembangkit (Site)</th>
@@ -438,14 +529,14 @@ export default function ReconciliationMonitorPage() {
             <tbody className="divide-y divide-gray-100">
               {isLoading ? (
                 <tr>
-                  <td colSpan={9} className="px-4 py-12 text-center text-gray-400">
+                  <td colSpan={canDelete ? 10 : 9} className="px-4 py-12 text-center text-gray-400">
                     <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-gray-300" />
                     Memuat data monitor rekonsiliasi...
                   </td>
                 </tr>
               ) : items.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="px-4 py-12 text-center text-gray-400">
+                  <td colSpan={canDelete ? 10 : 9} className="px-4 py-12 text-center text-gray-400">
                     <div className="flex flex-col items-center justify-center">
                       <CheckCircle2 className="w-8 h-8 text-emerald-400 mb-2" />
                       Tidak ada proses rekonsiliasi yang sesuai dengan filter.
@@ -456,8 +547,20 @@ export default function ReconciliationMonitorPage() {
                 items.map((job) => (
                   <tr
                     key={job.id}
-                    className="hover:bg-gray-50/60 transition-colors"
+                    className={`hover:bg-gray-50/60 transition-colors ${
+                      selectedJobIds.includes(job.id) ? "bg-red-50/30" : ""
+                    }`}
                   >
+                    {canDelete && (
+                      <td className="px-3 py-3 text-center">
+                        <input
+                          type="checkbox"
+                          checked={selectedJobIds.includes(job.id)}
+                          onChange={() => handleToggleSelectRow(job.id)}
+                          className="w-4 h-4 rounded text-secondary focus:ring-secondary cursor-pointer"
+                        />
+                      </td>
+                    )}
                     <td className="px-4 py-3 text-gray-600">
                       <div className="flex flex-col text-xs">
                         <span className="font-semibold text-gray-800">
@@ -488,13 +591,24 @@ export default function ReconciliationMonitorPage() {
                       {job.last_error ? job.last_error : "-"}
                     </td>
                     <td className="px-4 py-3 text-center">
-                      <button
-                        onClick={() => setSelectedJob(job)}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-secondary bg-teal-50 hover:bg-teal-100 rounded-md transition-colors cursor-pointer"
-                      >
-                        <Eye className="w-3.5 h-3.5" />
-                        Detail
-                      </button>
+                      <div className="flex items-center justify-center gap-1.5">
+                        <button
+                          onClick={() => setSelectedJob(job)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-secondary bg-teal-50 hover:bg-teal-100 rounded-md transition-colors cursor-pointer"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          Detail
+                        </button>
+                        {canDelete && (
+                          <button
+                            onClick={() => setJobToDelete(job)}
+                            className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-md transition-colors cursor-pointer"
+                            title="Hapus Activity"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -627,12 +741,155 @@ export default function ReconciliationMonitorPage() {
               </div>
             </div>
 
-            <div className="px-6 py-3 border-t border-gray-100 bg-gray-50 text-right">
+            <div className="px-6 py-3 border-t border-gray-100 bg-gray-50 flex items-center justify-between">
+              {canDelete ? (
+                <button
+                  onClick={() => setJobToDelete(selectedJob)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg border border-red-200 transition-colors cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  Hapus Activity Ini
+                </button>
+              ) : <div />}
               <button
                 onClick={() => setSelectedJob(null)}
                 className="px-4 py-2 text-xs font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
               >
                 Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {jobToDelete && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-red-50/50">
+              <div className="flex items-center gap-2 text-red-600">
+                <Trash2 className="w-5 h-5" />
+                <h3 className="text-base font-bold text-gray-900">
+                  Hapus Activity Rekonsiliasi
+                </h3>
+              </div>
+              <button
+                onClick={() => setJobToDelete(null)}
+                disabled={isDeleting}
+                className="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-3">
+              <p className="text-sm text-gray-700">
+                Apakah Anda yakin ingin menghapus activity rekonsiliasi ini dari antrean/monitor?
+              </p>
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-xs space-y-1.5 font-mono text-gray-700">
+                <div>
+                  <span className="font-semibold text-gray-500">ID Job:</span> {jobToDelete.id}
+                </div>
+                <div>
+                  <span className="font-semibold text-gray-500">Pembangkit:</span> {extractSiteName(jobToDelete)}
+                </div>
+                <div>
+                  <span className="font-semibold text-gray-500">Status:</span> {jobToDelete.status}
+                </div>
+                {jobToDelete.last_error && (
+                  <div className="text-red-600 font-sans mt-1">
+                    <span className="font-semibold">Error:</span> {jobToDelete.last_error}
+                  </div>
+                )}
+              </div>
+              <p className="text-xs text-gray-500">
+                Tindakan ini akan menghapus data job dari database secara permanen.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 px-6 py-3.5 border-t border-gray-100 bg-gray-50">
+              <button
+                onClick={() => setJobToDelete(null)}
+                disabled={isDeleting}
+                className="px-4 py-2 text-xs font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleConfirmDeleteJob}
+                disabled={isDeleting}
+                className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    Menghapus...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    Ya, Hapus Job
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Delete Confirmation Modal */}
+      {isBulkDeleteModalOpen && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-red-50/50">
+              <div className="flex items-center gap-2 text-red-600">
+                <Trash2 className="w-5 h-5" />
+                <h3 className="text-base font-bold text-gray-900">
+                  Konfirmasi Hapus Massal ({selectedJobIds.length} Job)
+                </h3>
+              </div>
+              <button
+                onClick={() => setIsBulkDeleteModalOpen(false)}
+                disabled={isBulkDeleting}
+                className="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-3">
+              <p className="text-sm text-gray-700">
+                Apakah Anda yakin ingin menghapus <span className="font-bold text-red-600">{selectedJobIds.length} activity rekonsiliasi</span> yang terpilih?
+              </p>
+              <div className="bg-red-50/50 border border-red-100 rounded-lg p-3 text-xs text-red-700">
+                Tindakan ini akan menghapus semua job terpilih secara permanen dari antrean dan monitor rekonsiliasi.
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 px-6 py-3.5 border-t border-gray-100 bg-gray-50">
+              <button
+                onClick={() => setIsBulkDeleteModalOpen(false)}
+                disabled={isBulkDeleting}
+                className="px-4 py-2 text-xs font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleConfirmBulkDeleteJob}
+                disabled={isBulkDeleting}
+                className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+              >
+                {isBulkDeleting ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    Menghapus...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    Ya, Hapus {selectedJobIds.length} Activity
+                  </>
+                )}
               </button>
             </div>
           </div>

@@ -999,7 +999,7 @@ export default function EditDataTable({
                       {fmt4(record.finalValueBbtud)}
                     </td>
                     <td className="px-4 py-3 text-center">
-                      <StatusBadge status={mapSourceToBadgeStatus(record.status || record.finalSourceBbtud || record.finalSourceMmscfd)} />
+                      <StatusBadge status={mapSourceToBadgeStatus(record.finalSourceBbtud || record.finalSourceMmscfd || record.status)} />
                     </td>
                     {viewMode === "detail" && (
                       <>

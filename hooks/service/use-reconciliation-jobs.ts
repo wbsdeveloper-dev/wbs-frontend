@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DASHBOARD_API_HOST } from "./dashboard-api";
 import { getAccessToken } from "@/lib/auth";
 
@@ -95,5 +95,60 @@ export function useReconciliationJobs(
     queryFn: () => fetchReconciliationJobs(params),
     refetchInterval: options?.refetchInterval ?? 3000,
     enabled: options?.enabled ?? true,
+  });
+}
+
+export async function deleteReconciliationJob(id: string): Promise<void> {
+  const url = `${DASHBOARD_API_HOST}/monitoring/jobs/${id}`;
+  const accessToken = getAccessToken();
+
+  const res = await fetch(url, {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to delete reconciliation job: ${res.statusText}`);
+  }
+}
+
+export function useDeleteReconciliationJob() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteReconciliationJob(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["reconciliation-jobs"] });
+    },
+  });
+}
+
+export async function deleteReconciliationJobsBulk(ids: string[]): Promise<void> {
+  const url = `${DASHBOARD_API_HOST}/monitoring/jobs/bulk-delete`;
+  const accessToken = getAccessToken();
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
+    body: JSON.stringify({ ids }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to bulk delete reconciliation jobs: ${res.statusText}`);
+  }
+}
+
+export function useDeleteReconciliationJobsBulk() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (ids: string[]) => deleteReconciliationJobsBulk(ids),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["reconciliation-jobs"] });
+    },
   });
 }
