@@ -141,11 +141,18 @@ const CustomRoundedTopBar = (props: any) => {
   );
 };
 
-const CustomXAxisTick = ({ x, y, payload }: any) => {
+const CustomXAxisTick = ({ x, y, payload, graphicJenisData = [] }: any) => {
+  let labels = [];
+  if (graphicJenisData.length === 0 || graphicJenisData.includes("Nominasi")) labels.push("Nominasi");
+  if (graphicJenisData.length === 0 || graphicJenisData.includes("Penyaluran")) labels.push("Penyaluran");
+  if (graphicJenisData.length === 0 || graphicJenisData.includes("Penerimaan")) labels.push("Penerimaan");
+  if (graphicJenisData.length === 0 || graphicJenisData.includes("Renominasi")) labels.push("Renominasi");
+  if (graphicJenisData.length === 0 || graphicJenisData.includes("Pemakaian")) labels.push("Pemakaian");
+
   return (
     <g transform={`translate(${x},${y})`}>
       <text x={0} y={15} fontSize={9} textAnchor="middle" fill="#9ca3af">
-        Nominasi | Penyaluran | Penerimaan | Pemakaian
+        {labels.join(" | ")}
       </text>
       <text
         x={0}
@@ -186,10 +193,12 @@ function AccumulationTooltip({
   active,
   payload,
   label,
+  graphicJenisData = [],
 }: {
   active?: boolean;
   payload?: AccumulationTooltipPayloadEntry[];
   label?: string;
+  graphicJenisData?: string[];
 }) {
   if (!active || !payload || payload.length === 0) return null;
 
@@ -203,6 +212,7 @@ function AccumulationTooltip({
 
       <div className="grid grid-cols-2 gap-4">
         {/* Nominasi */}
+        {(graphicJenisData.length === 0 || graphicJenisData.includes("Nominasi")) && (
         <div>
           <p className="text-xs font-bold text-gray-500 mb-1">Nominasi</p>
           <div className="space-y-1">
@@ -241,8 +251,10 @@ function AccumulationTooltip({
             </div>
           </div>
         </div>
+        )}
 
         {/* Penyaluran */}
+        {(graphicJenisData.length === 0 || graphicJenisData.includes("Penyaluran")) && (
         <div>
           <p className="text-xs font-bold text-gray-500 mb-1">Penyaluran</p>
           <div className="space-y-1">
@@ -281,8 +293,10 @@ function AccumulationTooltip({
             </div>
           </div>
         </div>
+        )}
 
         {/* Penerimaan */}
+        {(graphicJenisData.length === 0 || graphicJenisData.includes("Penerimaan")) && (
         <div>
           <p className="text-xs font-bold text-gray-500 mb-1">Penerimaan</p>
           <div className="space-y-1">
@@ -321,8 +335,52 @@ function AccumulationTooltip({
             </div>
           </div>
         </div>
+        )}
+
+        {/* Renominasi */}
+        {(graphicJenisData.length === 0 || graphicJenisData.includes("Renominasi")) && (
+        <div>
+          <p className="text-xs font-bold text-gray-500 mb-1">Renominasi</p>
+          <div className="space-y-1">
+            {Object.keys(data)
+              .filter((k) => k.endsWith("_renominasi") && data[k] > 0)
+              .map((k) => {
+                const product = k.replace("_renominasi", "");
+                return (
+                  <div
+                    key={k}
+                    className="flex items-center justify-between gap-3 text-xs"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        className="w-2 h-2 rounded-full"
+                        style={{ backgroundColor: getProductColor(product) }}
+                      />
+                      <span className="text-gray-600">{product}</span>
+                    </div>
+                    <span className="font-semibold text-gray-900">
+                      {data[k].toLocaleString("id-ID", {
+                        maximumFractionDigits: 2,
+                      })}
+                    </span>
+                  </div>
+                );
+              })}
+            <div className="pt-1 mt-1 border-t border-gray-100 flex justify-between text-xs font-bold text-gray-800">
+              <span>Total</span>
+              <span>
+                {(data.renominasi || 0).toLocaleString("id-ID", {
+                  maximumFractionDigits: 2,
+                })}{" "}
+                KL
+              </span>
+            </div>
+          </div>
+        </div>
+        )}
 
         {/* Pemakaian */}
+        {(graphicJenisData.length === 0 || graphicJenisData.includes("Pemakaian")) && (
         <div>
           <p className="text-xs font-bold text-gray-500 mb-1">Pemakaian</p>
           <div className="space-y-1">
@@ -361,6 +419,7 @@ function AccumulationTooltip({
             </div>
           </div>
         </div>
+        )}
       </div>
     </div>
   );
@@ -520,6 +579,7 @@ export default function Home() {
   const [graphicEnd, setGraphicEnd] = useState<string>(initialEnd);
   const [graphicProduct, setGraphicProduct] = useState<string | null>(null);
   const [graphicModa, setGraphicModa] = useState<string[]>([]);
+  const [graphicJenisData, setGraphicJenisData] = useState<string[]>([]);
 
   type GraphicXAxisMode =
     | "Waktu"
@@ -606,8 +666,9 @@ export default function Home() {
       : null;
 
     const filtered = bbmMonthlyData.filter((record) => {
-      if (startMonth && record.reportDate < startMonth) return false;
-      if (endMonth && record.reportDate > endMonth) return false;
+      const recordMonth = record.reportDate ? record.reportDate.substring(0, 7) : null;
+      if (startMonth && recordMonth && recordMonth < startMonth) return false;
+      if (endMonth && recordMonth && recordMonth > endMonth) return false;
       if (distributionModa && record.moda !== distributionModa) return false;
       return true;
     });
@@ -671,8 +732,9 @@ export default function Home() {
     let pemakaian = 0;
 
     const filtered = bbmMonthlyData.filter((record) => {
-      if (startMonth && record.reportDate < startMonth) return false;
-      if (endMonth && record.reportDate > endMonth) return false;
+      const recordMonth = record.reportDate ? record.reportDate.substring(0, 7) : null;
+      if (startMonth && recordMonth && recordMonth < startMonth) return false;
+      if (endMonth && recordMonth && recordMonth > endMonth) return false;
       return true;
     });
 
@@ -860,9 +922,10 @@ export default function Home() {
 
       const startMonth = graphicStart ? graphicStart.substring(0, 7) : null;
       const endMonth = graphicEnd ? graphicEnd.substring(0, 7) : null;
+      const recordMonth = record.reportDate ? record.reportDate.substring(0, 7) : null;
 
-      if (startMonth && record.reportDate < startMonth) return false;
-      if (endMonth && record.reportDate > endMonth) return false;
+      if (startMonth && recordMonth && recordMonth < startMonth) return false;
+      if (endMonth && recordMonth && recordMonth > endMonth) return false;
 
       return true;
     });
@@ -881,6 +944,7 @@ export default function Home() {
         nominasi: number;
         realisasi: number;
         penerimaan: number;
+        renominasi: number;
         pemakaian: number;
         modaRealisasi: Record<string, number>;
       }
@@ -904,6 +968,7 @@ export default function Home() {
           nominasi: record.nomination || 0,
           realisasi: record.realization || 0,
           penerimaan: record.receipt || 0,
+          renominasi: record.renomination || 0,
           pemakaian: record.usage || 0,
           modaRealisasi: { [moda]: realization },
         };
@@ -916,6 +981,10 @@ export default function Home() {
         monthlyGroups[groupKey].penerimaan = Math.max(
           monthlyGroups[groupKey].penerimaan,
           record.receipt || 0,
+        );
+        monthlyGroups[groupKey].renominasi = Math.max(
+          monthlyGroups[groupKey].renominasi,
+          record.renomination || 0,
         );
         monthlyGroups[groupKey].pemakaian = Math.max(
           monthlyGroups[groupKey].pemakaian,
@@ -937,6 +1006,7 @@ export default function Home() {
         nominasi: number;
         realisasi: number;
         penerimaan: number;
+        renominasi: number;
         pemakaian: number;
         modaRealisasi: Record<string, number>;
         [key: string]: any;
@@ -954,6 +1024,7 @@ export default function Home() {
             nominasi: 0,
             realisasi: 0,
             penerimaan: 0,
+            renominasi: 0,
             pemakaian: 0,
             modaRealisasi: {},
           };
@@ -961,11 +1032,13 @@ export default function Home() {
         chartGroups[name].nominasi += record.nomination || 0;
         chartGroups[name].realisasi += record.realization || 0;
         chartGroups[name].penerimaan += record.receipt || 0;
+        chartGroups[name].renominasi += record.renomination || 0;
         chartGroups[name].pemakaian += record.usage || 0;
 
         const pNom = `${record.product}_nominasi`;
         const pReal = `${record.product}_realisasi`;
         const pPen = `${record.product}_penerimaan`;
+        const pRen = `${record.product}_renominasi`;
         const pPem = `${record.product}_pemakaian`;
 
         chartGroups[name][pNom] =
@@ -974,13 +1047,17 @@ export default function Home() {
           (chartGroups[name][pReal] || 0) + (record.realization || 0);
         chartGroups[name][pPen] =
           (chartGroups[name][pPen] || 0) + (record.receipt || 0);
+        chartGroups[name][pRen] =
+          (chartGroups[name][pRen] || 0) + (record.renomination || 0);
         chartGroups[name][pPem] =
           (chartGroups[name][pPem] || 0) + (record.usage || 0);
       });
     } else {
       Object.values(monthlyGroups).forEach((record) => {
         let name = "Tidak Tersedia Data";
-        if (graphicXAxisMode === "Pembangkit") {
+        if (graphicXAxisMode === "Waktu") {
+          name = record.reportDate || "Tidak Tersedia Data";
+        } else if (graphicXAxisMode === "Pembangkit") {
           name = record.pembangkit || "Tidak Tersedia Data";
         } else if (graphicXAxisMode === "Pemasok") {
           name = record.tbbm || "Tidak Tersedia Data";
@@ -1002,6 +1079,7 @@ export default function Home() {
             nominasi: 0,
             realisasi: 0,
             penerimaan: 0,
+            renominasi: 0,
             pemakaian: 0,
             modaRealisasi: {},
           };
@@ -1010,6 +1088,7 @@ export default function Home() {
         chartGroups[name].nominasi += record.nominasi;
         chartGroups[name].realisasi += record.realisasi;
         chartGroups[name].penerimaan += record.penerimaan;
+        chartGroups[name].renominasi += record.renominasi;
         chartGroups[name].pemakaian += record.pemakaian;
 
         Object.entries(record.modaRealisasi).forEach(([m, val]) => {
@@ -1020,6 +1099,7 @@ export default function Home() {
         const pNom = `${record.product}_nominasi`;
         const pReal = `${record.product}_realisasi`;
         const pPen = `${record.product}_penerimaan`;
+        const pRen = `${record.product}_renominasi`;
         const pPem = `${record.product}_pemakaian`;
 
         chartGroups[name][pNom] =
@@ -1028,6 +1108,8 @@ export default function Home() {
           (chartGroups[name][pReal] || 0) + record.realisasi;
         chartGroups[name][pPen] =
           (chartGroups[name][pPen] || 0) + record.penerimaan;
+        chartGroups[name][pRen] =
+          (chartGroups[name][pRen] || 0) + record.renominasi;
         chartGroups[name][pPem] =
           (chartGroups[name][pPem] || 0) + record.pemakaian;
       });
@@ -1108,6 +1190,26 @@ export default function Home() {
             : !!graphicSupplier || !!graphicPlant,
       },
     );
+
+  const isBarChartEmpty = useMemo(() => {
+    if (barChartData.length === 0) return true;
+    if (barChartData.length === 1 && barChartData[0].name === "Tidak Tersedia Data") return true;
+
+    const selectedTypes = graphicJenisData.length > 0
+      ? graphicJenisData
+      : ["Nominasi", "Penyaluran", "Penerimaan", "Renominasi", "Pemakaian"];
+
+    let totalValue = 0;
+    for (const item of barChartData) {
+      if (selectedTypes.includes("Nominasi")) totalValue += (item.nominasi || 0);
+      if (selectedTypes.includes("Penyaluran")) totalValue += (item.realisasi || 0);
+      if (selectedTypes.includes("Penerimaan")) totalValue += (item.penerimaan || 0);
+      if (selectedTypes.includes("Renominasi")) totalValue += (item.renominasi || 0);
+      if (selectedTypes.includes("Pemakaian")) totalValue += (item.pemakaian || 0);
+    }
+
+    return totalValue === 0;
+  }, [barChartData, graphicJenisData]);
 
   // Redirect if unauthorized
   useEffect(() => {
@@ -1368,9 +1470,9 @@ export default function Home() {
                       <Loader2 className="animate-spin mr-2" size={20} />
                       Memuat data grafik...
                     </div>
-                  ) : barChartData.length === 0 ? (
-                    <div className="flex items-center justify-center h-full text-gray-400 text-sm">
-                      Tidak ada data laporan yang cocok dengan filter grafik
+                  ) : isBarChartEmpty ? (
+                    <div className="flex items-center justify-center h-full text-gray-400 text-sm font-medium">
+                      Tidak ada data
                     </div>
                   ) : (
                     <ResponsiveContainer width="100%" height="100%">
@@ -1382,7 +1484,7 @@ export default function Home() {
                         />
                         <XAxis
                           dataKey="name"
-                          tick={<CustomXAxisTick />}
+                          tick={<CustomXAxisTick graphicJenisData={graphicJenisData} />}
                           axisLine={{ stroke: "#e5e7eb" }}
                           tickLine={false}
                           height={50}
@@ -1397,7 +1499,7 @@ export default function Home() {
                             return value.toString();
                           }}
                         />
-                        <Tooltip content={<AccumulationTooltip />} />
+                        <Tooltip content={<AccumulationTooltip graphicJenisData={graphicJenisData} />} />
                         <Legend
                           verticalAlign="top"
                           height={36}
@@ -1426,7 +1528,7 @@ export default function Home() {
                           )}
                         />
                         {/* Nominasi */}
-                        {filterProductOptions.map((product) => (
+                        {(graphicJenisData.length === 0 || graphicJenisData.includes("Nominasi")) && filterProductOptions.map((product) => (
                           <Bar
                             key={`${product}_nominasi`}
                             dataKey={`${product}_nominasi`}
@@ -1443,7 +1545,7 @@ export default function Home() {
                           />
                         ))}
                         {/* Penyaluran */}
-                        {filterProductOptions.map((product) => (
+                        {(graphicJenisData.length === 0 || graphicJenisData.includes("Penyaluran")) && filterProductOptions.map((product) => (
                           <Bar
                             key={`${product}_realisasi`}
                             dataKey={`${product}_realisasi`}
@@ -1460,7 +1562,7 @@ export default function Home() {
                           />
                         ))}
                         {/* Penerimaan */}
-                        {filterProductOptions.map((product) => (
+                        {(graphicJenisData.length === 0 || graphicJenisData.includes("Penerimaan")) && filterProductOptions.map((product) => (
                           <Bar
                             key={`${product}_penerimaan`}
                             dataKey={`${product}_penerimaan`}
@@ -1476,8 +1578,25 @@ export default function Home() {
                             )}
                           />
                         ))}
+                        {/* Renominasi */}
+                        {(graphicJenisData.length === 0 || graphicJenisData.includes("Renominasi")) && filterProductOptions.map((product) => (
+                          <Bar
+                            key={`${product}_renominasi`}
+                            dataKey={`${product}_renominasi`}
+                            name={`${product} Renominasi`}
+                            fill={getProductColor(product)}
+                            stackId="renominasi"
+                            maxBarSize={40}
+                            shape={(props: any) => (
+                              <CustomRoundedTopBar
+                                {...props}
+                                productOptions={filterProductOptions}
+                              />
+                            )}
+                          />
+                        ))}
                         {/* Pemakaian */}
-                        {filterProductOptions.map((product) => (
+                        {(graphicJenisData.length === 0 || graphicJenisData.includes("Pemakaian")) && filterProductOptions.map((product) => (
                           <Bar
                             key={`${product}_pemakaian`}
                             dataKey={`${product}_pemakaian`}
@@ -1721,6 +1840,18 @@ export default function Home() {
                       placeholder="Semua Moda Transportasi"
                     />
                   )}
+
+                {/* Jenis Data Select */}
+                {chartMode === "akumulasi" && (
+                  <FilterAutocomplete
+                    label="Jenis data"
+                    options={["Nominasi", "Penyaluran", "Penerimaan", "Renominasi", "Pemakaian"]}
+                    value={graphicJenisData}
+                    multiple={true}
+                    onChange={(val) => setGraphicJenisData(val || [])}
+                    placeholder="Semua Jenis Data"
+                  />
+                )}
 
                 {/* Tanggal Filter */}
                 {chartMode !== "nasional" && (
