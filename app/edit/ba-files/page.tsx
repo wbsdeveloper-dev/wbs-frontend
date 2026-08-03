@@ -407,6 +407,7 @@ export default function BaFilesPage() {
             {/* Pagination */}
             {!isLoading && totalItems > 0 && (
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-4 py-3 border-t border-gray-200 gap-3 bg-white">
+                {/* Left: info + page size */}
                 <div className="flex items-center gap-3 flex-wrap">
                   <span className="text-sm text-gray-600">
                     Menampilkan{" "}
@@ -423,18 +424,20 @@ export default function BaFilesPage() {
                     </span>{" "}
                     data
                   </span>
-                  <div className="h-4 w-px bg-gray-300 hidden sm:block"></div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-600">Tampilkan:</span>
+                  <div className="flex items-center gap-1.5">
+                    <label htmlFor="page-size-ba" className="text-sm text-gray-500">
+                      Baris:
+                    </label>
                     <select
+                      id="page-size-ba"
                       value={pageSize}
                       onChange={(e) => {
                         setPageSize(Number(e.target.value));
                         setPage(1);
                       }}
-                      className="text-sm text-gray-600 border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-secondary bg-white cursor-pointer"
+                      className="px-2 py-1 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-secondary/40 focus:border-secondary transition-all duration-200"
                     >
-                      {[10, 25, 50, 100].map((size) => (
+                      {[5, 10, 25, 50, 100].map((size) => (
                         <option key={size} value={size}>
                           {size}
                         </option>
@@ -443,26 +446,63 @@ export default function BaFilesPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    disabled={page === 1}
-                    className="p-1 rounded-md text-gray-500 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    <ChevronLeft size={20} />
-                  </button>
-                  <span className="text-sm font-medium text-gray-700 px-3">
-                    Hal <span className="font-semibold">{page}</span> dari{" "}
-                    {totalPages}
-                  </span>
-                  <button
-                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                    disabled={page === totalPages}
-                    className="p-1 rounded-md text-gray-500 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    <ChevronRight size={20} />
-                  </button>
-                </div>
+                {/* Right: page buttons */}
+                {totalPages > 1 && (
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                      disabled={page === 1}
+                      className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    >
+                      <ChevronLeft size={16} />
+                    </button>
+
+                    {(() => {
+                      const pages: (number | "...")[] = [];
+                      if (totalPages <= 7) {
+                        for (let i = 1; i <= totalPages; i++) pages.push(i);
+                      } else {
+                        pages.push(1);
+                        if (page > 3) pages.push("...");
+                        const start = Math.max(2, page - 1);
+                        const end = Math.min(totalPages - 1, page + 1);
+                        for (let i = start; i <= end; i++) pages.push(i);
+                        if (page < totalPages - 2) pages.push("...");
+                        pages.push(totalPages);
+                      }
+                      return pages.map((p, idx) =>
+                        p === "..." ? (
+                          <span
+                            key={`ellipsis-${idx}`}
+                            className="px-1 text-sm text-gray-400 select-none"
+                          >
+                            …
+                          </span>
+                        ) : (
+                          <button
+                            key={p}
+                            onClick={() => setPage(p as number)}
+                            className={`min-w-[2rem] h-8 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer ${
+                              p === page
+                                ? "bg-primary text-white shadow-sm"
+                                : "text-gray-700 hover:bg-gray-100"
+                            }`}
+                          >
+                            {p}
+                          </button>
+                        ),
+                      );
+                    })()}
+
+                    <button
+                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={page >= totalPages}
+                      className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    >
+                      <ChevronRight size={16} />
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>

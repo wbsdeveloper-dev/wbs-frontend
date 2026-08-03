@@ -22,6 +22,7 @@ import {
   Fuel,
   Wind,
   Bell,
+  History,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -112,11 +113,6 @@ export default function Sidebar() {
           path: "/edit/email-files",
           resource: "email_ingest_gas",
         },
-        {
-          title: "Monitor Rekonsiliasi",
-          path: "/reconciliation-monitor",
-          resource: "data_input_gas",
-        },
       ],
     },
     {
@@ -164,6 +160,16 @@ export default function Sidebar() {
         {
           title: "Data Master",
           path: "/konfigurasi/data-master",
+          resource: "system_config_gas",
+        },
+        {
+          title: "Monitor Rekonsiliasi",
+          path: "/reconciliation-monitor",
+          resource: "data_input_gas",
+        },
+        {
+          title: "Log Riwayat",
+          path: "/konfigurasi/log-riwayat",
           resource: "system_config_gas",
         },
       ],

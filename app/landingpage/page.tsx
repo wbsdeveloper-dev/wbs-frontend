@@ -1,6 +1,13 @@
 "use client";
 
-import { ChevronRight, Fuel, Flame, ArrowLeft, Wind, Droplet } from "lucide-react";
+import {
+  ChevronRight,
+  Fuel,
+  Flame,
+  ArrowLeft,
+  Wind,
+  Droplet,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useEffect } from "react";
@@ -214,7 +221,9 @@ export default function DashboardSelection() {
           {/* LNG Card */}
           <div className="flex-1 group">
             <div
-              onClick={() => window.open("https://your-lng-dashboard-url.com", "_blank")}
+              onClick={() =>
+                window.open("https://pln-epi.cemapp.com/login", "_blank")
+              }
               className="relative bg-white rounded-2xl p-5 md:p-6 
                 border border-slate-200 hover:border-blue-500/50
                 cursor-pointer transition-all duration-300
@@ -238,7 +247,8 @@ export default function DashboardSelection() {
                 LNG
               </h3>
               <p className="text-slate-600 text-xs md:text-sm mb-4 leading-relaxed">
-                Pantau proses regasifikasi, jadwal kargo, dan pasokan Liquefied Natural Gas secara real-time
+                Pantau proses regasifikasi, jadwal kargo, dan pasokan Liquefied
+                Natural Gas secara real-time
               </p>
 
               {/* Button */}
