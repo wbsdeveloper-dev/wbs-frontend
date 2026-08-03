@@ -37,6 +37,8 @@ import {
 } from "@/hooks/service/dashboard-api";
 import { useBbmSitesSummary } from "@/hooks/service/bbm-api";
 import { useRelations, useSites } from "@/hooks/service/site-api";
+import { useBbmMonthly } from "@/hooks/service/bbm-api";
+import { useKertasKerjaMaster } from "@/hooks/service/kertas-kerja-api";
 import { usePrivilege } from "@/hooks/usePrivilege";
 
 interface LeafletIconPrototype {
@@ -339,6 +341,24 @@ export default function Map() {
       product:
         selectedProducts.length > 0 ? selectedProducts.join(",") : undefined,
     });
+
+  const { data: masterProductData } = useKertasKerjaMaster(
+    "master_product",
+    "BBM",
+  );
+  const { data: bbmMonthlyData } = useBbmMonthly();
+
+  const filterProductOptions = useMemo(() => {
+    if (!masterProductData) return [];
+    return masterProductData.map((p) => p.name).sort();
+  }, [masterProductData]);
+
+  const filterModaOptions = useMemo(() => {
+    if (!bbmMonthlyData) return [];
+    return Array.from(
+      new Set(bbmMonthlyData.map((r) => r.moda).filter(Boolean) as string[]),
+    ).sort();
+  }, [bbmMonthlyData]);
 
   const isLoading = isMapLoading || isSummaryLoading;
 
@@ -1047,7 +1067,7 @@ export default function Map() {
                   >
                     All
                   </button>
-                  {["Truck", "Vessel", "Pipeline"].map((mode) => (
+                  {(filterModaOptions.length > 0 ? filterModaOptions : ["Truck", "Vessel", "Pipeline"]).map((mode) => (
                     <button
                       key={mode}
                       onClick={() => {
@@ -1080,7 +1100,7 @@ export default function Map() {
                   >
                     All
                   </button>
-                  {["B30", "B35", "B40", "HSFO", "HSD", "LSFO", "IDO"].map(
+                  {(filterProductOptions.length > 0 ? filterProductOptions : ["B30", "B35", "B40", "HSFO", "HSD", "LSFO", "IDO"]).map(
                     (prod) => (
                       <button
                         key={prod}
@@ -1120,7 +1140,7 @@ export default function Map() {
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-5xl max-h-[85vh] flex flex-col md:flex-row animate-fade-in overflow-hidden">
             {(() => {
-              const PRODUCTS = [
+              const PRODUCTS = filterProductOptions.length > 0 ? filterProductOptions : [
                 "HSD",
                 "B35",
                 "LSFO",
@@ -1129,7 +1149,7 @@ export default function Map() {
                 "HSFO",
                 "IDO",
               ];
-              const MODES = ["Kapal", "Truck", "Pipa", "Lainnya"];
+              const MODES = filterModaOptions.length > 0 ? filterModaOptions : ["Kapal", "Truck", "Pipa", "Lainnya"];
 
               const filteredModalList = modalSearchQuery
                 ? modalSiteList.list.filter((site) =>
@@ -1384,7 +1404,7 @@ export default function Map() {
                                                       >
                                                         {moda
                                                           .toLowerCase()
-                                                          .includes("kapal") ? (
+                                                          .includes("kapal") || moda.toLowerCase().includes("vessel") ? (
                                                           <Ship
                                                             size={10}
                                                             className="text-emerald-600"
@@ -1526,7 +1546,7 @@ export default function Map() {
                                               <div className="flex items-center gap-1.5 text-xs">
                                                 {moda
                                                   .toLowerCase()
-                                                  .includes("kapal") ? (
+                                                  .includes("kapal") || moda.toLowerCase().includes("vessel") ? (
                                                   <Ship
                                                     size={12}
                                                     className="text-emerald-500"
@@ -1581,7 +1601,7 @@ export default function Map() {
                                 className="flex justify-between items-center p-3"
                               >
                                 <div className="flex items-center gap-2">
-                                  {moda.toLowerCase().includes("kapal") ? (
+                                  {moda.toLowerCase().includes("kapal") || moda.toLowerCase().includes("vessel") ? (
                                     <Ship size={14} className="text-gray-500" />
                                   ) : (
                                     <Truck

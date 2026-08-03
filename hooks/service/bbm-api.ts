@@ -45,17 +45,8 @@ export const bbmKeys = {
   all: ["bbm"] as const,
   monthly: () => [...bbmKeys.all, "monthly"] as const,
   bulk: () => [...bbmKeys.all, "bulk"] as const,
-  nationalTrend: (
-    type: string,
-    category: string,
-    startDate?: string,
-    endDate?: string,
-    region?: string | null,
-    unit?: string | null,
-    upk?: string | null,
-    moda?: string | null,
-    modeGrafik?: string | null
-  ) => [...bbmKeys.all, "national-trend", type, category, startDate, endDate, region, unit, upk, moda, modeGrafik] as const,
+  nationalTrend: (type: string, category: string, startDate?: string, endDate?: string, region?: string | null, unit?: string | null, upk?: string | null, moda?: string | null, modeGrafik?: string | null, jenisKit?: string | null, pembangkit?: string | null, tbbm?: string | null, product?: string | null) => 
+    [...bbmKeys.all, "national-trend", type, category, startDate, endDate, region, unit, upk, moda, modeGrafik, jenisKit, pembangkit, tbbm, product] as const,
 };
 
 export async function getBbmMonthly(): Promise<BbmRecord[]> {
@@ -103,7 +94,11 @@ export async function getNationalTrend(
   unit?: string | null,
   upk?: string | null,
   moda?: string | null,
-  modeGrafik?: string | null
+  modeGrafik?: string | null,
+  jenisKit?: string | null,
+  pembangkit?: string | null,
+  tbbm?: string | null,
+  product?: string | null
 ): Promise<Array<{ year: number; month: number; product?: string; mode_value?: string; total_volume: string }>> {
   let url = `${DASHBOARD_API_HOST}/bbm-monthly/national-trend?type=${type}&category=${encodeURIComponent(category)}`;
   if (startDate) url += `&startDate=${startDate}`;
@@ -113,6 +108,10 @@ export async function getNationalTrend(
   if (upk) url += `&upk=${encodeURIComponent(upk)}`;
   if (moda) url += `&moda=${encodeURIComponent(moda)}`;
   if (modeGrafik) url += `&modeGrafik=${encodeURIComponent(modeGrafik)}`;
+  if (jenisKit) url += `&jenisKit=${encodeURIComponent(jenisKit)}`;
+  if (pembangkit) url += `&pembangkit=${encodeURIComponent(pembangkit)}`;
+  if (tbbm) url += `&tbbm=${encodeURIComponent(tbbm)}`;
+  if (product) url += `&product=${encodeURIComponent(product)}`;
 
   const accessToken = getAccessToken();
 
@@ -145,11 +144,15 @@ export function useNationalTrend(
   upk?: string | null,
   moda?: string | null,
   modeGrafik?: string | null,
+  jenisKit?: string | null,
+  pembangkit?: string | null,
+  tbbm?: string | null,
+  product?: string | null,
   options?: Partial<UseQueryOptions<Array<{ year: number; month: number; product?: string; mode_value?: string; total_volume: string }>>>
 ) {
   return useQuery({
-    queryKey: bbmKeys.nationalTrend(type, category, startDate, endDate, region, unit, upk, moda, modeGrafik),
-    queryFn: () => getNationalTrend(type, category, startDate, endDate, region, unit, upk, moda, modeGrafik),
+    queryKey: bbmKeys.nationalTrend(type, category, startDate, endDate, region, unit, upk, moda, modeGrafik, jenisKit, pembangkit, tbbm, product),
+    queryFn: () => getNationalTrend(type, category, startDate, endDate, region, unit, upk, moda, modeGrafik, jenisKit, pembangkit, tbbm, product),
     ...options,
   });
 }

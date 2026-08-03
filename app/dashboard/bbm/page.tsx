@@ -141,22 +141,12 @@ const CustomRoundedTopBar = (props: any) => {
   );
 };
 
-const CustomXAxisTick = ({ x, y, payload, graphicJenisData = [] }: any) => {
-  let labels = [];
-  if (graphicJenisData.length === 0 || graphicJenisData.includes("Nominasi")) labels.push("Nominasi");
-  if (graphicJenisData.length === 0 || graphicJenisData.includes("Penyaluran")) labels.push("Penyaluran");
-  if (graphicJenisData.length === 0 || graphicJenisData.includes("Penerimaan")) labels.push("Penerimaan");
-  if (graphicJenisData.length === 0 || graphicJenisData.includes("Renominasi")) labels.push("Renominasi");
-  if (graphicJenisData.length === 0 || graphicJenisData.includes("Pemakaian")) labels.push("Pemakaian");
-
+const CustomXAxisTick = ({ x, y, payload }: any) => {
   return (
     <g transform={`translate(${x},${y})`}>
-      <text x={0} y={15} fontSize={9} textAnchor="middle" fill="#9ca3af">
-        {labels.join(" | ")}
-      </text>
       <text
         x={0}
-        y={32}
+        y={15}
         fontSize={11}
         textAnchor="middle"
         fill="#6b7280"
@@ -572,12 +562,12 @@ export default function Home() {
   const [graphicRegion, setGraphicRegion] = useState<string[]>([]);
   const [graphicUnit, setGraphicUnit] = useState<string[]>([]);
   const [graphicUpk, setGraphicUpk] = useState<string[]>([]);
-  const [graphicKit, setGraphicKit] = useState<string | null>(null);
-  const [graphicPlant, setGraphicPlant] = useState<string | null>(null);
-  const [graphicSupplier, setGraphicSupplier] = useState<string | null>(null);
+  const [graphicKit, setGraphicKit] = useState<string[]>([]);
+  const [graphicPlant, setGraphicPlant] = useState<string[]>([]);
+  const [graphicSupplier, setGraphicSupplier] = useState<string[]>([]);
   const [graphicStart, setGraphicStart] = useState<string>(initialStart);
   const [graphicEnd, setGraphicEnd] = useState<string>(initialEnd);
-  const [graphicProduct, setGraphicProduct] = useState<string | null>(null);
+  const [graphicProduct, setGraphicProduct] = useState<string[]>([]);
   const [graphicModa, setGraphicModa] = useState<string[]>([]);
   const [graphicJenisData, setGraphicJenisData] = useState<string[]>([]);
 
@@ -635,23 +625,19 @@ export default function Home() {
 
   const { data: nationalTrendData, isLoading: isNationalTrendLoading } =
     useNationalTrend(
-      nationalTrendType,
+      graphicJenisData.includes("Pemakaian") && !graphicJenisData.includes("Penyaluran") ? "pemakaian" : "penyaluran",
       nationalCategory || "BBM Per Year",
       graphicStart,
       graphicEnd,
-      nationalModeGrafik === "Region" && graphicRegion.length > 0
-        ? graphicRegion.join(",")
-        : null,
-      nationalModeGrafik === "Instansi" && graphicUnit.length > 0
-        ? graphicUnit.join(",")
-        : null,
-      nationalModeGrafik === "Unit Pelaksana" && graphicUpk.length > 0
-        ? graphicUpk.join(",")
-        : null,
-      nationalModeGrafik === "Moda Transportasi" && graphicModa.length > 0
-        ? graphicModa.join(",")
-        : null,
-      nationalModeGrafik,
+      graphicRegion.length > 0 ? graphicRegion.join(",") : null,
+      graphicUnit.length > 0 ? graphicUnit.join(",") : null,
+      graphicUpk.length > 0 ? graphicUpk.join(",") : null,
+      graphicModa.length > 0 ? graphicModa.join(",") : null,
+      graphicXAxisMode === "Instansi/Unit" ? "Instansi" : graphicXAxisMode,
+      graphicKit.length > 0 ? graphicKit.join(",") : null,
+      graphicPlant.length > 0 ? graphicPlant.join(",") : null,
+      graphicSupplier.length > 0 ? graphicSupplier.join(",") : null,
+      graphicProduct.length > 0 ? graphicProduct.join(",") : null,
     );
 
   // 1. Card Volume BBM Donut Chart (Real Data)
@@ -779,9 +765,9 @@ export default function Home() {
 
     let validTbbms = new Set<string>();
 
-    if (graphicPlant) {
+    if (graphicPlant.length > 0) {
       bbmMonthlyData.forEach((record) => {
-        if (record.pembangkit === graphicPlant && record.tbbm) {
+        if (graphicPlant.includes(record.pembangkit) && record.tbbm) {
           validTbbms.add(record.tbbm);
         }
       });
@@ -816,15 +802,17 @@ export default function Home() {
           ?.filter((u) => graphicUpk.includes(u.name))
           .map((u) => u.id) || []
         : [];
-    const selectedKitId = graphicKit
-      ? masterKitData?.find((k) => k.name === graphicKit)?.id
-      : null;
+    const selectedKitIds =
+      graphicKit.length > 0
+        ? masterKitData?.filter((k) => graphicKit.includes(k.name)).map((k) => k.id) || []
+        : [];
 
     if (selectedUnitIds.length > 0)
       data = data.filter((p) => selectedUnitIds.includes(p.unit_id || ""));
     if (selectedUpkIds.length > 0)
       data = data.filter((p) => selectedUpkIds.includes(p.upk_id || ""));
-    if (selectedKitId) data = data.filter((p) => p.kit_id === selectedKitId);
+    if (selectedKitIds.length > 0)
+      data = data.filter((p) => selectedKitIds.includes(p.kit_id || ""));
 
     return Array.from(new Set(data.map((p) => p.name))).sort();
   }, [
@@ -885,9 +873,10 @@ export default function Home() {
           ?.filter((u) => graphicUpk.includes(u.name))
           .map((u) => u.id) || []
         : [];
-    const selectedKitId = graphicKit
-      ? masterKitData?.find((k) => k.name === graphicKit)?.id
-      : null;
+    const selectedKitIds =
+      graphicKit.length > 0
+        ? masterKitData?.filter((k) => graphicKit.includes(k.name)).map((k) => k.id) || []
+        : [];
 
     const filtered = bbmMonthlyData.filter((record) => {
       if (graphicRegion.length > 0) {
@@ -898,7 +887,7 @@ export default function Home() {
       if (
         selectedUnitIds.length > 0 ||
         selectedUpkIds.length > 0 ||
-        selectedKitId
+        selectedKitIds.length > 0
       ) {
         const plantInfo = plantLookup.get(record.pembangkit);
         if (!plantInfo) return false;
@@ -912,11 +901,11 @@ export default function Home() {
           !selectedUpkIds.includes(plantInfo.upk_id || "")
         )
           return false;
-        if (selectedKitId && plantInfo.kit_id !== selectedKitId) return false;
+        if (selectedKitIds.length > 0 && !selectedKitIds.includes(plantInfo.kit_id || "")) return false;
       }
-      if (graphicSupplier && record.tbbm !== graphicSupplier) return false;
-      if (graphicPlant && record.pembangkit !== graphicPlant) return false;
-      if (graphicProduct && record.product !== graphicProduct) return false;
+      if (graphicSupplier.length > 0 && !graphicSupplier.includes(record.tbbm)) return false;
+      if (graphicPlant.length > 0 && !graphicPlant.includes(record.pembangkit)) return false;
+      if (graphicProduct.length > 0 && !graphicProduct.includes(record.product)) return false;
       if (graphicModa.length > 0 && !graphicModa.includes(record.moda || ""))
         return false;
 
@@ -1143,21 +1132,23 @@ export default function Home() {
       {
         startDate: graphicStart,
         endDate: graphicEnd,
-        product: graphicProduct || undefined,
+        product: graphicProduct.length > 0 ? graphicProduct.join(",") : undefined,
         moda: graphicModa.length > 0 ? graphicModa.join(",") : undefined,
         tbbm:
-          graphicSupplier ||
-          (graphicRegion.length > 0
-            ? filterSupplierOptions.join(",")
-            : undefined),
+          graphicSupplier.length > 0
+            ? graphicSupplier.join(",")
+            : (graphicRegion.length > 0
+              ? filterSupplierOptions.join(",")
+              : undefined),
         pembangkit:
-          graphicPlant ||
-          (graphicRegion.length > 0 ||
-            graphicUnit.length > 0 ||
-            graphicUpk.length > 0 ||
-            graphicKit
-            ? filterPlantOptions.join(",")
-            : undefined),
+          graphicPlant.length > 0
+            ? graphicPlant.join(",")
+            : (graphicRegion.length > 0 ||
+              graphicUnit.length > 0 ||
+              graphicUpk.length > 0 ||
+              graphicKit.length > 0
+              ? filterPlantOptions.join(",")
+              : undefined),
         interval:
           graphicIntervalMode === "Hari"
             ? "day"
@@ -1187,7 +1178,7 @@ export default function Home() {
         enabled:
           chartMode === "realisasi-moda"
             ? true
-            : !!graphicSupplier || !!graphicPlant,
+            : graphicSupplier.length > 0 || graphicPlant.length > 0,
       },
     );
 
@@ -1402,7 +1393,7 @@ export default function Home() {
                   </div>
                 </div>
                 <p
-                  className={`text-xs text-gray-500 ${graphicStart || graphicEnd || graphicRegion.length > 0 || graphicUnit.length > 0 || graphicUpk.length > 0 || graphicKit || graphicPlant || graphicSupplier || graphicProduct || graphicModa.length > 0 ? "mb-3" : "mb-6"}`}
+                  className={`text-xs text-gray-500 ${graphicStart || graphicEnd || graphicRegion.length > 0 || graphicUnit.length > 0 || graphicUpk.length > 0 || graphicKit.length > 0 || graphicPlant.length > 0 || graphicSupplier.length > 0 || graphicProduct.length > 0 || graphicModa.length > 0 ? "mb-3" : "mb-6"}`}
                 >
                   {chartMode === "akumulasi"
                     ? "Visualisasi perbandingan Rencana/Nominasi, Penyaluran, dan Pemakaian per Unit Pembangkit"
@@ -1415,10 +1406,10 @@ export default function Home() {
                   graphicRegion.length > 0 ||
                   graphicUnit.length > 0 ||
                   graphicUpk.length > 0 ||
-                  graphicKit ||
-                  graphicPlant ||
-                  graphicSupplier ||
-                  graphicProduct ||
+                  graphicKit.length > 0 ||
+                  graphicPlant.length > 0 ||
+                  graphicSupplier.length > 0 ||
+                  graphicProduct.length > 0 ||
                   graphicModa.length > 0) && (
                     <div className="flex flex-wrap gap-1.5 mb-6 max-w-xl">
                       {graphicStart && graphicEnd && (
@@ -1441,24 +1432,24 @@ export default function Home() {
                           Unit Pelaksana: {graphicUpk.join(", ")}
                         </span>
                       )}
-                      {graphicKit && (
+                      {graphicKit.length > 0 && (
                         <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
-                          Jenis Kit: {graphicKit}
+                          Jenis Kit: {graphicKit.join(", ")}
                         </span>
                       )}
-                      {graphicSupplier && (
+                      {graphicSupplier.length > 0 && (
                         <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-100">
-                          Pemasok: {graphicSupplier}
+                          Pemasok: {graphicSupplier.join(", ")}
                         </span>
                       )}
-                      {graphicPlant && (
+                      {graphicPlant.length > 0 && (
                         <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-orange-50 text-orange-700 border border-orange-100">
-                          Pembangkit: {graphicPlant}
+                          Pembangkit: {graphicPlant.join(", ")}
                         </span>
                       )}
-                      {graphicProduct && (
+                      {graphicProduct.length > 0 && (
                         <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-purple-50 text-purple-700 border border-purple-100">
-                          Produk: {graphicProduct}
+                          Produk: {graphicProduct.join(", ")}
                         </span>
                       )}
                     </div>
@@ -1489,10 +1480,10 @@ export default function Home() {
                         />
                         <XAxis
                           dataKey="name"
-                          tick={<CustomXAxisTick graphicJenisData={graphicJenisData} />}
+                          tick={<CustomXAxisTick />}
                           axisLine={{ stroke: "#e5e7eb" }}
                           tickLine={false}
-                          height={50}
+                          height={30}
                         />
                         <YAxis
                           tick={{ fill: "#6b7280", fontSize: 11 }}
@@ -1507,8 +1498,16 @@ export default function Home() {
                         <Tooltip content={<AccumulationTooltip graphicJenisData={graphicJenisData} />} />
                         <Legend
                           verticalAlign="top"
-                          height={36}
-                          content={() => (
+                          height={64}
+                          content={() => {
+                            let orderLabels = [];
+                            if (graphicJenisData.length === 0 || graphicJenisData.includes("Nominasi")) orderLabels.push("Nominasi");
+                            if (graphicJenisData.length === 0 || graphicJenisData.includes("Penyaluran")) orderLabels.push("Penyaluran");
+                            if (graphicJenisData.length === 0 || graphicJenisData.includes("Penerimaan")) orderLabels.push("Penerimaan");
+                            if (graphicJenisData.length === 0 || graphicJenisData.includes("Renominasi")) orderLabels.push("Renominasi");
+                            if (graphicJenisData.length === 0 || graphicJenisData.includes("Pemakaian")) orderLabels.push("Pemakaian");
+                            
+                            return (
                             <div className="flex flex-col items-center gap-2 mb-4">
                               <div className="flex justify-center items-center flex-wrap gap-4">
                                 {filterProductOptions.map((product) => (
@@ -1529,8 +1528,12 @@ export default function Home() {
                                   </div>
                                 ))}
                               </div>
+                              <div className="text-[10px] text-gray-500 bg-gray-50 px-3 py-1 rounded-full border border-gray-100">
+                                Urutan Kolom (kiri ke kanan): <span className="font-semibold text-gray-700">{orderLabels.join(" • ")}</span>
+                              </div>
                             </div>
-                          )}
+                            );
+                          }}
                         />
                         {/* Nominasi */}
                         {(graphicJenisData.length === 0 || graphicJenisData.includes("Nominasi")) && filterProductOptions.map((product) => (
@@ -1647,207 +1650,123 @@ export default function Home() {
               </h3>
 
               <div className="space-y-4 overflow-y-auto flex-1 pr-2 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-200 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-gray-300">
-                {chartMode === "nasional" && (
-                  <>
-                    <div className="mb-4">
-                      <FilterAutocomplete
-                        label="Kategori"
-                        options={["BBM Per Year", "BBM Per Produk"]}
-                        value={nationalCategory}
-                        onChange={setNationalCategory}
-                        placeholder="Pilih Kategori"
-                      />
-                    </div>
-
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Sumber Data
-                      </label>
-                      <div className="flex gap-4">
-                        <label className="flex items-center text-sm text-gray-700">
-                          <input
-                            type="radio"
-                            name="nationalTrendType"
-                            value="penyaluran"
-                            checked={nationalTrendType === "penyaluran"}
-                            onChange={() => setNationalTrendType("penyaluran")}
-                            className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                          />
-                          Penyaluran
-                        </label>
-                        <label className="flex items-center text-sm text-gray-700">
-                          <input
-                            type="radio"
-                            name="nationalTrendType"
-                            value="pemakaian"
-                            checked={nationalTrendType === "pemakaian"}
-                            onChange={() => setNationalTrendType("pemakaian")}
-                            className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                          />
-                          Pemakaian
-                        </label>
-                      </div>
-                    </div>
-                  </>
-                )}
 
                 {/* Mode Tampilan X-Axis Select */}
-                {chartMode !== "nasional" && (
-                  <FilterAutocomplete
-                    label="Mode Tampilan Grafik"
-                    options={[
-                      "Waktu",
-                      "Pembangkit",
-                      "Pemasok",
-                      "Jenis KIT",
-                      "Instansi/Unit",
-                      "UPK",
-                      "Region",
-                      "Moda Transportasi",
-                    ]}
-                    value={graphicXAxisMode}
-                    onChange={(val) => {
-                      if (val) setGraphicXAxisMode(val as GraphicXAxisMode);
-                    }}
-                    placeholder="Pilih Mode X-Axis"
-                  />
-                )}
-
-                {/* Mode Grafik for Nasional Tren */}
-                {chartMode === "nasional" && (
-                  <FilterAutocomplete
-                    label="Mode Grafik"
-                    options={[
-                      "Region",
-                      "Instansi",
-                      "Unit Pelaksana",
-                      "Moda Transportasi",
-                    ]}
-                    value={nationalModeGrafik}
-                    onChange={(val) => {
-                      setNationalModeGrafik(val);
-                      // Clear existing filters when mode changes
-                      setGraphicRegion([]);
-                      setGraphicUnit([]);
-                      setGraphicUpk([]);
-                      setGraphicModa([]);
-                    }}
-                    placeholder="Pilih Mode Grafik"
-                  />
-                )}
+                <FilterAutocomplete
+                  label="Mode Tampilan Grafik"
+                  options={[
+                    "Waktu",
+                    "Pembangkit",
+                    "Pemasok",
+                    "Jenis KIT",
+                    "Instansi/Unit",
+                    "UPK",
+                    "Region",
+                    "Moda Transportasi",
+                  ]}
+                  value={graphicXAxisMode}
+                  onChange={(val) => {
+                    if (val) setGraphicXAxisMode(val as GraphicXAxisMode);
+                  }}
+                  placeholder="Pilih Mode X-Axis"
+                />
 
                 {/* Region Select */}
-                {(chartMode !== "nasional" ||
-                  nationalModeGrafik === "Region") && (
-                    <FilterAutocomplete
-                      label="Region"
-                      options={filterRegionOptions}
-                      value={graphicRegion}
-                      multiple={true}
-                      onChange={(val) => {
-                        setGraphicRegion(val || []);
-                        setGraphicPlant(null);
-                        setGraphicSupplier(null);
-                      }}
-                      placeholder="Semua Region"
-                    />
-                  )}
+                <FilterAutocomplete
+                  label="Region"
+                  options={filterRegionOptions}
+                  value={graphicRegion}
+                  multiple={true}
+                  onChange={(val) => {
+                    setGraphicRegion(val || []);
+                    setGraphicPlant([]);
+                    setGraphicSupplier([]);
+                  }}
+                  placeholder="Semua Region"
+                />
 
                 {/* Instansi / Unit Select */}
-                {(chartMode !== "nasional" ||
-                  nationalModeGrafik === "Instansi") && (
-                    <FilterAutocomplete
-                      label="Instansi / Unit"
-                      options={filterUnitOptions}
-                      value={graphicUnit}
-                      multiple={true}
-                      onChange={(val) => {
-                        setGraphicUnit(val || []);
-                        setGraphicPlant(null);
-                        setGraphicUpk([]);
-                      }}
-                      placeholder="Semua Instansi / Unit"
-                    />
-                  )}
+                <FilterAutocomplete
+                  label="Instansi / Unit"
+                  options={filterUnitOptions}
+                  value={graphicUnit}
+                  multiple={true}
+                  onChange={(val) => {
+                    setGraphicUnit(val || []);
+                    setGraphicPlant([]);
+                    setGraphicUpk([]);
+                  }}
+                  placeholder="Semua Instansi / Unit"
+                />
 
                 {/* Unit Pelaksana Select */}
-                {(chartMode !== "nasional" ||
-                  nationalModeGrafik === "Unit Pelaksana") && (
-                    <FilterAutocomplete
-                      label="Unit Pelaksana"
-                      options={filterUpkOptions}
-                      value={graphicUpk}
-                      multiple={true}
-                      onChange={(val) => {
-                        setGraphicUpk(val || []);
-                        setGraphicPlant(null);
-                      }}
-                      placeholder="Semua Unit Pelaksana"
-                    />
-                  )}
+                <FilterAutocomplete
+                  label="Unit Pelaksana"
+                  options={filterUpkOptions}
+                  value={graphicUpk}
+                  multiple={true}
+                  onChange={(val) => {
+                    setGraphicUpk(val || []);
+                    setGraphicPlant([]);
+                  }}
+                  placeholder="Semua Unit Pelaksana"
+                />
 
                 {/* Jenis Kit Select */}
-                {chartMode !== "nasional" && (
-                  <FilterAutocomplete
-                    label="Jenis Kit"
-                    options={filterKitOptions}
-                    value={graphicKit}
-                    onChange={(val) => {
-                      setGraphicKit(val);
-                      setGraphicPlant(null);
-                    }}
-                    placeholder="Semua Jenis Kit"
-                  />
-                )}
+                <FilterAutocomplete
+                  label="Jenis Kit"
+                  options={filterKitOptions}
+                  value={graphicKit}
+                  multiple={true}
+                  onChange={(val) => {
+                    setGraphicKit(val || []);
+                    setGraphicPlant([]);
+                  }}
+                  placeholder="Semua Jenis Kit"
+                />
 
                 {/* Pembangkit Select */}
-                {chartMode !== "nasional" && (
-                  <FilterAutocomplete
-                    label="Pembangkit"
-                    options={filterPlantOptions}
-                    value={graphicPlant}
-                    onChange={setGraphicPlant}
-                    placeholder="Semua Pembangkit"
-                  />
-                )}
+                <FilterAutocomplete
+                  label="Pembangkit"
+                  options={filterPlantOptions}
+                  value={graphicPlant}
+                  multiple={true}
+                  onChange={(val) => setGraphicPlant(val || [])}
+                  placeholder="Semua Pembangkit"
+                />
 
                 {/* TBBM/Pemasok Select */}
-                {chartMode !== "nasional" && (
-                  <FilterAutocomplete
-                    label="TBBM / Pemasok"
-                    options={filterSupplierOptions}
-                    value={graphicSupplier}
-                    onChange={setGraphicSupplier}
-                    placeholder="Semua Pemasok"
-                  />
-                )}
+                <FilterAutocomplete
+                  label="TBBM / Pemasok"
+                  options={filterSupplierOptions}
+                  value={graphicSupplier}
+                  multiple={true}
+                  onChange={(val) => setGraphicSupplier(val || [])}
+                  placeholder="Semua Pemasok"
+                />
 
                 {/* Produk Select */}
-                {chartMode !== "nasional" && (
-                  <FilterAutocomplete
-                    label="Produk"
-                    options={filterProductOptions}
-                    value={graphicProduct}
-                    onChange={setGraphicProduct}
-                    placeholder="Semua Produk"
-                  />
-                )}
+                <FilterAutocomplete
+                  label="Produk"
+                  options={filterProductOptions}
+                  value={graphicProduct}
+                  multiple={true}
+                  onChange={(val) => setGraphicProduct(val || [])}
+                  placeholder="Semua Produk"
+                />
 
                 {/* Moda Transportasi Select */}
-                {(chartMode !== "nasional" ||
-                  nationalModeGrafik === "Moda Transportasi") && (
-                    <FilterAutocomplete
-                      label="Moda Transportasi"
-                      options={filterModaOptions}
-                      value={graphicModa}
-                      multiple={true}
-                      onChange={(val) => setGraphicModa(val || [])}
-                      placeholder="Semua Moda Transportasi"
-                    />
-                  )}
+                <FilterAutocomplete
+                  label="Moda Transportasi"
+                  options={filterModaOptions}
+                  value={graphicModa}
+                  multiple={true}
+                  onChange={(val) => setGraphicModa(val || [])}
+                  placeholder="Semua Moda Transportasi"
+                />
 
                 {/* Jenis Data Select */}
-                {chartMode === "akumulasi" && (
+                {(chartMode === "akumulasi" || chartMode === "nasional") && (
                   <FilterAutocomplete
                     label="Jenis data"
                     options={["Nominasi", "Penyaluran", "Penerimaan", "Renominasi", "Pemakaian"]}
@@ -1859,112 +1778,110 @@ export default function Home() {
                 )}
 
                 {/* Tanggal Filter */}
-                {chartMode !== "nasional" && (
-                  <>
-                    {/* Period Selectors */}
-                    <p className="block text-sm font-medium text-gray-700 mt-2 mb-2">
-                      Periode
-                    </p>
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      {[
-                        { label: "1 Minggu", val: "1W", interval: "Hari" },
-                        { label: "1 Bulan", val: "1M", interval: "Hari" },
-                        { label: "1 Tahun", val: "1Y", interval: "Bulan" },
-                        { label: "3 Tahun", val: "3Y", interval: "Tahun" },
-                      ].map((item) => (
+                <>
+                  {/* Period Selectors */}
+                  <p className="block text-sm font-medium text-gray-700 mt-2 mb-2">
+                    Periode
+                  </p>
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {[
+                      { label: "1 Minggu", val: "1W", interval: "Hari" },
+                      { label: "1 Bulan", val: "1M", interval: "Hari" },
+                      { label: "1 Tahun", val: "1Y", interval: "Bulan" },
+                      { label: "3 Tahun", val: "3Y", interval: "Tahun" },
+                    ].map((item) => (
+                      <button
+                        key={item.label}
+                        className={`px-3 py-2 text-sm font-medium rounded-md transition-colors text-center ${graphicPeriod === item.val
+                          ? "bg-primary text-white shadow-sm"
+                          : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+                          }`}
+                        onClick={() => {
+                          setGraphicPeriod(item.val as Periode);
+                          setGraphicIntervalMode(item.interval as any);
+
+                          const now = new Date();
+                          let newStart = "";
+                          let newEnd = "";
+
+                          if (item.val === "1W") {
+                            const start = new Date(now);
+                            start.setDate(now.getDate() - 7);
+                            newStart = formatLocalISODate(start);
+                            newEnd = formatLocalISODate(now);
+                          } else if (item.val === "1M") {
+                            const start = new Date(now);
+                            start.setDate(now.getDate() - 31);
+                            newStart = formatLocalISODate(start);
+                            newEnd = formatLocalISODate(now);
+                          } else if (item.val === "1Y") {
+                            const start = new Date(now.getFullYear(), 0, 1);
+                            const end = new Date(now.getFullYear(), 11, 31);
+                            newStart = formatLocalISODate(start);
+                            newEnd = formatLocalISODate(end);
+                          } else if (item.val === "3Y") {
+                            const start = new Date(
+                              now.getFullYear() - 2,
+                              0,
+                              1,
+                            );
+                            const end = new Date(now.getFullYear(), 11, 31);
+                            newStart = formatLocalISODate(start);
+                            newEnd = formatLocalISODate(end);
+                          }
+
+                          if (newStart && newEnd) {
+                            setGraphicStart(newStart);
+                            setGraphicEnd(newEnd);
+                          }
+                        }}
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Interval Selectors */}
+                  <p className="block text-sm font-medium text-gray-700 mb-2">
+                    Interval
+                  </p>
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {(["Tahun", "Bulan", "Hari"] as const).map((mode) => {
+                      if (
+                        graphicPeriod === "1W" &&
+                        (mode === "Tahun" || mode === "Bulan")
+                      )
+                        return null;
+                      if (graphicPeriod === "1M" && mode === "Tahun")
+                        return null;
+
+                      return (
                         <button
-                          key={item.label}
-                          className={`px-3 py-2 text-sm font-medium rounded-md transition-colors text-center ${graphicPeriod === item.val
+                          key={mode}
+                          className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${graphicIntervalMode === mode
                             ? "bg-primary text-white shadow-sm"
                             : "bg-gray-50 text-gray-600 hover:bg-gray-100"
                             }`}
-                          onClick={() => {
-                            setGraphicPeriod(item.val as Periode);
-                            setGraphicIntervalMode(item.interval as any);
-
-                            const now = new Date();
-                            let newStart = "";
-                            let newEnd = "";
-
-                            if (item.val === "1W") {
-                              const start = new Date(now);
-                              start.setDate(now.getDate() - 7);
-                              newStart = formatLocalISODate(start);
-                              newEnd = formatLocalISODate(now);
-                            } else if (item.val === "1M") {
-                              const start = new Date(now);
-                              start.setDate(now.getDate() - 31);
-                              newStart = formatLocalISODate(start);
-                              newEnd = formatLocalISODate(now);
-                            } else if (item.val === "1Y") {
-                              const start = new Date(now.getFullYear(), 0, 1);
-                              const end = new Date(now.getFullYear(), 11, 31);
-                              newStart = formatLocalISODate(start);
-                              newEnd = formatLocalISODate(end);
-                            } else if (item.val === "3Y") {
-                              const start = new Date(
-                                now.getFullYear() - 2,
-                                0,
-                                1,
-                              );
-                              const end = new Date(now.getFullYear(), 11, 31);
-                              newStart = formatLocalISODate(start);
-                              newEnd = formatLocalISODate(end);
-                            }
-
-                            if (newStart && newEnd) {
-                              setGraphicStart(newStart);
-                              setGraphicEnd(newEnd);
-                            }
-                          }}
+                          onClick={() => setGraphicIntervalMode(mode)}
                         >
-                          {item.label}
+                          {mode}
                         </button>
-                      ))}
-                    </div>
+                      );
+                    })}
+                  </div>
 
-                    {/* Interval Selectors */}
-                    <p className="block text-sm font-medium text-gray-700 mb-2">
-                      Interval
-                    </p>
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      {(["Tahun", "Bulan", "Hari"] as const).map((mode) => {
-                        if (
-                          graphicPeriod === "1W" &&
-                          (mode === "Tahun" || mode === "Bulan")
-                        )
-                          return null;
-                        if (graphicPeriod === "1M" && mode === "Tahun")
-                          return null;
-
-                        return (
-                          <button
-                            key={mode}
-                            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${graphicIntervalMode === mode
-                              ? "bg-primary text-white shadow-sm"
-                              : "bg-gray-50 text-gray-600 hover:bg-gray-100"
-                              }`}
-                            onClick={() => setGraphicIntervalMode(mode)}
-                          >
-                            {mode}
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    <DateRangeFilter
-                      startDate={graphicStart}
-                      endDate={graphicEnd}
-                      setStartDate={setGraphicStart}
-                      setEndDate={setGraphicEnd}
-                      periode={graphicPeriod}
-                      isSingleDate={false}
-                      mode={
-                        graphicPeriod === "3Y" ? "Tahun" : graphicIntervalMode
-                      }
-                    />
-                  </>
-                )}
+                  <DateRangeFilter
+                    startDate={graphicStart}
+                    endDate={graphicEnd}
+                    setStartDate={setGraphicStart}
+                    setEndDate={setGraphicEnd}
+                    periode={graphicPeriod}
+                    isSingleDate={false}
+                    mode={
+                      graphicPeriod === "3Y" ? "Tahun" : graphicIntervalMode
+                    }
+                  />
+                </>
               </div>
             </div>
           </div>
