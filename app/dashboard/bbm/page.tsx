@@ -53,7 +53,7 @@ import { useKertasKerjaMaster } from "@/hooks/service/kertas-kerja-api";
 import { NationalTrendChart } from "./components/NationalTrendChart";
 
 // Dynamic map import
-const MapBBM = dynamic(() => import("../../components/MapBBM"), { ssr: false });
+const MapBBM = dynamic(() => import("@/app/components/MapBBM"), { ssr: false });
 
 // Chart view mode type
 type ChartMode = "akumulasi" | "realisasi-moda" | "nasional";

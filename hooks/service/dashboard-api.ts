@@ -27,6 +27,7 @@ export interface MapSite {
   isEnabled: boolean;
   capacity?: string;
   owner?: string;
+  commodity?: string | null;
 }
 
 export interface MapPipe {
