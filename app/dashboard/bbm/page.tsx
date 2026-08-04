@@ -147,19 +147,11 @@ const CustomXAxisTick = ({ x, y, payload }: any) => {
       <text
         x={0}
         y={15}
-        fontSize={9}
-        textAnchor="middle"
-        fill="var(--text-muted)"
-      >
-        Nominasi | Penyaluran | Penerimaan | Pemakaian
-      </text>
-      <text
-        x={0}
-        y={32}
         fontSize={11}
-        textAnchor="middle"
-        fill="var(--text-secondary)"
+        textAnchor="end"
+        fill="#6b7280"
         className="font-medium"
+        transform="rotate(-45)"
       >
         {payload.value}
       </text>
@@ -192,10 +184,12 @@ function AccumulationTooltip({
   active,
   payload,
   label,
+  graphicJenisData = [],
 }: {
   active?: boolean;
   payload?: AccumulationTooltipPayloadEntry[];
   label?: string;
+  graphicJenisData?: string[];
 }) {
   if (!active || !payload || payload.length === 0) return null;
 
@@ -209,164 +203,214 @@ function AccumulationTooltip({
 
       <div className="grid grid-cols-2 gap-4">
         {/* Nominasi */}
-        <div>
-          <p className="text-xs font-bold text-gray-500 mb-1">Nominasi</p>
-          <div className="space-y-1">
-            {Object.keys(data)
-              .filter((k) => k.endsWith("_nominasi") && data[k] > 0)
-              .map((k) => {
-                const product = k.replace("_nominasi", "");
-                return (
-                  <div
-                    key={k}
-                    className="flex items-center justify-between gap-3 text-xs"
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <span
-                        className="w-2 h-2 rounded-full"
-                        style={{ backgroundColor: getProductColor(product) }}
-                      />
-                      <span className="text-gray-600">{product}</span>
+        {(graphicJenisData.length === 0 || graphicJenisData.includes("Nominasi")) && (
+          <div>
+            <p className="text-xs font-bold text-gray-500 mb-1">Nominasi</p>
+            <div className="space-y-1">
+              {Object.keys(data)
+                .filter((k) => k.endsWith("_nominasi") && data[k] > 0)
+                .map((k) => {
+                  const product = k.replace("_nominasi", "");
+                  return (
+                    <div
+                      key={k}
+                      className="flex items-center justify-between gap-3 text-xs"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className="w-2 h-2 rounded-full"
+                          style={{ backgroundColor: getProductColor(product) }}
+                        />
+                        <span className="text-gray-600">{product}</span>
+                      </div>
+                      <span className="font-semibold text-gray-900">
+                        {data[k].toLocaleString("id-ID", {
+                          maximumFractionDigits: 2,
+                        })}
+                      </span>
                     </div>
-                    <span className="font-semibold text-gray-900">
-                      {data[k].toLocaleString("id-ID", {
-                        maximumFractionDigits: 2,
-                      })}
-                    </span>
-                  </div>
-                );
-              })}
-            <div className="pt-1 mt-1 border-t border-gray-100 flex justify-between text-xs font-bold text-gray-800">
-              <span>Total</span>
-              <span>
-                {data.nominasi.toLocaleString("id-ID", {
-                  maximumFractionDigits: 2,
-                })}{" "}
-                KL
-              </span>
+                  );
+                })}
+              <div className="pt-1 mt-1 border-t border-gray-100 flex justify-between text-xs font-bold text-gray-800">
+                <span>Total</span>
+                <span>
+                  {data.nominasi.toLocaleString("id-ID", {
+                    maximumFractionDigits: 2,
+                  })}{" "}
+                  KL
+                </span>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Penyaluran */}
-        <div>
-          <p className="text-xs font-bold text-gray-500 mb-1">Penyaluran</p>
-          <div className="space-y-1">
-            {Object.keys(data)
-              .filter((k) => k.endsWith("_realisasi") && data[k] > 0)
-              .map((k) => {
-                const product = k.replace("_realisasi", "");
-                return (
-                  <div
-                    key={k}
-                    className="flex items-center justify-between gap-3 text-xs"
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <span
-                        className="w-2 h-2 rounded-full"
-                        style={{ backgroundColor: getProductColor(product) }}
-                      />
-                      <span className="text-gray-600">{product}</span>
+        {(graphicJenisData.length === 0 || graphicJenisData.includes("Penyaluran")) && (
+          <div>
+            <p className="text-xs font-bold text-gray-500 mb-1">Penyaluran</p>
+            <div className="space-y-1">
+              {Object.keys(data)
+                .filter((k) => k.endsWith("_realisasi") && data[k] > 0)
+                .map((k) => {
+                  const product = k.replace("_realisasi", "");
+                  return (
+                    <div
+                      key={k}
+                      className="flex items-center justify-between gap-3 text-xs"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className="w-2 h-2 rounded-full"
+                          style={{ backgroundColor: getProductColor(product) }}
+                        />
+                        <span className="text-gray-600">{product}</span>
+                      </div>
+                      <span className="font-semibold text-gray-900">
+                        {data[k].toLocaleString("id-ID", {
+                          maximumFractionDigits: 2,
+                        })}
+                      </span>
                     </div>
-                    <span className="font-semibold text-gray-900">
-                      {data[k].toLocaleString("id-ID", {
-                        maximumFractionDigits: 2,
-                      })}
-                    </span>
-                  </div>
-                );
-              })}
-            <div className="pt-1 mt-1 border-t border-gray-100 flex justify-between text-xs font-bold text-gray-800">
-              <span>Total</span>
-              <span>
-                {data.realisasi.toLocaleString("id-ID", {
-                  maximumFractionDigits: 2,
-                })}{" "}
-                KL
-              </span>
+                  );
+                })}
+              <div className="pt-1 mt-1 border-t border-gray-100 flex justify-between text-xs font-bold text-gray-800">
+                <span>Total</span>
+                <span>
+                  {data.realisasi.toLocaleString("id-ID", {
+                    maximumFractionDigits: 2,
+                  })}{" "}
+                  KL
+                </span>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Penerimaan */}
-        <div>
-          <p className="text-xs font-bold text-gray-500 mb-1">Penerimaan</p>
-          <div className="space-y-1">
-            {Object.keys(data)
-              .filter((k) => k.endsWith("_penerimaan") && data[k] > 0)
-              .map((k) => {
-                const product = k.replace("_penerimaan", "");
-                return (
-                  <div
-                    key={k}
-                    className="flex items-center justify-between gap-3 text-xs"
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <span
-                        className="w-2 h-2 rounded-full"
-                        style={{ backgroundColor: getProductColor(product) }}
-                      />
-                      <span className="text-gray-600">{product}</span>
+        {(graphicJenisData.length === 0 || graphicJenisData.includes("Penerimaan")) && (
+          <div>
+            <p className="text-xs font-bold text-gray-500 mb-1">Penerimaan</p>
+            <div className="space-y-1">
+              {Object.keys(data)
+                .filter((k) => k.endsWith("_penerimaan") && data[k] > 0)
+                .map((k) => {
+                  const product = k.replace("_penerimaan", "");
+                  return (
+                    <div
+                      key={k}
+                      className="flex items-center justify-between gap-3 text-xs"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className="w-2 h-2 rounded-full"
+                          style={{ backgroundColor: getProductColor(product) }}
+                        />
+                        <span className="text-gray-600">{product}</span>
+                      </div>
+                      <span className="font-semibold text-gray-900">
+                        {data[k].toLocaleString("id-ID", {
+                          maximumFractionDigits: 2,
+                        })}
+                      </span>
                     </div>
-                    <span className="font-semibold text-gray-900">
-                      {data[k].toLocaleString("id-ID", {
-                        maximumFractionDigits: 2,
-                      })}
-                    </span>
-                  </div>
-                );
-              })}
-            <div className="pt-1 mt-1 border-t border-gray-100 flex justify-between text-xs font-bold text-gray-800">
-              <span>Total</span>
-              <span>
-                {data.penerimaan.toLocaleString("id-ID", {
-                  maximumFractionDigits: 2,
-                })}{" "}
-                KL
-              </span>
+                  );
+                })}
+              <div className="pt-1 mt-1 border-t border-gray-100 flex justify-between text-xs font-bold text-gray-800">
+                <span>Total</span>
+                <span>
+                  {data.penerimaan.toLocaleString("id-ID", {
+                    maximumFractionDigits: 2,
+                  })}{" "}
+                  KL
+                </span>
+              </div>
             </div>
           </div>
-        </div>
+        )}
+
+        {/* Renominasi */}
+        {(graphicJenisData.length === 0 || graphicJenisData.includes("Renominasi")) && (
+          <div>
+            <p className="text-xs font-bold text-gray-500 mb-1">Renominasi</p>
+            <div className="space-y-1">
+              {Object.keys(data)
+                .filter((k) => k.endsWith("_renominasi") && data[k] > 0)
+                .map((k) => {
+                  const product = k.replace("_renominasi", "");
+                  return (
+                    <div
+                      key={k}
+                      className="flex items-center justify-between gap-3 text-xs"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className="w-2 h-2 rounded-full"
+                          style={{ backgroundColor: getProductColor(product) }}
+                        />
+                        <span className="text-gray-600">{product}</span>
+                      </div>
+                      <span className="font-semibold text-gray-900">
+                        {data[k].toLocaleString("id-ID", {
+                          maximumFractionDigits: 2,
+                        })}
+                      </span>
+                    </div>
+                  );
+                })}
+              <div className="pt-1 mt-1 border-t border-gray-100 flex justify-between text-xs font-bold text-gray-800">
+                <span>Total</span>
+                <span>
+                  {(data.renominasi || 0).toLocaleString("id-ID", {
+                    maximumFractionDigits: 2,
+                  })}{" "}
+                  KL
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Pemakaian */}
-        <div>
-          <p className="text-xs font-bold text-gray-500 mb-1">Pemakaian</p>
-          <div className="space-y-1">
-            {Object.keys(data)
-              .filter((k) => k.endsWith("_pemakaian") && data[k] > 0)
-              .map((k) => {
-                const product = k.replace("_pemakaian", "");
-                return (
-                  <div
-                    key={k}
-                    className="flex items-center justify-between gap-3 text-xs"
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <span
-                        className="w-2 h-2 rounded-full"
-                        style={{ backgroundColor: getProductColor(product) }}
-                      />
-                      <span className="text-gray-600">{product}</span>
+        {(graphicJenisData.length === 0 || graphicJenisData.includes("Pemakaian")) && (
+          <div>
+            <p className="text-xs font-bold text-gray-500 mb-1">Pemakaian</p>
+            <div className="space-y-1">
+              {Object.keys(data)
+                .filter((k) => k.endsWith("_pemakaian") && data[k] > 0)
+                .map((k) => {
+                  const product = k.replace("_pemakaian", "");
+                  return (
+                    <div
+                      key={k}
+                      className="flex items-center justify-between gap-3 text-xs"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className="w-2 h-2 rounded-full"
+                          style={{ backgroundColor: getProductColor(product) }}
+                        />
+                        <span className="text-gray-600">{product}</span>
+                      </div>
+                      <span className="font-semibold text-gray-900">
+                        {data[k].toLocaleString("id-ID", {
+                          maximumFractionDigits: 2,
+                        })}
+                      </span>
                     </div>
-                    <span className="font-semibold text-gray-900">
-                      {data[k].toLocaleString("id-ID", {
-                        maximumFractionDigits: 2,
-                      })}
-                    </span>
-                  </div>
-                );
-              })}
-            <div className="pt-1 mt-1 border-t border-gray-100 flex justify-between text-xs font-bold text-gray-800">
-              <span>Total</span>
-              <span>
-                {data.pemakaian.toLocaleString("id-ID", {
-                  maximumFractionDigits: 2,
-                })}{" "}
-                KL
-              </span>
+                  );
+                })}
+              <div className="pt-1 mt-1 border-t border-gray-100 flex justify-between text-xs font-bold text-gray-800">
+                <span>Total</span>
+                <span>
+                  {data.pemakaian.toLocaleString("id-ID", {
+                    maximumFractionDigits: 2,
+                  })}{" "}
+                  KL
+                </span>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
@@ -535,13 +579,14 @@ export default function Home() {
   const [graphicRegion, setGraphicRegion] = useState<string[]>([]);
   const [graphicUnit, setGraphicUnit] = useState<string[]>([]);
   const [graphicUpk, setGraphicUpk] = useState<string[]>([]);
-  const [graphicKit, setGraphicKit] = useState<string | null>(null);
-  const [graphicPlant, setGraphicPlant] = useState<string | null>(null);
-  const [graphicSupplier, setGraphicSupplier] = useState<string | null>(null);
+  const [graphicKit, setGraphicKit] = useState<string[]>([]);
+  const [graphicPlant, setGraphicPlant] = useState<string[]>([]);
+  const [graphicSupplier, setGraphicSupplier] = useState<string[]>([]);
   const [graphicStart, setGraphicStart] = useState<string>(initialStart);
   const [graphicEnd, setGraphicEnd] = useState<string>(initialEnd);
-  const [graphicProduct, setGraphicProduct] = useState<string | null>(null);
+  const [graphicProduct, setGraphicProduct] = useState<string[]>([]);
   const [graphicModa, setGraphicModa] = useState<string[]>([]);
+  const [graphicJenisData, setGraphicJenisData] = useState<string[]>([]);
 
   type GraphicXAxisMode =
     | "Waktu"
@@ -597,23 +642,19 @@ export default function Home() {
 
   const { data: nationalTrendData, isLoading: isNationalTrendLoading } =
     useNationalTrend(
-      nationalTrendType,
+      graphicJenisData.length > 0 ? graphicJenisData : undefined,
       nationalCategory || "BBM Per Year",
       graphicStart,
       graphicEnd,
-      nationalModeGrafik === "Region" && graphicRegion.length > 0
-        ? graphicRegion.join(",")
-        : null,
-      nationalModeGrafik === "Instansi" && graphicUnit.length > 0
-        ? graphicUnit.join(",")
-        : null,
-      nationalModeGrafik === "Unit Pelaksana" && graphicUpk.length > 0
-        ? graphicUpk.join(",")
-        : null,
-      nationalModeGrafik === "Moda Transportasi" && graphicModa.length > 0
-        ? graphicModa.join(",")
-        : null,
-      nationalModeGrafik,
+      graphicRegion.length > 0 ? graphicRegion.join(",") : null,
+      graphicUnit.length > 0 ? graphicUnit.join(",") : null,
+      graphicUpk.length > 0 ? graphicUpk.join(",") : null,
+      graphicModa.length > 0 ? graphicModa.join(",") : null,
+      graphicXAxisMode === "Instansi/Unit" ? "Instansi" : graphicXAxisMode,
+      graphicKit.length > 0 ? graphicKit.join(",") : null,
+      graphicPlant.length > 0 ? graphicPlant.join(",") : null,
+      graphicSupplier.length > 0 ? graphicSupplier.join(",") : null,
+      graphicProduct.length > 0 ? graphicProduct.join(",") : null,
     );
 
   // 1. Card Volume BBM Donut Chart (Real Data)
@@ -628,8 +669,9 @@ export default function Home() {
       : null;
 
     const filtered = bbmMonthlyData.filter((record) => {
-      if (startMonth && record.reportDate < startMonth) return false;
-      if (endMonth && record.reportDate > endMonth) return false;
+      const recordMonth = record.reportDate ? record.reportDate.substring(0, 7) : null;
+      if (startMonth && recordMonth && recordMonth < startMonth) return false;
+      if (endMonth && recordMonth && recordMonth > endMonth) return false;
       if (distributionModa && record.moda !== distributionModa) return false;
       return true;
     });
@@ -693,8 +735,9 @@ export default function Home() {
     let pemakaian = 0;
 
     const filtered = bbmMonthlyData.filter((record) => {
-      if (startMonth && record.reportDate < startMonth) return false;
-      if (endMonth && record.reportDate > endMonth) return false;
+      const recordMonth = record.reportDate ? record.reportDate.substring(0, 7) : null;
+      if (startMonth && recordMonth && recordMonth < startMonth) return false;
+      if (endMonth && recordMonth && recordMonth > endMonth) return false;
       return true;
     });
 
@@ -739,9 +782,9 @@ export default function Home() {
 
     let validTbbms = new Set<string>();
 
-    if (graphicPlant) {
+    if (graphicPlant.length > 0) {
       bbmMonthlyData.forEach((record) => {
-        if (record.pembangkit === graphicPlant && record.tbbm) {
+        if (graphicPlant.includes(record.pembangkit) && record.tbbm) {
           validTbbms.add(record.tbbm);
         }
       });
@@ -767,24 +810,26 @@ export default function Home() {
     const selectedUnitIds =
       graphicUnit.length > 0
         ? masterUnitData
-            ?.filter((u) => graphicUnit.includes(u.name))
-            .map((u) => u.id) || []
+          ?.filter((u) => graphicUnit.includes(u.name))
+          .map((u) => u.id) || []
         : [];
     const selectedUpkIds =
       graphicUpk.length > 0
         ? masterUpkData
-            ?.filter((u) => graphicUpk.includes(u.name))
-            .map((u) => u.id) || []
+          ?.filter((u) => graphicUpk.includes(u.name))
+          .map((u) => u.id) || []
         : [];
-    const selectedKitId = graphicKit
-      ? masterKitData?.find((k) => k.name === graphicKit)?.id
-      : null;
+    const selectedKitIds =
+      graphicKit.length > 0
+        ? masterKitData?.filter((k) => graphicKit.includes(k.name)).map((k) => k.id) || []
+        : [];
 
     if (selectedUnitIds.length > 0)
       data = data.filter((p) => selectedUnitIds.includes(p.unit_id || ""));
     if (selectedUpkIds.length > 0)
       data = data.filter((p) => selectedUpkIds.includes(p.upk_id || ""));
-    if (selectedKitId) data = data.filter((p) => p.kit_id === selectedKitId);
+    if (selectedKitIds.length > 0)
+      data = data.filter((p) => selectedKitIds.includes(p.kit_id || ""));
 
     return Array.from(new Set(data.map((p) => p.name))).sort();
   }, [
@@ -836,18 +881,19 @@ export default function Home() {
     const selectedUnitIds =
       graphicUnit.length > 0
         ? masterUnitData
-            ?.filter((u) => graphicUnit.includes(u.name))
-            .map((u) => u.id) || []
+          ?.filter((u) => graphicUnit.includes(u.name))
+          .map((u) => u.id) || []
         : [];
     const selectedUpkIds =
       graphicUpk.length > 0
         ? masterUpkData
-            ?.filter((u) => graphicUpk.includes(u.name))
-            .map((u) => u.id) || []
+          ?.filter((u) => graphicUpk.includes(u.name))
+          .map((u) => u.id) || []
         : [];
-    const selectedKitId = graphicKit
-      ? masterKitData?.find((k) => k.name === graphicKit)?.id
-      : null;
+    const selectedKitIds =
+      graphicKit.length > 0
+        ? masterKitData?.filter((k) => graphicKit.includes(k.name)).map((k) => k.id) || []
+        : [];
 
     const filtered = bbmMonthlyData.filter((record) => {
       if (graphicRegion.length > 0) {
@@ -858,7 +904,7 @@ export default function Home() {
       if (
         selectedUnitIds.length > 0 ||
         selectedUpkIds.length > 0 ||
-        selectedKitId
+        selectedKitIds.length > 0
       ) {
         const plantInfo = plantLookup.get(record.pembangkit);
         if (!plantInfo) return false;
@@ -872,19 +918,20 @@ export default function Home() {
           !selectedUpkIds.includes(plantInfo.upk_id || "")
         )
           return false;
-        if (selectedKitId && plantInfo.kit_id !== selectedKitId) return false;
+        if (selectedKitIds.length > 0 && !selectedKitIds.includes(plantInfo.kit_id || "")) return false;
       }
-      if (graphicSupplier && record.tbbm !== graphicSupplier) return false;
-      if (graphicPlant && record.pembangkit !== graphicPlant) return false;
-      if (graphicProduct && record.product !== graphicProduct) return false;
+      if (graphicSupplier.length > 0 && !graphicSupplier.includes(record.tbbm)) return false;
+      if (graphicPlant.length > 0 && !graphicPlant.includes(record.pembangkit)) return false;
+      if (graphicProduct.length > 0 && !graphicProduct.includes(record.product)) return false;
       if (graphicModa.length > 0 && !graphicModa.includes(record.moda || ""))
         return false;
 
       const startMonth = graphicStart ? graphicStart.substring(0, 7) : null;
       const endMonth = graphicEnd ? graphicEnd.substring(0, 7) : null;
+      const recordMonth = record.reportDate ? record.reportDate.substring(0, 7) : null;
 
-      if (startMonth && record.reportDate < startMonth) return false;
-      if (endMonth && record.reportDate > endMonth) return false;
+      if (startMonth && recordMonth && recordMonth < startMonth) return false;
+      if (endMonth && recordMonth && recordMonth > endMonth) return false;
 
       return true;
     });
@@ -903,6 +950,7 @@ export default function Home() {
         nominasi: number;
         realisasi: number;
         penerimaan: number;
+        renominasi: number;
         pemakaian: number;
         modaRealisasi: Record<string, number>;
       }
@@ -926,6 +974,7 @@ export default function Home() {
           nominasi: record.nomination || 0,
           realisasi: record.realization || 0,
           penerimaan: record.receipt || 0,
+          renominasi: record.renomination || 0,
           pemakaian: record.usage || 0,
           modaRealisasi: { [moda]: realization },
         };
@@ -938,6 +987,10 @@ export default function Home() {
         monthlyGroups[groupKey].penerimaan = Math.max(
           monthlyGroups[groupKey].penerimaan,
           record.receipt || 0,
+        );
+        monthlyGroups[groupKey].renominasi = Math.max(
+          monthlyGroups[groupKey].renominasi,
+          record.renomination || 0,
         );
         monthlyGroups[groupKey].pemakaian = Math.max(
           monthlyGroups[groupKey].pemakaian,
@@ -959,6 +1012,7 @@ export default function Home() {
         nominasi: number;
         realisasi: number;
         penerimaan: number;
+        renominasi: number;
         pemakaian: number;
         modaRealisasi: Record<string, number>;
         [key: string]: any;
@@ -976,6 +1030,7 @@ export default function Home() {
             nominasi: 0,
             realisasi: 0,
             penerimaan: 0,
+            renominasi: 0,
             pemakaian: 0,
             modaRealisasi: {},
           };
@@ -983,11 +1038,13 @@ export default function Home() {
         chartGroups[name].nominasi += record.nomination || 0;
         chartGroups[name].realisasi += record.realization || 0;
         chartGroups[name].penerimaan += record.receipt || 0;
+        chartGroups[name].renominasi += record.renomination || 0;
         chartGroups[name].pemakaian += record.usage || 0;
 
         const pNom = `${record.product}_nominasi`;
         const pReal = `${record.product}_realisasi`;
         const pPen = `${record.product}_penerimaan`;
+        const pRen = `${record.product}_renominasi`;
         const pPem = `${record.product}_pemakaian`;
 
         chartGroups[name][pNom] =
@@ -996,13 +1053,17 @@ export default function Home() {
           (chartGroups[name][pReal] || 0) + (record.realization || 0);
         chartGroups[name][pPen] =
           (chartGroups[name][pPen] || 0) + (record.receipt || 0);
+        chartGroups[name][pRen] =
+          (chartGroups[name][pRen] || 0) + (record.renomination || 0);
         chartGroups[name][pPem] =
           (chartGroups[name][pPem] || 0) + (record.usage || 0);
       });
     } else {
       Object.values(monthlyGroups).forEach((record) => {
         let name = "Tidak Tersedia Data";
-        if (graphicXAxisMode === "Pembangkit") {
+        if (graphicXAxisMode === "Waktu") {
+          name = record.reportDate || "Tidak Tersedia Data";
+        } else if (graphicXAxisMode === "Pembangkit") {
           name = record.pembangkit || "Tidak Tersedia Data";
         } else if (graphicXAxisMode === "Pemasok") {
           name = record.tbbm || "Tidak Tersedia Data";
@@ -1024,6 +1085,7 @@ export default function Home() {
             nominasi: 0,
             realisasi: 0,
             penerimaan: 0,
+            renominasi: 0,
             pemakaian: 0,
             modaRealisasi: {},
           };
@@ -1032,6 +1094,7 @@ export default function Home() {
         chartGroups[name].nominasi += record.nominasi;
         chartGroups[name].realisasi += record.realisasi;
         chartGroups[name].penerimaan += record.penerimaan;
+        chartGroups[name].renominasi += record.renominasi;
         chartGroups[name].pemakaian += record.pemakaian;
 
         Object.entries(record.modaRealisasi).forEach(([m, val]) => {
@@ -1042,6 +1105,7 @@ export default function Home() {
         const pNom = `${record.product}_nominasi`;
         const pReal = `${record.product}_realisasi`;
         const pPen = `${record.product}_penerimaan`;
+        const pRen = `${record.product}_renominasi`;
         const pPem = `${record.product}_pemakaian`;
 
         chartGroups[name][pNom] =
@@ -1050,6 +1114,8 @@ export default function Home() {
           (chartGroups[name][pReal] || 0) + record.realisasi;
         chartGroups[name][pPen] =
           (chartGroups[name][pPen] || 0) + record.penerimaan;
+        chartGroups[name][pRen] =
+          (chartGroups[name][pRen] || 0) + record.renominasi;
         chartGroups[name][pPem] =
           (chartGroups[name][pPem] || 0) + record.pemakaian;
       });
@@ -1083,21 +1149,23 @@ export default function Home() {
       {
         startDate: graphicStart,
         endDate: graphicEnd,
-        product: graphicProduct || undefined,
+        product: graphicProduct.length > 0 ? graphicProduct.join(",") : undefined,
         moda: graphicModa.length > 0 ? graphicModa.join(",") : undefined,
         tbbm:
-          graphicSupplier ||
-          (graphicRegion.length > 0
-            ? filterSupplierOptions.join(",")
-            : undefined),
+          graphicSupplier.length > 0
+            ? graphicSupplier.join(",")
+            : (graphicRegion.length > 0
+              ? filterSupplierOptions.join(",")
+              : undefined),
         pembangkit:
-          graphicPlant ||
-          (graphicRegion.length > 0 ||
-          graphicUnit.length > 0 ||
-          graphicUpk.length > 0 ||
-          graphicKit
-            ? filterPlantOptions.join(",")
-            : undefined),
+          graphicPlant.length > 0
+            ? graphicPlant.join(",")
+            : (graphicRegion.length > 0 ||
+              graphicUnit.length > 0 ||
+              graphicUpk.length > 0 ||
+              graphicKit.length > 0
+              ? filterPlantOptions.join(",")
+              : undefined),
         interval:
           graphicIntervalMode === "Hari"
             ? "day"
@@ -1127,9 +1195,29 @@ export default function Home() {
         enabled:
           chartMode === "realisasi-moda"
             ? true
-            : !!graphicSupplier || !!graphicPlant,
+            : graphicSupplier.length > 0 || graphicPlant.length > 0,
       },
     );
+
+  const isBarChartEmpty = useMemo(() => {
+    if (barChartData.length === 0) return true;
+    if (barChartData.length === 1 && barChartData[0].name === "Tidak Tersedia Data") return true;
+
+    const selectedTypes = graphicJenisData.length > 0
+      ? graphicJenisData
+      : ["Nominasi", "Penyaluran", "Penerimaan", "Renominasi", "Pemakaian"];
+
+    let totalValue = 0;
+    for (const item of barChartData) {
+      if (selectedTypes.includes("Nominasi")) totalValue += (item.nominasi || 0);
+      if (selectedTypes.includes("Penyaluran")) totalValue += (item.realisasi || 0);
+      if (selectedTypes.includes("Penerimaan")) totalValue += (item.penerimaan || 0);
+      if (selectedTypes.includes("Renominasi")) totalValue += (item.renominasi || 0);
+      if (selectedTypes.includes("Pemakaian")) totalValue += (item.pemakaian || 0);
+    }
+
+    return totalValue === 0;
+  }, [barChartData, graphicJenisData]);
 
   // Redirect if unauthorized
   useEffect(() => {
@@ -1137,6 +1225,13 @@ export default function Home() {
       router.push("/landingpage");
     }
   }, [isAuthLoading, canRead, router]);
+
+  // Reset X-Axis mode to Waktu if switching to Nasional (Grafik Tren)
+  useEffect(() => {
+    if (chartMode === "nasional" && graphicXAxisMode !== "Waktu") {
+      setGraphicXAxisMode("Waktu");
+    }
+  }, [chartMode, graphicXAxisMode]);
 
   if (isAuthLoading || !canRead) {
     return (
@@ -1284,21 +1379,19 @@ export default function Home() {
                     <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
                       <button
                         onClick={() => setChartMode("akumulasi")}
-                        className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
-                          chartMode === "akumulasi"
-                            ? "bg-white text-gray-900 shadow-sm"
-                            : "text-gray-500 hover:text-gray-700"
-                        }`}
+                        className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${chartMode === "akumulasi"
+                          ? "bg-white text-gray-900 shadow-sm"
+                          : "text-gray-500 hover:text-gray-700"
+                          }`}
                       >
                         Grafik Akumulasi
                       </button>
                       <button
                         onClick={() => setChartMode("realisasi-moda")}
-                        className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
-                          chartMode === "realisasi-moda"
-                            ? "bg-white text-gray-900 shadow-sm"
-                            : "text-gray-500 hover:text-gray-700"
-                        }`}
+                        className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${chartMode === "realisasi-moda"
+                          ? "bg-white text-gray-900 shadow-sm"
+                          : "text-gray-500 hover:text-gray-700"
+                          }`}
                       >
                         Penyaluran Harian
                       </button>
@@ -1313,11 +1406,10 @@ export default function Home() {
                           setGraphicStart(formatLocalISODate(start));
                           setGraphicEnd(formatLocalISODate(end));
                         }}
-                        className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
-                          chartMode === "nasional"
-                            ? "bg-white text-gray-900 shadow-sm"
-                            : "text-gray-500 hover:text-gray-700"
-                        }`}
+                        className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${chartMode === "nasional"
+                          ? "bg-white text-gray-900 shadow-sm"
+                          : "text-gray-500 hover:text-gray-700"
+                          }`}
                       >
                         Grafik Tren
                       </button>
@@ -1325,7 +1417,7 @@ export default function Home() {
                   </div>
                 </div>
                 <p
-                  className={`text-xs text-gray-500 ${graphicStart || graphicEnd || graphicRegion.length > 0 || graphicUnit.length > 0 || graphicUpk.length > 0 || graphicKit || graphicPlant || graphicSupplier || graphicProduct || graphicModa.length > 0 ? "mb-3" : "mb-6"}`}
+                  className={`text-xs text-gray-500 ${graphicStart || graphicEnd || graphicRegion.length > 0 || graphicUnit.length > 0 || graphicUpk.length > 0 || graphicKit.length > 0 || graphicPlant.length > 0 || graphicSupplier.length > 0 || graphicProduct.length > 0 || graphicModa.length > 0 ? "mb-3" : "mb-6"}`}
                 >
                   {chartMode === "akumulasi"
                     ? "Visualisasi perbandingan Rencana/Nominasi, Penyaluran, dan Pemakaian per Unit Pembangkit"
@@ -1338,54 +1430,54 @@ export default function Home() {
                   graphicRegion.length > 0 ||
                   graphicUnit.length > 0 ||
                   graphicUpk.length > 0 ||
-                  graphicKit ||
-                  graphicPlant ||
-                  graphicSupplier ||
-                  graphicProduct ||
+                  graphicKit.length > 0 ||
+                  graphicPlant.length > 0 ||
+                  graphicSupplier.length > 0 ||
+                  graphicProduct.length > 0 ||
                   graphicModa.length > 0) && (
-                  <div className="flex flex-wrap gap-1.5 mb-6 max-w-xl">
-                    {graphicStart && graphicEnd && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-700 border border-blue-100">
-                        Periode: {graphicStart} s/d {graphicEnd}
-                      </span>
-                    )}
-                    {graphicRegion.length > 0 && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
-                        Region: {graphicRegion.join(", ")}
-                      </span>
-                    )}
-                    {graphicUnit.length > 0 && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
-                        Instansi/Unit: {graphicUnit.join(", ")}
-                      </span>
-                    )}
-                    {graphicUpk.length > 0 && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
-                        Unit Pelaksana: {graphicUpk.join(", ")}
-                      </span>
-                    )}
-                    {graphicKit && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
-                        Jenis Kit: {graphicKit}
-                      </span>
-                    )}
-                    {graphicSupplier && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-100">
-                        Pemasok: {graphicSupplier}
-                      </span>
-                    )}
-                    {graphicPlant && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-orange-50 text-orange-700 border border-orange-100">
-                        Pembangkit: {graphicPlant}
-                      </span>
-                    )}
-                    {graphicProduct && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-purple-50 text-purple-700 border border-purple-100">
-                        Produk: {graphicProduct}
-                      </span>
-                    )}
-                  </div>
-                )}
+                    <div className="flex flex-wrap gap-1.5 mb-6 max-w-xl">
+                      {graphicStart && graphicEnd && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-700 border border-blue-100">
+                          Periode: {graphicStart} s/d {graphicEnd}
+                        </span>
+                      )}
+                      {graphicRegion.length > 0 && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
+                          Region: {graphicRegion.join(", ")}
+                        </span>
+                      )}
+                      {graphicUnit.length > 0 && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
+                          Instansi/Unit: {graphicUnit.join(", ")}
+                        </span>
+                      )}
+                      {graphicUpk.length > 0 && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
+                          Unit Pelaksana: {graphicUpk.join(", ")}
+                        </span>
+                      )}
+                      {graphicKit.length > 0 && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
+                          Jenis Kit: {graphicKit.join(", ")}
+                        </span>
+                      )}
+                      {graphicSupplier.length > 0 && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-100">
+                          Pemasok: {graphicSupplier.join(", ")}
+                        </span>
+                      )}
+                      {graphicPlant.length > 0 && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-orange-50 text-orange-700 border border-orange-100">
+                          Pembangkit: {graphicPlant.join(", ")}
+                        </span>
+                      )}
+                      {graphicProduct.length > 0 && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-purple-50 text-purple-700 border border-purple-100">
+                          Produk: {graphicProduct.join(", ")}
+                        </span>
+                      )}
+                    </div>
+                  )}
               </div>
               <div
                 className="w-full flex-1 min-h-0 mt-4 bg-white"
@@ -1398,13 +1490,13 @@ export default function Home() {
                       <Loader2 className="animate-spin mr-2" size={20} />
                       Memuat data grafik...
                     </div>
-                  ) : barChartData.length === 0 ? (
-                    <div className="flex items-center justify-center h-full text-gray-400 text-sm">
-                      Tidak ada data laporan yang cocok dengan filter grafik
+                  ) : isBarChartEmpty ? (
+                    <div className="flex items-center justify-center h-full text-gray-400 text-sm font-medium">
+                      Tidak ada data
                     </div>
                   ) : (
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={barChartData}>
+                      <BarChart data={barChartData} margin={{ top: 10, right: 10, left: 10, bottom: 40 }}>
                         <CartesianGrid
                           strokeDasharray="3 3"
                           vertical={false}
@@ -1415,7 +1507,7 @@ export default function Home() {
                           tick={<CustomXAxisTick />}
                           axisLine={{ stroke: "var(--border)" }}
                           tickLine={false}
-                          height={50}
+                          height={80}
                         />
                         <YAxis
                           tick={{ fill: "var(--text-muted)", fontSize: 11 }}
@@ -1427,36 +1519,48 @@ export default function Home() {
                             return value.toString();
                           }}
                         />
-                        <Tooltip content={<AccumulationTooltip />} />
+                        <Tooltip content={<AccumulationTooltip graphicJenisData={graphicJenisData} />} />
                         <Legend
                           verticalAlign="top"
-                          height={36}
-                          content={() => (
-                            <div className="flex flex-col items-center gap-2 mb-4">
-                              <div className="flex justify-center items-center flex-wrap gap-4">
-                                {filterProductOptions.map((product) => (
-                                  <div
-                                    key={product}
-                                    className="flex items-center gap-2"
-                                  >
-                                    <span
-                                      className="w-2.5 h-2.5 rounded-full"
-                                      style={{
-                                        backgroundColor:
-                                          getProductColor(product),
-                                      }}
-                                    />
-                                    <span className="text-xs font-medium text-gray-600">
-                                      {product}
-                                    </span>
-                                  </div>
-                                ))}
+                          height={64}
+                          content={() => {
+                            let orderLabels = [];
+                            if (graphicJenisData.length === 0 || graphicJenisData.includes("Nominasi")) orderLabels.push("Nominasi");
+                            if (graphicJenisData.length === 0 || graphicJenisData.includes("Penyaluran")) orderLabels.push("Penyaluran");
+                            if (graphicJenisData.length === 0 || graphicJenisData.includes("Penerimaan")) orderLabels.push("Penerimaan");
+                            if (graphicJenisData.length === 0 || graphicJenisData.includes("Renominasi")) orderLabels.push("Renominasi");
+                            if (graphicJenisData.length === 0 || graphicJenisData.includes("Pemakaian")) orderLabels.push("Pemakaian");
+
+                            return (
+                              <div className="flex flex-col items-center gap-2 mb-4">
+                                <div className="flex justify-center items-center flex-wrap gap-4">
+                                  {filterProductOptions.map((product) => (
+                                    <div
+                                      key={product}
+                                      className="flex items-center gap-2"
+                                    >
+                                      <span
+                                        className="w-2.5 h-2.5 rounded-full"
+                                        style={{
+                                          backgroundColor:
+                                            getProductColor(product),
+                                        }}
+                                      />
+                                      <span className="text-xs font-medium text-gray-600">
+                                        {product}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                                <div className="text-[10px] text-gray-500 bg-gray-50 px-3 py-1 rounded-full border border-gray-100">
+                                  Urutan Kolom (kiri ke kanan): <span className="font-semibold text-gray-700">{orderLabels.join(" • ")}</span>
+                                </div>
                               </div>
-                            </div>
-                          )}
+                            );
+                          }}
                         />
                         {/* Nominasi */}
-                        {filterProductOptions.map((product) => (
+                        {(graphicJenisData.length === 0 || graphicJenisData.includes("Nominasi")) && filterProductOptions.map((product) => (
                           <Bar
                             key={`${product}_nominasi`}
                             dataKey={`${product}_nominasi`}
@@ -1473,7 +1577,7 @@ export default function Home() {
                           />
                         ))}
                         {/* Penyaluran */}
-                        {filterProductOptions.map((product) => (
+                        {(graphicJenisData.length === 0 || graphicJenisData.includes("Penyaluran")) && filterProductOptions.map((product) => (
                           <Bar
                             key={`${product}_realisasi`}
                             dataKey={`${product}_realisasi`}
@@ -1490,7 +1594,7 @@ export default function Home() {
                           />
                         ))}
                         {/* Penerimaan */}
-                        {filterProductOptions.map((product) => (
+                        {(graphicJenisData.length === 0 || graphicJenisData.includes("Penerimaan")) && filterProductOptions.map((product) => (
                           <Bar
                             key={`${product}_penerimaan`}
                             dataKey={`${product}_penerimaan`}
@@ -1506,8 +1610,25 @@ export default function Home() {
                             )}
                           />
                         ))}
+                        {/* Renominasi */}
+                        {(graphicJenisData.length === 0 || graphicJenisData.includes("Renominasi")) && filterProductOptions.map((product) => (
+                          <Bar
+                            key={`${product}_renominasi`}
+                            dataKey={`${product}_renominasi`}
+                            name={`${product} Renominasi`}
+                            fill={getProductColor(product)}
+                            stackId="renominasi"
+                            maxBarSize={40}
+                            shape={(props: any) => (
+                              <CustomRoundedTopBar
+                                {...props}
+                                productOptions={filterProductOptions}
+                              />
+                            )}
+                          />
+                        ))}
                         {/* Pemakaian */}
-                        {filterProductOptions.map((product) => (
+                        {(graphicJenisData.length === 0 || graphicJenisData.includes("Pemakaian")) && filterProductOptions.map((product) => (
                           <Bar
                             key={`${product}_pemakaian`}
                             dataKey={`${product}_pemakaian`}
@@ -1553,314 +1674,242 @@ export default function Home() {
               </h3>
 
               <div className="space-y-4 overflow-y-auto flex-1 pr-2 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-200 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-gray-300">
-                {chartMode === "nasional" && (
-                  <>
-                    <div className="mb-4">
-                      <FilterAutocomplete
-                        label="Kategori"
-                        options={["BBM Per Year", "BBM Per Produk"]}
-                        value={nationalCategory}
-                        onChange={setNationalCategory}
-                        placeholder="Pilih Kategori"
-                      />
-                    </div>
-
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Sumber Data
-                      </label>
-                      <div className="flex gap-4">
-                        <label className="flex items-center text-sm text-gray-700">
-                          <input
-                            type="radio"
-                            name="nationalTrendType"
-                            value="penyaluran"
-                            checked={nationalTrendType === "penyaluran"}
-                            onChange={() => setNationalTrendType("penyaluran")}
-                            className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                          />
-                          Penyaluran
-                        </label>
-                        <label className="flex items-center text-sm text-gray-700">
-                          <input
-                            type="radio"
-                            name="nationalTrendType"
-                            value="pemakaian"
-                            checked={nationalTrendType === "pemakaian"}
-                            onChange={() => setNationalTrendType("pemakaian")}
-                            className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                          />
-                          Pemakaian
-                        </label>
-                      </div>
-                    </div>
-                  </>
-                )}
 
                 {/* Mode Tampilan X-Axis Select */}
-                {chartMode !== "nasional" && (
-                  <FilterAutocomplete
-                    label="Mode Tampilan Grafik"
-                    options={[
-                      "Waktu",
-                      "Pembangkit",
-                      "Pemasok",
-                      "Jenis KIT",
-                      "Instansi/Unit",
-                      "UPK",
-                      "Region",
-                      "Moda Transportasi",
-                    ]}
-                    value={graphicXAxisMode}
-                    onChange={(val) => {
-                      if (val) setGraphicXAxisMode(val as GraphicXAxisMode);
-                    }}
-                    placeholder="Pilih Mode X-Axis"
-                  />
-                )}
-
-                {/* Mode Grafik for Nasional Tren */}
-                {chartMode === "nasional" && (
-                  <FilterAutocomplete
-                    label="Mode Grafik"
-                    options={[
-                      "Region",
-                      "Instansi",
-                      "Unit Pelaksana",
-                      "Moda Transportasi",
-                    ]}
-                    value={nationalModeGrafik}
-                    onChange={(val) => {
-                      setNationalModeGrafik(val);
-                      // Clear existing filters when mode changes
-                      setGraphicRegion([]);
-                      setGraphicUnit([]);
-                      setGraphicUpk([]);
-                      setGraphicModa([]);
-                    }}
-                    placeholder="Pilih Mode Grafik"
-                  />
-                )}
+                <FilterAutocomplete
+                  label="Mode Tampilan Grafik"
+                  options={
+                    chartMode === "nasional"
+                      ? ["Waktu"]
+                      : [
+                        "Waktu",
+                        "Pembangkit",
+                        "Pemasok",
+                        "Jenis KIT",
+                        "Instansi/Unit",
+                        "UPK",
+                        "Region",
+                        "Moda Transportasi",
+                      ]
+                  }
+                  value={graphicXAxisMode}
+                  onChange={(val) => {
+                    if (val) setGraphicXAxisMode(val as GraphicXAxisMode);
+                  }}
+                  placeholder="Pilih Mode X-Axis"
+                />
 
                 {/* Region Select */}
-                {(chartMode !== "nasional" ||
-                  nationalModeGrafik === "Region") && (
-                  <FilterAutocomplete
-                    label="Region"
-                    options={filterRegionOptions}
-                    value={graphicRegion}
-                    multiple={true}
-                    onChange={(val) => {
-                      setGraphicRegion(val || []);
-                      setGraphicPlant(null);
-                      setGraphicSupplier(null);
-                    }}
-                    placeholder="Semua Region"
-                  />
-                )}
+                <FilterAutocomplete
+                  label="Region"
+                  options={filterRegionOptions}
+                  value={graphicRegion}
+                  multiple={true}
+                  onChange={(val) => {
+                    setGraphicRegion(val || []);
+                    setGraphicPlant([]);
+                    setGraphicSupplier([]);
+                  }}
+                  placeholder="Semua Region"
+                />
 
                 {/* Instansi / Unit Select */}
-                {(chartMode !== "nasional" ||
-                  nationalModeGrafik === "Instansi") && (
-                  <FilterAutocomplete
-                    label="Instansi / Unit"
-                    options={filterUnitOptions}
-                    value={graphicUnit}
-                    multiple={true}
-                    onChange={(val) => {
-                      setGraphicUnit(val || []);
-                      setGraphicPlant(null);
-                      setGraphicUpk([]);
-                    }}
-                    placeholder="Semua Instansi / Unit"
-                  />
-                )}
+                <FilterAutocomplete
+                  label="Instansi / Unit"
+                  options={filterUnitOptions}
+                  value={graphicUnit}
+                  multiple={true}
+                  onChange={(val) => {
+                    setGraphicUnit(val || []);
+                    setGraphicPlant([]);
+                    setGraphicUpk([]);
+                  }}
+                  placeholder="Semua Instansi / Unit"
+                />
 
                 {/* Unit Pelaksana Select */}
-                {(chartMode !== "nasional" ||
-                  nationalModeGrafik === "Unit Pelaksana") && (
-                  <FilterAutocomplete
-                    label="Unit Pelaksana"
-                    options={filterUpkOptions}
-                    value={graphicUpk}
-                    multiple={true}
-                    onChange={(val) => {
-                      setGraphicUpk(val || []);
-                      setGraphicPlant(null);
-                    }}
-                    placeholder="Semua Unit Pelaksana"
-                  />
-                )}
+                <FilterAutocomplete
+                  label="Unit Pelaksana"
+                  options={filterUpkOptions}
+                  value={graphicUpk}
+                  multiple={true}
+                  onChange={(val) => {
+                    setGraphicUpk(val || []);
+                    setGraphicPlant([]);
+                  }}
+                  placeholder="Semua Unit Pelaksana"
+                />
 
                 {/* Jenis Kit Select */}
-                {chartMode !== "nasional" && (
-                  <FilterAutocomplete
-                    label="Jenis Kit"
-                    options={filterKitOptions}
-                    value={graphicKit}
-                    onChange={(val) => {
-                      setGraphicKit(val);
-                      setGraphicPlant(null);
-                    }}
-                    placeholder="Semua Jenis Kit"
-                  />
-                )}
+                <FilterAutocomplete
+                  label="Jenis Kit"
+                  options={filterKitOptions}
+                  value={graphicKit}
+                  multiple={true}
+                  onChange={(val) => {
+                    setGraphicKit(val || []);
+                    setGraphicPlant([]);
+                  }}
+                  placeholder="Semua Jenis Kit"
+                />
 
                 {/* Pembangkit Select */}
-                {chartMode !== "nasional" && (
-                  <FilterAutocomplete
-                    label="Pembangkit"
-                    options={filterPlantOptions}
-                    value={graphicPlant}
-                    onChange={setGraphicPlant}
-                    placeholder="Semua Pembangkit"
-                  />
-                )}
+                <FilterAutocomplete
+                  label="Pembangkit"
+                  options={filterPlantOptions}
+                  value={graphicPlant}
+                  multiple={true}
+                  onChange={(val) => setGraphicPlant(val || [])}
+                  placeholder="Semua Pembangkit"
+                />
 
                 {/* TBBM/Pemasok Select */}
-                {chartMode !== "nasional" && (
-                  <FilterAutocomplete
-                    label="TBBM / Pemasok"
-                    options={filterSupplierOptions}
-                    value={graphicSupplier}
-                    onChange={setGraphicSupplier}
-                    placeholder="Semua Pemasok"
-                  />
-                )}
+                <FilterAutocomplete
+                  label="TBBM / Pemasok"
+                  options={filterSupplierOptions}
+                  value={graphicSupplier}
+                  multiple={true}
+                  onChange={(val) => setGraphicSupplier(val || [])}
+                  placeholder="Semua Pemasok"
+                />
 
                 {/* Produk Select */}
-                {chartMode !== "nasional" && (
-                  <FilterAutocomplete
-                    label="Produk"
-                    options={filterProductOptions}
-                    value={graphicProduct}
-                    onChange={setGraphicProduct}
-                    placeholder="Semua Produk"
-                  />
-                )}
+                <FilterAutocomplete
+                  label="Produk"
+                  options={filterProductOptions}
+                  value={graphicProduct}
+                  multiple={true}
+                  onChange={(val) => setGraphicProduct(val || [])}
+                  placeholder="Semua Produk"
+                />
 
                 {/* Moda Transportasi Select */}
-                {(chartMode !== "nasional" ||
-                  nationalModeGrafik === "Moda Transportasi") && (
+                <FilterAutocomplete
+                  label="Moda Transportasi"
+                  options={filterModaOptions}
+                  value={graphicModa}
+                  multiple={true}
+                  onChange={(val) => setGraphicModa(val || [])}
+                  placeholder="Semua Moda Transportasi"
+                />
+
+                {/* Jenis Data Select */}
+                {(chartMode === "akumulasi" || chartMode === "nasional") && (
                   <FilterAutocomplete
-                    label="Moda Transportasi"
-                    options={filterModaOptions}
-                    value={graphicModa}
+                    label="Jenis data"
+                    options={["Nominasi", "Penyaluran", "Penerimaan", "Renominasi", "Pemakaian"]}
+                    value={graphicJenisData}
                     multiple={true}
-                    onChange={(val) => setGraphicModa(val || [])}
-                    placeholder="Semua Moda Transportasi"
+                    onChange={(val) => setGraphicJenisData(val || [])}
+                    placeholder="Semua Jenis Data"
                   />
                 )}
 
                 {/* Tanggal Filter */}
-                {chartMode !== "nasional" && (
-                  <>
-                    {/* Period Selectors */}
-                    <p className="block text-sm font-medium text-gray-700 mt-2 mb-2">
-                      Periode
-                    </p>
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      {[
-                        { label: "1 Minggu", val: "1W", interval: "Hari" },
-                        { label: "1 Bulan", val: "1M", interval: "Hari" },
-                        { label: "1 Tahun", val: "1Y", interval: "Bulan" },
-                        { label: "3 Tahun", val: "3Y", interval: "Tahun" },
-                      ].map((item) => (
-                        <button
-                          key={item.label}
-                          className={`px-3 py-2 text-sm font-medium rounded-md transition-colors text-center ${
-                            graphicPeriod === item.val
-                              ? "bg-primary text-white shadow-sm"
-                              : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+                <>
+                  {/* Period Selectors */}
+                  <p className="block text-sm font-medium text-gray-700 mt-2 mb-2">
+                    Periode
+                  </p>
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {[
+                      { label: "1 Minggu", val: "1W", interval: "Hari" },
+                      { label: "1 Bulan", val: "1M", interval: "Hari" },
+                      { label: "1 Tahun", val: "1Y", interval: "Bulan" },
+                      { label: "3 Tahun", val: "3Y", interval: "Tahun" },
+                    ].map((item) => (
+                      <button
+                        key={item.label}
+                        className={`px-3 py-2 text-sm font-medium rounded-md transition-colors text-center ${graphicPeriod === item.val
+                          ? "bg-primary text-white shadow-sm"
+                          : "bg-gray-50 text-gray-600 hover:bg-gray-100"
                           }`}
-                          onClick={() => {
-                            setGraphicPeriod(item.val as Periode);
-                            setGraphicIntervalMode(item.interval as any);
+                        onClick={() => {
+                          setGraphicPeriod(item.val as Periode);
+                          setGraphicIntervalMode(item.interval as any);
 
-                            const now = new Date();
-                            let newStart = "";
-                            let newEnd = "";
+                          const now = new Date();
+                          let newStart = "";
+                          let newEnd = "";
 
-                            if (item.val === "1W") {
-                              const start = new Date(now);
-                              start.setDate(now.getDate() - 7);
-                              newStart = formatLocalISODate(start);
-                              newEnd = formatLocalISODate(now);
-                            } else if (item.val === "1M") {
-                              const start = new Date(now);
-                              start.setDate(now.getDate() - 31);
-                              newStart = formatLocalISODate(start);
-                              newEnd = formatLocalISODate(now);
-                            } else if (item.val === "1Y") {
-                              const start = new Date(now.getFullYear(), 0, 1);
-                              const end = new Date(now.getFullYear(), 11, 31);
-                              newStart = formatLocalISODate(start);
-                              newEnd = formatLocalISODate(end);
-                            } else if (item.val === "3Y") {
-                              const start = new Date(
-                                now.getFullYear() - 2,
-                                0,
-                                1,
-                              );
-                              const end = new Date(now.getFullYear(), 11, 31);
-                              newStart = formatLocalISODate(start);
-                              newEnd = formatLocalISODate(end);
-                            }
+                          if (item.val === "1W") {
+                            const start = new Date(now);
+                            start.setDate(now.getDate() - 7);
+                            newStart = formatLocalISODate(start);
+                            newEnd = formatLocalISODate(now);
+                          } else if (item.val === "1M") {
+                            const start = new Date(now);
+                            start.setDate(now.getDate() - 31);
+                            newStart = formatLocalISODate(start);
+                            newEnd = formatLocalISODate(now);
+                          } else if (item.val === "1Y") {
+                            const start = new Date(now.getFullYear(), 0, 1);
+                            const end = new Date(now.getFullYear(), 11, 31);
+                            newStart = formatLocalISODate(start);
+                            newEnd = formatLocalISODate(end);
+                          } else if (item.val === "3Y") {
+                            const start = new Date(
+                              now.getFullYear() - 2,
+                              0,
+                              1,
+                            );
+                            const end = new Date(now.getFullYear(), 11, 31);
+                            newStart = formatLocalISODate(start);
+                            newEnd = formatLocalISODate(end);
+                          }
 
-                            if (newStart && newEnd) {
-                              setGraphicStart(newStart);
-                              setGraphicEnd(newEnd);
-                            }
-                          }}
-                        >
-                          {item.label}
-                        </button>
-                      ))}
-                    </div>
+                          if (newStart && newEnd) {
+                            setGraphicStart(newStart);
+                            setGraphicEnd(newEnd);
+                          }
+                        }}
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
 
-                    {/* Interval Selectors */}
-                    <p className="block text-sm font-medium text-gray-700 mb-2">
-                      Interval
-                    </p>
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      {(["Tahun", "Bulan", "Hari"] as const).map((mode) => {
-                        if (
-                          graphicPeriod === "1W" &&
-                          (mode === "Tahun" || mode === "Bulan")
-                        )
-                          return null;
-                        if (graphicPeriod === "1M" && mode === "Tahun")
-                          return null;
+                  {/* Interval Selectors */}
+                  <p className="block text-sm font-medium text-gray-700 mb-2">
+                    Interval
+                  </p>
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {(["Tahun", "Bulan", "Hari"] as const).map((mode) => {
+                      if (
+                        graphicPeriod === "1W" &&
+                        (mode === "Tahun" || mode === "Bulan")
+                      )
+                        return null;
+                      if (graphicPeriod === "1M" && mode === "Tahun")
+                        return null;
 
-                        return (
-                          <button
-                            key={mode}
-                            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                              graphicIntervalMode === mode
-                                ? "bg-primary text-white shadow-sm"
-                                : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+                      return (
+                        <button
+                          key={mode}
+                          className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${graphicIntervalMode === mode
+                            ? "bg-primary text-white shadow-sm"
+                            : "bg-gray-50 text-gray-600 hover:bg-gray-100"
                             }`}
-                            onClick={() => setGraphicIntervalMode(mode)}
-                          >
-                            {mode}
-                          </button>
-                        );
-                      })}
-                    </div>
+                          onClick={() => setGraphicIntervalMode(mode)}
+                        >
+                          {mode}
+                        </button>
+                      );
+                    })}
+                  </div>
 
-                    <DateRangeFilter
-                      startDate={graphicStart}
-                      endDate={graphicEnd}
-                      setStartDate={setGraphicStart}
-                      setEndDate={setGraphicEnd}
-                      periode={graphicPeriod}
-                      isSingleDate={false}
-                      mode={
-                        graphicPeriod === "3Y" ? "Tahun" : graphicIntervalMode
-                      }
-                    />
-                  </>
-                )}
+                  <DateRangeFilter
+                    startDate={graphicStart}
+                    endDate={graphicEnd}
+                    setStartDate={setGraphicStart}
+                    setEndDate={setGraphicEnd}
+                    periode={graphicPeriod}
+                    isSingleDate={false}
+                    mode={
+                      graphicPeriod === "3Y" ? "Tahun" : graphicIntervalMode
+                    }
+                  />
+                </>
               </div>
             </div>
           </div>

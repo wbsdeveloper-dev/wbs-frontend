@@ -17,6 +17,7 @@ interface TrendData {
   month: number;
   total_volume: string;
   product?: string;
+  jenis_data?: string;
 }
 
 interface NationalTrendChartProps {
@@ -77,9 +78,8 @@ export function NationalTrendChart({
 
       data.forEach((item) => {
         const p = item.product || "LAINNYA";
-        const lineKey = (item as any).mode_value
-          ? `${(item as any).mode_value} - ${p}`
-          : p;
+        let lineKey = (item as any).mode_value ? `${(item as any).mode_value} - ${p}` : p;
+        if (item.jenis_data) lineKey = `${item.jenis_data} - ${lineKey}`;
         productsSet.add(lineKey);
         const tp = `${item.year}-${item.month.toString().padStart(2, "0")}`;
         timePointsSet.add(tp);
@@ -99,9 +99,8 @@ export function NationalTrendChart({
 
       data.forEach((item) => {
         const p = item.product || "LAINNYA";
-        const lineKey = (item as any).mode_value
-          ? `${(item as any).mode_value} - ${p}`
-          : p;
+        let lineKey = (item as any).mode_value ? `${(item as any).mode_value} - ${p}` : p;
+        if (item.jenis_data) lineKey = `${item.jenis_data} - ${lineKey}`;
         const tp = `${item.year}-${item.month.toString().padStart(2, "0")}`;
         // Add instead of overwrite, in case of multiple mode values falling in the same bucket?
         // Wait, SQL groups by year, month, product, mode_value so it's a 1-to-1 mapping.
@@ -134,9 +133,8 @@ export function NationalTrendChart({
       // X-axis is Months
       const linesSet = new Set<string>();
       data.forEach((item) => {
-        const lineKey = (item as any).mode_value
-          ? `${(item as any).mode_value} ${item.year}`
-          : String(item.year);
+        let lineKey = (item as any).mode_value ? `${(item as any).mode_value} ${item.year}` : String(item.year);
+        if (item.jenis_data) lineKey = `${item.jenis_data} - ${lineKey}`;
         linesSet.add(lineKey);
       });
       const uniqueLines = Array.from(linesSet).sort();
@@ -149,11 +147,9 @@ export function NationalTrendChart({
 
       data.forEach((item) => {
         if (item.month >= 1 && item.month <= 12) {
-          const lineKey = (item as any).mode_value
-            ? `${(item as any).mode_value} ${item.year}`
-            : String(item.year);
-          tableDataMap[lineKey][item.month - 1] =
-            parseFloat(item.total_volume) || 0;
+          let lineKey = (item as any).mode_value ? `${(item as any).mode_value} ${item.year}` : String(item.year);
+          if (item.jenis_data) lineKey = `${item.jenis_data} - ${lineKey}`;
+          tableDataMap[lineKey][item.month - 1] = parseFloat(item.total_volume) || 0;
         }
       });
 
