@@ -1380,8 +1380,8 @@ export default function Home() {
                       <button
                         onClick={() => setChartMode("akumulasi")}
                         className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${chartMode === "akumulasi"
-                            ? "bg-white text-gray-900 shadow-sm"
-                            : "text-gray-500 hover:text-gray-700"
+                          ? "bg-white text-gray-900 shadow-sm"
+                          : "text-gray-500 hover:text-gray-700"
                           }`}
                       >
                         Grafik Akumulasi
@@ -1389,8 +1389,8 @@ export default function Home() {
                       <button
                         onClick={() => setChartMode("realisasi-moda")}
                         className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${chartMode === "realisasi-moda"
-                            ? "bg-white text-gray-900 shadow-sm"
-                            : "text-gray-500 hover:text-gray-700"
+                          ? "bg-white text-gray-900 shadow-sm"
+                          : "text-gray-500 hover:text-gray-700"
                           }`}
                       >
                         Penyaluran Harian
@@ -1407,8 +1407,8 @@ export default function Home() {
                           setGraphicEnd(formatLocalISODate(end));
                         }}
                         className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${chartMode === "nasional"
-                            ? "bg-white text-gray-900 shadow-sm"
-                            : "text-gray-500 hover:text-gray-700"
+                          ? "bg-white text-gray-900 shadow-sm"
+                          : "text-gray-500 hover:text-gray-700"
                           }`}
                       >
                         Grafik Tren
