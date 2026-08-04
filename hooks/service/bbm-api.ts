@@ -45,8 +45,8 @@ export const bbmKeys = {
   all: ["bbm"] as const,
   monthly: () => [...bbmKeys.all, "monthly"] as const,
   bulk: () => [...bbmKeys.all, "bulk"] as const,
-  nationalTrend: (type: string, category: string, startDate?: string, endDate?: string, region?: string | null, unit?: string | null, upk?: string | null, moda?: string | null, modeGrafik?: string | null, jenisKit?: string | null, pembangkit?: string | null, tbbm?: string | null, product?: string | null) => 
-    [...bbmKeys.all, "national-trend", type, category, startDate, endDate, region, unit, upk, moda, modeGrafik, jenisKit, pembangkit, tbbm, product] as const,
+  nationalTrend: (jenisData: string[] | undefined, category: string, startDate?: string, endDate?: string, region?: string | null, unit?: string | null, upk?: string | null, moda?: string | null, modeGrafik?: string | null, jenisKit?: string | null, pembangkit?: string | null, tbbm?: string | null, product?: string | null) => 
+    [...bbmKeys.all, "national-trend", jenisData, category, startDate, endDate, region, unit, upk, moda, modeGrafik, jenisKit, pembangkit, tbbm, product] as const,
 };
 
 export async function getBbmMonthly(): Promise<BbmRecord[]> {
@@ -86,7 +86,7 @@ export function useBbmMonthly(options?: Partial<UseQueryOptions<BbmRecord[]>>) {
 }
 
 export async function getNationalTrend(
-  type: "penyaluran" | "pemakaian", 
+  jenisData: string[] | undefined,
   category: string,
   startDate?: string, 
   endDate?: string,
@@ -99,8 +99,13 @@ export async function getNationalTrend(
   pembangkit?: string | null,
   tbbm?: string | null,
   product?: string | null
-): Promise<Array<{ year: number; month: number; product?: string; mode_value?: string; total_volume: string }>> {
-  let url = `${DASHBOARD_API_HOST}/bbm-monthly/national-trend?type=${type}&category=${encodeURIComponent(category)}`;
+): Promise<Array<{ year: number; month: number; product?: string; mode_value?: string; total_volume: string; jenis_data?: string; }>> {
+  let url = `${DASHBOARD_API_HOST}/bbm-monthly/national-trend?category=${encodeURIComponent(category)}`;
+  if (jenisData && jenisData.length > 0) {
+    jenisData.forEach(jd => {
+      url += `&jenisData=${encodeURIComponent(jd)}`;
+    });
+  }
   if (startDate) url += `&startDate=${startDate}`;
   if (endDate) url += `&endDate=${endDate}`;
   if (region) url += `&region=${encodeURIComponent(region)}`;
@@ -135,7 +140,7 @@ export async function getNationalTrend(
 }
 
 export function useNationalTrend(
-  type: "penyaluran" | "pemakaian", 
+  jenisData: string[] | undefined,
   category: string,
   startDate?: string, 
   endDate?: string,
@@ -148,11 +153,11 @@ export function useNationalTrend(
   pembangkit?: string | null,
   tbbm?: string | null,
   product?: string | null,
-  options?: Partial<UseQueryOptions<Array<{ year: number; month: number; product?: string; mode_value?: string; total_volume: string }>>>
+  options?: Partial<UseQueryOptions<Array<{ year: number; month: number; product?: string; mode_value?: string; total_volume: string; jenis_data?: string; }>>>
 ) {
   return useQuery({
-    queryKey: bbmKeys.nationalTrend(type, category, startDate, endDate, region, unit, upk, moda, modeGrafik, jenisKit, pembangkit, tbbm, product),
-    queryFn: () => getNationalTrend(type, category, startDate, endDate, region, unit, upk, moda, modeGrafik, jenisKit, pembangkit, tbbm, product),
+    queryKey: bbmKeys.nationalTrend(jenisData, category, startDate, endDate, region, unit, upk, moda, modeGrafik, jenisKit, pembangkit, tbbm, product),
+    queryFn: () => getNationalTrend(jenisData, category, startDate, endDate, region, unit, upk, moda, modeGrafik, jenisKit, pembangkit, tbbm, product),
     ...options,
   });
 }

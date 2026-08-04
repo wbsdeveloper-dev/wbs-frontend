@@ -148,9 +148,10 @@ const CustomXAxisTick = ({ x, y, payload }: any) => {
         x={0}
         y={15}
         fontSize={11}
-        textAnchor="middle"
+        textAnchor="end"
         fill="#6b7280"
         className="font-medium"
+        transform="rotate(-45)"
       >
         {payload.value}
       </text>
@@ -625,7 +626,7 @@ export default function Home() {
 
   const { data: nationalTrendData, isLoading: isNationalTrendLoading } =
     useNationalTrend(
-      graphicJenisData.includes("Pemakaian") && !graphicJenisData.includes("Penyaluran") ? "pemakaian" : "penyaluran",
+      graphicJenisData.length > 0 ? graphicJenisData : undefined,
       nationalCategory || "BBM Per Year",
       graphicStart,
       graphicEnd,
@@ -1209,6 +1210,13 @@ export default function Home() {
     }
   }, [isAuthLoading, canRead, router]);
 
+  // Reset X-Axis mode to Waktu if switching to Nasional (Grafik Tren)
+  useEffect(() => {
+    if (chartMode === "nasional" && graphicXAxisMode !== "Waktu") {
+      setGraphicXAxisMode("Waktu");
+    }
+  }, [chartMode, graphicXAxisMode]);
+
   if (isAuthLoading || !canRead) {
     return (
       <div className="flex h-screen items-center justify-center bg-gray-50">
@@ -1472,7 +1480,7 @@ export default function Home() {
                     </div>
                   ) : (
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={barChartData}>
+                      <BarChart data={barChartData} margin={{ top: 10, right: 10, left: 10, bottom: 40 }}>
                         <CartesianGrid
                           strokeDasharray="3 3"
                           vertical={false}
@@ -1483,7 +1491,7 @@ export default function Home() {
                           tick={<CustomXAxisTick />}
                           axisLine={{ stroke: "#e5e7eb" }}
                           tickLine={false}
-                          height={30}
+                          height={80}
                         />
                         <YAxis
                           tick={{ fill: "#6b7280", fontSize: 11 }}
@@ -1654,16 +1662,20 @@ export default function Home() {
                 {/* Mode Tampilan X-Axis Select */}
                 <FilterAutocomplete
                   label="Mode Tampilan Grafik"
-                  options={[
-                    "Waktu",
-                    "Pembangkit",
-                    "Pemasok",
-                    "Jenis KIT",
-                    "Instansi/Unit",
-                    "UPK",
-                    "Region",
-                    "Moda Transportasi",
-                  ]}
+                  options={
+                    chartMode === "nasional"
+                      ? ["Waktu"]
+                      : [
+                          "Waktu",
+                          "Pembangkit",
+                          "Pemasok",
+                          "Jenis KIT",
+                          "Instansi/Unit",
+                          "UPK",
+                          "Region",
+                          "Moda Transportasi",
+                        ]
+                  }
                   value={graphicXAxisMode}
                   onChange={(val) => {
                     if (val) setGraphicXAxisMode(val as GraphicXAxisMode);

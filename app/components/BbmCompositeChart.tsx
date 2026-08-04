@@ -235,14 +235,9 @@ export default function BbmCompositeChart({
         data={chartData}
         margin={{
           top: 10,
-          right: 10,
-          left: 5,
-          bottom:
-            period === "1M" || (period === "3Y" && intervalMode === "Hari")
-              ? 50
-              : period === "3Y" && intervalMode === "Bulan"
-                ? 30
-                : 10,
+          right: 20,
+          left: 25,
+          bottom: 40,
         }}
       >
         <CartesianGrid
@@ -264,13 +259,7 @@ export default function BbmCompositeChart({
           interval={
             period === "3Y" && intervalMode === "Bulan" ? 0 : "preserveStartEnd"
           }
-          height={
-            period === "1M" || (period === "3Y" && intervalMode === "Hari")
-              ? 60
-              : period === "3Y" && intervalMode === "Bulan"
-                ? 50
-                : 30
-          }
+          height={80}
         />
         <YAxis
           yAxisId="left"
