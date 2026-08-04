@@ -23,6 +23,7 @@ import {
   AlertCircle,
   CheckCircle2,
   Info,
+  Menu,
 } from "lucide-react";
 import {
   useActivityLogs,
@@ -264,31 +265,15 @@ export default function LogRiwayatPage() {
           {/* Table Card */}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
             {/* Table header toolbar */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-white gap-3 flex-wrap">
-              {/* Search */}
-              <div className="relative flex-1 min-w-[220px]">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="text"
-                  value={searchEmail}
-                  onChange={(e) => {
-                    setSearchEmail(e.target.value);
-                    setPage(1);
-                  }}
-                  placeholder="Cari email pengguna..."
-                  className="w-full pl-9 pr-8 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-secondary transition-all"
-                />
-                {searchEmail && (
-                  <button
-                    onClick={() => {
-                      setSearchEmail("");
-                      setPage(1);
-                    }}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-white">
+              <div className="flex items-center gap-1.5">
+                <Menu size={20} className="text-gray-500" />
+                <span className="text-sm font-medium text-gray-700">
+                  Tabel Log Riwayat Aktivitas
+                </span>
+                <span className="text-xs text-gray-500 font-normal ml-2">
+                  (Total {pagination?.total || 0} record ditemukan)
+                </span>
               </div>
 
               <div className="flex items-center gap-2">
@@ -300,7 +285,7 @@ export default function LogRiwayatPage() {
                       : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
                   }`}
                 >
-                  <Filter className="w-4 h-4" />
+                  <Filter size={16} />
                   Filter
                   {activeFilterCount > 0 && (
                     <span className="ml-1 flex items-center justify-center w-5 h-5 bg-white/20 rounded-full text-xs font-bold">
@@ -308,28 +293,53 @@ export default function LogRiwayatPage() {
                     </span>
                   )}
                   <ChevronDown
-                    className={`w-4 h-4 transition-transform ${showFilters ? "rotate-180" : ""}`}
+                    size={14}
+                    className={`transition-transform duration-200 ${
+                      showFilters ? "rotate-180" : ""
+                    }`}
                   />
                 </button>
-                {activeFilterCount > 0 && (
-                  <button
-                    onClick={handleResetFilters}
-                    className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200 cursor-pointer"
-                  >
-                    <RotateCcw className="w-4 h-4" />
-                    Reset
-                  </button>
-                )}
               </div>
             </div>
 
             {/* Filter Panel */}
             {showFilters && (
               <div className="px-4 py-4 border-b border-gray-200 bg-gray-50/50">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
+                  {/* Search Email filter */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
+                      Cari Email / Pengguna
+                    </label>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <input
+                        type="text"
+                        value={searchEmail}
+                        onChange={(e) => {
+                          setSearchEmail(e.target.value);
+                          setPage(1);
+                        }}
+                        placeholder="Cari email pengguna..."
+                        className="w-full pl-9 pr-8 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
+                      />
+                      {searchEmail && (
+                        <button
+                          onClick={() => {
+                            setSearchEmail("");
+                            setPage(1);
+                          }}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
                   {/* Action filter */}
                   <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                    <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
                       Jenis Aksi
                     </label>
                     <select
@@ -338,7 +348,7 @@ export default function LogRiwayatPage() {
                         setActionFilter(e.target.value);
                         setPage(1);
                       }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-secondary"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
                     >
                       <option value="all">Semua Aksi</option>
                       <option value="LOGIN">Login</option>
@@ -354,7 +364,7 @@ export default function LogRiwayatPage() {
 
                   {/* Resource filter */}
                   <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                    <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
                       Modul / Resource
                     </label>
                     <select
@@ -363,7 +373,7 @@ export default function LogRiwayatPage() {
                         setResourceFilter(e.target.value);
                         setPage(1);
                       }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-secondary"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
                     >
                       <option value="all">Semua Modul</option>
                       <option value="auth">Autentikasi</option>
@@ -384,7 +394,7 @@ export default function LogRiwayatPage() {
 
                   {/* Status filter */}
                   <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                    <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
                       Status
                     </label>
                     <select
@@ -393,7 +403,7 @@ export default function LogRiwayatPage() {
                         setStatusFilter(e.target.value);
                         setPage(1);
                       }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-secondary"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
                     >
                       <option value="all">Semua Status</option>
                       <option value="SUCCESS">Berhasil</option>
@@ -401,38 +411,50 @@ export default function LogRiwayatPage() {
                     </select>
                   </div>
 
-                  {/* Date range */}
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
-                        Dari Tanggal
-                      </label>
-                      <input
-                        type="date"
-                        value={startDate}
-                        onChange={(e) => {
-                          setStartDate(e.target.value);
-                          setPage(1);
-                        }}
-                        className="w-full px-2 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-secondary"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
-                        Sampai
-                      </label>
-                      <input
-                        type="date"
-                        value={endDate}
-                        onChange={(e) => {
-                          setEndDate(e.target.value);
-                          setPage(1);
-                        }}
-                        className="w-full px-2 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-secondary"
-                      />
-                    </div>
+                  {/* Start Date */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
+                      Dari Tanggal
+                    </label>
+                    <input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => {
+                        setStartDate(e.target.value);
+                        setPage(1);
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
+                    />
+                  </div>
+
+                  {/* End Date */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
+                      Sampai Tanggal
+                    </label>
+                    <input
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => {
+                        setEndDate(e.target.value);
+                        setPage(1);
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
+                    />
                   </div>
                 </div>
+
+                {/* Reset Action */}
+                {activeFilterCount > 0 && (
+                  <div className="flex items-center justify-end gap-2 mt-4">
+                    <button
+                      onClick={handleResetFilters}
+                      className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200 cursor-pointer"
+                    >
+                      <RotateCcw size={14} /> Reset Filter
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 

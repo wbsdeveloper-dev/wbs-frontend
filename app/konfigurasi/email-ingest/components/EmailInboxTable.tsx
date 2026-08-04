@@ -16,6 +16,7 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Menu,
 } from "lucide-react";
 import {
   useGetEmailInbox,
@@ -235,77 +236,80 @@ export default function EmailInboxTable() {
   }
 
   return (
-    <div className="space-y-3">
-      {/* Top Search & Filter Bar */}
-      <div className="bg-white p-3 rounded-xl border border-gray-300 shadow-sm space-y-3">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="relative flex-1 w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Cari subjek, pengirim, atau nama file..."
-              className="w-full pl-9 pr-8 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 placeholder-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-800"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-            <button
-              onClick={() => setShowFilters((prev) => !prev)}
-              className={`inline-flex items-center gap-2 px-3.5 py-2 text-xs font-bold rounded-lg border transition-all cursor-pointer ${
-                showFilters || activeFilterCount > 0
-                  ? "bg-slate-900 text-white border-slate-900 shadow-sm"
-                  : "bg-white text-slate-800 border-gray-300 hover:bg-slate-50"
-              }`}
-            >
-              <Filter className="w-3.5 h-3.5" />
-              <span>Filter</span>
-              {activeFilterCount > 0 && (
-                <span className="w-4 h-4 rounded-full bg-white/30 text-white text-[10px] font-extrabold flex items-center justify-center">
-                  {activeFilterCount}
-                </span>
-              )}
-              <ChevronDown
-                className={`w-3.5 h-3.5 transition-transform ${
-                  showFilters ? "rotate-180" : ""
-                }`}
-              />
-            </button>
-
-            {activeFilterCount > 0 && (
-              <button
-                onClick={handleResetFilters}
-                className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-gray-700 hover:text-gray-900 bg-gray-200 hover:bg-gray-300 rounded-lg transition-all cursor-pointer"
-                title="Reset semua filter"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>Reset</span>
-              </button>
-            )}
-          </div>
+    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden animate-fadeIn">
+      {/* Table Header / Toolbar */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-white">
+        <div className="flex items-center gap-1.5">
+          <Menu size={20} className="text-gray-500" />
+          <span className="text-sm font-medium text-gray-700">
+            Data Email & Attachment
+          </span>
         </div>
 
-        {/* Expanded Filter Panel */}
-        {showFilters && (
-          <div className="pt-3 border-t border-gray-200 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 animate-fadeIn">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowFilters((prev) => !prev)}
+            className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-all duration-200 cursor-pointer ${
+              showFilters || activeFilterCount > 0
+                ? "bg-primary text-white border-primary"
+                : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+            }`}
+          >
+            <Filter size={16} />
+            Filter
+            {activeFilterCount > 0 && (
+              <span className="ml-1 flex items-center justify-center w-5 h-5 bg-white/20 rounded-full text-xs font-bold">
+                {activeFilterCount}
+              </span>
+            )}
+            <ChevronDown
+              size={14}
+              className={`transition-transform duration-200 ${
+                showFilters ? "rotate-180" : ""
+              }`}
+            />
+          </button>
+        </div>
+      </div>
+
+      {/* Filter Panel */}
+      {showFilters && (
+        <div className="px-4 py-4 border-b border-gray-200 bg-gray-50/50">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+            {/* Search filter */}
+            <div>
+              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
+                Cari Subjek / Pengirim
+              </label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Cari subjek, pengirim, atau file..."
+                  className="w-full pl-9 pr-8 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+
             {/* Rule Filter */}
             <div>
-              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
                 Nama Rule
               </label>
               <select
                 value={ruleFilter}
                 onChange={(e) => setRuleFilter(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs font-semibold text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-secondary"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
               >
                 <option value="all">Semua Rule</option>
                 <option value="tanpa_rule">Tanpa Rule</option>
@@ -319,13 +323,13 @@ export default function EmailInboxTable() {
 
             {/* Status Diproses Filter */}
             <div>
-              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
                 Status Diproses
               </label>
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs font-semibold text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-secondary"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
               >
                 <option value="all">Semua Status</option>
                 <option value="processed">Processed</option>
@@ -335,32 +339,47 @@ export default function EmailInboxTable() {
 
             {/* Start Date */}
             <div>
-              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
                 Tanggal Mulai
               </label>
               <input
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs font-semibold text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-secondary"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
               />
             </div>
 
             {/* End Date */}
             <div>
-              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
                 Tanggal Akhir
               </label>
               <input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs font-semibold text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-secondary"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
               />
             </div>
           </div>
-        )}
-      </div>
+
+          {/* Reset Filters */}
+          {activeFilterCount > 0 && (
+            <div className="flex items-center justify-end gap-2 mt-4">
+              <button
+                onClick={handleResetFilters}
+                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200 cursor-pointer"
+                title="Reset semua filter"
+              >
+                <RotateCcw size={14} /> Reset Filter
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="p-4 md:p-6 space-y-3">
 
       {/* Top Toolbar for Bulk Actions */}
       {canDelete && selectedIds.length > 0 && (
@@ -633,6 +652,7 @@ export default function EmailInboxTable() {
           </div>
         </div>
       )}
+      </div>
 
       {/* Single Delete Confirmation Modal */}
       {emailToDelete && (
