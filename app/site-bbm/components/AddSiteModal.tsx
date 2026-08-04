@@ -28,11 +28,25 @@ export function AddSiteModal({
   editingId,
 }: AddSiteModalProps) {
   const { data: dropdowns } = useDropdowns({ enabled: open });
-  const { data: jenisKits = [] } = useKertasKerjaMaster("master_jenis_kit", undefined, { enabled: open });
-  const { data: upks = [] } = useKertasKerjaMaster("master_unit_pelaksana", undefined, { enabled: open });
-  const { data: regions = [] } = useKertasKerjaMaster("master_region", undefined, { enabled: open });
-  const { data: units = [] } = useKertasKerjaMaster("master_unit", undefined, { enabled: open });
-  
+  const { data: jenisKits = [] } = useKertasKerjaMaster(
+    "master_jenis_kit",
+    undefined,
+    { enabled: open },
+  );
+  const { data: upks = [] } = useKertasKerjaMaster(
+    "master_unit_pelaksana",
+    undefined,
+    { enabled: open },
+  );
+  const { data: regions = [] } = useKertasKerjaMaster(
+    "master_region",
+    undefined,
+    { enabled: open },
+  );
+  const { data: units = [] } = useKertasKerjaMaster("master_unit", undefined, {
+    enabled: open,
+  });
+
   const createSiteMutation = useCreateSite({ onSuccess: () => {} });
   const updateSiteMutation = useUpdateSite({ onSuccess: () => {} });
 
@@ -54,26 +68,34 @@ export function AddSiteModal({
     unit_id: "",
   });
 
-  const [versions, setVersions] = useState<Array<{
-    id?: string;
-    capacity?: number;
-    capacity_mw?: number;
-    owner?: string;
-    lat?: string;
-    long?: string;
-    valid_from?: string;
-    valid_to?: string;
-    notes?: string;
-    isExpanded: boolean;
-  }>>([
-    { isExpanded: true }
-  ]);
+  const [versions, setVersions] = useState<
+    Array<{
+      id?: string;
+      capacity?: number;
+      capacity_mw?: number;
+      owner?: string;
+      lat?: string;
+      long?: string;
+      valid_from?: string;
+      valid_to?: string;
+      notes?: string;
+      isExpanded: boolean;
+    }>
+  >([{ isExpanded: true }]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const { data: historyData } = useSiteHistory(editingId || "", formData.site_type === "PEMBANGKIT" ? "PEMBANGKIT" : "PEMASOK", {
-    enabled: !!editingId && (formData.site_type === "PEMBANGKIT" || formData.site_type === "PEMASOK") && open
-  });
+  const { data: historyData } = useSiteHistory(
+    editingId || "",
+    formData.site_type === "PEMBANGKIT" ? "PEMBANGKIT" : "PEMASOK",
+    {
+      enabled:
+        !!editingId &&
+        (formData.site_type === "PEMBANGKIT" ||
+          formData.site_type === "PEMASOK") &&
+        open,
+    },
+  );
 
   const resetForm = useCallback(() => {
     setFormData({
@@ -105,14 +127,16 @@ export function AddSiteModal({
           unit_id: editingSite.unit_id ?? "",
         });
         if (editingSite.site_type === "TRANSPORTIR") {
-          setVersions([{
-            capacity: editingSite.capacity,
-            capacity_mw: editingSite.capacity_mw,
-            owner: editingSite.owner,
-            lat: editingSite.lat,
-            long: editingSite.long,
-            isExpanded: true
-          }]);
+          setVersions([
+            {
+              capacity: editingSite.capacity,
+              capacity_mw: editingSite.capacity_mw,
+              owner: editingSite.owner,
+              lat: editingSite.lat,
+              long: editingSite.long,
+              isExpanded: true,
+            },
+          ]);
         }
       } else if (!editingId) {
         resetForm();
@@ -121,7 +145,11 @@ export function AddSiteModal({
   }, [open, editingId, editingSite, resetForm]);
 
   useEffect(() => {
-    if (historyData && historyData.length > 0 && formData.site_type !== "TRANSPORTIR") {
+    if (
+      historyData &&
+      historyData.length > 0 &&
+      formData.site_type !== "TRANSPORTIR"
+    ) {
       const formattedVersions = historyData.map((h, idx) => ({
         id: h.id,
         capacity: h.capacity ?? undefined,
@@ -129,10 +157,10 @@ export function AddSiteModal({
         owner: h.owner || "",
         lat: h.lat || "",
         long: h.long || "",
-        valid_from: h.valid_from ? h.valid_from.split('T')[0] : "",
-        valid_to: h.valid_to ? h.valid_to.split('T')[0] : "",
+        valid_from: h.valid_from ? h.valid_from.split("T")[0] : "",
+        valid_to: h.valid_to ? h.valid_to.split("T")[0] : "",
         notes: h.notes || "",
-        isExpanded: idx === 0
+        isExpanded: idx === 0,
       }));
       setVersions(formattedVersions);
     }
@@ -160,10 +188,10 @@ export function AddSiteModal({
       return;
     }
 
-    // Take the first version's fields to use as top-level payload 
+    // Take the first version's fields to use as top-level payload
     // (for backward compatibility and TRANSPORTIR).
     const topVersion = versions[0];
-    
+
     const payload: CreateSitePayload = {
       name: formData.name,
       site_type: formData.site_type,
@@ -180,7 +208,7 @@ export function AddSiteModal({
     };
 
     if (formData.site_type !== "TRANSPORTIR") {
-      payload.versions = versions.map(v => ({
+      payload.versions = versions.map((v) => ({
         id: v.id,
         name: formData.name,
         capacity: v.capacity ?? null,
@@ -222,7 +250,10 @@ export function AddSiteModal({
   };
 
   const addVersion = () => {
-    setVersions([{ isExpanded: true }, ...versions.map(v => ({ ...v, isExpanded: false }))]);
+    setVersions([
+      { isExpanded: true },
+      ...versions.map((v) => ({ ...v, isExpanded: false })),
+    ]);
   };
 
   const removeVersion = (index: number) => {
@@ -249,38 +280,65 @@ export function AddSiteModal({
               {editingId ? "Edit Site" : "Tambah Site Baru"}
             </h2>
           </div>
-          <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg transition-colors">
+          <button
+            onClick={onClose}
+            className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+          >
             <X size={20} className="text-gray-500" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6 overflow-y-auto flex-1 min-h-0 bg-gray-50">
+        <form
+          onSubmit={handleSubmit}
+          className="p-6 space-y-6 overflow-y-auto flex-1 min-h-0 bg-gray-50"
+        >
           {/* Top Level Config */}
           <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm space-y-4">
-            <h3 className="font-semibold text-gray-800 border-b border-gray-100 pb-2 mb-3">Informasi Umum</h3>
-            
+            <h3 className="font-semibold text-gray-800 border-b border-gray-100 pb-2 mb-3">
+              Informasi Umum
+            </h3>
+
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Nama Site</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Nama Site
+              </label>
               <input
                 type="text"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
                 placeholder="Masukkan nama site"
                 className={`w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200 ${errors.name ? "border-red-300 focus:ring-red-500" : "border-gray-300"}`}
               />
-              {errors.name && <p className="text-xs text-red-600 mt-1">{errors.name}</p>}
+              {errors.name && (
+                <p className="text-xs text-red-600 mt-1">{errors.name}</p>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Komoditas</label>
-                <input type="text" value="BBM" readOnly className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-500 bg-gray-50 cursor-not-allowed" />
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Komoditas
+                </label>
+                <input
+                  type="text"
+                  value="BBM"
+                  readOnly
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-500 bg-gray-50 cursor-not-allowed"
+                />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Jenis</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Jenis
+                </label>
                 <select
                   value={formData.site_type}
-                  onChange={(e) => handleSiteTypeChange(e.target.value as "PEMBANGKIT" | "PEMASOK")}
+                  onChange={(e) =>
+                    handleSiteTypeChange(
+                      e.target.value as "PEMBANGKIT" | "PEMASOK",
+                    )
+                  }
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white transition-all duration-200"
                 >
                   <option value="PEMBANGKIT">Pembangkit</option>
@@ -292,11 +350,15 @@ export function AddSiteModal({
             {formData.site_type !== "TRANSPORTIR" && (
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Region</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Region
+                  </label>
                   <Autocomplete
                     options={regions.map((r: any) => r.name)}
                     value={formData.region}
-                    onChange={(_event, newValue: string | null) => setFormData({ ...formData, region: newValue || "" })}
+                    onChange={(_event, newValue: string | null) =>
+                      setFormData({ ...formData, region: newValue || "" })
+                    }
                     renderInput={(params) => (
                       <TextField
                         {...params}
@@ -305,7 +367,12 @@ export function AddSiteModal({
                         size="small"
                         error={!!errors.region}
                         helperText={errors.region}
-                        sx={{ "& .MuiOutlinedInput-root": { borderRadius: "0.5rem", backgroundColor: "white" } }}
+                        sx={{
+                          "& .MuiOutlinedInput-root": {
+                            borderRadius: "0.5rem",
+                            backgroundColor: "var(--surface)",
+                          },
+                        }}
                       />
                     )}
                     className="w-full"
@@ -313,15 +380,38 @@ export function AddSiteModal({
                 </div>
                 {formData.site_type === "PEMBANGKIT" && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Jenis Kit</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Jenis Kit
+                    </label>
                     <Autocomplete
                       options={jenisKits}
                       getOptionLabel={(option: any) => option.name}
-                      value={jenisKits.find((j: any) => j.id === formData.kit_id) || null}
-                      onChange={(_event, newValue: any) => setFormData({ ...formData, kit_id: newValue ? newValue.id : "" })}
-                      isOptionEqualToValue={(option, value) => option.id === value?.id}
+                      value={
+                        jenisKits.find((j: any) => j.id === formData.kit_id) ||
+                        null
+                      }
+                      onChange={(_event, newValue: any) =>
+                        setFormData({
+                          ...formData,
+                          kit_id: newValue ? newValue.id : "",
+                        })
+                      }
+                      isOptionEqualToValue={(option, value) =>
+                        option.id === value?.id
+                      }
                       renderInput={(params) => (
-                        <TextField {...params} placeholder="Pilih jenis kit" variant="outlined" size="small" sx={{ "& .MuiOutlinedInput-root": { borderRadius: "0.5rem", backgroundColor: "white" } }} />
+                        <TextField
+                          {...params}
+                          placeholder="Pilih jenis kit"
+                          variant="outlined"
+                          size="small"
+                          sx={{
+                            "& .MuiOutlinedInput-root": {
+                              borderRadius: "0.5rem",
+                              backgroundColor: "var(--surface)",
+                            },
+                          }}
+                        />
                       )}
                       className="w-full"
                     />
@@ -333,29 +423,73 @@ export function AddSiteModal({
             {formData.site_type === "PEMBANGKIT" && (
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Unit Pelaksana</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Unit Pelaksana
+                  </label>
                   <Autocomplete
                     options={upks}
                     getOptionLabel={(option: any) => option.name}
-                    value={upks.find((j: any) => j.id === formData.upk_id) || null}
-                    onChange={(_event, newValue: any) => setFormData({ ...formData, upk_id: newValue ? newValue.id : "" })}
-                    isOptionEqualToValue={(option, value) => option.id === value?.id}
+                    value={
+                      upks.find((j: any) => j.id === formData.upk_id) || null
+                    }
+                    onChange={(_event, newValue: any) =>
+                      setFormData({
+                        ...formData,
+                        upk_id: newValue ? newValue.id : "",
+                      })
+                    }
+                    isOptionEqualToValue={(option, value) =>
+                      option.id === value?.id
+                    }
                     renderInput={(params) => (
-                      <TextField {...params} placeholder="Pilih unit pelaksana" variant="outlined" size="small" sx={{ "& .MuiOutlinedInput-root": { borderRadius: "0.5rem", backgroundColor: "white" } }} />
+                      <TextField
+                        {...params}
+                        placeholder="Pilih unit pelaksana"
+                        variant="outlined"
+                        size="small"
+                        sx={{
+                          "& .MuiOutlinedInput-root": {
+                            borderRadius: "0.5rem",
+                            backgroundColor: "var(--surface)",
+                          },
+                        }}
+                      />
                     )}
                     className="w-full"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Unit</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Unit
+                  </label>
                   <Autocomplete
                     options={units}
                     getOptionLabel={(option: any) => option.name}
-                    value={units.find((j: any) => j.id === formData.unit_id) || null}
-                    onChange={(_event, newValue: any) => setFormData({ ...formData, unit_id: newValue ? newValue.id : "" })}
-                    isOptionEqualToValue={(option, value) => option.id === value?.id}
+                    value={
+                      units.find((j: any) => j.id === formData.unit_id) || null
+                    }
+                    onChange={(_event, newValue: any) =>
+                      setFormData({
+                        ...formData,
+                        unit_id: newValue ? newValue.id : "",
+                      })
+                    }
+                    isOptionEqualToValue={(option, value) =>
+                      option.id === value?.id
+                    }
                     renderInput={(params) => (
-                      <TextField {...params} placeholder="Pilih unit" variant="outlined" size="small" sx={{ "& .MuiOutlinedInput-root": { borderRadius: "0.5rem", backgroundColor: "white" } }} />
+                      <TextField
+                        {...params}
+                        placeholder="Pilih unit"
+                        variant="outlined"
+                        size="small"
+                        sx={{
+                          "& .MuiOutlinedInput-root": {
+                            borderRadius: "0.5rem",
+                            backgroundColor: "var(--surface)",
+                          },
+                        }}
+                      />
                     )}
                     className="w-full"
                   />
@@ -367,7 +501,9 @@ export function AddSiteModal({
           {/* Versions / Detail Site */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-gray-800">Detail & Masa Berlaku (History)</h3>
+              <h3 className="font-semibold text-gray-800">
+                Detail & Masa Berlaku (History)
+              </h3>
               {formData.site_type !== "TRANSPORTIR" && (
                 <button
                   type="button"
@@ -381,9 +517,12 @@ export function AddSiteModal({
             </div>
 
             {versions.map((version, idx) => (
-              <div key={idx} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden transition-all duration-200">
-                <div 
-                  className={`flex items-center justify-between p-4 ${version.isExpanded ? 'border-b border-gray-100 bg-gray-50/50' : 'hover:bg-gray-50 cursor-pointer'}`}
+              <div
+                key={idx}
+                className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden transition-all duration-200"
+              >
+                <div
+                  className={`flex items-center justify-between p-4 ${version.isExpanded ? "border-b border-gray-100 bg-gray-50/50" : "hover:bg-gray-50 cursor-pointer"}`}
                   onClick={() => !version.isExpanded && toggleVersion(idx)}
                 >
                   <div className="flex items-center gap-3">
@@ -391,10 +530,13 @@ export function AddSiteModal({
                       {versions.length - idx}
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">Versi {versions.length - idx}</p>
+                      <p className="font-medium text-gray-900">
+                        Versi {versions.length - idx}
+                      </p>
                       {formData.site_type !== "TRANSPORTIR" && (
                         <p className="text-xs text-gray-500">
-                          {version.valid_from || "Awal"} - {version.valid_to || "Akhir"}
+                          {version.valid_from || "Awal"} -{" "}
+                          {version.valid_to || "Akhir"}
                         </p>
                       )}
                     </div>
@@ -403,7 +545,10 @@ export function AddSiteModal({
                     {versions.length > 1 && (
                       <button
                         type="button"
-                        onClick={(e) => { e.stopPropagation(); removeVersion(idx); }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeVersion(idx);
+                        }}
                         className="p-1.5 text-red-500 hover:bg-red-50 rounded-md transition-colors"
                         title="Hapus versi ini"
                       >
@@ -412,10 +557,17 @@ export function AddSiteModal({
                     )}
                     <button
                       type="button"
-                      onClick={(e) => { e.stopPropagation(); toggleVersion(idx); }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleVersion(idx);
+                      }}
                       className="p-1.5 text-gray-500 hover:bg-gray-100 rounded-md transition-colors"
                     >
-                      {version.isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                      {version.isExpanded ? (
+                        <ChevronUp size={20} />
+                      ) : (
+                        <ChevronDown size={20} />
+                      )}
                     </button>
                   </div>
                 </div>
@@ -426,10 +578,14 @@ export function AddSiteModal({
                       {/* Kepemilikan */}
                       {formData.site_type === "PEMBANGKIT" && (
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Kepemilikan</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Kepemilikan
+                          </label>
                           <select
                             value={version.owner ?? ""}
-                            onChange={(e) => updateVersion(idx, "owner", e.target.value)}
+                            onChange={(e) =>
+                              updateVersion(idx, "owner", e.target.value)
+                            }
                             className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white transition-all duration-200"
                           >
                             <option value="">Pilih kepemilikan</option>
@@ -443,11 +599,21 @@ export function AddSiteModal({
                       {/* Capacity */}
                       {formData.site_type !== "TRANSPORTIR" && (
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Kapasitas (KL)</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Kapasitas (KL)
+                          </label>
                           <input
                             type="number"
                             value={version.capacity ?? ""}
-                            onChange={(e) => updateVersion(idx, "capacity", e.target.value ? Number(e.target.value) : undefined)}
+                            onChange={(e) =>
+                              updateVersion(
+                                idx,
+                                "capacity",
+                                e.target.value
+                                  ? Number(e.target.value)
+                                  : undefined,
+                              )
+                            }
                             placeholder="Masukkan kapasitas (KL)"
                             className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
                           />
@@ -457,12 +623,22 @@ export function AddSiteModal({
                       {/* Capacity MW */}
                       {formData.site_type === "PEMBANGKIT" && (
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Kapasitas (MW)</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Kapasitas (MW)
+                          </label>
                           <input
                             type="number"
                             step="any"
                             value={version.capacity_mw ?? ""}
-                            onChange={(e) => updateVersion(idx, "capacity_mw", e.target.value ? Number(e.target.value) : undefined)}
+                            onChange={(e) =>
+                              updateVersion(
+                                idx,
+                                "capacity_mw",
+                                e.target.value
+                                  ? Number(e.target.value)
+                                  : undefined,
+                              )
+                            }
                             placeholder="Masukkan kapasitas (MW)"
                             className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
                           />
@@ -472,21 +648,37 @@ export function AddSiteModal({
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Latitude</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Latitude
+                        </label>
                         <input
                           type="text"
                           value={version.lat ?? ""}
-                          onChange={(e) => updateVersion(idx, "lat", e.target.value || undefined)}
+                          onChange={(e) =>
+                            updateVersion(
+                              idx,
+                              "lat",
+                              e.target.value || undefined,
+                            )
+                          }
                           placeholder="-6.123456"
                           className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Longitude</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Longitude
+                        </label>
                         <input
                           type="text"
                           value={version.long ?? ""}
-                          onChange={(e) => updateVersion(idx, "long", e.target.value || undefined)}
+                          onChange={(e) =>
+                            updateVersion(
+                              idx,
+                              "long",
+                              e.target.value || undefined,
+                            )
+                          }
                           placeholder="106.123456"
                           className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
                         />
@@ -498,29 +690,41 @@ export function AddSiteModal({
                       <div className="mt-4 p-4 bg-gray-50/50 rounded-lg border border-gray-100">
                         <div className="grid grid-cols-2 gap-4 mb-4">
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Valid From</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Valid From
+                            </label>
                             <input
                               type="date"
                               value={version.valid_from || ""}
-                              onChange={(e) => updateVersion(idx, "valid_from", e.target.value)}
+                              onChange={(e) =>
+                                updateVersion(idx, "valid_from", e.target.value)
+                              }
                               className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
                             />
                           </div>
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Valid To</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Valid To
+                            </label>
                             <input
                               type="date"
                               value={version.valid_to || ""}
-                              onChange={(e) => updateVersion(idx, "valid_to", e.target.value)}
+                              onChange={(e) =>
+                                updateVersion(idx, "valid_to", e.target.value)
+                              }
                               className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
                             />
                           </div>
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Catatan</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Catatan
+                          </label>
                           <textarea
                             value={version.notes || ""}
-                            onChange={(e) => updateVersion(idx, "notes", e.target.value)}
+                            onChange={(e) =>
+                              updateVersion(idx, "notes", e.target.value)
+                            }
                             placeholder="Opsional: Tambahkan catatan masa berlaku"
                             rows={2}
                             className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
@@ -545,10 +749,12 @@ export function AddSiteModal({
           </button>
           <button
             onClick={handleSubmit}
-            disabled={createSiteMutation.isPending || updateSiteMutation.isPending}
+            disabled={
+              createSiteMutation.isPending || updateSiteMutation.isPending
+            }
             className="px-6 py-2.5 text-sm font-medium text-white bg-primary rounded-lg hover:bg-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
-            {(createSiteMutation.isPending || updateSiteMutation.isPending) ? (
+            {createSiteMutation.isPending || updateSiteMutation.isPending ? (
               <>
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 Menyimpan...

@@ -15,6 +15,22 @@ export const metadata: Metadata = {
   description: "Plan, prioritize, and accomplish your tasks with ease",
 };
 
+const themeInitializationScript = `
+(function () {
+  try {
+    var storedMode = localStorage.getItem("wbs-color-mode");
+    var mode = storedMode === "dark" ? "dark" : "light";
+    var root = document.documentElement;
+    root.classList.toggle("dark", mode === "dark");
+    root.dataset.colorMode = mode;
+    root.style.colorScheme = mode;
+  } catch (_) {
+    document.documentElement.dataset.colorMode = "light";
+    document.documentElement.style.colorScheme = "light";
+  }
+})();
+`;
+
 export default function RootLayout({
   children,
 }: {
@@ -22,6 +38,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={redditSans.variable} suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{ __html: themeInitializationScript }}
+        />
+      </head>
       <body suppressHydrationWarning>
         <Providers>{children}</Providers>
       </body>

@@ -52,11 +52,11 @@ interface EditDataTableProps {
 // ---------------------------------------------------------------------------
 
 const STATUS_OPTIONS = [
-  { value: "", label: "Semua Status" },
-  { value: "BA_VALIDATION", label: "Tervalidasi BA" },
-  { value: "MANUAL", label: "Manual" },
+  { value: "", label: "Semua Sumber Data" },
   { value: "EMAIL", label: "Email" },
   { value: "SPREADSHEET", label: "Spreadsheet" },
+  { value: "MANUAL", label: "Manual" },
+  { value: "BA_VALIDATION", label: "Tervalidasi BA" },
   { value: "WHATSAPP", label: "Whatsapp" },
 ];
 
@@ -635,64 +635,64 @@ export default function EditDataTable({
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {/* ID filter */}
               <div>
-                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
                   ID
                 </label>
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                   <input
                     type="text"
                     value={localId}
                     onChange={(e) => setLocalId(e.target.value)}
                     placeholder="Cari berdasarkan ID..."
-                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
+                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
                   />
                 </div>
               </div>
 
               {/* Pemasok filter */}
               <div>
-                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
                   Pemasok
                 </label>
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                   <input
                     type="text"
                     value={localSupplierName}
                     onChange={(e) => setLocalSupplierName(e.target.value)}
                     placeholder="Cari pemasok..."
-                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
+                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
                   />
                 </div>
               </div>
 
               {/* Pembangkit filter */}
               <div>
-                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
                   Pembangkit
                 </label>
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                   <input
                     type="text"
                     value={localSiteName}
                     onChange={(e) => setLocalSiteName(e.target.value)}
                     placeholder="Cari pembangkit..."
-                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
+                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
                   />
                 </div>
               </div>
 
               {/* Komoditas filter */}
               <div>
-                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
                   Komoditas
                 </label>
                 <select
                   value={localCommodity}
                   onChange={(e) => setLocalCommodity(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200 bg-white"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200 bg-white"
                 >
                   <option value="">Semua</option>
                   <option value="GAS PIPA">Gas Pipa</option>
@@ -700,15 +700,15 @@ export default function EditDataTable({
                 </select>
               </div>
 
-              {/* Status filter */}
+              {/* Sumber Data filter */}
               <div>
-                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
-                  Status
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                  Sumber Data
                 </label>
                 <select
                   value={localStatus}
                   onChange={(e) => setLocalStatus(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200 bg-white"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200 bg-white"
                 >
                   {STATUS_OPTIONS.map((opt) => (
                     <option key={opt.value} value={opt.value}>
@@ -720,39 +720,39 @@ export default function EditDataTable({
 
               {/* Tanggal Mulai */}
               <div>
-                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
                   Tanggal Mulai
                 </label>
                 <input
                   type="date"
                   value={localStartDate}
                   onChange={(e) => setLocalStartDate(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200 bg-white"
                 />
               </div>
 
               {/* Tanggal Akhir */}
               <div>
-                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
                   Tanggal Akhir
                 </label>
                 <input
                   type="date"
                   value={localEndDate}
                   onChange={(e) => setLocalEndDate(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200 bg-white"
                 />
               </div>
 
               {/* Periode filter */}
               <div>
-                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
                   Periode
                 </label>
                 <select
                   value={localPeriodType}
                   onChange={(e) => setLocalPeriodType(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200 bg-white"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200 bg-white"
                 >
                   {PERIOD_OPTIONS.map((opt) => (
                     <option key={opt.value} value={opt.value}>

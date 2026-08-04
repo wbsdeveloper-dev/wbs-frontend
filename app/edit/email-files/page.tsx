@@ -63,17 +63,7 @@ export default function EmailFilesPage() {
       </div>
 
       {/* Main Table Card */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden animate-fadeIn">
-        <div className="px-6 py-4 border-b border-gray-200 bg-gray-50/50 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wider flex items-center gap-2">
-            <FileText className="w-4 h-4 text-gray-500" />
-            Data Email & Attachment
-          </h2>
-        </div>
-        <div className="p-4 md:p-6">
-          <EmailInboxTable />
-        </div>
-      </div>
+      <EmailInboxTable />
     </div>
   );
 }

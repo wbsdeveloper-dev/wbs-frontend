@@ -3,15 +3,14 @@
 import { useState, useEffect } from "react";
 import { Eye, EyeOff, LogIn, Loader2, AlertCircle } from "lucide-react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/providers/auth-provider";
+import ThemeToggle from "@/components/ui/ThemeToggle";
 
 const REMEMBER_ME_KEY = "wbs_remember_me";
 const SAVED_EMAIL_KEY = "wbs_saved_email";
 const SAVED_PASSWORD_KEY = "wbs_saved_password";
 
 export default function LoginPage() {
-  const router = useRouter();
   const { login } = useAuth();
 
   const [email, setEmail] = useState("");
@@ -70,32 +69,36 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex bg-white dark:bg-slate-950">
       {/* Left Panel - Login Form */}
-      <div className="w-full lg:w-2/5 bg-gradient-to-br from-white via-gray-50 to-gray-100 flex flex-col">
+      <div className="relative w-full lg:w-2/5 bg-gradient-to-br from-white via-gray-50 to-gray-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex flex-col">
+        <ThemeToggle
+          compact
+          className="absolute right-5 top-5 z-10 md:right-8 md:top-8"
+        />
         {/* Logos Header */}
-        <div className="p-6 md:p-8 lg:p-10 flex justify-center">
+        <div className="p-6 pr-20 md:p-8 md:pr-24 lg:p-10 lg:pr-24 flex justify-center">
           <div className="flex items-center justify-center lg:justify-start gap-4 md:gap-6 lg:gap-10 flex-wrap">
             <Image
               src="/logos/danantara.png"
               alt="Danantara logo"
               width={100}
               height={35}
-              className="object-contain w-[80px] md:w-[100px] lg:w-[150px]"
+              className="theme-logo-surface object-contain w-[80px] md:w-[100px] lg:w-[150px]"
             />
             <Image
               src="/logos/SucofindoIdSurvey.png"
               alt="Sucofindo logo"
               width={60}
               height={35}
-              className="object-contain w-[50px] md:w-[60px] lg:w-[100px] relative top-[-2px]"
+              className="theme-logo-surface object-contain w-[50px] md:w-[60px] lg:w-[100px] relative top-[-2px]"
             />
             <Image
               src="/logos/pln-epi.png"
               alt="PLN EPI logo"
               width={100}
               height={35}
-              className="object-contain w-[80px] md:w-[100px] lg:w-[140px]"
+              className="theme-logo-surface object-contain w-[80px] md:w-[100px] lg:w-[140px]"
             />
           </div>
         </div>
@@ -108,17 +111,17 @@ export default function LoginPage() {
               <h1 className="text-primary text-3xl md:text-4xl lg:text-5xl font-bold mb-3 leading-tight">
                 Selamat Datang!
               </h1>
-              <p className="text-gray-600 text-sm md:text-base leading-relaxed">
+              <p className="text-gray-600 dark:text-slate-300 text-sm md:text-base leading-relaxed">
                 Sistem monitoring{" "}
-                <span className="font-semibold text-primary">Gas Pipa</span>{" "}
-                dan <span className="font-semibold text-primary">BBM</span>{" "}
-                berbasis website
+                <span className="font-semibold text-primary">Gas Pipa</span> dan{" "}
+                <span className="font-semibold text-primary">BBM</span> berbasis
+                website
               </p>
             </div>
 
             {/* Error Display */}
             {error && (
-              <div className="flex items-center gap-3 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm mb-2">
+              <div className="flex items-center gap-3 p-4 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 text-red-700 dark:text-red-300 text-sm mb-2">
                 <AlertCircle size={18} className="flex-shrink-0" />
                 <span>{error}</span>
               </div>
@@ -128,7 +131,7 @@ export default function LoginPage() {
             <form onSubmit={handleSubmit} className="space-y-5">
               {/* Email Field */}
               <div className="space-y-2">
-                <label className="block text-gray-700 text-sm font-medium">
+                <label className="block text-gray-700 dark:text-slate-200 text-sm font-medium">
                   Email
                 </label>
                 <div className="relative group">
@@ -137,8 +140,8 @@ export default function LoginPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Masukkan email"
-                    className="w-full px-4 py-3.5 rounded-xl bg-white text-gray-900 placeholder-gray-400
-                      border-2 border-gray-200 
+                    className="w-full px-4 py-3.5 rounded-xl bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500
+                      border-2 border-gray-200 dark:border-slate-700
                       focus:border-secondary focus:ring-4 focus:ring-secondary/10
                       transition-all duration-200 outline-none"
                   />
@@ -148,7 +151,7 @@ export default function LoginPage() {
 
               {/* Password Field */}
               <div className="space-y-2">
-                <label className="block text-gray-700 text-sm font-medium">
+                <label className="block text-gray-700 dark:text-slate-200 text-sm font-medium">
                   Password
                 </label>
                 <div className="relative group">
@@ -157,8 +160,8 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••••••"
-                    className="w-full px-4 py-3.5 pr-12 rounded-xl bg-white text-gray-900 placeholder-gray-400
-                      border-2 border-gray-200 
+                    className="w-full px-4 py-3.5 pr-12 rounded-xl bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500
+                      border-2 border-gray-200 dark:border-slate-700
                       focus:border-secondary focus:ring-4 focus:ring-secondary/10
                       transition-all duration-200 outline-none"
                   />
@@ -182,7 +185,7 @@ export default function LoginPage() {
                     onChange={(e) => setRememberMe(e.target.checked)}
                     className="w-4 h-4 rounded border-gray-300 text-secondary focus:ring-secondary cursor-pointer"
                   />
-                  <span className="text-gray-600 group-hover:text-gray-800 transition-colors">
+                  <span className="text-gray-600 dark:text-slate-300 group-hover:text-gray-800 dark:group-hover:text-white transition-colors">
                     Ingat saya
                   </span>
                 </label>
@@ -221,7 +224,7 @@ export default function LoginPage() {
             </form>
 
             {/* Footer Text */}
-            <p className="text-center text-gray-500 text-xs mt-8">
+            <p className="text-center text-gray-500 dark:text-slate-400 text-xs mt-8">
               © 2026 Sucofindo. All rights reserved.
             </p>
           </div>

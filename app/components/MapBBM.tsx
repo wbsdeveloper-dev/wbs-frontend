@@ -45,103 +45,120 @@ interface LeafletIconPrototype {
   _getIconUrl?: () => string;
 }
 
-delete (L.Icon.Default.prototype as LeafletIconPrototype)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl:
-    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-});
-
-// ---------------------------------------------------------------------------
-// Icon helpers
-// ---------------------------------------------------------------------------
-
-const createSoftIcon = (color: string) =>
-  L.divIcon({
-    className: "",
-    html: `
-      <div style="
-        background: ${color};
-        width: 20px;
-        height: 20px;
-        border-radius: 50%;
-        border: 3px solid white;
-        box-shadow: 0 0 0 4px ${color}33;
-      "></div>
-    `,
-    iconSize: [20, 20],
-    iconAnchor: [10, 10],
-    popupAnchor: [0, -10],
+if (typeof window !== "undefined" && typeof L !== "undefined" && L?.Icon?.Default) {
+  delete (L.Icon.Default.prototype as LeafletIconPrototype)._getIconUrl;
+  L.Icon.Default.mergeOptions({
+    iconRetinaUrl:
+      "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+    iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+    shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
   });
+}
 
-const createPembangkitIcon = (color: string) =>
-  L.divIcon({
-    className: "",
+// ---------------------------------------------------------------------------
+// Category Helper & Icon Definitions (matching Gas Pipa teardrop style)
+// ---------------------------------------------------------------------------
+
+function getSiteCategoryKey(siteType: string, commodity?: string | null): string {
+  if (siteType === "TRANSPORTIR") return "TRANSPORTIR";
+  if (siteType === "TERMINAL") return "TERMINAL";
+  if (siteType === "HANDOVER_POINT") return "HANDOVER_POINT";
+
+  const commNorm = (commodity || "").toUpperCase().trim();
+  if (commNorm.includes("GAS") || commNorm.includes("PIPA")) {
+    return `${siteType}_GAS_PIPA`;
+  }
+  if (commNorm.includes("LNG")) {
+    return `${siteType}_LNG`;
+  }
+  if (commNorm.includes("BBM")) {
+    return `${siteType}_BBM`;
+  }
+  return `${siteType}_BBM`;
+}
+
+const CATEGORY_CONFIG: Record<string, { label: string; color: string; svg: string }> = {
+  PEMBANGKIT_BBM: {
+    label: "Pembangkit (BBM)",
+    color: "#1581fb", // Blue for Pembangkit BBM
+    svg: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h20"/><path d="M20 18v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/><path d="M3 18v-8l7-5v13"/><path d="M14 10V4h3v3"/></svg>`,
+  },
+  PEMBANGKIT_LNG: {
+    label: "Pembangkit (LNG)",
+    color: "#1581fb", // Blue
+    svg: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h20"/><path d="M20 18v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/><path d="M3 18v-8l7-5v13"/><path d="M14 10V4h3v3"/></svg>`,
+  },
+  PEMBANGKIT_GAS_PIPA: {
+    label: "Pembangkit (Gas Pipa)",
+    color: "#13778e", // Teal
+    svg: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h20"/><path d="M20 18v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/><path d="M3 18v-8l7-5v13"/><path d="M14 10V4h3v3"/></svg>`,
+  },
+  PEMASOK_BBM: {
+    label: "TBBM / Pemasok",
+    color: "#EF4444", // Red for TBBM / Pemasok BBM
+    svg: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18"/><path d="M15 10h4a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-1"/><path d="M7 11V7h4v4"/></svg>`,
+  },
+  PEMASOK_LNG: {
+    label: "Pemasok (LNG)",
+    color: "#3B82F6", // Blue
+    svg: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>`,
+  },
+  PEMASOK_GAS_PIPA: {
+    label: "Pemasok (Gas Pipa)",
+    color: "#06B6D4", // Cyan
+    svg: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z"/></svg>`,
+  },
+  TRANSPORTIR: {
+    label: "Transportir",
+    color: "#F59E0B", // Amber
+    svg: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>`,
+  },
+};
+
+const createCategoryIcon = (catKey: string, fallbackColor: string) => {
+  const config = CATEGORY_CONFIG[catKey] || {
+    color: fallbackColor,
+    svg: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="white" stroke-width="2.2"><circle cx="12" cy="12" r="8"/></svg>`,
+  };
+
+  return L.divIcon({
+    className: "custom-site-marker",
     html: `
       <div style="
-        background: ${color};
-        width: 24px;
-        height: 24px;
-        border-radius: 50%;
-        border: 2px solid white;
-        box-shadow: 0 0 0 2px ${color}33, 0 2px 4px rgba(0,0,0,0.15);
+        position: relative;
         display: flex;
         align-items: center;
         justify-content: center;
-      ">
-        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M2 20h20"/>
-          <path d="M20 18v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/>
-          <path d="M3 18v-8l7-5v13"/>
-          <path d="M14 10V4h3v3"/>
-        </svg>
-      </div>
-    `,
-    iconSize: [24, 24],
-    iconAnchor: [12, 12],
-    popupAnchor: [0, -12],
-  });
-
-const createTbbmIcon = (color: string) =>
-  L.divIcon({
-    className: "",
-    html: `
-      <div style="
-        background: ${color};
-        width: 24px;
-        height: 24px;
-        border-radius: 50%;
+        background: ${config.color};
+        width: 30px;
+        height: 30px;
+        border-radius: 50% 50% 50% 0;
+        transform: rotate(-45deg);
         border: 2px solid white;
-        box-shadow: 0 0 0 2px ${color}33, 0 2px 4px rgba(0,0,0,0.15);
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        box-shadow: 0 3px 8px rgba(0,0,0,0.35);
+        cursor: pointer;
       ">
-        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="3" x2="15" y1="22" y2="22"/>
-          <path d="M4 9h8"/>
-          <path d="M4 22V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v18"/>
-          <path d="M5 15h6"/>
-          <path d="M12 9h4a2 2 0 0 1 2 2v3a2 2 0 0 0 2 2v0a2 2 0 0 1 2 2v4"/>
-        </svg>
+        <div style="
+          transform: rotate(45deg);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        ">
+          ${config.svg}
+        </div>
       </div>
     `,
-    iconSize: [24, 24],
-    iconAnchor: [12, 12],
-    popupAnchor: [0, -12],
+    iconSize: [30, 30],
+    iconAnchor: [15, 30],
+    popupAnchor: [0, -28],
   });
+};
 
 const buildIcons = (legend: MapLegend): Record<string, L.DivIcon> => {
   const icons: Record<string, L.DivIcon> = {};
   legend.siteTypes.forEach((st) => {
-    if (st.type === "PEMBANGKIT") {
-      icons[st.type] = createPembangkitIcon(st.color);
-    } else if (st.type === "PEMASOK") {
-      icons[st.type] = createTbbmIcon(st.color);
-    } else {
-      icons[st.type] = createSoftIcon(st.color);
-    }
+    const catKey = getSiteCategoryKey(st.type, null);
+    icons[st.type] = createCategoryIcon(catKey, st.color);
   });
   return icons;
 };
@@ -714,7 +731,13 @@ export default function Map() {
 
               {/* SITE MARKERS */}
               {filteredSites.map((site) => {
-                const icon = icons[site.siteType];
+                const catKey = getSiteCategoryKey(site.siteType, site.commodity);
+                const info = CATEGORY_CONFIG[catKey] || {
+                  label: getSiteTypeLabel(site.siteType),
+                  color: getSiteTypeColor(site.siteType),
+                  svg: "",
+                };
+                const icon = createCategoryIcon(catKey, info.color);
                 const summary = bbmSitesSummary?.find((s) => s.id === site.id);
                 const connected = getConnectedSites(site.id);
 
@@ -727,13 +750,24 @@ export default function Map() {
                     icon={icon}
                   >
                     <Popup>
-                      <div className="min-w-[180px]">
-                        <p
-                          className="font-semibold text-sm"
-                          style={{ color: getSiteTypeColor(site.siteType) }}
-                        >
-                          {getSiteTypeLabel(site.siteType)}
-                        </p>
+                      <div className="min-w-[190px]">
+                        <div className="flex items-center gap-1.5 mb-1.5">
+                          <span
+                            className="w-3.5 h-3.5 rounded-full flex items-center justify-center flex-shrink-0"
+                            style={{ backgroundColor: info.color }}
+                          >
+                            <span
+                              className="scale-75"
+                              dangerouslySetInnerHTML={{ __html: info.svg }}
+                            />
+                          </span>
+                          <p
+                            className="font-semibold text-xs uppercase tracking-wider"
+                            style={{ color: info.color }}
+                          >
+                            {info.label}
+                          </p>
+                        </div>
                         <p className="text-sm font-medium text-gray-800">
                           {site.name}
                         </p>

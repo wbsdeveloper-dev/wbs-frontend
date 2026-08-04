@@ -9,12 +9,12 @@ const StyledTextField = styled(TextField)({
   "& .MuiOutlinedInput-root": {
     padding: "4px 8px",
     borderRadius: "8px",
-    backgroundColor: "white",
+    backgroundColor: "var(--surface)",
     "& fieldset": {
-      borderColor: "#d1d5db", // gray-300
+      borderColor: "var(--border)",
     },
     "&:hover fieldset": {
-      borderColor: "#9ca3af", // gray-400
+      borderColor: "var(--border-strong)",
     },
     "&.Mui-focused fieldset": {
       borderColor: "#3b82f6", // blue-500

@@ -187,7 +187,7 @@ export default function BbmCompositeChart({
         const d = new Date(entry.reportDate);
         monthStr = d.toLocaleDateString("id-ID", { month: "short" });
         yearStr = d.getFullYear().toString();
-        
+
         return {
           ...entry,
           label: formatDayLabel(entry.reportDate, intervalMode),
@@ -195,7 +195,7 @@ export default function BbmCompositeChart({
           yearStr,
         };
       }
-      
+
       // If no reportDate, it's categorical (dimension) data
       return {
         ...entry,
@@ -208,7 +208,7 @@ export default function BbmCompositeChart({
 
   const modaKeys = data?.modas || data?.modaKeys || [];
   const nomination = data?.nomination || 0;
-  
+
   // Determine if we are rendering time-series or categorical data
   const isTimeSeries = data?.chartData?.[0]?.reportDate !== undefined;
 
@@ -243,11 +243,11 @@ export default function BbmCompositeChart({
         <CartesianGrid
           strokeDasharray="3 3"
           vertical={false}
-          stroke="#f3f4f6"
+          stroke="var(--border)"
         />
         <XAxis
           dataKey="label"
-          axisLine={{ stroke: "#e5e7eb" }}
+          axisLine={{ stroke: "var(--border)" }}
           tickLine={false}
           tick={
             <CustomXAxisTick
@@ -263,7 +263,7 @@ export default function BbmCompositeChart({
         />
         <YAxis
           yAxisId="left"
-          tick={{ fill: "#6b7280", fontSize: 11 }}
+          tick={{ fill: "var(--text-muted)", fontSize: 11 }}
           axisLine={false}
           tickLine={false}
           tickFormatter={(value) => {
@@ -277,7 +277,7 @@ export default function BbmCompositeChart({
             value: "Realisasi (KL)",
             angle: -90,
             position: "insideLeft",
-            style: { fontSize: 11, fill: "#4b5563" },
+            style: { fontSize: 11, fill: "var(--text-secondary)" },
             offset: -5,
           }}
         />
@@ -395,7 +395,7 @@ const CustomXAxisTick = (props: any) => {
         x={x}
         y={y + (shouldSlope ? 10 : 15)}
         textAnchor={shouldSlope ? "end" : "middle"}
-        fill="#666"
+        fill="var(--text-muted)"
         fontSize={11}
         transform={shouldSlope ? `rotate(-45, ${x}, ${y + 10})` : undefined}
       >
@@ -409,7 +409,13 @@ const CustomXAxisTick = (props: any) => {
 
   return (
     <g>
-      <text x={x} y={y + 15} textAnchor="middle" fill="#666" fontSize={11}>
+      <text
+        x={x}
+        y={y + 15}
+        textAnchor="middle"
+        fill="var(--text-muted)"
+        fontSize={11}
+      >
         {payload.value}
       </text>
       {isMidYear && (
@@ -417,7 +423,7 @@ const CustomXAxisTick = (props: any) => {
           x={x}
           y={y + 35}
           textAnchor="middle"
-          fill="#333"
+          fill="var(--text-primary)"
           fontSize={12}
           fontWeight="bold"
         >
@@ -430,7 +436,7 @@ const CustomXAxisTick = (props: any) => {
         y1={y + 22}
         x2={x + 50}
         y2={y + 22}
-        stroke="#e5e7eb"
+        stroke="var(--border)"
         strokeWidth={1}
       />
       {/* Vertical separator before Jan */}
@@ -440,7 +446,7 @@ const CustomXAxisTick = (props: any) => {
           y1={y}
           x2={x - 14}
           y2={y + 40}
-          stroke="#e5e7eb"
+          stroke="var(--border)"
           strokeWidth={1}
         />
       )}

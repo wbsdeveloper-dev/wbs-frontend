@@ -48,33 +48,102 @@ L.Icon.Default.mergeOptions({
 });
 
 // ---------------------------------------------------------------------------
-// Icon helpers
+// Category Helper & Icon Definitions
 // ---------------------------------------------------------------------------
 
-const createSoftIcon = (color: string) =>
-  L.divIcon({
-    className: "",
+function getSiteCategoryKey(siteType: string, commodity?: string | null): string {
+  if (siteType === "TRANSPORTIR") return "TRANSPORTIR";
+  if (siteType === "TERMINAL") return "TERMINAL";
+  if (siteType === "HANDOVER_POINT") return "HANDOVER_POINT";
+
+  const commNorm = (commodity || "").toUpperCase().trim();
+  if (commNorm.includes("GAS") || commNorm.includes("PIPA")) {
+    return `${siteType}_GAS_PIPA`;
+  }
+  if (commNorm.includes("LNG")) {
+    return `${siteType}_LNG`;
+  }
+  if (commNorm.includes("BBM")) {
+    return `${siteType}_BBM`;
+  }
+  return `${siteType}_GAS_PIPA`;
+}
+
+const CATEGORY_CONFIG: Record<string, { label: string; color: string; svg: string }> = {
+  PEMBANGKIT_LNG: {
+    label: "Pembangkit (LNG)",
+    color: "#1581fb", // Vibrant Blue for LNG Pembangkit
+    svg: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h20"/><path d="M20 18v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/><path d="M3 18v-8l7-5v13"/><path d="M14 10V4h3v3"/></svg>`,
+  },
+  PEMBANGKIT_GAS_PIPA: {
+    label: "Pembangkit (Gas Pipa)",
+    color: "#13778e", // Teal/Ocean Blue for Gas Pipa Pembangkit
+    svg: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h20"/><path d="M20 18v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/><path d="M3 18v-8l7-5v13"/><path d="M14 10V4h3v3"/></svg>`,
+  },
+  PEMBANGKIT_BBM: {
+    label: "Pembangkit (BBM)",
+    color: "#1581fb", // Blue for Pembangkit BBM
+    svg: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h20"/><path d="M20 18v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/><path d="M3 18v-8l7-5v13"/><path d="M14 10V4h3v3"/></svg>`,
+  },
+  PEMASOK_LNG: {
+    label: "Pemasok (LNG)",
+    color: "#3B82F6", // Original Blue kept for LNG
+    svg: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>`,
+  },
+  PEMASOK_GAS_PIPA: {
+    label: "Pemasok (Gas Pipa)",
+    color: "#06B6D4", // New Distinct Cyan for Gas Pipa
+    svg: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z"/></svg>`,
+  },
+  PEMASOK_BBM: {
+    label: "Pemasok (BBM)",
+    color: "#0284C7", // Sky Blue
+    svg: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>`,
+  },
+  TRANSPORTIR: {
+    label: "Transportir",
+    color: "#F59E0B", // Original Amber
+    svg: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>`,
+  },
+};
+
+const createCategoryIcon = (catKey: string, fallbackColor: string) => {
+  const config = CATEGORY_CONFIG[catKey] || {
+    color: fallbackColor,
+    svg: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="white" stroke-width="2.2"><circle cx="12" cy="12" r="8"/></svg>`,
+  };
+
+  return L.divIcon({
+    className: "custom-site-marker",
     html: `
       <div style="
-        background: ${color};
-        width: 20px;
-        height: 20px;
-        border-radius: 50%;
-        border: 3px solid white;
-        box-shadow: 0 0 0 4px ${color}33;
-      "></div>
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: ${config.color};
+        width: 30px;
+        height: 30px;
+        border-radius: 50% 50% 50% 0;
+        transform: rotate(-45deg);
+        border: 2px solid white;
+        box-shadow: 0 3px 8px rgba(0,0,0,0.35);
+        cursor: pointer;
+      ">
+        <div style="
+          transform: rotate(45deg);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        ">
+          ${config.svg}
+        </div>
+      </div>
     `,
-    iconSize: [20, 20],
-    iconAnchor: [10, 10],
-    popupAnchor: [0, -10],
+    iconSize: [30, 30],
+    iconAnchor: [15, 30],
+    popupAnchor: [0, -28],
   });
-
-const buildIcons = (legend: MapLegend): Record<string, L.DivIcon> => {
-  const icons: Record<string, L.DivIcon> = {};
-  legend.siteTypes.forEach((st) => {
-    icons[st.type] = createSoftIcon(st.color);
-  });
-  return icons;
 };
 
 // ---------------------------------------------------------------------------
@@ -85,7 +154,6 @@ export default function Map({ commodity }: { commodity?: string }) {
   const mapRef = useRef<HTMLDivElement>(null);
 
   const filterExportButtons = (node: HTMLElement) => {
-    // Exclude the export buttons themselves from the generated image
     if (node?.classList?.contains("export-buttons-container")) return false;
     return true;
   };
@@ -199,7 +267,7 @@ export default function Map({ commodity }: { commodity?: string }) {
   const canReadSites = hasPrivilege("site_management", "READ");
   const { data: relations } = useRelations(true, {
     enabled: canReadSites,
-  }); // fetch active relations only if permitted
+  });
 
   // ---- UI state -----------------------------------------------------------
   const [legendExpanded, setLegendExpanded] = useState(false);
@@ -214,6 +282,10 @@ export default function Map({ commodity }: { commodity?: string }) {
     TRANSPORTIR: true,
     TERMINAL: true,
     HANDOVER_POINT: true,
+    PEMBANGKIT_LNG: true,
+    PEMBANGKIT_GAS_PIPA: true,
+    PEMASOK_LNG: true,
+    PEMASOK_GAS_PIPA: true,
   });
   const [showPipes, setShowPipes] = useState(true);
 
@@ -224,7 +296,7 @@ export default function Map({ commodity }: { commodity?: string }) {
     null,
   );
 
-  // Kepemilikan (owner) filter – checked owners are included
+  // Kepemilikan (owner) filter
   const OWNER_OPTIONS = ["PLN", "PLN IP", "PLN NP"] as const;
   const [selectedOwners, setSelectedOwners] = useState<Set<string>>(
     new Set(OWNER_OPTIONS),
@@ -238,12 +310,6 @@ export default function Map({ commodity }: { commodity?: string }) {
       return next;
     });
   }, []);
-
-  // ---- Derived data -------------------------------------------------------
-  const icons = useMemo(() => {
-    if (!data?.legend) return {} as Record<string, L.DivIcon>;
-    return buildIcons(data.legend);
-  }, [data?.legend]);
 
   // ---- Relational Filtering Helpers ---------------------------------------
   const getConnectedSet = useCallback((siteName: string, siteType: string) => {
@@ -289,10 +355,8 @@ export default function Map({ commodity }: { commodity?: string }) {
     return rSet;
   }, [selectedRegion, data?.sites, relations]);
 
-  // Set of site IDs matching the requested commodity (from site_dim)
   const gasSiteIds = useMemo(() => new Set(gasSites?.map((s) => s.id) || []), [gasSites]);
 
-  // Unique region list for filter dropdown
   const regionOptions = useMemo(() => {
     if (!data?.sites) return [];
     const validIds = intersect([pemasokSet, pembangkitSet]);
@@ -307,7 +371,6 @@ export default function Map({ commodity }: { commodity?: string }) {
     return Array.from(new Set(validSites.map(s => s.region))).filter(Boolean).sort();
   }, [data?.sites, pemasokSet, pembangkitSet, intersect, commodity, gasSiteIds]);
 
-  // Names for autocomplete filters
   const pemasokNames = useMemo(() => {
     if (!data?.sites) return [];
     const validIds = intersect([regionSet, pembangkitSet]);
@@ -336,7 +399,6 @@ export default function Map({ commodity }: { commodity?: string }) {
     return validSites.map(s => s.name).sort();
   }, [data?.sites, regionSet, pemasokSet, intersect, commodity, gasSiteIds]);
 
-  // Reset pembangkit when current selection is no longer valid
   useEffect(() => {
     if (selectedRegion && !regionOptions.includes(selectedRegion)) {
       setSelectedRegion(null);
@@ -358,18 +420,21 @@ export default function Map({ commodity }: { commodity?: string }) {
   // Filtered sites
   const filteredSites = useMemo(() => {
     if (!data?.sites) return [];
-    if (commodity && !gasSites) return []; // wait for commodity-filtered sites to load
+    if (commodity && !gasSites) return [];
     const validIds = intersect([regionSet, pemasokSet, pembangkitSet]);
 
     return data.sites.filter((site) => {
-      // Only show sites that belong to the requested commodity
       if (commodity && !gasSiteIds.has(site.id)) return false;
 
-      if (!visibleSiteTypes[site.siteType]) return false;
+      // Check base type and detailed type visibility
+      const catKey = getSiteCategoryKey(site.siteType, site.commodity);
+      const isBaseVisible = visibleSiteTypes[site.siteType] ?? true;
+      const isCatVisible = visibleSiteTypes[catKey] ?? true;
+
+      if (!isBaseVisible || !isCatVisible) return false;
 
       if (validIds && !validIds.has(site.id)) return false;
 
-      // Kepemilikan filter – hide PEMBANGKIT sites whose owner is unchecked
       if (site.siteType === "PEMBANGKIT" && site.owner) {
         if (!selectedOwners.has(site.owner)) return false;
       }
@@ -388,7 +453,6 @@ export default function Map({ commodity }: { commodity?: string }) {
     intersect
   ]);
 
-  // Filtered pipes – show only if both source and target are visible
   const filteredPipes = useMemo(() => {
     if (!data?.pipes || !showPipes) return [];
     const visibleIds = new Set(filteredSites.map((s) => s.id));
@@ -399,11 +463,14 @@ export default function Map({ commodity }: { commodity?: string }) {
   }, [data?.pipes, filteredSites, showPipes]);
 
   // ---- helpers ------------------------------------------------------------
-  const getSiteTypeLabel = (type: string) =>
-    data?.legend.siteTypes.find((st) => st.type === type)?.label || type;
-
-  const getSiteTypeColor = (type: string) =>
-    data?.legend.siteTypes.find((st) => st.type === type)?.color || "#999999";
+  const getSiteCategoryInfo = (siteType: string, commodity?: string | null) => {
+    const catKey = getSiteCategoryKey(siteType, commodity);
+    return CATEGORY_CONFIG[catKey] || {
+      label: siteType,
+      color: "#999999",
+      svg: "",
+    };
+  };
 
   const getPipeTypeColor = (relationType: string) =>
     data?.legend.pipeTypes.find((pt) => pt.type === relationType)?.color ||
@@ -424,7 +491,6 @@ export default function Map({ commodity }: { commodity?: string }) {
     return data.sites.filter((s) => connectedIds.includes(s.id));
   };
 
-  // Toggle a specific site type visibility
   const toggleSiteType = (type: string) => {
     setVisibleSiteTypes((prev) => ({ ...prev, [type]: !prev[type] }));
   };
@@ -474,7 +540,7 @@ export default function Map({ commodity }: { commodity?: string }) {
             <div className="export-buttons-container flex items-center gap-2 bg-gray-100 rounded-lg p-0.5">
               <button
                 onClick={handleExportImage}
-                className="px-3 py-1.5 rounded-md text-xs font-medium text-emerald-500 hover:bg-emerald-50 flex items-center gap-1.5 transition-all duration-200"
+                className="px-3 py-1.5 rounded-md text-xs font-medium text-emerald-500 hover:bg-emerald-50 flex items-center gap-1.5 transition-all duration-200 cursor-pointer"
                 title="Export as Image (PNG)"
               >
                 <ImageIcon size={14} />
@@ -482,7 +548,7 @@ export default function Map({ commodity }: { commodity?: string }) {
               </button>
               <button
                 onClick={handleExportPDF}
-                className="px-3 py-1.5 rounded-md text-xs font-medium text-rose-400 hover:bg-rose-50 flex items-center gap-1.5 transition-all duration-200"
+                className="px-3 py-1.5 rounded-md text-xs font-medium text-rose-400 hover:bg-rose-50 flex items-center gap-1.5 transition-all duration-200 cursor-pointer"
                 title="Export as PDF"
               >
                 <FileText size={14} />
@@ -538,7 +604,9 @@ export default function Map({ commodity }: { commodity?: string }) {
 
               {/* SITE MARKERS */}
               {filteredSites.map((site) => {
-                const icon = icons[site.siteType];
+                const catKey = getSiteCategoryKey(site.siteType, site.commodity);
+                const info = getSiteCategoryInfo(site.siteType, site.commodity);
+                const icon = createCategoryIcon(catKey, info.color);
                 const connected = getConnectedSites(site.id);
 
                 return (
@@ -548,17 +616,34 @@ export default function Map({ commodity }: { commodity?: string }) {
                     icon={icon}
                   >
                     <Popup>
-                      <div className="min-w-[180px]">
-                        <p
-                          className="font-semibold text-sm"
-                          style={{ color: getSiteTypeColor(site.siteType) }}
-                        >
-                          {getSiteTypeLabel(site.siteType)}
-                        </p>
-                        <p className="text-sm font-medium text-gray-800">
+                      <div className="min-w-[190px]">
+                        <div className="flex items-center gap-1.5 mb-1.5">
+                          <span
+                            className="w-3.5 h-3.5 rounded-full flex items-center justify-center flex-shrink-0"
+                            style={{ backgroundColor: info.color }}
+                          >
+                            <span
+                              className="scale-75"
+                              dangerouslySetInnerHTML={{ __html: info.svg }}
+                            />
+                          </span>
+                          <p
+                            className="font-semibold text-xs uppercase tracking-wider"
+                            style={{ color: info.color }}
+                          >
+                            {info.label}
+                          </p>
+                        </div>
+                        <p className="text-sm font-bold text-gray-900">
                           {site.name}
                         </p>
                         <div className="mt-2 pt-2 border-t border-gray-200 space-y-1">
+                          <div className="flex justify-between text-xs">
+                            <span className="text-gray-500">Komoditas:</span>
+                            <span className="font-medium text-gray-800">
+                              {site.commodity || "GAS PIPA"}
+                            </span>
+                          </div>
                           <div className="flex justify-between text-xs">
                             <span className="text-gray-500">Region:</span>
                             <span className="font-medium text-gray-700">
@@ -569,7 +654,7 @@ export default function Map({ commodity }: { commodity?: string }) {
                             <div className="flex justify-between text-xs">
                               <span className="text-gray-500">Kapasitas:</span>
                               <span className="font-medium text-primary">
-                                {parseFloat(site.capacity).toLocaleString()} MW
+                                {parseFloat(String(site.capacity)).toLocaleString()} MW
                               </span>
                             </div>
                           )}
@@ -584,7 +669,8 @@ export default function Map({ commodity }: { commodity?: string }) {
                           <div className="flex justify-between text-xs">
                             <span className="text-gray-500">Koordinat:</span>
                             <span className="font-medium text-gray-700">
-                              {site.lat != null ? Number(site.lat).toFixed(4) : ""}, {site.lng != null ? Number(site.lng).toFixed(4) : ""}
+                              {site.lat != null ? Number(site.lat).toFixed(4) : ""},{" "}
+                              {site.lng != null ? Number(site.lng).toFixed(4) : ""}
                             </span>
                           </div>
                         </div>
@@ -598,22 +684,21 @@ export default function Map({ commodity }: { commodity?: string }) {
                                   : "Relasi:"}
                             </p>
                             <ul className="text-xs text-gray-700 space-y-0.5">
-                              {connected.map((c) => (
-                                <li
-                                  key={c.id}
-                                  className="flex items-center gap-1"
-                                >
-                                  <span
-                                    className="w-1.5 h-1.5 rounded-full"
-                                    style={{
-                                      backgroundColor: getSiteTypeColor(
-                                        c.siteType,
-                                      ),
-                                    }}
-                                  />
-                                  {c.name}
-                                </li>
-                              ))}
+                              {connected.map((c) => {
+                                const cInfo = getSiteCategoryInfo(c.siteType, c.commodity);
+                                return (
+                                  <li
+                                    key={c.id}
+                                    className="flex items-center gap-1.5 text-xs"
+                                  >
+                                    <span
+                                      className="w-2 h-2 rounded-full flex-shrink-0"
+                                      style={{ backgroundColor: cInfo.color }}
+                                    />
+                                    <span className="truncate">{c.name}</span>
+                                  </li>
+                                );
+                              })}
                             </ul>
                           </div>
                         )}
@@ -629,56 +714,63 @@ export default function Map({ commodity }: { commodity?: string }) {
               {!legendExpanded ? (
                 <button
                   onClick={() => setLegendExpanded(true)}
-                  className="flex items-center gap-2 bg-white/95 backdrop-blur rounded-lg shadow-lg px-3 py-2 text-xs hover:bg-white transition-all"
+                  className="flex items-center gap-2 bg-white/95 backdrop-blur rounded-lg shadow-lg px-3 py-2 text-xs hover:bg-white transition-all cursor-pointer"
                 >
                   <Layers size={16} className="text-primary" />
                   <span className="text-gray-700 font-medium">Legend</span>
                   <ChevronUp size={14} className="text-gray-400" />
                 </button>
               ) : (
-                <div className="bg-white/95 backdrop-blur rounded-lg shadow-lg px-3 py-2 sm:px-4 sm:py-3 text-xs space-y-2 min-w-[140px]">
+                <div className="bg-white/95 backdrop-blur rounded-lg shadow-lg px-3 py-2 sm:px-4 sm:py-3 text-xs space-y-2 min-w-[170px] max-h-[300px] overflow-y-auto">
                   {/* Header with collapse button */}
-                  <div className="flex items-center justify-between border-b border-gray-200 pb-1.5 mb-1">
+                  <div className="flex items-center justify-between border-b border-gray-200 pb-1.5 mb-1 sticky top-0 bg-white/95 backdrop-blur">
                     <span className="text-gray-700 font-semibold text-xs">
                       Keterangan Map
                     </span>
                     <button
                       onClick={() => setLegendExpanded(false)}
-                      className="p-1 hover:bg-gray-100 rounded transition-colors"
+                      className="p-1 hover:bg-gray-100 rounded transition-colors cursor-pointer"
                     >
                       <ChevronDown size={14} className="text-gray-500" />
                     </button>
                   </div>
 
-                  {/* Site type toggles — driven by legend */}
+                  {/* Site type & commodity category toggles */}
                   {data.legend.siteTypes.map((st) => {
                     const isVisible = visibleSiteTypes[st.type] ?? true;
+                    const config = CATEGORY_CONFIG[st.type] || {
+                      label: st.label,
+                      color: st.color,
+                      svg: "",
+                    };
+
                     return (
                       <button
                         key={st.type}
                         onClick={() => toggleSiteType(st.type)}
-                        className={`flex items-center gap-2 w-full py-1 px-1.5 rounded-md transition-all ${isVisible ? `bg-opacity-10` : "bg-gray-100 opacity-60"
-                          }`}
+                        className={`flex items-center gap-2 w-full py-1 px-1.5 rounded-md transition-all cursor-pointer ${
+                          isVisible ? `bg-opacity-10` : "bg-gray-100 opacity-60"
+                        }`}
                         style={
                           isVisible
-                            ? { backgroundColor: `${st.color}1A` }
+                            ? { backgroundColor: `${config.color}1A` }
                             : undefined
                         }
                       >
                         <span
-                          className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full`}
-                          style={{
-                            backgroundColor: st.color,
-                            boxShadow: isVisible
-                              ? `0 0 0 4px ${st.color}33`
-                              : "none",
-                          }}
-                        />
-                        <span className="text-gray-700 text-xs flex-1 text-left">
-                          {st.label}
+                          className="w-3.5 h-3.5 rounded-full flex items-center justify-center flex-shrink-0"
+                          style={{ backgroundColor: config.color }}
+                        >
+                          <span
+                            className="scale-75"
+                            dangerouslySetInnerHTML={{ __html: config.svg }}
+                          />
+                        </span>
+                        <span className="text-gray-700 text-xs flex-1 text-left font-medium truncate">
+                          {config.label}
                         </span>
                         {isVisible ? (
-                          <Eye size={14} style={{ color: st.color }} />
+                          <Eye size={14} style={{ color: config.color }} />
                         ) : (
                           <EyeOff size={14} className="text-gray-400" />
                         )}
@@ -689,7 +781,7 @@ export default function Map({ commodity }: { commodity?: string }) {
                   {/* Pipe type legend items */}
                   {data.legend.pipeTypes.length > 0 && (
                     <div className="pt-1 border-t border-gray-200">
-                      <p className="text-[10px] text-gray-500 mb-1">Jenis Pipa</p>
+                      <p className="text-[10px] text-gray-500 mb-1 font-semibold">Jenis Pipa</p>
                       {data.legend.pipeTypes.map((pt) => (
                         <div
                           key={pt.type}
@@ -714,7 +806,7 @@ export default function Map({ commodity }: { commodity?: string }) {
       {/* Mobile Filter Button */}
       <button
         onClick={() => setFilterOpen(!filterOpen)}
-        className="lg:hidden fixed bottom-4 right-4 z-50 bg-gradient-to-r from-primary to-secondary text-white p-3 rounded-full shadow-lg hover:shadow-xl transition-all"
+        className="lg:hidden fixed bottom-4 right-4 z-50 bg-gradient-to-r from-primary to-secondary text-white p-3 rounded-full shadow-lg hover:shadow-xl transition-all cursor-pointer"
       >
         {filterOpen ? <X size={22} /> : <Filter size={22} />}
       </button>
@@ -735,7 +827,7 @@ export default function Map({ commodity }: { commodity?: string }) {
           <p className="text-lg font-semibold text-gray-900">Filter Map</p>
           <button
             onClick={() => setFilterOpen(false)}
-            className="p-2 hover:bg-gray-100 rounded-full"
+            className="p-2 hover:bg-gray-100 rounded-full cursor-pointer"
           >
             <X size={20} className="text-gray-600" />
           </button>

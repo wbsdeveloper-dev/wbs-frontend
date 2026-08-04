@@ -39,7 +39,13 @@ L.Icon.Default.mergeOptions({
 interface MapSite {
   id: string;
   name: string;
-  siteType: "PEMBANGKIT" | "PEMASOK" | "TRANSPORTIR" | "TERMINAL" | "HANDOVER_POINT";
+  siteType:
+    | "PEMBANGKIT"
+    | "PEMASOK"
+    | "TRANSPORTIR"
+    | "TERMINAL"
+    | "HANDOVER_POINT";
+  commodity?: string | null;
   lat: number;
   lng: number;
   region: string;
@@ -86,7 +92,8 @@ interface ApiResponse<T> {
   meta?: { requestId: string; timestamp: string };
 }
 
-const SITE_API_HOST = process.env.NEXT_PUBLIC_API_HOST || "http://localhost:3005/api";
+const SITE_API_HOST =
+  process.env.NEXT_PUBLIC_API_HOST || "http://localhost:3005/api";
 
 async function mapFetch<T>(path: string, options?: RequestInit): Promise<T> {
   const url = `${SITE_API_HOST}${path}`;
@@ -121,38 +128,111 @@ async function mapFetch<T>(path: string, options?: RequestInit): Promise<T> {
   return body.data;
 }
 
-async function updateSiteStatus(siteId: string, isEnabled: boolean): Promise<void> {
+async function updateSiteStatus(
+  siteId: string,
+  isEnabled: boolean,
+): Promise<void> {
   return mapFetch(`/sites/${siteId}`, {
     method: "PATCH",
     body: JSON.stringify({ is_enabled: isEnabled }),
   });
 }
 
-const createCustomIcon = (color: string) =>
-  L.divIcon({
-    className: "",
+// ── Category Helper & Icon Definitions ─────────────────────────────────────
+
+function getSiteCategoryKey(siteType: string, commodity?: string | null): string {
+  if (siteType === "TRANSPORTIR") return "TRANSPORTIR";
+  if (siteType === "TERMINAL") return "TERMINAL";
+  if (siteType === "HANDOVER_POINT") return "HANDOVER_POINT";
+
+  const commNorm = (commodity || "").toUpperCase().trim();
+  if (commNorm.includes("GAS") || commNorm.includes("PIPA")) {
+    return `${siteType}_GAS_PIPA`;
+  }
+  if (commNorm.includes("LNG")) {
+    return `${siteType}_LNG`;
+  }
+  if (commNorm.includes("BBM")) {
+    return `${siteType}_BBM`;
+  }
+  return `${siteType}_GAS_PIPA`; // default for gas page
+}
+
+const CATEGORY_CONFIG: Record<string, { label: string; color: string; svg: string }> = {
+  PEMBANGKIT_LNG: {
+    label: "Pembangkit (LNG)",
+    color: "#1581fb", // Vibrant Blue for LNG Pembangkit
+    svg: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h20"/><path d="M20 18v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/><path d="M3 18v-8l7-5v13"/><path d="M14 10V4h3v3"/></svg>`,
+  },
+  PEMBANGKIT_GAS_PIPA: {
+    label: "Pembangkit (Gas Pipa)",
+    color: "#13778e", // Teal/Ocean Blue for Gas Pipa Pembangkit
+    svg: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h20"/><path d="M20 18v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/><path d="M3 18v-8l7-5v13"/><path d="M14 10V4h3v3"/></svg>`,
+  },
+  PEMBANGKIT_BBM: {
+    label: "Pembangkit (BBM)",
+    color: "#1581fb", // Blue for Pembangkit BBM
+    svg: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h20"/><path d="M20 18v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/><path d="M3 18v-8l7-5v13"/><path d="M14 10V4h3v3"/></svg>`,
+  },
+  PEMASOK_LNG: {
+    label: "Pemasok (LNG)",
+    color: "#3B82F6", // Original Blue kept for LNG
+    svg: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>`,
+  },
+  PEMASOK_GAS_PIPA: {
+    label: "Pemasok (Gas Pipa)",
+    color: "#06B6D4", // New Distinct Cyan for Gas Pipa
+    svg: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z"/></svg>`,
+  },
+  PEMASOK_BBM: {
+    label: "Pemasok (BBM)",
+    color: "#0284C7", // Sky
+    svg: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>`,
+  },
+  TRANSPORTIR: {
+    label: "Transportir",
+    color: "#F59E0B", // Original Amber
+    svg: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>`,
+  },
+};
+
+const createCustomIcon = (catKey: string, fallbackColor: string) => {
+  const config = CATEGORY_CONFIG[catKey] || {
+    color: fallbackColor,
+    svg: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="white" stroke-width="2.2"><circle cx="12" cy="12" r="8"/></svg>`,
+  };
+
+  return L.divIcon({
+    className: "custom-site-marker",
     html: `
       <div style="
-        background:${color};
-        width:20px;
-        height:20px;
-        border-radius:50%;
-        border:3px solid white;
-        box-shadow:0 0 0 4px ${color}33;
-      "></div>
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: ${config.color};
+        width: 30px;
+        height: 30px;
+        border-radius: 50% 50% 50% 0;
+        transform: rotate(-45deg);
+        border: 2px solid white;
+        box-shadow: 0 3px 8px rgba(0,0,0,0.35);
+        cursor: pointer;
+      ">
+        <div style="
+          transform: rotate(45deg);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        ">
+          ${config.svg}
+        </div>
+      </div>
     `,
-    iconSize: [20, 20],
-    iconAnchor: [10, 10],
-    popupAnchor: [0, -10],
+    iconSize: [30, 30],
+    iconAnchor: [15, 30],
+    popupAnchor: [0, -28],
   });
-
-// Create icons for each site type
-const createIcons = (legend: MapLegend): Record<string, L.DivIcon> => {
-  const icons: Record<string, L.DivIcon> = {};
-  legend.siteTypes.forEach((siteType) => {
-    icons[siteType.type] = createCustomIcon(siteType.color);
-  });
-  return icons;
 };
 
 export default function SiteMap() {
@@ -180,11 +260,13 @@ export default function SiteMap() {
         setIsLoading(true);
         setError(null);
         const response = await mapFetch<MapLocationsResponse>(
-          "/dashboard/map-locations"
+          "/dashboard/map-locations",
         );
         setData(response);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load map data");
+        setError(
+          err instanceof Error ? err.message : "Failed to load map data",
+        );
       } finally {
         setIsLoading(false);
       }
@@ -197,44 +279,36 @@ export default function SiteMap() {
   const regions = useMemo(() => {
     if (!data?.sites) return [];
     const uniqueRegions = Array.from(
-      new Set(data.sites.map((site) => site.region))
+      new Set(data.sites.map((site) => site.region)),
     ).filter(Boolean);
     return uniqueRegions.sort();
-  }, [data]);
-
-  // Get icons based on legend
-  const icons = useMemo(() => {
-    if (!data?.legend) return {} as Record<string, L.DivIcon>;
-    return createIcons(data.legend);
   }, [data]);
 
   // Filter sites based on filters
   const filteredSites = useMemo(() => {
     if (!data?.sites) return [];
 
-    return data.sites.map((site) => ({
-      ...site,
-      isEnabled: updatingSiteId === site.id ? !site.isEnabled : site.isEnabled, // Show opposite status during update
-    })).filter((site) => {
-      // Filter by site type
-      if (site.siteType === "PEMBANGKIT" && !showPembangkit)
-        return false;
-      if (site.siteType === "PEMASOK" && !showPemasok) return false;
-      if (site.siteType === "TRANSPORTIR" && !showTransportir)
-        return false;
-      if (site.siteType === "TERMINAL" && !showTerminal) return false;
-      if (site.siteType === "HANDOVER_POINT" && !showHandoverPoint)
-        return false;
+    return data.sites
+      .map((site) => ({
+        ...site,
+        isEnabled:
+          updatingSiteId === site.id ? !site.isEnabled : site.isEnabled,
+      }))
+      .filter((site) => {
+        if (site.siteType === "PEMBANGKIT" && !showPembangkit) return false;
+        if (site.siteType === "PEMASOK" && !showPemasok) return false;
+        if (site.siteType === "TRANSPORTIR" && !showTransportir) return false;
+        if (site.siteType === "TERMINAL" && !showTerminal) return false;
+        if (site.siteType === "HANDOVER_POINT" && !showHandoverPoint)
+          return false;
 
-      // Filter by status
-      if (site.isEnabled && !showActive) return false;
-      if (!site.isEnabled && !showInactive) return false;
+        if (site.isEnabled && !showActive) return false;
+        if (!site.isEnabled && !showInactive) return false;
 
-      // Filter by region
-      if (selectedRegion && site.region !== selectedRegion) return false;
+        if (selectedRegion && site.region !== selectedRegion) return false;
 
-      return true;
-    });
+        return true;
+      });
   }, [
     data,
     showPembangkit,
@@ -249,16 +323,22 @@ export default function SiteMap() {
   ]);
 
   // Handle toggle site status
-  const handleToggleSiteStatus = async (siteId: string, currentStatus: boolean) => {
+  const handleToggleSiteStatus = async (
+    siteId: string,
+    currentStatus: boolean,
+  ) => {
     try {
       setUpdatingSiteId(siteId);
       setUpdateError(null);
       await updateSiteStatus(siteId, !currentStatus);
-      // Refresh data after update
-      const response = await mapFetch<MapLocationsResponse>("/dashboard/map-locations");
+      const response = await mapFetch<MapLocationsResponse>(
+        "/dashboard/map-locations",
+      );
       setData(response);
     } catch (err) {
-      setUpdateError(err instanceof Error ? err.message : "Gagal mengubah status site");
+      setUpdateError(
+        err instanceof Error ? err.message : "Gagal mengubah status site",
+      );
     } finally {
       setUpdatingSiteId(null);
     }
@@ -270,22 +350,21 @@ export default function SiteMap() {
 
     const visibleSiteIds = new Set(filteredSites.map((s) => s.id));
 
-    return data.pipes.filter((pipe) =>
-      visibleSiteIds.has(pipe.sourceSiteId) &&
-      visibleSiteIds.has(pipe.targetSiteId)
+    return data.pipes.filter(
+      (pipe) =>
+        visibleSiteIds.has(pipe.sourceSiteId) &&
+        visibleSiteIds.has(pipe.targetSiteId),
     );
   }, [data, filteredSites, showPipes]);
 
-  // Get site type label
-  const getSiteTypeLabel = (type: string) => {
-    const siteType = data?.legend.siteTypes.find((st) => st.type === type);
-    return siteType?.label || type;
-  };
-
-  // Get site type color
-  const getSiteTypeColor = (type: string) => {
-    const siteType = data?.legend.siteTypes.find((st) => st.type === type);
-    return siteType?.color || "#999999";
+  // Get site category info
+  const getSiteCategoryInfo = (siteType: string, commodity?: string | null) => {
+    const catKey = getSiteCategoryKey(siteType, commodity);
+    return CATEGORY_CONFIG[catKey] || {
+      label: siteType,
+      color: "#999999",
+      svg: "",
+    };
   };
 
   // Get pipe type label
@@ -300,15 +379,10 @@ export default function SiteMap() {
     return pipeType?.color || "#999999";
   };
 
-  // Get status label
-  const getStatusLabel = (isEnabled: boolean) => {
-    return isEnabled ? "Aktif" : "Nonaktif";
-  };
-
-  // Get status color
-  const getStatusColor = (isEnabled: boolean) => {
-    return isEnabled ? "text-green-600" : "text-red-600";
-  };
+  const getStatusLabel = (isEnabled: boolean) =>
+    isEnabled ? "Aktif" : "Nonaktif";
+  const getStatusColor = (isEnabled: boolean) =>
+    isEnabled ? "text-green-600" : "text-red-600";
 
   if (isLoading) {
     return (
@@ -326,7 +400,9 @@ export default function SiteMap() {
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm flex items-center justify-center h-[400px]">
         <div className="text-center">
           <X size={48} className="text-red-400 mx-auto mb-3" />
-          <p className="text-gray-700 text-sm font-medium mb-1">Gagal Memuat Data</p>
+          <p className="text-gray-700 text-sm font-medium mb-1">
+            Gagal Memuat Data
+          </p>
           <p className="text-gray-500 text-xs">{error}</p>
         </div>
       </div>
@@ -371,7 +447,7 @@ export default function SiteMap() {
         </div>
         <button
           onClick={() => setLegendExpanded(!legendExpanded)}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50 rounded-lg transition-colors cursor-pointer"
         >
           <Filter size={16} />
           <span>Filter</span>
@@ -396,65 +472,42 @@ export default function SiteMap() {
                 </span>
               </div>
               <div className="space-y-1.5">
-                {data.legend.siteTypes.map((siteType) => {
-                  const isChecked = (() => {
-                    switch (siteType.type) {
-                      case "PEMBANGKIT":
-                        return showPembangkit;
-                      case "PEMASOK":
-                        return showPemasok;
-                      case "TRANSPORTIR":
-                        return showTransportir;
-                      case "TERMINAL":
-                        return showTerminal;
-                      case "HANDOVER_POINT":
-                        return showHandoverPoint;
-                      default:
-                        return true;
-                    }
-                  })();
-
-                  const handleCheck = (checked: boolean) => {
-                    switch (siteType.type) {
-                      case "PEMBANGKIT":
-                        setShowPembangkit(checked);
-                        break;
-                      case "PEMASOK":
-                        setShowPemasok(checked);
-                        break;
-                      case "TRANSPORTIR":
-                        setShowTransportir(checked);
-                        break;
-                      case "TERMINAL":
-                        setShowTerminal(checked);
-                        break;
-                      case "HANDOVER_POINT":
-                        setShowHandoverPoint(checked);
-                        break;
-                    }
-                  };
-
-                  return (
-                    <label
-                      key={siteType.type}
-                      className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        onChange={(e) => handleCheck(e.target.checked)}
-                        className="w-4 h-4 text-primary rounded border-gray-300 focus:ring-secondary"
-                      />
-                      <span className="flex items-center gap-1.5">
-                        <span
-                          className="w-3 h-3 rounded-full"
-                          style={{ backgroundColor: siteType.color }}
-                        />
-                        {siteType.label}
-                      </span>
-                    </label>
-                  );
-                })}
+                <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={showPembangkit}
+                    onChange={(e) => setShowPembangkit(e.target.checked)}
+                    className="w-4 h-4 text-primary rounded border-gray-300 focus:ring-secondary"
+                  />
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded-full bg-[#10B981]" />
+                    Pembangkit
+                  </span>
+                </label>
+                <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={showPemasok}
+                    onChange={(e) => setShowPemasok(e.target.checked)}
+                    className="w-4 h-4 text-primary rounded border-gray-300 focus:ring-secondary"
+                  />
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded-full bg-[#3B82F6]" />
+                    Pemasok
+                  </span>
+                </label>
+                <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={showTransportir}
+                    onChange={(e) => setShowTransportir(e.target.checked)}
+                    className="w-4 h-4 text-primary rounded border-gray-300 focus:ring-secondary"
+                  />
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded-full bg-[#F59E0B]" />
+                    Transportir
+                  </span>
+                </label>
               </div>
             </div>
 
@@ -504,9 +557,7 @@ export default function SiteMap() {
               </div>
               <select
                 value={selectedRegion || ""}
-                onChange={(e) =>
-                  setSelectedRegion(e.target.value || null)
-                }
+                onChange={(e) => setSelectedRegion(e.target.value || null)}
                 className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white"
               >
                 <option value="">Semua Region</option>
@@ -522,9 +573,7 @@ export default function SiteMap() {
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <Layers size={16} className="text-gray-500" />
-                <span className="text-xs font-medium text-gray-700">
-                  Pipa
-                </span>
+                <span className="text-xs font-medium text-gray-700">Pipa</span>
               </div>
               <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
                 <input
@@ -557,53 +606,32 @@ export default function SiteMap() {
               </div>
             </div>
 
-            {/* Legend */}
+            {/* Icon Legend */}
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <Layers size={16} className="text-gray-500" />
                 <span className="text-xs font-medium text-gray-700">
-                  Legenda
+                  Legenda Ikon
                 </span>
               </div>
-              <div className="space-y-2">
-                <div>
-                  <p className="text-xs font-medium text-gray-700 mb-1.5">
-                    Jenis Site
-                  </p>
-                  <div className="space-y-1">
-                    {data.legend.siteTypes.map((siteType) => (
-                      <div
-                        key={siteType.type}
-                        className="flex items-center gap-1.5 text-xs text-gray-600"
-                      >
-                        <span
-                          className="w-2.5 h-2.5 rounded-full"
-                          style={{ backgroundColor: siteType.color }}
-                        />
-                        {siteType.label}
-                      </div>
-                    ))}
+              <div className="space-y-1.5">
+                {Object.entries(CATEGORY_CONFIG).map(([key, config]) => (
+                  <div
+                    key={key}
+                    className="flex items-center gap-2 text-xs text-gray-700"
+                  >
+                    <span
+                      className="w-3.5 h-3.5 rounded-full flex items-center justify-center flex-shrink-0"
+                      style={{ backgroundColor: config.color }}
+                    >
+                      <span
+                        className="scale-75"
+                        dangerouslySetInnerHTML={{ __html: config.svg }}
+                      />
+                    </span>
+                    <span>{config.label}</span>
                   </div>
-                </div>
-                <div>
-                  <p className="text-xs font-medium text-gray-700 mb-1.5">
-                    Jenis Pipa
-                  </p>
-                  <div className="space-y-1">
-                    {data.legend.pipeTypes.map((pipeType) => (
-                      <div
-                        key={pipeType.type}
-                        className="flex items-center gap-1.5 text-xs text-gray-600"
-                      >
-                        <span
-                          className="w-8 h-0.5"
-                          style={{ backgroundColor: pipeType.color }}
-                        />
-                        {pipeType.label}
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
           </div>
@@ -611,7 +639,7 @@ export default function SiteMap() {
       )}
 
       {/* Map */}
-      <div className="relative h-[400px] w-full">
+      <div className="relative h-[500px] w-full">
         <MapContainer
           center={[-2.5, 118]}
           zoom={5}
@@ -627,10 +655,10 @@ export default function SiteMap() {
           {showPipes &&
             filteredPipes.map((pipe) => {
               const sourceSite = filteredSites.find(
-                (s) => s.id === pipe.sourceSiteId
+                (s) => s.id === pipe.sourceSiteId,
               );
               const targetSite = filteredSites.find(
-                (s) => s.id === pipe.targetSiteId
+                (s) => s.id === pipe.targetSiteId,
               );
 
               if (!sourceSite || !targetSite) return null;
@@ -641,8 +669,14 @@ export default function SiteMap() {
                 <Polyline
                   key={pipe.id}
                   positions={[
-                    [Number(sourceSite.lat), Number(sourceSite.lng)] as LatLngTuple,
-                    [Number(targetSite.lat), Number(targetSite.lng)] as LatLngTuple,
+                    [
+                      Number(sourceSite.lat),
+                      Number(sourceSite.lng),
+                    ] as LatLngTuple,
+                    [
+                      Number(targetSite.lat),
+                      Number(targetSite.lng),
+                    ] as LatLngTuple,
                   ]}
                   color={pipeColor}
                   weight={3}
@@ -663,9 +697,13 @@ export default function SiteMap() {
 
           {/* Site Markers */}
           {filteredSites.map((site) => {
-            const icon = icons[site.siteType];
+            const catKey = getSiteCategoryKey(site.siteType, site.commodity);
+            const info = getSiteCategoryInfo(site.siteType, site.commodity);
+            const icon = createCustomIcon(catKey, info.color);
             const isUpdating = updatingSiteId === site.id;
-            const displayStatus = isUpdating ? !site.isEnabled : site.isEnabled;
+            const displayStatus = isUpdating
+              ? !site.isEnabled
+              : site.isEnabled;
 
             return (
               <Marker
@@ -675,36 +713,49 @@ export default function SiteMap() {
                 opacity={displayStatus ? 1 : 0.5}
               >
                 <Popup>
-                  <div className="min-w-[200px]">
+                  <div className="min-w-[210px]">
                     <div className="flex items-center gap-1.5 mb-2">
                       <span
-                        className="w-3 h-3 rounded-full"
+                        className="w-3.5 h-3.5 rounded-full flex items-center justify-center flex-shrink-0"
                         style={{
-                          backgroundColor: getSiteTypeColor(site.siteType),
+                          backgroundColor: info.color,
                           opacity: displayStatus ? 1 : 0.5,
                         }}
-                      />
+                      >
+                        <span
+                          className="scale-75"
+                          dangerouslySetInnerHTML={{ __html: info.svg }}
+                        />
+                      </span>
                       <p
-                        className={`font-semibold text-sm`}
+                        className="font-semibold text-sm"
                         style={{
-                          color: getSiteTypeColor(site.siteType),
+                          color: info.color,
                           opacity: displayStatus ? 1 : 0.6,
                         }}
                       >
-                        {getSiteTypeLabel(site.siteType)}
+                        {info.label}
                       </p>
                     </div>
-                    <p className="text-base font-medium text-gray-900 mb-2">
+                    <p className="text-base font-bold text-gray-900 mb-2">
                       {site.name}
                     </p>
-                    <div className="space-y-1 text-sm text-gray-700">
+                    <div className="space-y-1 text-xs text-gray-700">
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Komoditas:</span>
+                        <span className="font-semibold text-gray-800">
+                          {site.commodity || "GAS PIPA"}
+                        </span>
+                      </div>
                       <div className="flex justify-between">
                         <span className="text-gray-500">Region:</span>
                         <span>{site.region}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-500">Status:</span>
-                        <span className={getStatusColor(displayStatus)}>
+                        <span
+                          className={`font-semibold ${getStatusColor(displayStatus)}`}
+                        >
                           {getStatusLabel(displayStatus)}
                           {isUpdating && (
                             <span className="ml-2 text-xs text-gray-400">
@@ -716,21 +767,26 @@ export default function SiteMap() {
                       <div className="flex justify-between">
                         <span className="text-gray-500">Koordinat:</span>
                         <span>
-                          {site.lat != null ? Number(site.lat).toFixed(4) : ""}, {site.lng != null ? Number(site.lng).toFixed(4) : ""}
+                          {site.lat != null ? Number(site.lat).toFixed(4) : ""},{" "}
+                          {site.lng != null ? Number(site.lng).toFixed(4) : ""}
                         </span>
                       </div>
                     </div>
+
                     {/* Toggle Status Button */}
                     <div className="mt-3 pt-3 border-t border-gray-200">
                       <button
-                        onClick={() => handleToggleSiteStatus(site.id, site.isEnabled)}
+                        onClick={() =>
+                          handleToggleSiteStatus(site.id, site.isEnabled)
+                        }
                         disabled={isUpdating}
-                        className={`w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${isUpdating
+                        className={`w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold rounded-lg transition-all duration-200 cursor-pointer ${
+                          isUpdating
                             ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                             : displayStatus
                               ? "bg-red-50 text-red-600 hover:bg-red-100"
                               : "bg-green-50 text-green-600 hover:bg-green-100"
-                          }`}
+                        }`}
                       >
                         {isUpdating ? (
                           <>
@@ -739,12 +795,12 @@ export default function SiteMap() {
                           </>
                         ) : displayStatus ? (
                           <>
-                            <PowerOff size={16} />
+                            <PowerOff size={14} />
                             <span>Nonaktifkan Site</span>
                           </>
                         ) : (
                           <>
-                            <Power size={16} />
+                            <Power size={14} />
                             <span>Aktifkan Site</span>
                           </>
                         )}

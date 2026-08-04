@@ -65,7 +65,9 @@ export default function EmailTable({
                 {canUpdate && (
                   <input
                     type="checkbox"
-                    checked={selectedRows.length === emails.length && emails.length > 0}
+                    checked={
+                      selectedRows.length === emails.length && emails.length > 0
+                    }
                     onChange={handleSelectAll}
                     className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-secondary cursor-pointer"
                   />
@@ -95,9 +97,7 @@ export default function EmailTable({
                 </div>
               </th>
               <th className="px-4 py-4 text-center">
-                <div className="text-sm font-semibold text-gray-700">
-                  Aksi
-                </div>
+                <div className="text-sm font-semibold text-gray-700">Aksi</div>
               </th>
             </tr>
           </thead>
@@ -105,7 +105,7 @@ export default function EmailTable({
             {emails.map((email, index) => (
               <tr
                 key={email.id}
-                className={`border-b border-gray-100 hover:bg-[#f0fdfa] transition-colors duration-150 cursor-pointer ${
+                className={`border-b border-gray-100 hover:bg-[#f0fdfa] dark:hover:bg-teal-950/30 transition-colors duration-150 cursor-pointer ${
                   index % 2 === 0 ? "bg-white" : "bg-gray-50/30"
                 }`}
                 onClick={() => onRowClick(email)}
@@ -190,7 +190,10 @@ export default function EmailTable({
             ))}
             {emails.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-12 text-center text-gray-500">
+                <td
+                  colSpan={6}
+                  className="px-4 py-12 text-center text-gray-500"
+                >
                   Tidak ada data email ditemukan
                 </td>
               </tr>
@@ -198,7 +201,7 @@ export default function EmailTable({
           </tbody>
         </table>
       </div>
-      
+
       {/* Pagination */}
       <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200">
         <div className="text-sm text-gray-600">

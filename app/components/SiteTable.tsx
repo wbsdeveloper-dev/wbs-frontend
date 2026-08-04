@@ -46,6 +46,60 @@ const StatusBadge = ({
   </span>
 );
 
+// Site type badge component
+const SiteTypeBadge = ({
+  siteType,
+  commodity,
+}: {
+  siteType: string;
+  commodity?: string | null;
+}) => {
+  const comm = (commodity || "").toUpperCase();
+  let label = siteType === "PEMBANGKIT" ? "Pembangkit" : siteType === "PEMASOK" ? "Pemasok" : "Transportir";
+  let bg = "bg-gray-100 text-gray-700 border-gray-200";
+  let dotColor = "bg-gray-400";
+
+  if (siteType === "PEMBANGKIT") {
+    if (comm.includes("GAS") || comm.includes("PIPA")) {
+      bg = "bg-[#13778e]/10 text-[#13778e] border-[#13778e]/30 font-semibold";
+      dotColor = "bg-[#13778e]";
+      label = "Pembangkit (Gas Pipa)";
+    } else if (comm.includes("LNG")) {
+      bg = "bg-[#1581fb]/10 text-[#1581fb] border-[#1581fb]/30 font-semibold";
+      dotColor = "bg-[#1581fb]";
+      label = "Pembangkit (LNG)";
+    } else if (comm.includes("BBM")) {
+      bg = "bg-lime-50 text-lime-800 border-lime-200 font-semibold";
+      dotColor = "bg-lime-500";
+      label = "Pembangkit (BBM)";
+    }
+  } else if (siteType === "PEMASOK") {
+    if (comm.includes("GAS") || comm.includes("PIPA")) {
+      bg = "bg-cyan-50 text-cyan-800 border-cyan-200 font-semibold";
+      dotColor = "bg-cyan-500";
+      label = "Pemasok (Gas Pipa)";
+    } else if (comm.includes("LNG")) {
+      bg = "bg-blue-50 text-blue-800 border-blue-200 font-semibold";
+      dotColor = "bg-blue-500";
+      label = "Pemasok (LNG)";
+    } else if (comm.includes("BBM")) {
+      bg = "bg-sky-50 text-sky-800 border-sky-200 font-semibold";
+      dotColor = "bg-sky-500";
+      label = "Pemasok (BBM)";
+    }
+  } else if (siteType === "TRANSPORTIR") {
+    bg = "bg-amber-50 text-amber-800 border-amber-200 font-semibold";
+    dotColor = "bg-amber-500";
+  }
+
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs border ${bg}`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${dotColor}`} />
+      {label}
+    </span>
+  );
+};
+
 // Action buttons component
 const ActionButtons = ({
   id,
@@ -259,9 +313,7 @@ export function DaftarSiteTable({
   const [pendingDeleteName, setPendingDeleteName] = useState<string>("");
   const [warnedSites, setWarnedSites] = useState<string[]>([]);
 
-  const effectiveCommodity = selectedCommodity
-    ? selectedCommodity
-    : commodity;
+  const effectiveCommodity = selectedCommodity ? selectedCommodity : commodity;
 
   const { data: sites, isLoading } = useSites({
     search: debouncedSearch,
@@ -336,7 +388,8 @@ export function DaftarSiteTable({
     }
   };
 
-  const commodityOptions = commodity && commodity.length > 0 ? commodity : ["GAS PIPA", "LNG", "BBM"];
+  const commodityOptions =
+    commodity && commodity.length > 0 ? commodity : ["GAS PIPA", "LNG", "BBM"];
 
   // Pagination logic
   const totalPages = Math.ceil((sites?.length || 0) / itemsPerPage);
@@ -363,7 +416,9 @@ export function DaftarSiteTable({
                 value={selectedCommodity || "Semua Komoditas"}
                 onChange={(val) => {
                   const valStr = typeof val === "string" ? val : val || "";
-                  setSelectedCommodity(valStr === "Semua Komoditas" ? "" : valStr);
+                  setSelectedCommodity(
+                    valStr === "Semua Komoditas" ? "" : valStr,
+                  );
                   setCurrentPage(0);
                 }}
                 placeholder="Pilih Komoditas"
@@ -457,15 +512,11 @@ export function DaftarSiteTable({
                     </td>
                     {commodity?.includes("BBM") && (
                       <td className="px-4 py-3 text-center text-gray-700">
-                        {site.capacity
-                          ? `${site.capacity} kL`
-                          : "-"}
+                        {site.capacity ? `${site.capacity} kL` : "-"}
                       </td>
                     )}
                     <td className="px-4 py-3 text-center text-gray-700">
-                      {site.capacity_mw
-                        ? `${site.capacity_mw} MW`
-                        : "-"}
+                      {site.capacity_mw ? `${site.capacity_mw} MW` : "-"}
                     </td>
                     <td className="px-4 py-3 text-center text-gray-700">
                       {site.commodity || "-"}
@@ -658,7 +709,8 @@ export function RelasiOperasionalTable({
     }
   };
 
-  const commodityOptions = commodity && commodity.length > 0 ? commodity : ["GAS PIPA", "LNG", "BBM"];
+  const commodityOptions =
+    commodity && commodity.length > 0 ? commodity : ["GAS PIPA", "LNG", "BBM"];
 
   // Pagination logic
   const totalPages = Math.ceil((filteredRelations?.length || 0) / itemsPerPage);
@@ -686,7 +738,9 @@ export function RelasiOperasionalTable({
                 value={selectedCommodity || "Semua Komoditas"}
                 onChange={(val) => {
                   const valStr = typeof val === "string" ? val : val || "";
-                  setSelectedCommodity(valStr === "Semua Komoditas" ? "" : valStr);
+                  setSelectedCommodity(
+                    valStr === "Semua Komoditas" ? "" : valStr,
+                  );
                   setCurrentPage(0);
                 }}
                 placeholder="Pilih Komoditas"

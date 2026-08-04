@@ -53,7 +53,7 @@ import { useKertasKerjaMaster } from "@/hooks/service/kertas-kerja-api";
 import { NationalTrendChart } from "./components/NationalTrendChart";
 
 // Dynamic map import
-const MapBBM = dynamic(() => import("../../components/MapBBM"), { ssr: false });
+const MapBBM = dynamic(() => import("@/app/components/MapBBM"), { ssr: false });
 
 // Chart view mode type
 type ChartMode = "akumulasi" | "realisasi-moda" | "nasional";
@@ -204,212 +204,212 @@ function AccumulationTooltip({
       <div className="grid grid-cols-2 gap-4">
         {/* Nominasi */}
         {(graphicJenisData.length === 0 || graphicJenisData.includes("Nominasi")) && (
-        <div>
-          <p className="text-xs font-bold text-gray-500 mb-1">Nominasi</p>
-          <div className="space-y-1">
-            {Object.keys(data)
-              .filter((k) => k.endsWith("_nominasi") && data[k] > 0)
-              .map((k) => {
-                const product = k.replace("_nominasi", "");
-                return (
-                  <div
-                    key={k}
-                    className="flex items-center justify-between gap-3 text-xs"
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <span
-                        className="w-2 h-2 rounded-full"
-                        style={{ backgroundColor: getProductColor(product) }}
-                      />
-                      <span className="text-gray-600">{product}</span>
+          <div>
+            <p className="text-xs font-bold text-gray-500 mb-1">Nominasi</p>
+            <div className="space-y-1">
+              {Object.keys(data)
+                .filter((k) => k.endsWith("_nominasi") && data[k] > 0)
+                .map((k) => {
+                  const product = k.replace("_nominasi", "");
+                  return (
+                    <div
+                      key={k}
+                      className="flex items-center justify-between gap-3 text-xs"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className="w-2 h-2 rounded-full"
+                          style={{ backgroundColor: getProductColor(product) }}
+                        />
+                        <span className="text-gray-600">{product}</span>
+                      </div>
+                      <span className="font-semibold text-gray-900">
+                        {data[k].toLocaleString("id-ID", {
+                          maximumFractionDigits: 2,
+                        })}
+                      </span>
                     </div>
-                    <span className="font-semibold text-gray-900">
-                      {data[k].toLocaleString("id-ID", {
-                        maximumFractionDigits: 2,
-                      })}
-                    </span>
-                  </div>
-                );
-              })}
-            <div className="pt-1 mt-1 border-t border-gray-100 flex justify-between text-xs font-bold text-gray-800">
-              <span>Total</span>
-              <span>
-                {data.nominasi.toLocaleString("id-ID", {
-                  maximumFractionDigits: 2,
-                })}{" "}
-                KL
-              </span>
+                  );
+                })}
+              <div className="pt-1 mt-1 border-t border-gray-100 flex justify-between text-xs font-bold text-gray-800">
+                <span>Total</span>
+                <span>
+                  {data.nominasi.toLocaleString("id-ID", {
+                    maximumFractionDigits: 2,
+                  })}{" "}
+                  KL
+                </span>
+              </div>
             </div>
           </div>
-        </div>
         )}
 
         {/* Penyaluran */}
         {(graphicJenisData.length === 0 || graphicJenisData.includes("Penyaluran")) && (
-        <div>
-          <p className="text-xs font-bold text-gray-500 mb-1">Penyaluran</p>
-          <div className="space-y-1">
-            {Object.keys(data)
-              .filter((k) => k.endsWith("_realisasi") && data[k] > 0)
-              .map((k) => {
-                const product = k.replace("_realisasi", "");
-                return (
-                  <div
-                    key={k}
-                    className="flex items-center justify-between gap-3 text-xs"
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <span
-                        className="w-2 h-2 rounded-full"
-                        style={{ backgroundColor: getProductColor(product) }}
-                      />
-                      <span className="text-gray-600">{product}</span>
+          <div>
+            <p className="text-xs font-bold text-gray-500 mb-1">Penyaluran</p>
+            <div className="space-y-1">
+              {Object.keys(data)
+                .filter((k) => k.endsWith("_realisasi") && data[k] > 0)
+                .map((k) => {
+                  const product = k.replace("_realisasi", "");
+                  return (
+                    <div
+                      key={k}
+                      className="flex items-center justify-between gap-3 text-xs"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className="w-2 h-2 rounded-full"
+                          style={{ backgroundColor: getProductColor(product) }}
+                        />
+                        <span className="text-gray-600">{product}</span>
+                      </div>
+                      <span className="font-semibold text-gray-900">
+                        {data[k].toLocaleString("id-ID", {
+                          maximumFractionDigits: 2,
+                        })}
+                      </span>
                     </div>
-                    <span className="font-semibold text-gray-900">
-                      {data[k].toLocaleString("id-ID", {
-                        maximumFractionDigits: 2,
-                      })}
-                    </span>
-                  </div>
-                );
-              })}
-            <div className="pt-1 mt-1 border-t border-gray-100 flex justify-between text-xs font-bold text-gray-800">
-              <span>Total</span>
-              <span>
-                {data.realisasi.toLocaleString("id-ID", {
-                  maximumFractionDigits: 2,
-                })}{" "}
-                KL
-              </span>
+                  );
+                })}
+              <div className="pt-1 mt-1 border-t border-gray-100 flex justify-between text-xs font-bold text-gray-800">
+                <span>Total</span>
+                <span>
+                  {data.realisasi.toLocaleString("id-ID", {
+                    maximumFractionDigits: 2,
+                  })}{" "}
+                  KL
+                </span>
+              </div>
             </div>
           </div>
-        </div>
         )}
 
         {/* Penerimaan */}
         {(graphicJenisData.length === 0 || graphicJenisData.includes("Penerimaan")) && (
-        <div>
-          <p className="text-xs font-bold text-gray-500 mb-1">Penerimaan</p>
-          <div className="space-y-1">
-            {Object.keys(data)
-              .filter((k) => k.endsWith("_penerimaan") && data[k] > 0)
-              .map((k) => {
-                const product = k.replace("_penerimaan", "");
-                return (
-                  <div
-                    key={k}
-                    className="flex items-center justify-between gap-3 text-xs"
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <span
-                        className="w-2 h-2 rounded-full"
-                        style={{ backgroundColor: getProductColor(product) }}
-                      />
-                      <span className="text-gray-600">{product}</span>
+          <div>
+            <p className="text-xs font-bold text-gray-500 mb-1">Penerimaan</p>
+            <div className="space-y-1">
+              {Object.keys(data)
+                .filter((k) => k.endsWith("_penerimaan") && data[k] > 0)
+                .map((k) => {
+                  const product = k.replace("_penerimaan", "");
+                  return (
+                    <div
+                      key={k}
+                      className="flex items-center justify-between gap-3 text-xs"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className="w-2 h-2 rounded-full"
+                          style={{ backgroundColor: getProductColor(product) }}
+                        />
+                        <span className="text-gray-600">{product}</span>
+                      </div>
+                      <span className="font-semibold text-gray-900">
+                        {data[k].toLocaleString("id-ID", {
+                          maximumFractionDigits: 2,
+                        })}
+                      </span>
                     </div>
-                    <span className="font-semibold text-gray-900">
-                      {data[k].toLocaleString("id-ID", {
-                        maximumFractionDigits: 2,
-                      })}
-                    </span>
-                  </div>
-                );
-              })}
-            <div className="pt-1 mt-1 border-t border-gray-100 flex justify-between text-xs font-bold text-gray-800">
-              <span>Total</span>
-              <span>
-                {data.penerimaan.toLocaleString("id-ID", {
-                  maximumFractionDigits: 2,
-                })}{" "}
-                KL
-              </span>
+                  );
+                })}
+              <div className="pt-1 mt-1 border-t border-gray-100 flex justify-between text-xs font-bold text-gray-800">
+                <span>Total</span>
+                <span>
+                  {data.penerimaan.toLocaleString("id-ID", {
+                    maximumFractionDigits: 2,
+                  })}{" "}
+                  KL
+                </span>
+              </div>
             </div>
           </div>
-        </div>
         )}
 
         {/* Renominasi */}
         {(graphicJenisData.length === 0 || graphicJenisData.includes("Renominasi")) && (
-        <div>
-          <p className="text-xs font-bold text-gray-500 mb-1">Renominasi</p>
-          <div className="space-y-1">
-            {Object.keys(data)
-              .filter((k) => k.endsWith("_renominasi") && data[k] > 0)
-              .map((k) => {
-                const product = k.replace("_renominasi", "");
-                return (
-                  <div
-                    key={k}
-                    className="flex items-center justify-between gap-3 text-xs"
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <span
-                        className="w-2 h-2 rounded-full"
-                        style={{ backgroundColor: getProductColor(product) }}
-                      />
-                      <span className="text-gray-600">{product}</span>
+          <div>
+            <p className="text-xs font-bold text-gray-500 mb-1">Renominasi</p>
+            <div className="space-y-1">
+              {Object.keys(data)
+                .filter((k) => k.endsWith("_renominasi") && data[k] > 0)
+                .map((k) => {
+                  const product = k.replace("_renominasi", "");
+                  return (
+                    <div
+                      key={k}
+                      className="flex items-center justify-between gap-3 text-xs"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className="w-2 h-2 rounded-full"
+                          style={{ backgroundColor: getProductColor(product) }}
+                        />
+                        <span className="text-gray-600">{product}</span>
+                      </div>
+                      <span className="font-semibold text-gray-900">
+                        {data[k].toLocaleString("id-ID", {
+                          maximumFractionDigits: 2,
+                        })}
+                      </span>
                     </div>
-                    <span className="font-semibold text-gray-900">
-                      {data[k].toLocaleString("id-ID", {
-                        maximumFractionDigits: 2,
-                      })}
-                    </span>
-                  </div>
-                );
-              })}
-            <div className="pt-1 mt-1 border-t border-gray-100 flex justify-between text-xs font-bold text-gray-800">
-              <span>Total</span>
-              <span>
-                {(data.renominasi || 0).toLocaleString("id-ID", {
-                  maximumFractionDigits: 2,
-                })}{" "}
-                KL
-              </span>
+                  );
+                })}
+              <div className="pt-1 mt-1 border-t border-gray-100 flex justify-between text-xs font-bold text-gray-800">
+                <span>Total</span>
+                <span>
+                  {(data.renominasi || 0).toLocaleString("id-ID", {
+                    maximumFractionDigits: 2,
+                  })}{" "}
+                  KL
+                </span>
+              </div>
             </div>
           </div>
-        </div>
         )}
 
         {/* Pemakaian */}
         {(graphicJenisData.length === 0 || graphicJenisData.includes("Pemakaian")) && (
-        <div>
-          <p className="text-xs font-bold text-gray-500 mb-1">Pemakaian</p>
-          <div className="space-y-1">
-            {Object.keys(data)
-              .filter((k) => k.endsWith("_pemakaian") && data[k] > 0)
-              .map((k) => {
-                const product = k.replace("_pemakaian", "");
-                return (
-                  <div
-                    key={k}
-                    className="flex items-center justify-between gap-3 text-xs"
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <span
-                        className="w-2 h-2 rounded-full"
-                        style={{ backgroundColor: getProductColor(product) }}
-                      />
-                      <span className="text-gray-600">{product}</span>
+          <div>
+            <p className="text-xs font-bold text-gray-500 mb-1">Pemakaian</p>
+            <div className="space-y-1">
+              {Object.keys(data)
+                .filter((k) => k.endsWith("_pemakaian") && data[k] > 0)
+                .map((k) => {
+                  const product = k.replace("_pemakaian", "");
+                  return (
+                    <div
+                      key={k}
+                      className="flex items-center justify-between gap-3 text-xs"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className="w-2 h-2 rounded-full"
+                          style={{ backgroundColor: getProductColor(product) }}
+                        />
+                        <span className="text-gray-600">{product}</span>
+                      </div>
+                      <span className="font-semibold text-gray-900">
+                        {data[k].toLocaleString("id-ID", {
+                          maximumFractionDigits: 2,
+                        })}
+                      </span>
                     </div>
-                    <span className="font-semibold text-gray-900">
-                      {data[k].toLocaleString("id-ID", {
-                        maximumFractionDigits: 2,
-                      })}
-                    </span>
-                  </div>
-                );
-              })}
-            <div className="pt-1 mt-1 border-t border-gray-100 flex justify-between text-xs font-bold text-gray-800">
-              <span>Total</span>
-              <span>
-                {data.pemakaian.toLocaleString("id-ID", {
-                  maximumFractionDigits: 2,
-                })}{" "}
-                KL
-              </span>
+                  );
+                })}
+              <div className="pt-1 mt-1 border-t border-gray-100 flex justify-between text-xs font-bold text-gray-800">
+                <span>Total</span>
+                <span>
+                  {data.pemakaian.toLocaleString("id-ID", {
+                    maximumFractionDigits: 2,
+                  })}{" "}
+                  KL
+                </span>
+              </div>
             </div>
           </div>
-        </div>
         )}
       </div>
     </div>
@@ -506,16 +506,21 @@ export default function Home() {
   const formattedNominationPeriod = useMemo(() => {
     try {
       if (!nominationStartDate || !nominationEndDate) return "";
-      const start = new Date(nominationStartDate + "T00:00:00").toLocaleDateString("id-ID", {
+      const start = new Date(
+        nominationStartDate + "T00:00:00",
+      ).toLocaleDateString("id-ID", {
         day: "numeric",
         month: "short",
         year: "numeric",
       });
-      const end = new Date(nominationEndDate + "T00:00:00").toLocaleDateString("id-ID", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      });
+      const end = new Date(nominationEndDate + "T00:00:00").toLocaleDateString(
+        "id-ID",
+        {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+        },
+      );
       return `${start} - ${end}`;
     } catch {
       return `${nominationStartDate} - ${nominationEndDate}`;
@@ -525,16 +530,21 @@ export default function Home() {
   const formattedTopSuppliersPeriod = useMemo(() => {
     try {
       if (!topSuppliersStart || !topSuppliersEnd) return "";
-      const start = new Date(topSuppliersStart + "T00:00:00").toLocaleDateString("id-ID", {
+      const start = new Date(
+        topSuppliersStart + "T00:00:00",
+      ).toLocaleDateString("id-ID", {
         day: "numeric",
         month: "short",
         year: "numeric",
       });
-      const end = new Date(topSuppliersEnd + "T00:00:00").toLocaleDateString("id-ID", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      });
+      const end = new Date(topSuppliersEnd + "T00:00:00").toLocaleDateString(
+        "id-ID",
+        {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+        },
+      );
       return `${start} - ${end}`;
     } catch {
       return `${topSuppliersStart} - ${topSuppliersEnd}`;
@@ -544,16 +554,22 @@ export default function Home() {
   const formattedTopPlantsPeriod = useMemo(() => {
     try {
       if (!topPlantsStart || !topPlantsEnd) return "";
-      const start = new Date(topPlantsStart + "T00:00:00").toLocaleDateString("id-ID", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      });
-      const end = new Date(topPlantsEnd + "T00:00:00").toLocaleDateString("id-ID", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      });
+      const start = new Date(topPlantsStart + "T00:00:00").toLocaleDateString(
+        "id-ID",
+        {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+        },
+      );
+      const end = new Date(topPlantsEnd + "T00:00:00").toLocaleDateString(
+        "id-ID",
+        {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+        },
+      );
       return `${start} - ${end}`;
     } catch {
       return `${topPlantsStart} - ${topPlantsEnd}`;
@@ -1364,8 +1380,8 @@ export default function Home() {
                       <button
                         onClick={() => setChartMode("akumulasi")}
                         className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${chartMode === "akumulasi"
-                          ? "bg-white text-gray-900 shadow-sm"
-                          : "text-gray-500 hover:text-gray-700"
+                            ? "bg-white text-gray-900 shadow-sm"
+                            : "text-gray-500 hover:text-gray-700"
                           }`}
                       >
                         Grafik Akumulasi
@@ -1373,8 +1389,8 @@ export default function Home() {
                       <button
                         onClick={() => setChartMode("realisasi-moda")}
                         className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${chartMode === "realisasi-moda"
-                          ? "bg-white text-gray-900 shadow-sm"
-                          : "text-gray-500 hover:text-gray-700"
+                            ? "bg-white text-gray-900 shadow-sm"
+                            : "text-gray-500 hover:text-gray-700"
                           }`}
                       >
                         Penyaluran Harian
@@ -1391,8 +1407,8 @@ export default function Home() {
                           setGraphicEnd(formatLocalISODate(end));
                         }}
                         className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${chartMode === "nasional"
-                          ? "bg-white text-gray-900 shadow-sm"
-                          : "text-gray-500 hover:text-gray-700"
+                            ? "bg-white text-gray-900 shadow-sm"
+                            : "text-gray-500 hover:text-gray-700"
                           }`}
                       >
                         Grafik Tren
@@ -1484,17 +1500,17 @@ export default function Home() {
                         <CartesianGrid
                           strokeDasharray="3 3"
                           vertical={false}
-                          stroke="#f3f4f6"
+                          stroke="var(--border)"
                         />
                         <XAxis
                           dataKey="name"
                           tick={<CustomXAxisTick />}
-                          axisLine={{ stroke: "#e5e7eb" }}
+                          axisLine={{ stroke: "var(--border)" }}
                           tickLine={false}
                           height={80}
                         />
                         <YAxis
-                          tick={{ fill: "#6b7280", fontSize: 11 }}
+                          tick={{ fill: "var(--text-muted)", fontSize: 11 }}
                           axisLine={false}
                           tickLine={false}
                           tickFormatter={(value) => {
@@ -1514,32 +1530,32 @@ export default function Home() {
                             if (graphicJenisData.length === 0 || graphicJenisData.includes("Penerimaan")) orderLabels.push("Penerimaan");
                             if (graphicJenisData.length === 0 || graphicJenisData.includes("Renominasi")) orderLabels.push("Renominasi");
                             if (graphicJenisData.length === 0 || graphicJenisData.includes("Pemakaian")) orderLabels.push("Pemakaian");
-                            
+
                             return (
-                            <div className="flex flex-col items-center gap-2 mb-4">
-                              <div className="flex justify-center items-center flex-wrap gap-4">
-                                {filterProductOptions.map((product) => (
-                                  <div
-                                    key={product}
-                                    className="flex items-center gap-2"
-                                  >
-                                    <span
-                                      className="w-2.5 h-2.5 rounded-full"
-                                      style={{
-                                        backgroundColor:
-                                          getProductColor(product),
-                                      }}
-                                    />
-                                    <span className="text-xs font-medium text-gray-600">
-                                      {product}
-                                    </span>
-                                  </div>
-                                ))}
+                              <div className="flex flex-col items-center gap-2 mb-4">
+                                <div className="flex justify-center items-center flex-wrap gap-4">
+                                  {filterProductOptions.map((product) => (
+                                    <div
+                                      key={product}
+                                      className="flex items-center gap-2"
+                                    >
+                                      <span
+                                        className="w-2.5 h-2.5 rounded-full"
+                                        style={{
+                                          backgroundColor:
+                                            getProductColor(product),
+                                        }}
+                                      />
+                                      <span className="text-xs font-medium text-gray-600">
+                                        {product}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                                <div className="text-[10px] text-gray-500 bg-gray-50 px-3 py-1 rounded-full border border-gray-100">
+                                  Urutan Kolom (kiri ke kanan): <span className="font-semibold text-gray-700">{orderLabels.join(" • ")}</span>
+                                </div>
                               </div>
-                              <div className="text-[10px] text-gray-500 bg-gray-50 px-3 py-1 rounded-full border border-gray-100">
-                                Urutan Kolom (kiri ke kanan): <span className="font-semibold text-gray-700">{orderLabels.join(" • ")}</span>
-                              </div>
-                            </div>
                             );
                           }}
                         />
@@ -1666,15 +1682,15 @@ export default function Home() {
                     chartMode === "nasional"
                       ? ["Waktu"]
                       : [
-                          "Waktu",
-                          "Pembangkit",
-                          "Pemasok",
-                          "Jenis KIT",
-                          "Instansi/Unit",
-                          "UPK",
-                          "Region",
-                          "Moda Transportasi",
-                        ]
+                        "Waktu",
+                        "Pembangkit",
+                        "Pemasok",
+                        "Jenis KIT",
+                        "Instansi/Unit",
+                        "UPK",
+                        "Region",
+                        "Moda Transportasi",
+                      ]
                   }
                   value={graphicXAxisMode}
                   onChange={(val) => {

@@ -25,7 +25,7 @@ export default function Card({
 }: CardProps) {
   return (
     <div
-      className={`bg-white rounded-xl border border-gray-200 ${paddingClasses[padding]} ${className}`}
+      className={`bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 rounded-xl border border-gray-200 dark:border-slate-700 ${paddingClasses[padding]} ${className}`}
       style={style}
     >
       {children}
@@ -46,11 +46,13 @@ export function CardHeader({ title, description, action }: CardHeaderProps) {
   return (
     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
       <div>
-        <h3 className="text-base md:text-lg font-semibold text-gray-900">
+        <h3 className="text-base md:text-lg font-semibold text-gray-900 dark:text-slate-100">
           {title}
         </h3>
         {description && (
-          <p className="text-xs md:text-sm text-gray-500 mt-1">{description}</p>
+          <p className="text-xs md:text-sm text-gray-500 dark:text-slate-400 mt-1">
+            {description}
+          </p>
         )}
       </div>
       {action && <div>{action}</div>}

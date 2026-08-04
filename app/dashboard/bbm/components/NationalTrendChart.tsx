@@ -187,15 +187,15 @@ export function NationalTrendChart({
               <CartesianGrid
                 strokeDasharray="3 3"
                 vertical={false}
-                stroke="#F3F4F6"
+                stroke="var(--border)"
               />
               <XAxis
                 dataKey="time"
-                tick={{ fill: "#6B7280" }}
-                axisLine={{ stroke: "#E5E7EB" }}
+                tick={{ fill: "var(--text-muted)" }}
+                axisLine={{ stroke: "var(--border)" }}
               />
               <YAxis
-                tick={{ fill: "#6B7280" }}
+                tick={{ fill: "var(--text-muted)" }}
                 axisLine={false}
                 tickFormatter={(value) => {
                   if (value >= 1000000)
@@ -212,7 +212,10 @@ export function NationalTrendChart({
                     "",
                   ];
                 }}
-                labelStyle={{ color: "#374151", fontWeight: "bold" }}
+                labelStyle={{
+                  color: "var(--text-primary)",
+                  fontWeight: "bold",
+                }}
               />
               <Legend iconType="circle" wrapperStyle={{ paddingTop: "20px" }} />
               {lines.map((lineKey, index) => (

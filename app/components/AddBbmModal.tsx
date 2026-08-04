@@ -34,7 +34,8 @@ export default function AddBbmModal({ setOpenModal, onSuccess }: Props) {
   });
 
   const tbbmData = rawTbbmData?.filter((p) => p.commodity === "BBM") || [];
-  const pembangkitData = rawPembangkitData?.filter((p) => p.commodity === "BBM") || [];
+  const pembangkitData =
+    rawPembangkitData?.filter((p) => p.commodity === "BBM") || [];
 
   const handleSave = async () => {
     try {
@@ -136,7 +137,7 @@ export default function AddBbmModal({ setOpenModal, onSuccess }: Props) {
                   sx={{
                     "& .MuiOutlinedInput-root": {
                       borderRadius: "0.75rem",
-                      backgroundColor: "white",
+                      backgroundColor: "var(--surface)",
                     },
                   }}
                 />
@@ -179,7 +180,7 @@ export default function AddBbmModal({ setOpenModal, onSuccess }: Props) {
                   sx={{
                     "& .MuiOutlinedInput-root": {
                       borderRadius: "0.75rem",
-                      backgroundColor: "white",
+                      backgroundColor: "var(--surface)",
                     },
                   }}
                 />
