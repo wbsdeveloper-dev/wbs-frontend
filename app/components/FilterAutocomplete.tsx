@@ -7,12 +7,12 @@ const StyledAutocomplete = styled(Autocomplete)({
   "& .MuiOutlinedInput-root": {
     padding: "4px 8px",
     borderRadius: "8px",
-    backgroundColor: "white",
+    backgroundColor: "var(--surface)",
     "& fieldset": {
-      borderColor: "#d1d5db",
+      borderColor: "var(--border)",
     },
     "&:hover fieldset": {
-      borderColor: "#9ca3af",
+      borderColor: "var(--border-strong)",
     },
     "&.Mui-focused fieldset": {
       borderColor: "#3b82f6",
@@ -56,17 +56,25 @@ export default function FilterAutocomplete({
         multiple={multiple}
         disableCloseOnSelect={multiple}
         options={options}
-        value={multiple ? (value || []) : (value || null)}
+        value={multiple ? value || [] : value || null}
         onChange={(_, newValue) => onChange(newValue)}
-        renderOption={multiple ? (props, option, { selected }) => {
-          const { key, ...otherProps } = props as any;
-          return (
-            <li key={key} {...otherProps}>
-              <Checkbox style={{ marginRight: 8 }} checked={selected} size="small" />
-              {option}
-            </li>
-          );
-        } : undefined}
+        renderOption={
+          multiple
+            ? (props, option, { selected }) => {
+                const { key, ...otherProps } = props as any;
+                return (
+                  <li key={key} {...otherProps}>
+                    <Checkbox
+                      style={{ marginRight: 8 }}
+                      checked={selected}
+                      size="small"
+                    />
+                    {option}
+                  </li>
+                );
+              }
+            : undefined
+        }
         renderInput={(params) => (
           <TextField
             {...params}

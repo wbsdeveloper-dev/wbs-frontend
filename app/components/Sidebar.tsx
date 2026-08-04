@@ -4,7 +4,6 @@ import {
   LayoutDashboard,
   Database,
   FileText,
-  Settings,
   LogOut,
   Bot,
   Reply,
@@ -22,7 +21,6 @@ import {
   Fuel,
   Wind,
   Bell,
-  History,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -30,6 +28,7 @@ import { useRouter } from "next/navigation";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/components/providers/auth-provider";
+import ThemeToggle from "@/components/ui/ThemeToggle";
 import { usePrivilege, type Resource } from "@/hooks/usePrivilege";
 import { useNotifications } from "@/hooks/service/notification-api";
 
@@ -38,7 +37,7 @@ export default function Sidebar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const { hasPrivilege } = usePrivilege();
-  
+
   const canReadNotification = hasPrivilege("notification", "READ");
 
   const { data: notificationsData } = useNotifications(
@@ -326,7 +325,7 @@ export default function Sidebar() {
                 alt="PLN logo"
                 width={110}
                 height={30}
-                className={`transition-none ${isCollapsed ? "opacity-0" : "opacity-100"}`}
+                className={`theme-logo-surface transition-none ${isCollapsed ? "opacity-0" : "opacity-100"}`}
               />
             </div>
             {!isMobile && (
@@ -350,7 +349,7 @@ export default function Sidebar() {
               alt="PLN logo"
               width={30}
               height={30}
-              className={`transition-none ${!isCollapsed ? "opacity-0" : "opacity-100"}`}
+              className={`theme-logo-surface transition-none ${!isCollapsed ? "opacity-0" : "opacity-100"}`}
             />
 
             <button
@@ -576,12 +575,14 @@ export default function Sidebar() {
             <Reply className="w-5 h-5" />
             {(!isCollapsed || isMobile) && <span>Pilih Dashboard</span>}
           </Link>
-          <button
-            className={`flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-gray-600 hover:text-primary hover:bg-gray-100 rounded-xl cursor-pointer w-full transition-all duration-200 hover:scale-[1.03] ${isCollapsed && !isMobile ? "justify-center" : ""}`}
-          >
-            <Settings className="w-5 h-5" />
-            {(!isCollapsed || isMobile) && <span>Pengaturan</span>}
-          </button>
+          <ThemeToggle
+            compact={isCollapsed && !isMobile}
+            className={`w-full ${
+              isCollapsed && !isMobile
+                ? "mx-auto"
+                : "justify-start border-0 shadow-none"
+            }`}
+          />
           <button
             onClick={logout}
             className={`flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-red-500 hover:text-red-600 hover:bg-red-50 rounded-xl cursor-pointer w-full transition-all duration-200 hover:scale-[1.03] ${isCollapsed && !isMobile ? "justify-center" : ""}`}

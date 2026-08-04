@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { createPortal } from "react-dom";
 import {
   Pencil,
   Trash2,
-  Download,
   Search,
   Menu,
   ChevronLeft,
@@ -22,7 +21,6 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type {
-  MonitoringRecord,
   MonitoringPagination,
   MonitoringParams,
 } from "@/hooks/service/monitoring-api";
@@ -74,34 +72,34 @@ function DeleteConfirmModal({
   itemName,
   isDeleting,
 }: DeleteConfirmModalProps) {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-
-  if (!mounted || !open) return null;
+  if (!open) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
-        <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-200">
-          <Trash2 className="w-6 h-6 text-red-500" />
-          <h2 className="text-lg font-semibold text-gray-900">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 dark:bg-black/70 backdrop-blur-sm">
+      <div className="bg-white dark:bg-slate-900 border border-transparent dark:border-slate-700 rounded-2xl shadow-2xl w-full max-w-md">
+        <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-200 dark:border-slate-700">
+          <Trash2 className="w-6 h-6 text-red-500 dark:text-red-400" />
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-slate-100">
             Konfirmasi Hapus
           </h2>
         </div>
         <div className="p-6">
-          <p className="text-sm text-gray-700 mb-4">
+          <p className="text-sm text-gray-700 dark:text-slate-300 mb-4">
             Apakah Anda yakin ingin menghapus record{" "}
-            <span className="font-semibold text-gray-900">{itemName}</span>?
+            <span className="font-semibold text-gray-900 dark:text-slate-100">
+              {itemName}
+            </span>
+            ?
           </p>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-600 dark:text-slate-400">
             Tindakan ini tidak dapat dibatalkan.
           </p>
         </div>
-        <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-gray-200">
+        <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-gray-200 dark:border-slate-700">
           <button
             onClick={onClose}
             disabled={isDeleting}
-            className="px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-all duration-200 disabled:opacity-50"
+            className="px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-slate-200 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-all duration-200 disabled:opacity-50"
           >
             Batal
           </button>
@@ -143,13 +141,26 @@ const formatNormalizeText = (text: string) => {
 // ---------------------------------------------------------------------------
 
 const StatusBadge = ({ status }: { status: string }) => {
-  const config: Record<string, { bg: string; text: string; dot: string; label?: string }> = {
-    DI_BAWAH_TOP: { bg: "bg-red-50", text: "text-red-700", dot: "bg-red-500", label: "Di Bawah TOP" },
-    DATA_HILANG: { bg: "bg-amber-50", text: "text-amber-700", dot: "bg-amber-500", label: "Data Hilang" },
+  const config: Record<
+    string,
+    { bg: string; text: string; dot: string; label?: string }
+  > = {
+    DI_BAWAH_TOP: {
+      bg: "bg-red-50 dark:bg-red-950/50 dark:ring-1 dark:ring-inset dark:ring-red-500/25",
+      text: "text-red-700 dark:text-red-300",
+      dot: "bg-red-500 dark:bg-red-400",
+      label: "Di Bawah TOP",
+    },
+    DATA_HILANG: {
+      bg: "bg-amber-50 dark:bg-amber-950/50 dark:ring-1 dark:ring-inset dark:ring-amber-500/25",
+      text: "text-amber-700 dark:text-amber-300",
+      dot: "bg-amber-500 dark:bg-amber-400",
+      label: "Data Hilang",
+    },
   };
   const c = config[status] ?? {
-    bg: "bg-gray-100",
-    text: "text-gray-700",
+    bg: "bg-gray-100 dark:bg-slate-700",
+    text: "text-gray-700 dark:text-slate-200",
     dot: "bg-gray-400",
   };
 
@@ -182,11 +193,11 @@ const ActionButtons = ({
   canUpdate: boolean;
   canDelete: boolean;
 }) => (
-  <div className="flex items-center justify-center gap-1">
+  <div className="flex items-center justify-center gap-1.5">
     {canUpdate && (
       <button
         onClick={() => onEdit(id)}
-        className="p-1.5 text-primary hover:bg-primary/10 rounded-lg transition-colors"
+        className="p-2 text-primary dark:text-cyan-300 hover:bg-primary/10 dark:hover:bg-cyan-400/10 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
         title="Edit"
       >
         <Pencil size={16} />
@@ -195,7 +206,7 @@ const ActionButtons = ({
     {canDelete && (
       <button
         onClick={() => onDelete(id)}
-        className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+        className="p-2 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
         title="Hapus"
       >
         <Trash2 size={16} />
@@ -267,7 +278,7 @@ export default function NotificationDataTable({
   }, [paginatedRecords, sortField, sortDir]);
 
   // Sort icon helper
-  const SortIcon = ({ field }: { field: SortField }) => {
+  const renderSortIcon = (field: SortField) => {
     if (sortField !== field)
       return <ChevronsUpDown size={12} className="ml-1 opacity-40" />;
     return sortDir === "asc" ? (
@@ -278,28 +289,33 @@ export default function NotificationDataTable({
   };
 
   // Sortable header helper
-  const Th = ({
-    label,
-    field,
-    align = "center",
-  }: {
-    label: string;
-    field?: SortField;
-    align?: "left" | "center" | "right";
-  }) => (
-    <th
-      className={`px-4 py-3 text-${align} text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap ${field
-        ? "cursor-pointer select-none hover:bg-gray-100 transition-colors"
-        : ""
+  const renderHeader = (
+    label: string,
+    field?: SortField,
+    align: "left" | "center" | "right" = "center",
+  ) => {
+    const alignmentClass = {
+      left: "text-left",
+      center: "text-center",
+      right: "text-right",
+    }[align];
+
+    return (
+      <th
+        className={`px-4 py-3.5 ${alignmentClass} text-xs font-semibold text-gray-600 dark:text-slate-300 uppercase tracking-wider whitespace-nowrap ${
+          field
+            ? "cursor-pointer select-none hover:bg-gray-100 dark:hover:bg-slate-700/70 transition-colors"
+            : ""
         }`}
-      onClick={field ? () => handleSort(field) : undefined}
-    >
-      <span className="inline-flex items-center justify-center">
-        {label}
-        {field && <SortIcon field={field} />}
-      </span>
-    </th>
-  );
+        onClick={field ? () => handleSort(field) : undefined}
+      >
+        <span className="inline-flex items-center justify-center">
+          {label}
+          {field && renderSortIcon(field)}
+        </span>
+      </th>
+    );
+  };
 
   // 4-decimal formatter
   const fmt4 = (val: number | null | undefined): string => {
@@ -399,7 +415,7 @@ export default function NotificationDataTable({
     <>
       {/* Success toast */}
       {showDeleteSuccess && (
-        <div className="mb-4 flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm font-medium animate-fade-in">
+        <div className="mb-4 flex items-center gap-2 bg-green-50 dark:bg-emerald-950/50 border border-green-200 dark:border-emerald-500/30 text-green-700 dark:text-emerald-300 px-4 py-3 rounded-xl text-sm font-medium animate-fade-in">
           <CheckCircle2 size={18} />
           Data berhasil dihapus
         </div>
@@ -407,18 +423,18 @@ export default function NotificationDataTable({
 
       {/* Error toast */}
       {deleteError && (
-        <div className="mb-4 flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm font-medium">
+        <div className="mb-4 flex items-center gap-2 bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-300 px-4 py-3 rounded-xl text-sm font-medium">
           <AlertCircle size={18} />
           {deleteError}
         </div>
       )}
 
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+      <div className="overflow-hidden bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-700/80 shadow-sm dark:shadow-xl dark:shadow-black/20">
         {/* Table Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
-          <div className="flex items-center gap-1.5">
-            <Menu size={20} className="text-gray-500" />
-            <span className="text-sm font-medium text-gray-700">
+        <div className="flex items-center justify-between px-4 py-3.5 border-b border-gray-200 dark:border-slate-700/80 bg-white dark:bg-slate-900">
+          <div className="flex items-center gap-2">
+            <Menu size={20} className="text-gray-500 dark:text-slate-400" />
+            <span className="text-sm font-semibold text-gray-700 dark:text-slate-100">
               Tabel Monitoring Data
             </span>
           </div>
@@ -426,10 +442,11 @@ export default function NotificationDataTable({
             {filtersEnabled && (
               <button
                 onClick={() => setShowFilters((v) => !v)}
-                className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-all duration-200 ${showFilters || activeFilterCount > 0
-                  ? "bg-primary text-white border-primary"
-                  : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                  }`}
+                className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-all duration-200 ${
+                  showFilters || activeFilterCount > 0
+                    ? "bg-primary text-white border-primary shadow-sm"
+                    : "bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-200 border-gray-300 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700"
+                }`}
               >
                 <Filter size={16} />
                 Filter
@@ -449,7 +466,7 @@ export default function NotificationDataTable({
 
         {/* Filter Panel */}
         {filtersEnabled && showFilters && (
-          <div className="px-4 py-4 border-b border-gray-200 bg-gray-50/50">
+          <div className="px-4 py-4 border-b border-gray-200 dark:border-slate-700/80 bg-gray-50/50 dark:bg-slate-950/45">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {/* ID filter */}
               <div>
@@ -633,36 +650,38 @@ export default function NotificationDataTable({
         )}
 
         {/* Status Legend */}
-        <div className="px-4 py-3 bg-white border-b border-gray-200 flex flex-wrap items-center gap-x-6 gap-y-3">
-          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Legenda Status:</span>
+        <div className="px-4 py-3 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700/80 flex flex-wrap items-center gap-x-6 gap-y-3">
+          <span className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
+            Legenda Status:
+          </span>
 
-          <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
+          <div className="flex items-center gap-2 bg-gray-50 dark:bg-slate-800/70 px-3 py-1.5 rounded-lg border border-gray-100 dark:border-slate-700">
             <StatusBadge status="DI_BAWAH_TOP" />
             <StatusBadge status="DATA_HILANG" />
           </div>
         </div>
 
         {/* Table Body */}
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto bg-white dark:bg-slate-900">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50">
+            <thead className="bg-gray-50 dark:bg-slate-800/90">
               <tr>
-                <Th label="No" />
-                <Th label="Tanggal" field="reportDate" />
-                <Th label="Pemasok" field="supplierName" align="left" />
-                <Th label="Pembangkit" field="siteName" align="left" />
-                <Th label="Metrik" field="metricType" />
-                <Th label="Nilai Final" field="finalValue" />
-                <Th label="Status" field="status" />
-                {hasAction && <Th label="Aksi" />}
+                {renderHeader("No")}
+                {renderHeader("Tanggal", "reportDate")}
+                {renderHeader("Pemasok", "supplierName", "left")}
+                {renderHeader("Pembangkit", "siteName", "left")}
+                {renderHeader("Metrik", "metricType")}
+                {renderHeader("Nilai Final", "finalValue")}
+                {renderHeader("Status", "status")}
+                {hasAction && renderHeader("Aksi")}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-gray-100 dark:divide-slate-700/70 bg-white dark:bg-slate-900">
               {isLoading ? (
                 <tr>
                   <td
                     colSpan={hasAction ? 8 : 7}
-                    className="px-4 py-8 text-center text-gray-500"
+                    className="px-4 py-10 text-center text-gray-500 dark:text-slate-400 bg-white dark:bg-slate-900"
                   >
                     <div className="flex items-center justify-center gap-2">
                       <Loader2
@@ -677,7 +696,7 @@ export default function NotificationDataTable({
                 <tr>
                   <td
                     colSpan={hasAction ? 8 : 7}
-                    className="px-4 py-8 text-center text-gray-500"
+                    className="px-4 py-10 text-center text-gray-500 dark:text-slate-400 bg-white dark:bg-slate-900"
                   >
                     Tidak ada data monitoring
                   </td>
@@ -686,34 +705,35 @@ export default function NotificationDataTable({
                 sortedRecords.map((record, index) => (
                   <tr
                     key={record.id}
-                    className={`transition-colors ${!record.isRead
-                      ? "bg-blue-50/70 hover:bg-blue-100/60 border border-l-4 border-l-blue-300"
-                      : "hover:bg-gray-50"
-                      }`}
+                    className={`group transition-colors duration-150 ${
+                      !record.isRead
+                        ? "bg-cyan-50/70 hover:bg-cyan-50 dark:bg-cyan-950/25 dark:hover:bg-cyan-900/30 border-l-[3px] border-l-cyan-400 dark:border-l-cyan-400"
+                        : "bg-white hover:bg-gray-50/80 dark:bg-slate-900 dark:hover:bg-slate-800/70 border-l-[3px] border-l-transparent"
+                    }`}
                   >
-                    <td className="px-4 py-3 text-center text-gray-700">
+                    <td className="px-4 py-3.5 text-center text-gray-700 dark:text-slate-400">
                       {startIndex + index + 1}
                     </td>
-                    <td className="px-4 py-3 text-center text-gray-700 whitespace-nowrap">
+                    <td className="px-4 py-3.5 text-center text-gray-700 dark:text-slate-300 whitespace-nowrap">
                       {record.reportDate}
                     </td>
-                    <td className="px-4 py-3 text-gray-900">
+                    <td className="px-4 py-3.5 text-gray-900 dark:text-slate-100 font-medium">
                       {record.supplierName ?? "-"}
                     </td>
-                    <td className="px-4 py-3 text-gray-900">
+                    <td className="px-4 py-3.5 text-gray-900 dark:text-slate-100 font-medium">
                       {record.siteName}
                     </td>
-                    <td className="px-4 py-3 text-center text-gray-700 whitespace-nowrap">
+                    <td className="px-4 py-3.5 text-center text-gray-700 dark:text-slate-300 whitespace-nowrap">
                       {formatNormalizeText(record.metricType)}
                     </td>
-                    <td className="px-4 py-3 text-center text-gray-700 font-mono font-medium">
+                    <td className="px-4 py-3.5 text-center text-gray-700 dark:text-slate-200 font-mono font-medium">
                       {fmt4(record.finalValue)}
                     </td>
-                    <td className="px-4 py-3 text-center">
+                    <td className="px-4 py-3.5 text-center">
                       <StatusBadge status={record.status} />
                     </td>
                     {hasAction && (
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3.5">
                         <ActionButtons
                           id={record.id}
                           onEdit={(id) => {
@@ -739,10 +759,10 @@ export default function NotificationDataTable({
 
         {/* Pagination */}
         {!isLoading && (
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-4 py-3 border-t border-gray-200 gap-3">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-4 py-3.5 border-t border-gray-200 dark:border-slate-700/80 bg-white dark:bg-slate-900 gap-3">
             {/* Left: info + page size */}
             <div className="flex items-center gap-3 flex-wrap">
-              <span className="text-sm text-gray-600">
+              <span className="text-sm text-gray-600 dark:text-slate-300">
                 Menampilkan{" "}
                 {totalItems > 0 ? (
                   <>
@@ -755,7 +775,10 @@ export default function NotificationDataTable({
                 data
               </span>
               <div className="flex items-center gap-1.5">
-                <label htmlFor="page-size" className="text-sm text-gray-500">
+                <label
+                  htmlFor="page-size"
+                  className="text-sm text-gray-500 dark:text-slate-400"
+                >
                   Baris:
                 </label>
                 <select
@@ -764,7 +787,7 @@ export default function NotificationDataTable({
                   onChange={(e) => {
                     onPageChange(1, Number(e.target.value));
                   }}
-                  className="px-2 py-1 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-secondary/40 focus:border-secondary transition-all duration-200"
+                  className="px-2 py-1.5 border border-gray-300 dark:border-slate-600 rounded-lg text-sm text-gray-700 dark:text-slate-200 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-secondary/40 focus:border-secondary transition-all duration-200"
                 >
                   {[5, 10, 25, 50].map((size) => (
                     <option key={size} value={size}>
@@ -782,7 +805,7 @@ export default function NotificationDataTable({
                 <button
                   onClick={() => onPageChange(apiPage - 1, itemsPerPage)}
                   disabled={currentPage === 0}
-                  className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="p-1.5 text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   <ChevronLeft size={16} />
                 </button>
@@ -806,7 +829,7 @@ export default function NotificationDataTable({
                     p === "..." ? (
                       <span
                         key={`ellipsis-${idx}`}
-                        className="px-1 text-sm text-gray-400 select-none"
+                        className="px-1 text-sm text-gray-400 dark:text-slate-500 select-none"
                       >
                         …
                       </span>
@@ -814,10 +837,11 @@ export default function NotificationDataTable({
                       <button
                         key={p}
                         onClick={() => onPageChange(p as number, itemsPerPage)}
-                        className={`min-w-[2rem] h-8 rounded-lg text-sm font-medium transition-all duration-200 ${p === displayPage
-                          ? "bg-primary text-white shadow-sm"
-                          : "text-gray-700 hover:bg-gray-100"
-                          }`}
+                        className={`min-w-[2rem] h-8 rounded-lg text-sm font-medium transition-all duration-200 ${
+                          p === displayPage
+                            ? "bg-primary text-white shadow-sm shadow-primary/20"
+                            : "text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700"
+                        }`}
                       >
                         {p}
                       </button>
@@ -829,7 +853,7 @@ export default function NotificationDataTable({
                 <button
                   onClick={() => onPageChange(apiPage + 1, itemsPerPage)}
                   disabled={currentPage >= totalPages - 1}
-                  className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="p-1.5 text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   <ChevronRight size={16} />
                 </button>

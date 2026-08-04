@@ -57,7 +57,7 @@ export function ErrorModal({
           position: "fixed",
           inset: 0,
           zIndex: 9998,
-          backgroundColor: "rgba(0,0,0,0.45)",
+          backgroundColor: "var(--overlay)",
           animation: "errorFadeIn 0.25s ease-out",
         }}
       />
@@ -71,10 +71,11 @@ export function ErrorModal({
           transform: "translate(-50%, -50%)",
           zIndex: 9999,
           width: "min(420px, 90vw)",
-          backgroundColor: "#fff",
+          backgroundColor: "var(--surface)",
+          border: "1px solid var(--border)",
           borderRadius: "16px",
           padding: "2rem",
-          boxShadow: "0 20px 60px rgba(0,0,0,0.25)",
+          boxShadow: "0 20px 60px rgba(0,0,0,0.45)",
           animation: "errorScaleIn 0.3s ease-out forwards",
           textAlign: "center",
         }}
@@ -136,7 +137,7 @@ export function ErrorModal({
             margin: "0 0 0.5rem",
             fontSize: "1.25rem",
             fontWeight: 700,
-            color: "#1F2937",
+            color: "var(--text-primary)",
           }}
         >
           {title}
@@ -147,7 +148,7 @@ export function ErrorModal({
           style={{
             margin: "0 0 1.5rem",
             fontSize: "0.9rem",
-            color: "#6B7280",
+            color: "var(--text-muted)",
             lineHeight: 1.5,
             wordBreak: "break-word",
           }}
@@ -158,6 +159,7 @@ export function ErrorModal({
         {/* Dismiss */}
         <button
           onClick={onClose}
+          className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
           style={{
             display: "inline-block",
             padding: "0.625rem 2rem",

@@ -373,7 +373,7 @@ export default function TemplateTab() {
                   sx={{
                     "& .MuiOutlinedInput-root": {
                       borderRadius: "0.375rem",
-                      backgroundColor: "white",
+                      backgroundColor: "var(--surface)",
                     },
                   }}
                 />
@@ -416,7 +416,7 @@ export default function TemplateTab() {
                   sx={{
                     "& .MuiOutlinedInput-root": {
                       borderRadius: "0.375rem",
-                      backgroundColor: "white",
+                      backgroundColor: "var(--surface)",
                     },
                   }}
                 />
@@ -459,7 +459,7 @@ export default function TemplateTab() {
                   sx={{
                     "& .MuiOutlinedInput-root": {
                       borderRadius: "0.375rem",
-                      backgroundColor: "white",
+                      backgroundColor: "var(--surface)",
                     },
                   }}
                 />
@@ -500,7 +500,7 @@ export default function TemplateTab() {
                   sx={{
                     "& .MuiOutlinedInput-root": {
                       borderRadius: "0.375rem",
-                      backgroundColor: "white",
+                      backgroundColor: "var(--surface)",
                     },
                   }}
                 />

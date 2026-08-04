@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Geist_Mono, Reddit_Sans } from "next/font/google";
 import "../globals.css";
 import Sidebar from "../components/Sidebar";
-import { Providers } from "../providers";
 
 const redditSans = Reddit_Sans({
   subsets: ["latin"],
@@ -31,7 +30,7 @@ export default function ReconciliationMonitorLayout({
     >
       <Sidebar />
       <main className="flex-1 overflow-auto min-w-0">
-        <Providers>{children}</Providers>
+        {children}
       </main>
     </div>
   );

@@ -1,13 +1,45 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
-  --background: #ffffff;
+  color-scheme: light;
+  --background: #f8fafc;
   --foreground: #171717;
-  
+  --surface: #ffffff;
+  --surface-muted: #f9fafb;
+  --surface-subtle: #f3f4f6;
+  --border: #e5e7eb;
+  --border-strong: #d1d5db;
+  --text-primary: #111827;
+  --text-secondary: #4b5563;
+  --text-muted: #6b7280;
+  --text-subtle: #9ca3af;
+  --overlay: rgb(0 0 0 / 0.45);
+
   /* Default Theme (Gas Pipa) */
   --theme-primary: #115d72;
   --theme-primary-dark: #0d4a5c;
   --theme-secondary: #14a2bb;
+}
+
+:root.dark {
+  color-scheme: dark;
+  --background: #080d17;
+  --foreground: #f3f4f6;
+  --surface: #111827;
+  --surface-muted: #182235;
+  --surface-subtle: #202b3e;
+  --border: #273449;
+  --border-strong: #3a4961;
+  --text-primary: #f3f4f6;
+  --text-secondary: #d1d5db;
+  --text-muted: #aeb8c7;
+  --text-subtle: #8491a3;
+  --overlay: rgb(0 0 0 / 0.7);
+  --theme-primary: #22b8cf;
+  --theme-primary-dark: #13778e;
+  --theme-secondary: #67e8f9;
 }
 
 body[data-theme="bbm"] {
@@ -17,26 +49,444 @@ body[data-theme="bbm"] {
   --theme-secondary: #fb923c;
 }
 
+.dark body[data-theme="bbm"] {
+  --theme-primary: #fb923c;
+  --theme-primary-dark: #c2410c;
+  --theme-secondary: #fdba74;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-reddit-sans);
   --font-mono: var(--font-geist-mono);
-  
+
   --color-primary: var(--theme-primary);
   --color-primary-dark: var(--theme-primary-dark);
   --color-secondary: var(--theme-secondary);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  background: var(--background);
 }
 
 body {
+  min-height: 100vh;
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-reddit-sans), system-ui, sans-serif;
+  transition:
+    background-color 180ms ease,
+    color 180ms ease;
+}
+
+/* Shared form defaults for controls without an explicit surface utility. */
+.dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+.dark textarea,
+.dark select {
+  background-color: var(--surface) !important;
+  border-color: var(--border-strong) !important;
+  color: var(--text-primary) !important;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: var(--text-subtle);
+}
+
+.dark option {
+  background-color: var(--surface);
+  color: var(--text-primary);
+}
+
+/*
+ * Compatibility layer for legacy Tailwind color utilities. New and edited
+ * components should prefer explicit dark: variants or semantic CSS variables.
+ */
+.dark .bg-white,
+.dark .bg-white\/95,
+.dark .bg-white\/90,
+.dark .bg-white\/80,
+.dark .bg-white\/70 {
+  background-color: var(--surface) !important;
+}
+
+.dark .bg-white\/50,
+.dark .bg-white\/40,
+.dark .bg-white\/30,
+.dark .bg-white\/20,
+.dark .bg-white\/10 {
+  background-color: rgb(17 24 39 / 0.72) !important;
+}
+
+.dark .bg-gray-50,
+.dark .bg-gray-50\/80,
+.dark .bg-gray-50\/70,
+.dark .bg-gray-50\/60,
+.dark .bg-gray-50\/50,
+.dark .bg-gray-50\/30,
+.dark .bg-slate-50,
+.dark .bg-slate-50\/50,
+.dark .bg-slate-50\/30 {
+  background-color: var(--surface-muted) !important;
+}
+
+.dark .bg-gray-100,
+.dark .bg-gray-100\/60,
+.dark .bg-gray-100\/50,
+.dark .bg-gray-200,
+.dark .bg-gray-200\/50,
+.dark .bg-gray-300,
+.dark .bg-slate-100,
+.dark .bg-slate-100\/50,
+.dark .bg-slate-200,
+.dark .bg-slate-200\/50,
+.dark .bg-slate-300 {
+  background-color: var(--surface-subtle) !important;
+}
+
+.dark .hover\:bg-white:hover,
+.dark .hover\:bg-gray-50:hover,
+.dark .hover\:bg-gray-50\/50:hover,
+.dark .hover\:bg-gray-50\/60:hover,
+.dark .hover\:bg-gray-50\/80:hover,
+.dark .hover\:bg-gray-100:hover,
+.dark .hover\:bg-gray-200:hover,
+.dark .hover\:bg-slate-50:hover,
+.dark .hover\:bg-slate-100:hover {
+  background-color: #243047 !important;
+}
+
+.dark .text-black,
+.dark .text-gray-950,
+.dark .text-gray-900,
+.dark .text-gray-800,
+.dark .text-slate-950,
+.dark .text-slate-900,
+.dark .text-slate-800 {
+  color: var(--text-primary) !important;
+}
+
+.dark .text-gray-700,
+.dark .text-gray-600,
+.dark .text-slate-700,
+.dark .text-slate-600 {
+  color: var(--text-secondary) !important;
+}
+
+.dark .text-gray-500,
+.dark .text-slate-500 {
+  color: var(--text-muted) !important;
+}
+
+.dark .text-gray-400,
+.dark .text-gray-300,
+.dark .text-slate-400,
+.dark .text-slate-300 {
+  color: var(--text-subtle) !important;
+}
+
+.dark .border-gray-50,
+.dark .border-gray-100,
+.dark .border-gray-200,
+.dark .border-slate-100,
+.dark .border-slate-200 {
+  border-color: var(--border) !important;
+}
+
+.dark .border-gray-300,
+.dark .border-gray-400,
+.dark .border-slate-300,
+.dark .border-slate-400 {
+  border-color: var(--border-strong) !important;
+}
+
+.dark .divide-gray-50 > :not(:last-child),
+.dark .divide-gray-100 > :not(:last-child),
+.dark .divide-gray-200 > :not(:last-child),
+.dark .divide-slate-100 > :not(:last-child),
+.dark .divide-slate-200 > :not(:last-child) {
+  border-color: var(--border) !important;
+}
+
+/* Preserve semantic status meaning without retaining high-glare pale surfaces. */
+.dark .bg-red-50,
+.dark .bg-red-50\/50,
+.dark .bg-red-50\/30,
+.dark .bg-red-100 {
+  background-color: rgb(127 29 29 / 0.32) !important;
+}
+
+.dark .bg-amber-50,
+.dark .bg-amber-50\/50,
+.dark .bg-amber-50\/30,
+.dark .bg-amber-100,
+.dark .bg-yellow-50,
+.dark .bg-yellow-100 {
+  background-color: rgb(120 53 15 / 0.3) !important;
+}
+
+.dark .bg-orange-50,
+.dark .bg-orange-50\/50,
+.dark .bg-orange-100 {
+  background-color: rgb(124 45 18 / 0.32) !important;
+}
+
+.dark .bg-green-50,
+.dark .bg-green-50\/50,
+.dark .bg-green-100,
+.dark .bg-emerald-50,
+.dark .bg-emerald-50\/50,
+.dark .bg-emerald-100 {
+  background-color: rgb(6 78 59 / 0.3) !important;
+}
+
+.dark .bg-blue-50,
+.dark .bg-blue-50\/50,
+.dark .bg-blue-100,
+.dark .bg-sky-50,
+.dark .bg-sky-100,
+.dark .bg-cyan-50,
+.dark .bg-cyan-100,
+.dark .bg-teal-50,
+.dark .bg-teal-100 {
+  background-color: rgb(12 74 110 / 0.3) !important;
+}
+
+.dark .bg-purple-50,
+.dark .bg-purple-100,
+.dark .bg-violet-50,
+.dark .bg-violet-100,
+.dark .bg-pink-50,
+.dark .bg-pink-100 {
+  background-color: rgb(88 28 135 / 0.3) !important;
+}
+
+.dark .text-red-700,
+.dark .text-red-800,
+.dark .text-red-900 {
+  color: #fca5a5 !important;
+}
+
+.dark .text-amber-700,
+.dark .text-amber-800,
+.dark .text-amber-900,
+.dark .text-yellow-700,
+.dark .text-yellow-800,
+.dark .text-orange-700,
+.dark .text-orange-800,
+.dark .text-orange-900 {
+  color: #fdba74 !important;
+}
+
+.dark .text-green-700,
+.dark .text-green-800,
+.dark .text-green-900,
+.dark .text-emerald-700,
+.dark .text-emerald-800,
+.dark .text-emerald-900 {
+  color: #6ee7b7 !important;
+}
+
+.dark .text-blue-700,
+.dark .text-blue-800,
+.dark .text-blue-900,
+.dark .text-sky-700,
+.dark .text-sky-800,
+.dark .text-cyan-700,
+.dark .text-cyan-800,
+.dark .text-teal-700,
+.dark .text-teal-800 {
+  color: #7dd3fc !important;
+}
+
+.dark .text-purple-700,
+.dark .text-purple-800,
+.dark .text-violet-700,
+.dark .text-violet-800,
+.dark .text-pink-700,
+.dark .text-pink-800 {
+  color: #d8b4fe !important;
+}
+
+.dark .border-red-100,
+.dark .border-red-200,
+.dark .border-red-300 {
+  border-color: rgb(239 68 68 / 0.42) !important;
+}
+
+.dark .border-amber-100,
+.dark .border-amber-200,
+.dark .border-amber-300,
+.dark .border-yellow-100,
+.dark .border-yellow-200,
+.dark .border-orange-100,
+.dark .border-orange-200 {
+  border-color: rgb(245 158 11 / 0.4) !important;
+}
+
+.dark .border-green-100,
+.dark .border-green-200,
+.dark .border-emerald-100,
+.dark .border-emerald-200 {
+  border-color: rgb(16 185 129 / 0.4) !important;
+}
+
+.dark .border-blue-100,
+.dark .border-blue-200,
+.dark .border-sky-100,
+.dark .border-sky-200,
+.dark .border-cyan-100,
+.dark .border-cyan-200,
+.dark .border-teal-100,
+.dark .border-teal-200 {
+  border-color: rgb(56 189 248 / 0.4) !important;
+}
+
+.dark .from-slate-50,
+.dark .from-gray-50 {
+  --tw-gradient-from: #080d17 !important;
+  --tw-gradient-to: rgb(8 13 23 / 0) !important;
+}
+
+.dark .via-gray-50,
+.dark .via-slate-50 {
+  --tw-gradient-via: #101827 !important;
+}
+
+.dark .to-slate-100,
+.dark .to-gray-100 {
+  --tw-gradient-to: #182235 !important;
+}
+
+.dark .shadow-sm,
+.dark .shadow-md,
+.dark .shadow-lg,
+.dark .shadow-xl,
+.dark .shadow-2xl {
+  --tw-shadow-color: rgb(0 0 0 / 0.45);
+}
+
+/* Third-party surfaces. Map tiles stay unchanged for geographic readability. */
+.dark .MuiDataGrid-root,
+.dark .MuiDataGrid-columnHeaders,
+.dark .MuiDataGrid-columnHeader,
+.dark .MuiDataGrid-filler,
+.dark .MuiDataGrid-footerContainer {
+  background-color: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+.dark .MuiDataGrid-columnHeaders,
+.dark .MuiDataGrid-columnHeader,
+.dark .MuiDataGrid-filler {
+  background-color: var(--surface-muted) !important;
+}
+
+.dark .MuiDialog-paper,
+.dark .MuiPopover-paper,
+.dark .MuiAutocomplete-paper,
+.dark .MuiPickersPopper-root .MuiPaper-root,
+.dark .MuiPickersLayout-root {
+  background-color: var(--surface) !important;
+  background-image: none !important;
+  color: var(--text-primary) !important;
+}
+
+.dark .MuiOutlinedInput-root,
+.dark .MuiInputBase-root {
+  background-color: var(--surface) !important;
+  color: var(--text-primary) !important;
+}
+
+.dark .MuiOutlinedInput-notchedOutline {
+  border-color: var(--border-strong) !important;
+}
+
+.dark .MuiInputLabel-root,
+.dark .MuiFormHelperText-root,
+.dark .MuiSvgIcon-root {
+  color: var(--text-muted);
+}
+
+.dark .MuiDialogTitle-root,
+.dark .MuiDialogContentText-root,
+.dark .MuiTypography-root:not(.MuiAlert-message) {
+  color: var(--text-primary) !important;
+}
+
+.dark .MuiDialogActions-root,
+.dark .MuiDialogContent-root {
+  border-color: var(--border) !important;
+}
+
+.dark .MuiMenuItem-root:hover,
+.dark .MuiAutocomplete-option[aria-selected="true"] {
+  background-color: var(--surface-subtle) !important;
+}
+
+.dark .leaflet-control,
+.dark .leaflet-bar a,
+.dark .leaflet-popup-content-wrapper,
+.dark .leaflet-popup-tip,
+.dark .leaflet-tooltip {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+.dark .leaflet-bar a:hover {
+  background: var(--surface-subtle) !important;
+}
+
+.dark .leaflet-tile-pane {
+  filter: brightness(0.72) invert(1) contrast(1.18) hue-rotate(180deg)
+    saturate(0.72);
+}
+
+.dark .leaflet-overlay-pane,
+.dark .leaflet-marker-pane,
+.dark .leaflet-shadow-pane,
+.dark .leaflet-tooltip-pane,
+.dark .leaflet-popup-pane {
+  filter: none;
+}
+
+.dark .recharts-cartesian-axis-tick-value,
+.dark .recharts-legend-item-text,
+.dark .recharts-text {
+  fill: var(--text-muted);
+  color: var(--text-muted) !important;
+}
+
+.dark .recharts-cartesian-grid line {
+  stroke: var(--border);
+}
+
+.dark .recharts-default-tooltip {
+  background-color: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+  box-shadow: 0 12px 30px rgb(0 0 0 / 0.4);
+}
+
+.dark .recharts-tooltip-label,
+.dark .recharts-tooltip-item {
+  color: var(--text-secondary) !important;
+}
+
+/* Keep partner marks transparent in dark mode while preserving edge clarity. */
+.dark .theme-logo-surface {
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+  filter: drop-shadow(0 1px 1px rgb(255 255 255 / 0.16))
+    drop-shadow(0 2px 5px rgb(0 0 0 / 0.28));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body {
+    transition: none;
+  }
 }

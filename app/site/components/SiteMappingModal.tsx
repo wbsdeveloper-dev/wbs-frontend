@@ -20,9 +20,10 @@ export function SiteMappingModal({
   onClose,
   onSuccess,
 }: SiteMappingModalProps) {
-  const { data: dropdowns, isLoading: isLoadingDropdowns } = useDropdowns({ enabled: open });
-  const { data: existingMappings, isLoading: isLoadingMappings } =
-    useMappings("WA", { enabled: open });
+  const { data: dropdowns, isLoading: isLoadingDropdowns } = useDropdowns({
+    enabled: open,
+  });
+  const { data: existingMappings } = useMappings("WA", { enabled: open });
   const createMappingMutation = useCreateMapping({
     onSuccess: () => {
       onSuccess();
@@ -115,8 +116,8 @@ export function SiteMappingModal({
         </div>
 
         {/* Info Box */}
-        <div className="px-6 py-4 bg-[#f0f9ff] border-b border-[#bae6fd]">
-          <p className="text-sm text-[#0c4a6e]">
+        <div className="px-6 py-4 bg-[#f0f9ff] dark:bg-sky-950/40 border-b border-[#bae6fd] dark:border-sky-800/60">
+          <p className="text-sm text-[#0c4a6e] dark:text-sky-200">
             Hubungkan nama sumber dari pesan WhatsApp ke site yang sesuai dalam
             sistem. Mapping ini akan digunakan untuk otomatisasi pemrosesan
             data.
@@ -158,10 +159,11 @@ export function SiteMappingModal({
                 setErrors({ ...errors, source_name: "" });
               }}
               placeholder="Masukkan nama grup atau pengirim WhatsApp"
-              className={`w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200 ${errors.source_name
-                ? "border-red-300 focus:ring-red-500"
-                : "border-gray-300"
-                }`}
+              className={`w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200 ${
+                errors.source_name
+                  ? "border-red-300 focus:ring-red-500"
+                  : "border-gray-300"
+              }`}
             />
             {errors.source_name ? (
               <p className="text-xs text-red-600 mt-1">{errors.source_name}</p>
@@ -184,10 +186,11 @@ export function SiteMappingModal({
                 setErrors({ ...errors, normalized_site_id: "" });
               }}
               disabled={isLoadingDropdowns}
-              className={`w-full px-4 py-2.5 border rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white transition-all duration-200 ${errors.normalized_site_id
-                ? "border-red-300 focus:ring-red-500"
-                : "border-gray-300"
-                }`}
+              className={`w-full px-4 py-2.5 border rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white transition-all duration-200 ${
+                errors.normalized_site_id
+                  ? "border-red-300 focus:ring-red-500"
+                  : "border-gray-300"
+              }`}
             >
               <option value="">Cari site untuk dihubungkan...</option>
               {dropdowns?.plants.map((site) => (
