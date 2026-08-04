@@ -21,6 +21,8 @@ import {
   Activity,
   Trash2,
   Loader2,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import Card, { CardHeader } from "@/app/components/ui/Card";
 import {
@@ -619,47 +621,106 @@ export default function ReconciliationMonitorPage() {
 
         {/* Pagination Footer */}
         {pagination.total > 0 && (
-          <div className="flex flex-col sm:flex-row items-center justify-between px-4 py-3 border-t border-gray-100 bg-gray-50/50 mt-auto gap-3">
-            <div className="text-xs text-gray-500">
-              Menampilkan <span className="font-semibold text-gray-900">{items.length}</span> dari total{" "}
-              <span className="font-semibold text-gray-900">{pagination.total}</span> proses
-            </div>
-
-            <div className="flex items-center gap-4">
-              <select
-                value={limit}
-                onChange={(e) => {
-                  setLimit(Number(e.target.value));
-                  setPage(1);
-                }}
-                className="px-2 py-1 text-xs border border-gray-300 rounded bg-white text-gray-700"
-              >
-                <option value="10">10 / hal</option>
-                <option value="20">20 / hal</option>
-                <option value="50">50 / hal</option>
-                <option value="100">100 / hal</option>
-              </select>
-
-              <div className="flex items-center gap-1.5 text-xs">
-                <button
-                  disabled={page <= 1}
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  className="px-3 py-1 border border-gray-300 rounded bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-4 py-3 border-t border-gray-200 gap-3 bg-white mt-auto">
+            {/* Left: info + page size */}
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="text-sm text-gray-600">
+                Menampilkan{" "}
+                <span className="font-semibold text-gray-900">
+                  {(page - 1) * limit + 1}
+                </span>{" "}
+                -{" "}
+                <span className="font-semibold text-gray-900">
+                  {Math.min(page * limit, pagination.total)}
+                </span>{" "}
+                dari{" "}
+                <span className="font-semibold text-gray-900">
+                  {pagination.total}
+                </span>{" "}
+                proses
+              </span>
+              <div className="flex items-center gap-1.5">
+                <label htmlFor="page-size-jobs" className="text-sm text-gray-500">
+                  Baris:
+                </label>
+                <select
+                  id="page-size-jobs"
+                  value={limit}
+                  onChange={(e) => {
+                    setLimit(Number(e.target.value));
+                    setPage(1);
+                  }}
+                  className="px-2 py-1 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-secondary/40 focus:border-secondary transition-all duration-200 cursor-pointer"
                 >
-                  Prev
-                </button>
-                <span className="px-2 text-gray-700 font-medium">
-                  {page} / {pagination.totalPages}
-                </span>
-                <button
-                  disabled={page >= pagination.totalPages}
-                  onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
-                  className="px-3 py-1 border border-gray-300 rounded bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                >
-                  Next
-                </button>
+                  {[10, 20, 50, 100].map((size) => (
+                    <option key={size} value={size}>
+                      {size}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
+
+            {/* Right: page buttons */}
+            {pagination.totalPages > 1 && (
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page <= 1}
+                  className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  title="Halaman Sebelumnya"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+
+                {(() => {
+                  const pages: (number | "...")[] = [];
+                  const totalPages = pagination.totalPages;
+                  if (totalPages <= 7) {
+                    for (let i = 1; i <= totalPages; i++) pages.push(i);
+                  } else {
+                    pages.push(1);
+                    if (page > 3) pages.push("...");
+                    const start = Math.max(2, page - 1);
+                    const end = Math.min(totalPages - 1, page + 1);
+                    for (let i = start; i <= end; i++) pages.push(i);
+                    if (page < totalPages - 2) pages.push("...");
+                    pages.push(totalPages);
+                  }
+                  return pages.map((p, idx) =>
+                    p === "..." ? (
+                      <span
+                        key={`ellipsis-${idx}`}
+                        className="px-1 text-sm text-gray-400 select-none"
+                      >
+                        …
+                      </span>
+                    ) : (
+                      <button
+                        key={p}
+                        onClick={() => setPage(p as number)}
+                        className={`min-w-[2rem] h-8 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer ${
+                          p === page
+                            ? "bg-primary text-white shadow-sm"
+                            : "text-gray-700 hover:bg-gray-100"
+                        }`}
+                      >
+                        {p}
+                      </button>
+                    ),
+                  );
+                })()}
+
+                <button
+                  onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
+                  disabled={page >= pagination.totalPages}
+                  className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  title="Halaman Berikutnya"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            )}
           </div>
         )}
       </Card>

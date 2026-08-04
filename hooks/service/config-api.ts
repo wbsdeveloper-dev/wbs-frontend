@@ -1083,6 +1083,7 @@ export interface EmailInboxRecord {
     storageRef: string;
     sizeBytes: number;
   }> | null;
+  is_processed: boolean;
   received_at: string;
   created_at: string;
   source_name: string | null;
@@ -1161,5 +1162,38 @@ export async function previewEmailAttachment(storageRef: string, fileName: strin
   const previewBlob = new Blob([blob], { type: mimeType });
   const blobUrl = windowUrl.createObjectURL(previewBlob);
   window.open(blobUrl, "_blank");
+}
+
+export async function deleteEmailInbox(id: string): Promise<void> {
+  await configFetch<{ id: string; deleted: boolean }>(`/config/email-inbox/${id}`, {
+    method: "DELETE",
+  });
+}
+
+export function useDeleteEmailInbox() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteEmailInbox(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["email-inbox"] });
+    },
+  });
+}
+
+export async function deleteEmailInboxBulk(ids: string[]): Promise<void> {
+  await configFetch<{ deletedCount: number }>("/config/email-inbox/bulk-delete", {
+    method: "POST",
+    body: JSON.stringify({ ids }),
+  });
+}
+
+export function useDeleteEmailInboxBulk() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (ids: string[]) => deleteEmailInboxBulk(ids),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["email-inbox"] });
+    },
+  });
 }
 

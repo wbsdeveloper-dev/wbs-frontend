@@ -1,7 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
-import { Filter, X, Info, AlertTriangle, Image as ImageIcon, FileText } from "lucide-react";
+import {
+  Filter,
+  X,
+  Info,
+  AlertTriangle,
+  Image as ImageIcon,
+  FileText,
+} from "lucide-react";
 import * as htmlToImage from "html-to-image";
 import jsPDF from "jspdf";
 import {
@@ -441,7 +448,7 @@ const CustomXAxisTick = (props: any) => {
         x={x}
         y={y + (shouldSlope ? 10 : 15)}
         textAnchor={shouldSlope ? "end" : "middle"}
-        fill="#666"
+        fill="var(--text-muted)"
         fontSize={12}
         transform={shouldSlope ? `rotate(-45, ${x}, ${y + 10})` : undefined}
       >
@@ -455,7 +462,13 @@ const CustomXAxisTick = (props: any) => {
 
   return (
     <g>
-      <text x={x} y={y + 15} textAnchor="middle" fill="#666" fontSize={11}>
+      <text
+        x={x}
+        y={y + 15}
+        textAnchor="middle"
+        fill="var(--text-muted)"
+        fontSize={11}
+      >
         {payload.value}
       </text>
       {isMidYear && (
@@ -463,7 +476,7 @@ const CustomXAxisTick = (props: any) => {
           x={x}
           y={y + 35}
           textAnchor="middle"
-          fill="#333"
+          fill="var(--text-primary)"
           fontSize={12}
           fontWeight="bold"
         >
@@ -476,7 +489,7 @@ const CustomXAxisTick = (props: any) => {
         y1={y + 22}
         x2={x + 50}
         y2={y + 22}
-        stroke="#e5e7eb"
+        stroke="var(--border)"
         strokeWidth={1}
       />
       {/* Vertical separator before Jan */}
@@ -486,7 +499,7 @@ const CustomXAxisTick = (props: any) => {
           y1={y}
           x2={x - 14}
           y2={y + 40}
-          stroke="#e5e7eb"
+          stroke="var(--border)"
           strokeWidth={1}
         />
       )}
@@ -703,7 +716,10 @@ export default function RealtimeChart({
   const handleExportImage = async () => {
     if (!chartRef.current) return;
     try {
-      const dataUrl = await htmlToImage.toPng(chartRef.current, { backgroundColor: "#ffffff", pixelRatio: 2 });
+      const dataUrl = await htmlToImage.toPng(chartRef.current, {
+        backgroundColor: "#ffffff",
+        pixelRatio: 2,
+      });
       const link = document.createElement("a");
       link.download = `grafik-gas-${new Date().toISOString().split("T")[0]}.png`;
       link.href = dataUrl;
@@ -716,13 +732,16 @@ export default function RealtimeChart({
   const handleExportPDF = async () => {
     if (!chartRef.current) return;
     try {
-      const canvas = await htmlToImage.toCanvas(chartRef.current, { backgroundColor: "#ffffff", pixelRatio: 2 });
+      const canvas = await htmlToImage.toCanvas(chartRef.current, {
+        backgroundColor: "#ffffff",
+        pixelRatio: 2,
+      });
       const imgData = canvas.toDataURL("image/png");
-      
+
       const pdf = new jsPDF("l", "mm", "a4");
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      
+
       pdf.addImage(imgData, "PNG", 0, 10, pdfWidth, pdfHeight);
       pdf.save(`grafik-gas-${new Date().toISOString().split("T")[0]}.pdf`);
     } catch (err) {
@@ -941,15 +960,13 @@ export default function RealtimeChart({
     let opts = ["Pemasok A", "Pemasok B"];
     if (filtersData?.pemasok) {
       opts = filtersData.pemasok
-        .filter(
-          (p: FilterOption) => {
-            const comp = p.commodity?.toUpperCase();
-            if (commodity && commodity !== "Semua Komoditas") {
-              return comp === commodity.toUpperCase();
-            }
-            return comp === "LNG" || comp === "GAS PIPA";
-          },
-        )
+        .filter((p: FilterOption) => {
+          const comp = p.commodity?.toUpperCase();
+          if (commodity && commodity !== "Semua Komoditas") {
+            return comp === commodity.toUpperCase();
+          }
+          return comp === "LNG" || comp === "GAS PIPA";
+        })
         .map((p: FilterOption) => p.name);
     }
     return ["Semua Pemasok", ...opts];
@@ -958,15 +975,13 @@ export default function RealtimeChart({
   const pembangkitOptions = useMemo(() => {
     if (filtersData?.pembangkit)
       return filtersData.pembangkit
-        .filter(
-          (p: FilterOption) => {
-            const comp = p.commodity?.toUpperCase();
-            if (commodity && commodity !== "Semua Komoditas") {
-              return comp === commodity.toUpperCase();
-            }
-            return comp === "LNG" || comp === "GAS PIPA";
-          },
-        )
+        .filter((p: FilterOption) => {
+          const comp = p.commodity?.toUpperCase();
+          if (commodity && commodity !== "Semua Komoditas") {
+            return comp === commodity.toUpperCase();
+          }
+          return comp === "LNG" || comp === "GAS PIPA";
+        })
         .map((p: FilterOption) => p.name);
     return ["Pembangkit 1", "Pembangkit 2"];
   }, [filtersData, commodity]);
@@ -1313,7 +1328,8 @@ export default function RealtimeChart({
                   <div className="flex justify-center items-center w-full h-[500px]">
                     <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
                   </div>
-                ) : transportirKeys.huluKeys.length === 0 && transportirKeys.hilirKeys.length === 0 ? (
+                ) : transportirKeys.huluKeys.length === 0 &&
+                  transportirKeys.hilirKeys.length === 0 ? (
                   <div className="flex justify-center items-center w-full h-[500px] text-gray-500 text-xl font-semibold">
                     Data untuk periode ini tidak tersedia
                   </div>
@@ -1321,98 +1337,110 @@ export default function RealtimeChart({
                   <>
                     <ResponsiveContainer width="100%" height={500}>
                       <BarChart
-                      data={realTransportirData}
-                      margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
-                      maxBarSize={100}
-                    >
-                      <CartesianGrid
-                        strokeDasharray="3 3"
-                        vertical={false}
-                        stroke="#eee"
-                      />
-                      <XAxis
-                        dataKey="category"
-                        tick={{
-                          fontSize: 14,
-                          fontWeight: "600",
-                          fill: "#4b5563",
-                        }}
-                        axisLine={{ stroke: "#e5e7eb" }}
-                        tickLine={false}
-                        dy={10}
-                      />
-                      <YAxis
-                        tick={{ fontSize: 12, fill: "#6b7280" }}
-                        axisLine={false}
-                        tickLine={false}
-                      />
-                      <Tooltip
-                        content={
-                          <CustomTransportirTooltip
-                            unit={chartFlowData?.unit}
-                          />
-                        }
-                        cursor={{ fill: "transparent" }}
-                      />
-
-                      {/* Data Hulu Bars */}
-                      {transportirKeys.huluKeys.map((key, index) => (
-                        <Bar
-                          key={key}
-                          dataKey={key}
-                          stackId="a"
-                          fill={getUpstreamColor(key)}
-                          radius={
-                            index === transportirKeys.huluKeys.length - 1
-                              ? [8, 8, 0, 0]
-                              : [0, 0, 0, 0]
+                        data={realTransportirData}
+                        margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                        maxBarSize={100}
+                      >
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          vertical={false}
+                          stroke="var(--border)"
+                        />
+                        <XAxis
+                          dataKey="category"
+                          tick={{
+                            fontSize: 14,
+                            fontWeight: "600",
+                            fill: "var(--text-secondary)",
+                          }}
+                          axisLine={{ stroke: "var(--border)" }}
+                          tickLine={false}
+                          dy={10}
+                        />
+                        <YAxis
+                          tick={{ fontSize: 12, fill: "var(--text-muted)" }}
+                          axisLine={false}
+                          tickLine={false}
+                        />
+                        <Tooltip
+                          content={
+                            <CustomTransportirTooltip
+                              unit={chartFlowData?.unit}
+                            />
                           }
-                          isAnimationActive={false}
-                        >
-                          <LabelList
-                            content={<CustomHuluBarLabel name={key} />}
-                          />
-                        </Bar>
-                      ))}
+                          cursor={{ fill: "transparent" }}
+                        />
 
-                      {/* Data Hilir Bars */}
-                      {transportirKeys.hilirKeys.map((h, index) => (
-                        <Bar
-                          key={h.key}
-                          dataKey={h.key}
-                          stackId="a"
-                          fill={getUpstreamColor(h.upstreamName)}
-                          stroke="#ffffff"
-                          strokeWidth={1}
-                          radius={
-                            index === transportirKeys.hilirKeys.length - 1
-                              ? [8, 8, 0, 0]
-                              : [0, 0, 0, 0]
-                          }
-                          isAnimationActive={false}
-                        >
-                          <LabelList
-                            content={
-                              <CustomHilirBarLabel
-                                name1={h.downstreamName}
-                                name2={`(${h.upstreamName})`}
-                              />
+                        {/* Data Hulu Bars */}
+                        {transportirKeys.huluKeys.map((key, index) => (
+                          <Bar
+                            key={key}
+                            dataKey={key}
+                            stackId="a"
+                            fill={getUpstreamColor(key)}
+                            radius={
+                              index === transportirKeys.huluKeys.length - 1
+                                ? [8, 8, 0, 0]
+                                : [0, 0, 0, 0]
                             }
-                          />
-                        </Bar>
-                      ))}
-                    </BarChart>
+                            isAnimationActive={false}
+                          >
+                            <LabelList
+                              content={<CustomHuluBarLabel name={key} />}
+                            />
+                          </Bar>
+                        ))}
+
+                        {/* Data Hilir Bars */}
+                        {transportirKeys.hilirKeys.map((h, index) => (
+                          <Bar
+                            key={h.key}
+                            dataKey={h.key}
+                            stackId="a"
+                            fill={getUpstreamColor(h.upstreamName)}
+                            stroke="#ffffff"
+                            strokeWidth={1}
+                            radius={
+                              index === transportirKeys.hilirKeys.length - 1
+                                ? [8, 8, 0, 0]
+                                : [0, 0, 0, 0]
+                            }
+                            isAnimationActive={false}
+                          >
+                            <LabelList
+                              content={
+                                <CustomHilirBarLabel
+                                  name1={h.downstreamName}
+                                  name2={`(${h.upstreamName})`}
+                                />
+                              }
+                            />
+                          </Bar>
+                        ))}
+                      </BarChart>
                     </ResponsiveContainer>
-                
+
                     {/* Information Legend for Opening and Closing Stock */}
                     <div className="mt-4 flex justify-center items-center gap-8 border-t border-gray-100 pt-5">
                       <div className="flex items-center gap-2">
                         <div className="w-3 h-3 rounded-sm bg-primary/20 border border-primary/40 shadow-sm" />
-                        <span className="text-sm font-medium text-gray-600">Opening Stock: {Number(transportirData?.stock?.openingStock || 0).toLocaleString('id-ID')} BBTUD</span>
+                        <span className="text-sm font-medium text-gray-600">
+                          Opening Stock:{" "}
+                          {Number(
+                            transportirData?.stock?.openingStock || 0,
+                          ).toLocaleString("id-ID")}{" "}
+                          BBTUD
+                        </span>
                       </div>
                       <div className="flex items-center gap-2">
                         <div className="w-3 h-3 rounded-sm bg-secondary/20 border border-secondary/40 shadow-sm" />
-                        <span className="text-sm font-medium text-gray-600">Closing Stock: {Number(transportirData?.stock?.closingStock || 0).toLocaleString('id-ID')} BBTUD</span>
+                        <span className="text-sm font-medium text-gray-600">
+                          Closing Stock:{" "}
+                          {Number(
+                            transportirData?.stock?.closingStock || 0,
+                          ).toLocaleString("id-ID")}{" "}
+                          BBTUD
+                        </span>
                       </div>
                     </div>
                   </>
@@ -1746,7 +1774,9 @@ export default function RealtimeChart({
               onChange={(val) => {
                 setRegion(val);
                 if (onRegionChange) {
-                  onRegionChange(val === "Semua Region" ? null : (val as string));
+                  onRegionChange(
+                    val === "Semua Region" ? null : (val as string),
+                  );
                 }
               }}
               placeholder="Pilih Region"
@@ -2034,7 +2064,9 @@ export default function RealtimeChart({
                   endDate={endDate}
                   setStartDate={setStartDate}
                   setEndDate={setEndDate}
-                  periode={chartMode === "transportir" ? "1W" : period as Periode}
+                  periode={
+                    chartMode === "transportir" ? "1W" : (period as Periode)
+                  }
                   isSingleDate={
                     chartMode === "transportir" ? false : period === "1D"
                   }

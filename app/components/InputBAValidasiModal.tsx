@@ -752,7 +752,7 @@ export default function InputBAValidasiModal({
                             sx={{
                               "& .MuiOutlinedInput-root": {
                                 borderRadius: "0.75rem",
-                                backgroundColor: "white",
+                                backgroundColor: "var(--surface)",
                               },
                             }}
                           />
@@ -793,7 +793,7 @@ export default function InputBAValidasiModal({
                               sx={{
                                 "& .MuiOutlinedInput-root": {
                                   borderRadius: "0.75rem",
-                                  backgroundColor: "white",
+                                  backgroundColor: "var(--surface)",
                                 },
                               }}
                             />
@@ -908,7 +908,7 @@ export default function InputBAValidasiModal({
                                   sx={{
                                     "& .MuiOutlinedInput-root": {
                                       borderRadius: "0.75rem",
-                                      backgroundColor: "white",
+                                      backgroundColor: "var(--surface)",
                                     },
                                   }}
                                 />

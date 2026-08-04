@@ -1,10 +1,11 @@
 "use client";
 
-import { ChevronRight, Fuel, Flame, ArrowLeft, Wind, Droplet } from "lucide-react";
+import { ChevronRight, Fuel, Flame, ArrowLeft, Droplet } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useEffect } from "react";
 import { useAuth } from "@/components/providers/auth-provider";
+import ThemeToggle from "@/components/ui/ThemeToggle";
 
 export default function DashboardSelection() {
   const router = useRouter();
@@ -35,9 +36,9 @@ export default function DashboardSelection() {
   }
 
   return (
-    <div className="h-screen relative overflow-hidden flex flex-col bg-white">
+    <div className="h-screen relative overflow-hidden flex flex-col bg-white dark:bg-slate-950">
       {/* Subtle gradient overlay for depth */}
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-white to-slate-100" />
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950" />
 
       {/* Animated Pattern Overlay - subtle on white */}
       <div className="absolute inset-0 opacity-30">
@@ -66,27 +67,28 @@ export default function DashboardSelection() {
             <span className="text-sm font-medium">Kembali</span>
           </button>
 
-          <div className="flex items-center gap-4 md:gap-8">
+          <div className="flex items-center gap-3 md:gap-6">
+            <ThemeToggle compact />
             <Image
               src="/logos/danantara.png"
               alt="Danantara logo"
               width={100}
               height={30}
-              className="object-contain w-[60px] md:w-[80px] lg:w-[100px]"
+              className="theme-logo-surface object-contain w-[60px] md:w-[80px] lg:w-[100px]"
             />
             <Image
               src="/logos/SucofindoIdSurvey.png"
               alt="Sucofindo logo"
               width={60}
               height={25}
-              className="object-contain w-[40px] md:w-[50px] lg:w-[60px] mb-3"
+              className="theme-logo-surface object-contain w-[40px] md:w-[50px] lg:w-[60px] mb-3"
             />
             <Image
               src="/logos/pln-epi.png"
               alt="PLN EPI logo"
               width={100}
               height={30}
-              className="object-contain w-[60px] md:w-[80px] lg:w-[100px]"
+              className="theme-logo-surface object-contain w-[60px] md:w-[80px] lg:w-[100px]"
             />
           </div>
         </div>
@@ -97,10 +99,10 @@ export default function DashboardSelection() {
         {/* Title Section */}
         <div className="text-center mb-6 md:mb-8">
           <div className="w-20 h-1 bg-gradient-to-r from-secondary to-primary/30 rounded-full mx-auto mb-4" />
-          <h1 className="text-slate-800 text-2xl md:text-3xl lg:text-4xl font-bold mb-2 leading-tight tracking-tight">
+          <h1 className="text-slate-800 dark:text-slate-100 text-2xl md:text-3xl lg:text-4xl font-bold mb-2 leading-tight tracking-tight">
             Pilih Dashboard
           </h1>
-          <p className="text-slate-600 text-sm md:text-base max-w-md mx-auto leading-relaxed">
+          <p className="text-slate-600 dark:text-slate-300 text-sm md:text-base max-w-md mx-auto leading-relaxed">
             Akses pemantauan{" "}
             <span className="text-primary font-semibold">Gas Pipa</span>
             {", "}
@@ -120,8 +122,8 @@ export default function DashboardSelection() {
                 e.preventDefault();
                 router.push("/dashboard/gas");
               }}
-              className="relative bg-white rounded-2xl p-5 md:p-6 
-                border border-slate-200 hover:border-secondary/50
+              className="relative bg-[var(--surface)] rounded-2xl p-5 md:p-6
+                border border-slate-200 dark:border-slate-700 hover:border-secondary/50
                 cursor-pointer transition-all duration-300
                 shadow-lg shadow-slate-200/50 hover:shadow-xl hover:shadow-[#14a2bb]/20
                 hover:scale-[1.02] block no-underline"
@@ -136,13 +138,13 @@ export default function DashboardSelection() {
               </div>
 
               {/* Content */}
-              <h3 className="text-slate-800 text-xl md:text-2xl font-bold mb-1 tracking-tight">
+              <h3 className="text-slate-800 dark:text-slate-100 text-xl md:text-2xl font-bold mb-1 tracking-tight">
                 Dashboard
               </h3>
               <h3 className="text-secondary text-xl md:text-2xl font-bold mb-3">
                 Gas Pipa
               </h3>
-              <p className="text-slate-600 text-xs md:text-sm mb-4 leading-relaxed">
+              <p className="text-slate-600 dark:text-slate-300 text-xs md:text-sm mb-4 leading-relaxed">
                 Monitoring pasokan dan distribusi gas secara real-time dengan
                 visualisasi data interaktif
               </p>
@@ -154,7 +156,7 @@ export default function DashboardSelection() {
                 border border-secondary/20 group-hover:border-secondary/40
                 transition-all duration-300"
               >
-                <span className="text-slate-700 font-medium">
+                <span className="text-slate-700 dark:text-slate-200 font-medium">
                   Akses Dashboard
                 </span>
                 <ChevronRight className="w-5 h-5 text-secondary group-hover:translate-x-1 transition-transform" />
@@ -170,8 +172,8 @@ export default function DashboardSelection() {
                 e.preventDefault();
                 router.push("/dashboard/bbm");
               }}
-              className="relative bg-white rounded-2xl p-5 md:p-6 
-                border border-slate-200 hover:border-[#fb923c]/50
+              className="relative bg-[var(--surface)] rounded-2xl p-5 md:p-6
+                border border-slate-200 dark:border-slate-700 hover:border-[#fb923c]/50
                 cursor-pointer transition-all duration-300
                 shadow-lg shadow-slate-200/50 hover:shadow-xl hover:shadow-[#fb923c]/20
                 hover:scale-[1.02] block no-underline"
@@ -186,13 +188,13 @@ export default function DashboardSelection() {
               </div>
 
               {/* Content */}
-              <h3 className="text-slate-800 text-xl md:text-2xl font-bold mb-1 tracking-tight">
+              <h3 className="text-slate-800 dark:text-slate-100 text-xl md:text-2xl font-bold mb-1 tracking-tight">
                 Dashboard
               </h3>
               <h3 className="text-[#ea580c] text-xl md:text-2xl font-bold mb-3">
                 BBM
               </h3>
-              <p className="text-slate-600 text-xs md:text-sm mb-4 leading-relaxed">
+              <p className="text-slate-600 dark:text-slate-300 text-xs md:text-sm mb-4 leading-relaxed">
                 Monitoring stok dan distribusi BBM dengan analitik komprehensif
                 dan laporan harian
               </p>
@@ -204,7 +206,7 @@ export default function DashboardSelection() {
                 border border-[#fb923c]/20 group-hover:border-[#fb923c]/40
                 transition-all duration-300"
               >
-                <span className="text-slate-700 font-medium">
+                <span className="text-slate-700 dark:text-slate-200 font-medium">
                   Akses Dashboard
                 </span>
                 <ChevronRight className="w-5 h-5 text-[#fb923c] group-hover:translate-x-1 transition-transform" />
@@ -214,9 +216,11 @@ export default function DashboardSelection() {
           {/* LNG Card */}
           <div className="flex-1 group">
             <div
-              onClick={() => window.open("https://your-lng-dashboard-url.com", "_blank")}
-              className="relative bg-white rounded-2xl p-5 md:p-6 
-                border border-slate-200 hover:border-blue-500/50
+              onClick={() =>
+                window.open("https://pln-epi.cemapp.com/login", "_blank")
+              }
+              className="relative bg-[var(--surface)] rounded-2xl p-5 md:p-6
+                border border-slate-200 dark:border-slate-700 hover:border-blue-500/50
                 cursor-pointer transition-all duration-300
                 shadow-lg shadow-slate-200/50 hover:shadow-xl hover:shadow-blue-500/20
                 hover:scale-[1.02]"
@@ -231,14 +235,15 @@ export default function DashboardSelection() {
               </div>
 
               {/* Content */}
-              <h3 className="text-slate-800 text-xl md:text-2xl font-bold mb-1 tracking-tight">
+              <h3 className="text-slate-800 dark:text-slate-100 text-xl md:text-2xl font-bold mb-1 tracking-tight">
                 Dashboard
               </h3>
               <h3 className="text-blue-600 text-xl md:text-2xl font-bold mb-3">
                 LNG
               </h3>
-              <p className="text-slate-600 text-xs md:text-sm mb-4 leading-relaxed">
-                Pantau proses regasifikasi, jadwal kargo, dan pasokan Liquefied Natural Gas secara real-time
+              <p className="text-slate-600 dark:text-slate-300 text-xs md:text-sm mb-4 leading-relaxed">
+                Pantau proses regasifikasi, jadwal kargo, dan pasokan Liquefied
+                Natural Gas secara real-time
               </p>
 
               {/* Button */}
@@ -248,7 +253,7 @@ export default function DashboardSelection() {
                 border border-cyan-400/20 group-hover:border-cyan-400/40
                 transition-all duration-300"
               >
-                <span className="text-slate-700 font-medium">
+                <span className="text-slate-700 dark:text-slate-200 font-medium">
                   Akses Dashboard
                 </span>
                 <ChevronRight className="w-5 h-5 text-blue-600 group-hover:translate-x-1 transition-transform" />
@@ -258,7 +263,7 @@ export default function DashboardSelection() {
         </div>
 
         {/* Bottom text */}
-        <p className="text-slate-500 text-xs mt-6 text-center">
+        <p className="text-slate-500 dark:text-slate-400 text-xs mt-6 text-center">
           Anda dapat berpindah dashboard kapan saja melalui menu sidebar
         </p>
       </main>

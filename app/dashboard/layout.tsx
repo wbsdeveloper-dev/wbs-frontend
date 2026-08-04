@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Geist_Mono, Reddit_Sans } from "next/font/google";
 import "../globals.css";
 import Sidebar from "../components/Sidebar";
-import { Providers } from "../providers";
 
 const redditSans = Reddit_Sans({
   subsets: ["latin"],
@@ -42,7 +41,7 @@ export default function RootLayout({
       <div className="relative z-10 flex w-full h-full min-w-0">
         <Sidebar />
         <main className="flex-1 overflow-auto pt-16 lg:pt-0">
-          <Providers>{children}</Providers>
+          {children}
         </main>
       </div>
     </div>

@@ -197,13 +197,14 @@ export default function EditBbmDataTable({
         return false;
 
       // Date Range (reportDate is YYYY-MM)
+      const recordMonth = r.reportDate ? r.reportDate.substring(0, 7) : "";
       if (filters.startDate) {
         const startMonth = filters.startDate.substring(0, 7);
-        if (r.reportDate < startMonth) return false;
+        if (recordMonth < startMonth) return false;
       }
       if (filters.endDate) {
         const endMonth = filters.endDate.substring(0, 7);
-        if (r.reportDate > endMonth) return false;
+        if (recordMonth > endMonth) return false;
       }
 
       return true;
