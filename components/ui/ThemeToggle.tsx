@@ -46,7 +46,7 @@ export default function ThemeToggle({
       </span>
       {!compact && (
         <span className="text-sm font-medium">
-          {isDark ? "Mode Terang" : "Mode Gelap"}
+          {isDark ? "Mode Gelap" : "Mode Terang"}
         </span>
       )}
     </button>
