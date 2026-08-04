@@ -105,7 +105,7 @@ export default function NoteSection({ pemasokId, pembangkitId }: Props) {
         <h3 className="font-bold">Catatan Kejadian</h3>
       </div>
       <div>
-        <div className="border border-gray-200 p-5 rounded-lg mt-3 text-gray-800 overflow-auto h-[275px]">
+        <div className="border border-gray-200 p-5 rounded-lg mt-3 text-gray-800 overflow-y-auto max-h-[500px] min-h-[100px]">
           {notes.length > 0 ? (
             <div className="space-y-4">
               {notes.map((note) => {
@@ -192,7 +192,7 @@ export default function NoteSection({ pemasokId, pembangkitId }: Props) {
               })}
             </div>
           ) : (
-            <div className="flex justify-center items-center h-full">
+            <div className="flex justify-center items-center py-8">
               <p className="text-gray-400">Belum ada catatan kejadian</p>
             </div>
           )}
