@@ -69,6 +69,24 @@ export interface MapLocationsResponse {
   legend: MapLegend;
 }
 
+/** GET /dashboard/supplier-contract-summaries */
+export interface SupplierContractSummary {
+  supplierSiteId: string;
+  supplierName: string;
+  representativeContractId: string;
+  effectiveContractNumber: string;
+  year: number;
+  jphBbtud: number | null;
+  topBbtud: number | null;
+  tjkBbtud: number | null;
+  updatedAt: string;
+}
+
+export interface SupplierContractSummariesResponse {
+  year: number;
+  items: SupplierContractSummary[];
+}
+
 /** GET /dashboard/distribution */
 export interface DistributionItem {
   name: string;
@@ -318,6 +336,13 @@ export const dashboardKeys = {
   all: ["dashboard"] as const,
   mapLocations: (region?: string, commodity?: string) =>
     [...dashboardKeys.all, "map-locations", region, commodity] as const,
+  supplierContractSummaries: (year: number, commodity?: string) =>
+    [
+      ...dashboardKeys.all,
+      "supplier-contract-summaries",
+      year,
+      commodity,
+    ] as const,
   distribution: (
     startDate: string,
     endDate: string,
@@ -446,6 +471,15 @@ function buildQuery(
 export async function getMapLocations(region?: string, commodity?: string) {
   return dashboardFetch<MapLocationsResponse>(
     `/dashboard/map-locations${buildQuery({ region, commodity })}`,
+  );
+}
+
+export async function getSupplierContractSummaries(
+  year: number,
+  commodity?: string,
+) {
+  return dashboardFetch<SupplierContractSummariesResponse>(
+    `/dashboard/supplier-contract-summaries${buildQuery({ year, commodity })}`,
   );
 }
 
@@ -840,6 +874,24 @@ export function useTransportirChart(startDate: string, endDate: string) {
       return body.data as TransportirChartResponse;
     },
     enabled: !!startDate && !!endDate,
+  });
+}
+
+// ==========================================
+// Supplier Contract Summaries
+// ==========================================
+
+export function useSupplierContractSummaries(
+  year: number,
+  commodity?: string,
+  options?: Partial<UseQueryOptions<SupplierContractSummariesResponse>>,
+) {
+  return useQuery({
+    queryKey: dashboardKeys.supplierContractSummaries(year, commodity),
+    queryFn: () => getSupplierContractSummaries(year, commodity),
+    enabled: Number.isInteger(year) && year > 0,
+    staleTime: 5 * 60 * 1000,
+    ...options,
   });
 }
 

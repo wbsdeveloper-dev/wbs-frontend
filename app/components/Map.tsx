@@ -30,7 +30,9 @@ import FilterAutocomplete from "./FilterAutocomplete";
 import {
   useMapLocations,
   usePemasokBbtudSnapshot,
+  useSupplierContractSummaries,
   type MapSite,
+  type SupplierContractSummary,
 } from "@/hooks/service/dashboard-api";
 import { useRelations, useSites } from "@/hooks/service/site-api";
 import { usePrivilege } from "@/hooks/usePrivilege";
@@ -185,6 +187,7 @@ function formatReportDate(reportDate: string): string {
 
 export default function Map({ commodity }: { commodity?: string }) {
   const mapRef = useRef<HTMLDivElement>(null);
+  const currentYear = new Date().getFullYear();
 
   const filterExportButtons = (node: HTMLElement) => {
     if (node?.classList?.contains("export-buttons-container")) return false;
@@ -306,6 +309,11 @@ export default function Map({ commodity }: { commodity?: string }) {
     isLoading: isPemasokBbtudLoading,
     isError: isPemasokBbtudError,
   } = usePemasokBbtudSnapshot();
+  const {
+    data: supplierContractSummaries,
+    isLoading: isSupplierContractsLoading,
+    isError: isSupplierContractsError,
+  } = useSupplierContractSummaries(currentYear, commodity);
   const { data: gasSites } = useSites(commodity ? { commodity } : undefined);
 
   const { hasPrivilege } = usePrivilege();
@@ -419,6 +427,18 @@ export default function Map({ commodity }: { commodity?: string }) {
     () => new Set(gasSites?.map((s) => s.id) || []),
     [gasSites],
   );
+
+  const supplierContractsBySiteId = useMemo(() => {
+    const lookup = new globalThis.Map<string, SupplierContractSummary[]>();
+
+    supplierContractSummaries?.items.forEach((contract) => {
+      const contracts = lookup.get(contract.supplierSiteId) || [];
+      contracts.push(contract);
+      lookup.set(contract.supplierSiteId, contracts);
+    });
+
+    return lookup;
+  }, [supplierContractSummaries]);
 
   const pemasokBbtudByPair = useMemo(() => {
     const lookup = new globalThis.Map<
@@ -703,6 +723,10 @@ export default function Map({ commodity }: { commodity?: string }) {
                 const info = getSiteCategoryInfo(site.siteType, site.commodity);
                 const icon = createCategoryIcon(catKey, info.color);
                 const connected = getConnectedSites(site.id);
+                const supplierContracts =
+                  site.siteType === "PEMASOK"
+                    ? supplierContractsBySiteId.get(site.id) || []
+                    : [];
 
                 return (
                   <Marker
@@ -712,9 +736,14 @@ export default function Map({ commodity }: { commodity?: string }) {
                     }
                     icon={icon}
                   >
-                    <Popup>
-                      <div className="min-w-[230px] sm:min-w-[250px]">
-                        <div className="flex items-center gap-1.5 mb-1.5">
+                    <Popup
+                      keepInView
+                      autoPan
+                      autoPanPadding={[20, 20]}
+                      maxWidth={320}
+                    >
+                      <div className="min-w-[220px] max-w-[280px] sm:min-w-[260px] sm:max-w-[320px] max-h-[170px] sm:max-h-[220px] md:max-h-[270px] lg:max-h-[320px] overflow-y-auto overscroll-contain px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                        <div className="flex items-center gap-1.5 mb-0.5">
                           <span
                             className="w-3.5 h-3.5 rounded-full flex items-center justify-center flex-shrink-0"
                             style={{ backgroundColor: info.color }}
@@ -725,62 +754,102 @@ export default function Map({ commodity }: { commodity?: string }) {
                             />
                           </span>
                           <p
-                            className="font-semibold text-xs uppercase tracking-wider"
+                            className="!m-0 font-semibold text-xs uppercase tracking-wider"
                             style={{ color: info.color }}
                           >
                             {info.label}
                           </p>
                         </div>
-                        <p className="text-sm font-bold text-gray-900">
+                        <p className="!m-0 text-sm font-bold text-gray-900">
                           {site.name}
                         </p>
-                        <div className="mt-2 pt-2 border-t border-gray-200 space-y-1">
-                          <div className="flex justify-between text-xs">
-                            <span className="text-gray-500">Komoditas:</span>
-                            <span className="font-medium text-gray-800">
-                              {site.commodity || "GAS PIPA"}
-                            </span>
-                          </div>
-                          <div className="flex justify-between text-xs">
-                            <span className="text-gray-500">Region:</span>
-                            <span className="font-medium text-gray-700">
-                              {site.region}
-                            </span>
-                          </div>
-                          {site.siteType === "PEMBANGKIT" && site.capacity && (
-                            <div className="flex justify-between text-xs">
-                              <span className="text-gray-500">Kapasitas:</span>
-                              <span className="font-medium text-primary">
-                                {parseFloat(
-                                  String(site.capacity),
-                                ).toLocaleString()}{" "}
-                                MW
-                              </span>
+                        {site.region && (
+                          <p className="!mt-0.5 !mb-0 text-[11px] text-gray-500">
+                            Region {site.region}
+                          </p>
+                        )}
+                        {site.siteType === "PEMBANGKIT" &&
+                          (site.capacity || site.owner) && (
+                            <div className="mt-2 pt-2 border-t border-gray-200 space-y-1">
+                              {site.capacity && (
+                                <div className="flex justify-between text-xs">
+                                  <span className="text-gray-500">
+                                    Kapasitas:
+                                  </span>
+                                  <span className="font-medium text-primary">
+                                    {parseFloat(
+                                      String(site.capacity),
+                                    ).toLocaleString()}{" "}
+                                    MW
+                                  </span>
+                                </div>
+                              )}
+                              {site.owner && (
+                                <div className="flex justify-between text-xs">
+                                  <span className="text-gray-500">
+                                    Kepemilikan:
+                                  </span>
+                                  <span className="font-medium text-gray-700">
+                                    {site.owner}
+                                  </span>
+                                </div>
+                              )}
                             </div>
                           )}
-                          {site.siteType === "PEMBANGKIT" && site.owner && (
-                            <div className="flex justify-between text-xs">
-                              <span className="text-gray-500">
-                                Kepemilikan:
-                              </span>
-                              <span className="font-medium text-gray-700">
-                                {site.owner}
-                              </span>
-                            </div>
-                          )}
-                          <div className="flex justify-between text-xs">
-                            <span className="text-gray-500">Koordinat:</span>
-                            <span className="font-medium text-gray-700">
-                              {site.lat != null
-                                ? Number(site.lat).toFixed(4)
-                                : ""}
-                              ,{" "}
-                              {site.lng != null
-                                ? Number(site.lng).toFixed(4)
-                                : ""}
-                            </span>
+                        {site.siteType === "PEMASOK" && (
+                          <div className="mt-2 pt-2 border-t border-gray-200">
+                            <p className="text-xs font-semibold text-gray-700 mb-1.5">
+                              Kontrak Aktif {currentYear}
+                            </p>
+                            {isSupplierContractsLoading ? (
+                              <div className="flex items-center gap-1.5 text-xs text-gray-500 py-1">
+                                <Loader2 size={12} className="animate-spin" />
+                                Memuat data kontrak...
+                              </div>
+                            ) : isSupplierContractsError ? (
+                              <p className="text-xs text-red-500 py-1">
+                                Data kontrak gagal dimuat
+                              </p>
+                            ) : supplierContracts.length === 0 ? (
+                              <p className="text-xs text-gray-500 py-1">
+                                Tidak ada kontrak aktif
+                              </p>
+                            ) : (
+                              <div className="space-y-1.5">
+                                {supplierContracts.map((contract) => (
+                                  <div
+                                    key={`${contract.supplierSiteId}:${contract.effectiveContractNumber.toLowerCase()}`}
+                                    className="rounded-md border border-gray-200 bg-gray-50 p-2"
+                                  >
+                                    <p className="text-[11px] font-semibold text-gray-800 break-words mb-1.5">
+                                      {contract.effectiveContractNumber}
+                                    </p>
+                                    <div className="grid grid-cols-[36px_1fr] gap-x-2 gap-y-0.5 text-[11px]">
+                                      <span className="text-gray-500">JPH</span>
+                                      <span className="font-medium text-gray-800 text-right whitespace-nowrap">
+                                        {contract.jphBbtud != null
+                                          ? `${bbtudFormatter.format(contract.jphBbtud)} BBTUD`
+                                          : "-"}
+                                      </span>
+                                      <span className="text-gray-500">TOP</span>
+                                      <span className="font-medium text-gray-800 text-right whitespace-nowrap">
+                                        {contract.topBbtud != null
+                                          ? `${bbtudFormatter.format(contract.topBbtud)} BBTUD`
+                                          : "-"}
+                                      </span>
+                                      <span className="text-gray-500">TJK</span>
+                                      <span className="font-medium text-gray-800 text-right whitespace-nowrap">
+                                        {contract.tjkBbtud != null
+                                          ? `${bbtudFormatter.format(contract.tjkBbtud)} BBTUD`
+                                          : "-"}
+                                      </span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
                           </div>
-                        </div>
+                        )}
                         {connected.length > 0 && (
                           <div className="mt-2 pt-2 border-t border-gray-200">
                             <p className="text-xs text-gray-500 mb-1">
