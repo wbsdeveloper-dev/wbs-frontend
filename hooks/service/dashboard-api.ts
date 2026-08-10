@@ -3,9 +3,16 @@
 
 import { ApiError, type ApiResponse } from "./bot-api";
 import { getAccessToken } from "@/lib/auth";
-import { useQuery, useMutation, useQueryClient, type UseQueryOptions, type UseMutationOptions } from "@tanstack/react-query";
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  type UseQueryOptions,
+  type UseMutationOptions,
+} from "@tanstack/react-query";
 
-export const DASHBOARD_API_HOST = process.env.NEXT_PUBLIC_API_HOST || "http://localhost:3005/api";
+export const DASHBOARD_API_HOST =
+  process.env.NEXT_PUBLIC_API_HOST || "http://localhost:3005/api";
 
 // ---------------------------------------------------------------------------
 // Response types
@@ -16,11 +23,11 @@ export interface MapSite {
   id: string;
   name: string;
   siteType:
-  | "PEMBANGKIT"
-  | "PEMASOK"
-  | "TRANSPORTIR"
-  | "TERMINAL"
-  | "HANDOVER_POINT";
+    | "PEMBANGKIT"
+    | "PEMASOK"
+    | "TRANSPORTIR"
+    | "TERMINAL"
+    | "HANDOVER_POINT";
   lat: string | null;
   lng: string | null;
   region: string;
@@ -223,6 +230,20 @@ export interface DashboardFilters {
 }
 
 /** GET /dashboard/summary */
+/** GET /dashboard/pemasok-bbtud-snapshot */
+export interface PemasokBbtudEntry {
+  siteId: string;
+  siteName: string;
+  bbtud: number | null;
+}
+
+export interface PemasokBbtudSnapshot {
+  supplierId: string;
+  supplierName: string;
+  reportDate: string;
+  pembangkits: PemasokBbtudEntry[];
+}
+
 export interface DashboardSummary {
   period: {
     start: string;
@@ -297,12 +318,52 @@ export const dashboardKeys = {
   all: ["dashboard"] as const,
   mapLocations: (region?: string, commodity?: string) =>
     [...dashboardKeys.all, "map-locations", region, commodity] as const,
-  distribution: (startDate: string, endDate: string, by: string, region?: string) =>
-    [...dashboardKeys.all, "distribution", startDate, endDate, by, region] as const,
-  topSuppliers: (startDate: string, endDate: string, limit?: number, region?: string, commodity?: string) =>
-    [...dashboardKeys.all, "top-suppliers", startDate, endDate, limit, region, commodity] as const,
-  topPlants: (startDate: string, endDate: string, limit?: number, region?: string, commodity?: string) =>
-    [...dashboardKeys.all, "top-plants", startDate, endDate, limit, region, commodity] as const,
+  distribution: (
+    startDate: string,
+    endDate: string,
+    by: string,
+    region?: string,
+  ) =>
+    [
+      ...dashboardKeys.all,
+      "distribution",
+      startDate,
+      endDate,
+      by,
+      region,
+    ] as const,
+  topSuppliers: (
+    startDate: string,
+    endDate: string,
+    limit?: number,
+    region?: string,
+    commodity?: string,
+  ) =>
+    [
+      ...dashboardKeys.all,
+      "top-suppliers",
+      startDate,
+      endDate,
+      limit,
+      region,
+      commodity,
+    ] as const,
+  topPlants: (
+    startDate: string,
+    endDate: string,
+    limit?: number,
+    region?: string,
+    commodity?: string,
+  ) =>
+    [
+      ...dashboardKeys.all,
+      "top-plants",
+      startDate,
+      endDate,
+      limit,
+      region,
+      commodity,
+    ] as const,
   chartFlow: (
     startDate: string,
     endDate: string,
@@ -327,12 +388,42 @@ export const dashboardKeys = {
     ] as const,
   contractInfo: (pemasokId?: string, pembangkitId?: string) =>
     [...dashboardKeys.all, "contract-info", pemasokId, pembangkitId] as const,
-  events: (startDate: string, endDate: string, limit?: number, page?: number, siteId?: string, severity?: string) =>
-    [...dashboardKeys.all, "events", startDate, endDate, limit, page, siteId, severity] as const,
-  filters: (pemasokId?: string, pembangkitId?: string, region?: string, commodity?: string) =>
-    [...dashboardKeys.all, "filters", pemasokId, pembangkitId, region, commodity] as const,
+  events: (
+    startDate: string,
+    endDate: string,
+    limit?: number,
+    page?: number,
+    siteId?: string,
+    severity?: string,
+  ) =>
+    [
+      ...dashboardKeys.all,
+      "events",
+      startDate,
+      endDate,
+      limit,
+      page,
+      siteId,
+      severity,
+    ] as const,
+  filters: (
+    pemasokId?: string,
+    pembangkitId?: string,
+    region?: string,
+    commodity?: string,
+  ) =>
+    [
+      ...dashboardKeys.all,
+      "filters",
+      pemasokId,
+      pembangkitId,
+      region,
+      commodity,
+    ] as const,
   summary: (startDate: string, endDate: string) =>
     [...dashboardKeys.all, "summary", startDate, endDate] as const,
+  pemasokBbtudSnapshot: () =>
+    [...dashboardKeys.all, "pemasok-bbtud-snapshot"] as const,
 };
 
 // ---------------------------------------------------------------------------
@@ -358,7 +449,12 @@ export async function getMapLocations(region?: string, commodity?: string) {
   );
 }
 
-export async function getDistribution(startDate: string, endDate: string, by: "supplier" | "plant", region?: string) {
+export async function getDistribution(
+  startDate: string,
+  endDate: string,
+  by: "supplier" | "plant",
+  region?: string,
+) {
   return dashboardFetch<DistributionResponse>(
     `/dashboard/distribution${buildQuery({ startDate, endDate, by, region })}`,
   );
@@ -433,7 +529,9 @@ export async function createEvent(payload: CreateEventPayload) {
   });
 }
 
-export async function uploadEventFile(file: File): Promise<{ filename: string }> {
+export async function uploadEventFile(
+  file: File,
+): Promise<{ filename: string }> {
   const url = `${DASHBOARD_API_HOST}/dashboard/events/upload`;
   const accessToken = getAccessToken();
 
@@ -460,7 +558,7 @@ export async function uploadEventFile(file: File): Promise<{ filename: string }>
     throw new ApiError(res.status, msg);
   }
 
-  const body = await res.json() as any;
+  const body = (await res.json()) as any;
   if (!body.success) {
     throw new ApiError(res.status, body.message || "Gagal mengunggah file");
   }
@@ -474,7 +572,12 @@ export async function deleteEvent(id: string) {
   });
 }
 
-export async function getFilters(pemasokId?: string, pembangkitId?: string, region?: string, commodity?: string) {
+export async function getFilters(
+  pemasokId?: string,
+  pembangkitId?: string,
+  region?: string,
+  commodity?: string,
+) {
   return dashboardFetch<DashboardFilters>(
     `/dashboard/filters${buildQuery({ pemasokId, pembangkitId, region, commodity })}`,
   );
@@ -525,8 +628,15 @@ export function useTopSuppliers(
   options?: Partial<UseQueryOptions<TopResponse>>,
 ) {
   return useQuery({
-    queryKey: dashboardKeys.topSuppliers(startDate, endDate, limit, region, commodity),
-    queryFn: () => getTopSuppliers(startDate, endDate, limit, region, commodity),
+    queryKey: dashboardKeys.topSuppliers(
+      startDate,
+      endDate,
+      limit,
+      region,
+      commodity,
+    ),
+    queryFn: () =>
+      getTopSuppliers(startDate, endDate, limit, region, commodity),
     ...options,
   });
 }
@@ -540,7 +650,13 @@ export function useTopPlants(
   options?: Partial<UseQueryOptions<TopResponse>>,
 ) {
   return useQuery({
-    queryKey: dashboardKeys.topPlants(startDate, endDate, limit, region, commodity),
+    queryKey: dashboardKeys.topPlants(
+      startDate,
+      endDate,
+      limit,
+      region,
+      commodity,
+    ),
     queryFn: () => getTopPlants(startDate, endDate, limit, region, commodity),
     ...options,
   });
@@ -606,7 +722,14 @@ export function useEvents(
   options?: Partial<UseQueryOptions<EventsResponse>>,
 ) {
   return useQuery({
-    queryKey: dashboardKeys.events(startDate, endDate, limit, page, siteId, severity),
+    queryKey: dashboardKeys.events(
+      startDate,
+      endDate,
+      limit,
+      page,
+      siteId,
+      severity,
+    ),
     queryFn: () => getEvents(startDate, endDate, limit, page, siteId, severity),
     ...options,
   });
@@ -717,5 +840,26 @@ export function useTransportirChart(startDate: string, endDate: string) {
       return body.data as TransportirChartResponse;
     },
     enabled: !!startDate && !!endDate,
+  });
+}
+
+// ==========================================
+// Pemasok BBTUD Snapshot (D-1)
+// ==========================================
+
+export async function getPemasokBbtudSnapshot(): Promise<PemasokBbtudSnapshot[]> {
+  return dashboardFetch<PemasokBbtudSnapshot[]>(
+    "/dashboard/pemasok-bbtud-snapshot",
+  );
+}
+
+export function usePemasokBbtudSnapshot(
+  options?: Partial<UseQueryOptions<PemasokBbtudSnapshot[]>>,
+) {
+  return useQuery({
+    queryKey: dashboardKeys.pemasokBbtudSnapshot(),
+    queryFn: () => getPemasokBbtudSnapshot(),
+    staleTime: 5 * 60 * 1000,
+    ...options,
   });
 }
