@@ -29,8 +29,8 @@ import {
 import FilterAutocomplete from "./FilterAutocomplete";
 import {
   useMapLocations,
+  usePemasokBbtudSnapshot,
   type MapSite,
-  type MapLegend,
 } from "@/hooks/service/dashboard-api";
 import { useRelations, useSites } from "@/hooks/service/site-api";
 import { usePrivilege } from "@/hooks/usePrivilege";
@@ -51,7 +51,10 @@ L.Icon.Default.mergeOptions({
 // Category Helper & Icon Definitions
 // ---------------------------------------------------------------------------
 
-function getSiteCategoryKey(siteType: string, commodity?: string | null): string {
+function getSiteCategoryKey(
+  siteType: string,
+  commodity?: string | null,
+): string {
   if (siteType === "TRANSPORTIR") return "TRANSPORTIR";
   if (siteType === "TERMINAL") return "TERMINAL";
   if (siteType === "HANDOVER_POINT") return "HANDOVER_POINT";
@@ -69,7 +72,10 @@ function getSiteCategoryKey(siteType: string, commodity?: string | null): string
   return `${siteType}_GAS_PIPA`;
 }
 
-const CATEGORY_CONFIG: Record<string, { label: string; color: string; svg: string }> = {
+const CATEGORY_CONFIG: Record<
+  string,
+  { label: string; color: string; svg: string }
+> = {
   PEMBANGKIT_LNG: {
     label: "Pembangkit (LNG)",
     color: "#1581fb", // Vibrant Blue for LNG Pembangkit
@@ -146,6 +152,33 @@ const createCategoryIcon = (catKey: string, fallbackColor: string) => {
   });
 };
 
+interface ExportRelationship {
+  sourceName: string;
+  targetName: string;
+  commodity: string | null;
+  status: string;
+}
+
+type JsPdfWithAutoTable = jsPDF & {
+  lastAutoTable: { finalY: number };
+};
+
+const bbtudFormatter = new Intl.NumberFormat("id-ID", {
+  minimumFractionDigits: 4,
+  maximumFractionDigits: 4,
+});
+
+const d1DateFormatter = new Intl.DateTimeFormat("id-ID", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+});
+
+function formatReportDate(reportDate: string): string {
+  const [year, month, day] = reportDate.split("-").map(Number);
+  return d1DateFormatter.format(new Date(year, month - 1, day));
+}
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -164,7 +197,7 @@ export default function Map({ commodity }: { commodity?: string }) {
       const dataUrl = await htmlToImage.toPng(mapRef.current, {
         backgroundColor: "#ffffff",
         pixelRatio: 2,
-        filter: filterExportButtons as any,
+        filter: filterExportButtons,
       });
       const link = document.createElement("a");
       link.download = `peta-gas-${new Date().toISOString().split("T")[0]}.png`;
@@ -181,7 +214,7 @@ export default function Map({ commodity }: { commodity?: string }) {
       const canvas = await htmlToImage.toCanvas(mapRef.current, {
         backgroundColor: "#ffffff",
         pixelRatio: 2,
-        filter: filterExportButtons as any,
+        filter: filterExportButtons,
       });
       const imgData = canvas.toDataURL("image/png");
 
@@ -193,60 +226,69 @@ export default function Map({ commodity }: { commodity?: string }) {
 
       pdf.addPage();
       pdf.setFontSize(14);
-      pdf.text("Breakdown Relasi Pembangkit dan Pemasok Berdasarkan Region", 14, 15);
+      pdf.text(
+        "Breakdown Relasi Pembangkit dan Pemasok Berdasarkan Region",
+        14,
+        15,
+      );
 
-      const relationships = filteredPipes.reduce((acc, pipe) => {
-        const source = getSiteById(pipe.sourceSiteId);
-        const target = getSiteById(pipe.targetSiteId);
-        if (!source || !target) return acc;
+      const relationships = filteredPipes.reduce(
+        (acc, pipe) => {
+          const source = getSiteById(pipe.sourceSiteId);
+          const target = getSiteById(pipe.targetSiteId);
+          if (!source || !target) return acc;
 
-        const region = target.region || source.region || "Unknown Region";
+          const region = target.region || source.region || "Unknown Region";
 
-        if (!acc[region]) {
-          acc[region] = [];
-        }
+          if (!acc[region]) {
+            acc[region] = [];
+          }
 
-        acc[region].push({
-          sourceName: source.name,
-          targetName: target.name,
-          commodity: pipe.commodity,
-          status: pipe.status
-        });
+          acc[region].push({
+            sourceName: source.name,
+            targetName: target.name,
+            commodity: pipe.commodity,
+            status: pipe.status,
+          });
 
-        return acc;
-      }, {} as Record<string, any[]>);
+          return acc;
+        },
+        {} as Record<string, ExportRelationship[]>,
+      );
 
       let startY = 25;
 
-      Object.keys(relationships).sort().forEach((region) => {
-        pdf.setFontSize(12);
-        pdf.text(`Region: ${region}`, 14, startY);
-        startY += 5;
+      Object.keys(relationships)
+        .sort()
+        .forEach((region) => {
+          pdf.setFontSize(12);
+          pdf.text(`Region: ${region}`, 14, startY);
+          startY += 5;
 
-        const regionData = relationships[region].map((rel, index) => [
-          index + 1,
-          rel.targetName,
-          rel.sourceName,
-          rel.commodity || "-"
-        ]);
+          const regionData = relationships[region].map((rel, index) => [
+            index + 1,
+            rel.targetName,
+            rel.sourceName,
+            rel.commodity || "-",
+          ]);
 
-        autoTable(pdf, {
-          startY: startY,
-          head: [["No", "Pembangkit", "Pemasok", "Komoditas"]],
-          body: regionData,
-          theme: 'grid',
-          headStyles: { fillColor: [41, 128, 185], textColor: 255 },
-          styles: { fontSize: 10 },
-          margin: { left: 14, right: 14 },
+          autoTable(pdf, {
+            startY: startY,
+            head: [["No", "Pembangkit", "Pemasok", "Komoditas"]],
+            body: regionData,
+            theme: "grid",
+            headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+            styles: { fontSize: 10 },
+            margin: { left: 14, right: 14 },
+          });
+
+          startY = (pdf as JsPdfWithAutoTable).lastAutoTable.finalY + 15;
+
+          if (startY > pdf.internal.pageSize.getHeight() - 20) {
+            pdf.addPage();
+            startY = 20;
+          }
         });
-
-        startY = (pdf as any).lastAutoTable.finalY + 15;
-
-        if (startY > pdf.internal.pageSize.getHeight() - 20) {
-          pdf.addPage();
-          startY = 20;
-        }
-      });
 
       pdf.save(`peta-gas-${new Date().toISOString().split("T")[0]}.pdf`);
     } catch (err) {
@@ -259,9 +301,12 @@ export default function Map({ commodity }: { commodity?: string }) {
     undefined,
     commodity,
   );
-  const { data: gasSites } = useSites(
-    commodity ? { commodity } : undefined,
-  );
+  const {
+    data: pemasokBbtudSnapshots,
+    isLoading: isPemasokBbtudLoading,
+    isError: isPemasokBbtudError,
+  } = usePemasokBbtudSnapshot();
+  const { data: gasSites } = useSites(commodity ? { commodity } : undefined);
 
   const { hasPrivilege } = usePrivilege();
   const canReadSites = hasPrivilege("site_management", "READ");
@@ -287,7 +332,7 @@ export default function Map({ commodity }: { commodity?: string }) {
     PEMASOK_LNG: true,
     PEMASOK_GAS_PIPA: true,
   });
-  const [showPipes, setShowPipes] = useState(true);
+  const showPipes = true;
 
   // Filter states
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
@@ -312,41 +357,56 @@ export default function Map({ commodity }: { commodity?: string }) {
   }, []);
 
   // ---- Relational Filtering Helpers ---------------------------------------
-  const getConnectedSet = useCallback((siteName: string, siteType: string) => {
-    if (!data?.sites || !relations) return null;
-    const site = data.sites.find(s => s.siteType === siteType && s.name === siteName);
-    if (!site) return null;
+  const getConnectedSet = useCallback(
+    (siteName: string, siteType: string) => {
+      if (!data?.sites || !relations) return null;
+      const site = data.sites.find(
+        (s) => s.siteType === siteType && s.name === siteName,
+      );
+      if (!site) return null;
 
-    const connected = new Set<string>();
-    connected.add(site.id);
-    relations.forEach(rel => {
-      if (rel.source_site_id === site.id) connected.add(rel.target_site_id);
-      if (rel.target_site_id === site.id) connected.add(rel.source_site_id);
-    });
-    return connected;
-  }, [data?.sites, relations]);
+      const connected = new Set<string>();
+      connected.add(site.id);
+      relations.forEach((rel) => {
+        if (rel.source_site_id === site.id) connected.add(rel.target_site_id);
+        if (rel.target_site_id === site.id) connected.add(rel.source_site_id);
+      });
+      return connected;
+    },
+    [data?.sites, relations],
+  );
 
   const intersect = useCallback((sets: (Set<string> | null)[]) => {
     const activeSets = sets.filter((s): s is Set<string> => s !== null);
     if (activeSets.length === 0) return null;
     let result = new Set(activeSets[0]);
     for (let i = 1; i < activeSets.length; i++) {
-      result = new Set([...result].filter(x => activeSets[i].has(x)));
+      result = new Set([...result].filter((x) => activeSets[i].has(x)));
     }
     return result;
   }, []);
 
-  const pemasokSet = useMemo(() => selectedPemasok ? getConnectedSet(selectedPemasok, "PEMASOK") : null, [selectedPemasok, getConnectedSet]);
-  const pembangkitSet = useMemo(() => selectedPembangkit ? getConnectedSet(selectedPembangkit, "PEMBANGKIT") : null, [selectedPembangkit, getConnectedSet]);
+  const pemasokSet = useMemo(
+    () =>
+      selectedPemasok ? getConnectedSet(selectedPemasok, "PEMASOK") : null,
+    [selectedPemasok, getConnectedSet],
+  );
+  const pembangkitSet = useMemo(
+    () =>
+      selectedPembangkit
+        ? getConnectedSet(selectedPembangkit, "PEMBANGKIT")
+        : null,
+    [selectedPembangkit, getConnectedSet],
+  );
 
   const regionSet = useMemo(() => {
     if (!selectedRegion || !data?.sites) return null;
-    const regionSites = data.sites.filter(s => s.region === selectedRegion);
+    const regionSites = data.sites.filter((s) => s.region === selectedRegion);
     const rSet = new Set<string>();
-    regionSites.forEach(s => {
+    regionSites.forEach((s) => {
       rSet.add(s.id);
       if (relations) {
-        relations.forEach(rel => {
+        relations.forEach((rel) => {
           if (rel.source_site_id === s.id) rSet.add(rel.target_site_id);
           if (rel.target_site_id === s.id) rSet.add(rel.source_site_id);
         });
@@ -355,7 +415,28 @@ export default function Map({ commodity }: { commodity?: string }) {
     return rSet;
   }, [selectedRegion, data?.sites, relations]);
 
-  const gasSiteIds = useMemo(() => new Set(gasSites?.map((s) => s.id) || []), [gasSites]);
+  const gasSiteIds = useMemo(
+    () => new Set(gasSites?.map((s) => s.id) || []),
+    [gasSites],
+  );
+
+  const pemasokBbtudByPair = useMemo(() => {
+    const lookup = new globalThis.Map<
+      string,
+      { bbtud: number | null; reportDate: string }
+    >();
+
+    pemasokBbtudSnapshots?.forEach((supplier) => {
+      supplier.pembangkits.forEach((pembangkit) => {
+        lookup.set(`${supplier.supplierId}:${pembangkit.siteId}`, {
+          bbtud: pembangkit.bbtud,
+          reportDate: supplier.reportDate,
+        });
+      });
+    });
+
+    return lookup;
+  }, [pemasokBbtudSnapshots]);
 
   const regionOptions = useMemo(() => {
     if (!data?.sites) return [];
@@ -363,40 +444,49 @@ export default function Map({ commodity }: { commodity?: string }) {
 
     let validSites = data.sites;
     if (commodity && gasSiteIds) {
-      validSites = validSites.filter(s => gasSiteIds.has(s.id));
+      validSites = validSites.filter((s) => gasSiteIds.has(s.id));
     }
     if (validIds) {
-      validSites = validSites.filter(s => validIds.has(s.id));
+      validSites = validSites.filter((s) => validIds.has(s.id));
     }
-    return Array.from(new Set(validSites.map(s => s.region))).filter(Boolean).sort();
-  }, [data?.sites, pemasokSet, pembangkitSet, intersect, commodity, gasSiteIds]);
+    return Array.from(new Set(validSites.map((s) => s.region)))
+      .filter(Boolean)
+      .sort();
+  }, [
+    data?.sites,
+    pemasokSet,
+    pembangkitSet,
+    intersect,
+    commodity,
+    gasSiteIds,
+  ]);
 
   const pemasokNames = useMemo(() => {
     if (!data?.sites) return [];
     const validIds = intersect([regionSet, pembangkitSet]);
 
-    let validSites = data.sites.filter(s => s.siteType === "PEMASOK");
+    let validSites = data.sites.filter((s) => s.siteType === "PEMASOK");
     if (commodity && gasSiteIds) {
-      validSites = validSites.filter(s => gasSiteIds.has(s.id));
+      validSites = validSites.filter((s) => gasSiteIds.has(s.id));
     }
     if (validIds) {
-      validSites = validSites.filter(s => validIds.has(s.id));
+      validSites = validSites.filter((s) => validIds.has(s.id));
     }
-    return validSites.map(s => s.name).sort();
+    return validSites.map((s) => s.name).sort();
   }, [data?.sites, regionSet, pembangkitSet, intersect, commodity, gasSiteIds]);
 
   const pembangkitNames = useMemo(() => {
     if (!data?.sites) return [];
     const validIds = intersect([regionSet, pemasokSet]);
 
-    let validSites = data.sites.filter(s => s.siteType === "PEMBANGKIT");
+    let validSites = data.sites.filter((s) => s.siteType === "PEMBANGKIT");
     if (commodity && gasSiteIds) {
-      validSites = validSites.filter(s => gasSiteIds.has(s.id));
+      validSites = validSites.filter((s) => gasSiteIds.has(s.id));
     }
     if (validIds) {
-      validSites = validSites.filter(s => validIds.has(s.id));
+      validSites = validSites.filter((s) => validIds.has(s.id));
     }
-    return validSites.map(s => s.name).sort();
+    return validSites.map((s) => s.name).sort();
   }, [data?.sites, regionSet, pemasokSet, intersect, commodity, gasSiteIds]);
 
   useEffect(() => {
@@ -450,7 +540,7 @@ export default function Map({ commodity }: { commodity?: string }) {
     regionSet,
     pemasokSet,
     pembangkitSet,
-    intersect
+    intersect,
   ]);
 
   const filteredPipes = useMemo(() => {
@@ -465,11 +555,13 @@ export default function Map({ commodity }: { commodity?: string }) {
   // ---- helpers ------------------------------------------------------------
   const getSiteCategoryInfo = (siteType: string, commodity?: string | null) => {
     const catKey = getSiteCategoryKey(siteType, commodity);
-    return CATEGORY_CONFIG[catKey] || {
-      label: siteType,
-      color: "#999999",
-      svg: "",
-    };
+    return (
+      CATEGORY_CONFIG[catKey] || {
+        label: siteType,
+        color: "#999999",
+        svg: "",
+      }
+    );
   };
 
   const getPipeTypeColor = (relationType: string) =>
@@ -604,7 +696,10 @@ export default function Map({ commodity }: { commodity?: string }) {
 
               {/* SITE MARKERS */}
               {filteredSites.map((site) => {
-                const catKey = getSiteCategoryKey(site.siteType, site.commodity);
+                const catKey = getSiteCategoryKey(
+                  site.siteType,
+                  site.commodity,
+                );
                 const info = getSiteCategoryInfo(site.siteType, site.commodity);
                 const icon = createCategoryIcon(catKey, info.color);
                 const connected = getConnectedSites(site.id);
@@ -612,11 +707,13 @@ export default function Map({ commodity }: { commodity?: string }) {
                 return (
                   <Marker
                     key={site.id}
-                    position={[Number(site.lat), Number(site.lng)] as LatLngTuple}
+                    position={
+                      [Number(site.lat), Number(site.lng)] as LatLngTuple
+                    }
                     icon={icon}
                   >
                     <Popup>
-                      <div className="min-w-[190px]">
+                      <div className="min-w-[230px] sm:min-w-[250px]">
                         <div className="flex items-center gap-1.5 mb-1.5">
                           <span
                             className="w-3.5 h-3.5 rounded-full flex items-center justify-center flex-shrink-0"
@@ -654,13 +751,18 @@ export default function Map({ commodity }: { commodity?: string }) {
                             <div className="flex justify-between text-xs">
                               <span className="text-gray-500">Kapasitas:</span>
                               <span className="font-medium text-primary">
-                                {parseFloat(String(site.capacity)).toLocaleString()} MW
+                                {parseFloat(
+                                  String(site.capacity),
+                                ).toLocaleString()}{" "}
+                                MW
                               </span>
                             </div>
                           )}
                           {site.siteType === "PEMBANGKIT" && site.owner && (
                             <div className="flex justify-between text-xs">
-                              <span className="text-gray-500">Kepemilikan:</span>
+                              <span className="text-gray-500">
+                                Kepemilikan:
+                              </span>
                               <span className="font-medium text-gray-700">
                                 {site.owner}
                               </span>
@@ -669,8 +771,13 @@ export default function Map({ commodity }: { commodity?: string }) {
                           <div className="flex justify-between text-xs">
                             <span className="text-gray-500">Koordinat:</span>
                             <span className="font-medium text-gray-700">
-                              {site.lat != null ? Number(site.lat).toFixed(4) : ""},{" "}
-                              {site.lng != null ? Number(site.lng).toFixed(4) : ""}
+                              {site.lat != null
+                                ? Number(site.lat).toFixed(4)
+                                : ""}
+                              ,{" "}
+                              {site.lng != null
+                                ? Number(site.lng).toFixed(4)
+                                : ""}
                             </span>
                           </div>
                         </div>
@@ -683,19 +790,70 @@ export default function Map({ commodity }: { commodity?: string }) {
                                   ? "Pembangkit:"
                                   : "Relasi:"}
                             </p>
-                            <ul className="text-xs text-gray-700 space-y-0.5">
+                            <ul className="text-xs text-gray-700 space-y-1">
                               {connected.map((c) => {
-                                const cInfo = getSiteCategoryInfo(c.siteType, c.commodity);
+                                const cInfo = getSiteCategoryInfo(
+                                  c.siteType,
+                                  c.commodity,
+                                );
+                                const bbtudData =
+                                  site.siteType === "PEMASOK" &&
+                                  c.siteType === "PEMBANGKIT"
+                                    ? pemasokBbtudByPair.get(
+                                        `${site.id}:${c.id}`,
+                                      )
+                                    : undefined;
+                                const hasBbtud = bbtudData?.bbtud != null;
+
                                 return (
-                                  <li
-                                    key={c.id}
-                                    className="flex items-center gap-1.5 text-xs"
-                                  >
-                                    <span
-                                      className="w-2 h-2 rounded-full flex-shrink-0"
-                                      style={{ backgroundColor: cInfo.color }}
-                                    />
-                                    <span className="truncate">{c.name}</span>
+                                  <li key={c.id} className="text-xs">
+                                    <div className="flex items-start gap-2">
+                                      <span
+                                        className="w-2 h-2 rounded-full flex-shrink-0 mt-[3px]"
+                                        style={{ backgroundColor: cInfo.color }}
+                                      />
+                                      <div className="min-w-0 flex-1">
+                                        <div className="flex items-baseline justify-between gap-3 text-gray-700 leading-tight">
+                                          <span className="font-medium min-w-0">
+                                            {c.name}
+                                          </span>
+                                          {site.siteType === "PEMASOK" &&
+                                            c.siteType === "PEMBANGKIT" && (
+                                              <>
+                                                {isPemasokBbtudLoading ? (
+                                                  <span className="text-gray-500 whitespace-nowrap">
+                                                    Memuat data D-1...
+                                                  </span>
+                                                ) : hasBbtud ? (
+                                                  <span className="font-semibold text-primary whitespace-nowrap">
+                                                    {bbtudFormatter.format(
+                                                      bbtudData.bbtud!,
+                                                    )}{" "}
+                                                    BBTUD
+                                                  </span>
+                                                ) : (
+                                                  <span className="text-gray-500 text-right">
+                                                    Data D-1 belum tersedia
+                                                  </span>
+                                                )}
+                                              </>
+                                            )}
+                                        </div>
+                                        {site.siteType === "PEMASOK" &&
+                                          c.siteType === "PEMBANGKIT" &&
+                                          !isPemasokBbtudLoading &&
+                                          !isPemasokBbtudError &&
+                                          hasBbtud &&
+                                          bbtudData?.reportDate && (
+                                            <div className="text-[10px] text-gray-500 mt-1">
+                                              Data:{" "}
+                                              {formatReportDate(
+                                                bbtudData.reportDate,
+                                              )}
+                                            </div>
+                                          )}
+                                      </div>
+                                    </div>
                                   </li>
                                 );
                               })}
@@ -781,7 +939,9 @@ export default function Map({ commodity }: { commodity?: string }) {
                   {/* Pipe type legend items */}
                   {data.legend.pipeTypes.length > 0 && (
                     <div className="pt-1 border-t border-gray-200">
-                      <p className="text-[10px] text-gray-500 mb-1 font-semibold">Jenis Pipa</p>
+                      <p className="text-[10px] text-gray-500 mb-1 font-semibold">
+                        Jenis Pipa
+                      </p>
                       {data.legend.pipeTypes.map((pt) => (
                         <div
                           key={pt.type}

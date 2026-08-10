@@ -558,7 +558,7 @@ export async function uploadEventFile(
     throw new ApiError(res.status, msg);
   }
 
-  const body = (await res.json()) as any;
+  const body = (await res.json()) as ApiResponse<{ filename: string }>;
   if (!body.success) {
     throw new ApiError(res.status, body.message || "Gagal mengunggah file");
   }
@@ -847,7 +847,9 @@ export function useTransportirChart(startDate: string, endDate: string) {
 // Pemasok BBTUD Snapshot (D-1)
 // ==========================================
 
-export async function getPemasokBbtudSnapshot(): Promise<PemasokBbtudSnapshot[]> {
+export async function getPemasokBbtudSnapshot(): Promise<
+  PemasokBbtudSnapshot[]
+> {
   return dashboardFetch<PemasokBbtudSnapshot[]>(
     "/dashboard/pemasok-bbtud-snapshot",
   );
