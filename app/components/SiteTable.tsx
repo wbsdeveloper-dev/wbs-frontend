@@ -10,6 +10,9 @@ import {
   AlertTriangle,
   ChevronLeft,
   ChevronRight,
+  Filter,
+  ChevronDown,
+  X,
 } from "lucide-react";
 import {
   useSites,
@@ -22,6 +25,7 @@ import {
   type DeleteRelationResponse,
 } from "@/hooks/service/site-api";
 import { usePrivilege } from "@/hooks/usePrivilege";
+import { useKertasKerjaMaster } from "@/hooks/service/kertas-kerja-api";
 import FilterAutocomplete from "./FilterAutocomplete";
 
 // Status badge component
@@ -33,14 +37,12 @@ const StatusBadge = ({
   isEnabled: boolean;
 }) => (
   <span
-    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
-      isEnabled ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"
-    }`}
+    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${isEnabled ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"
+      }`}
   >
     <span
-      className={`w-1.5 h-1.5 rounded-full ${
-        isEnabled ? "bg-green-500" : "bg-red-500"
-      }`}
+      className={`w-1.5 h-1.5 rounded-full ${isEnabled ? "bg-green-500" : "bg-red-500"
+        }`}
     />
     {isEnabled ? "Aktif" : "Nonaktif"}
   </span>
@@ -302,9 +304,35 @@ export function DaftarSiteTable({
   const canDelete = hasPrivilege("site_management", "DELETE");
   const hasAction = canUpdate || canDelete;
 
+  const isBbm = commodity?.includes("BBM");
+  const isGasPipa = commodity?.includes("GAS PIPA") || commodity?.includes("LNG");
+  
+  const regionCommodityFilter = isBbm ? "BBM" : isGasPipa ? "GAS PIPA" : undefined;
+
+  const { data: rawRegions = [] } = useKertasKerjaMaster(
+    "master_region",
+    regionCommodityFilter
+  );
+
+  const regions = regionCommodityFilter
+    ? rawRegions.filter((r: any) => !r.comodity || r.comodity === regionCommodityFilter || (regionCommodityFilter === "GAS PIPA" && r.comodity === "LNG"))
+    : rawRegions;
+
+  const [showFilters, setShowFilters] = useState(false);
+
+  // Applied filters
   const [searchTerm, setSearchTerm] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedCommodity, setSelectedCommodity] = useState<string>("");
+  const [selectedType, setSelectedType] = useState<string>("");
+  const [selectedRegion, setSelectedRegion] = useState<string>("");
+
+  // Local filters (for the panel)
+  const [localSearchTerm, setLocalSearchTerm] = useState("");
+  const [localCommodity, setLocalCommodity] = useState<string>("");
+  const [localType, setLocalType] = useState<string>("");
+  const [localRegion, setLocalRegion] = useState<string>("");
+
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(0);
   const [itemsPerPage] = useState(5);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -313,11 +341,41 @@ export function DaftarSiteTable({
   const [pendingDeleteName, setPendingDeleteName] = useState<string>("");
   const [warnedSites, setWarnedSites] = useState<string[]>([]);
 
+  const activeFilterCount = [
+    searchTerm,
+    selectedCommodity,
+    selectedType,
+    selectedRegion,
+  ].filter(Boolean).length;
+
+  const handleApplyFilters = () => {
+    setSearchTerm(localSearchTerm);
+    setSelectedCommodity(localCommodity);
+    setSelectedType(localType);
+    setSelectedRegion(localRegion);
+    setCurrentPage(0);
+  };
+
+  const handleResetFilters = () => {
+    setLocalSearchTerm("");
+    setLocalCommodity("");
+    setLocalType("");
+    setLocalRegion("");
+
+    setSearchTerm("");
+    setSelectedCommodity("");
+    setSelectedType("");
+    setSelectedRegion("");
+    setCurrentPage(0);
+  };
+
   const effectiveCommodity = selectedCommodity ? selectedCommodity : commodity;
 
   const { data: sites, isLoading } = useSites({
     search: debouncedSearch,
     commodity: effectiveCommodity,
+    type: selectedType || undefined,
+    region: selectedRegion || undefined,
   });
   const deleteSiteMutation = useDeleteSite({
     onSuccess: (data: DeleteSiteResponse) => {
@@ -408,34 +466,180 @@ export function DaftarSiteTable({
               Tabel Daftar Pemasok & Pembangkit
             </span>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="w-52">
-              <FilterAutocomplete
-                label=""
-                options={["Semua Komoditas", ...commodityOptions]}
-                value={selectedCommodity || "Semua Komoditas"}
-                onChange={(val) => {
-                  const valStr = typeof val === "string" ? val : val || "";
-                  setSelectedCommodity(
-                    valStr === "Semua Komoditas" ? "" : valStr,
-                  );
-                  setCurrentPage(0);
-                }}
-                placeholder="Pilih Komoditas"
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowFilters((v) => !v)}
+              className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-all duration-200 ${showFilters || activeFilterCount > 0
+                ? "bg-primary text-white border-primary"
+                : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                }`}
+            >
+              <Filter size={16} />
+              Filter
+              {activeFilterCount > 0 && (
+                <span className="ml-1 flex items-center justify-center w-5 h-5 bg-white/20 rounded-full text-xs font-bold">
+                  {activeFilterCount}
+                </span>
+              )}
+              <ChevronDown
+                size={14}
+                className={`transition-transform duration-200 ${showFilters ? "rotate-180" : ""}`}
               />
-            </div>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Cari Pemasok / Pembangkit..."
-                className="w-48 md:w-56 pl-8 pr-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
-              />
-            </div>
+            </button>
           </div>
         </div>
+
+        {/* Filter Panel */}
+        {showFilters && (
+          <div className="px-4 py-4 border-b border-gray-200 bg-gray-50/50">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              {/* Pencarian filter */}
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                  Pencarian
+                </label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                  <input
+                    type="text"
+                    value={localSearchTerm}
+                    onChange={(e) => setLocalSearchTerm(e.target.value)}
+                    placeholder="Nama pemasok / pembangkit"
+                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
+                  />
+                </div>
+              </div>
+
+              {/* Tipe filter */}
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                  Jenis
+                </label>
+                <select
+                  value={localType}
+                  onChange={(e) => setLocalType(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200 bg-white"
+                >
+                  <option value="">Semua Jenis</option>
+                  <option value="PEMBANGKIT">Pembangkit</option>
+                  <option value="PEMASOK">Pemasok</option>
+                  <option value="TRANSPORTIR">Transportir</option>
+                </select>
+              </div>
+
+              {/* Region filter */}
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                  Region
+                </label>
+                <select
+                  value={localRegion}
+                  onChange={(e) => setLocalRegion(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200 bg-white"
+                >
+                  <option value="">Semua Region</option>
+                  {regions.map((region: any) => (
+                    <option key={region.id} value={region.name}>
+                      {region.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Komoditas filter */}
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                  Komoditas
+                </label>
+                <select
+                  value={localCommodity}
+                  onChange={(e) => setLocalCommodity(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200 bg-white"
+                >
+                  <option value="">Semua Komoditas</option>
+                  {commodityOptions.map((opt) => (
+                    <option key={opt} value={opt}>
+                      {opt === "GAS PIPA" ? "Gas Pipa" : opt}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Filter actions */}
+            <div className="flex items-center justify-end gap-2 mt-4">
+              <button
+                onClick={handleResetFilters}
+                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200"
+              >
+                <X size={14} />
+                Reset
+              </button>
+              <button
+                onClick={handleApplyFilters}
+                className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
+              >
+                <Search size={14} />
+                Terapkan Filter
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Active filter tags */}
+        {activeFilterCount > 0 && !showFilters && (
+          <div className="px-4 py-2.5 border-b border-gray-200 flex items-center gap-2 flex-wrap bg-white">
+            <span className="text-xs text-gray-500 font-medium">
+              Filter aktif:
+            </span>
+            {searchTerm && (
+              <FilterTag
+                label={`Pencarian: ${searchTerm}`}
+                onRemove={() => {
+                  setLocalSearchTerm("");
+                  setSearchTerm("");
+                  setCurrentPage(0);
+                }}
+              />
+            )}
+            {selectedType && (
+              <FilterTag
+                label={`Jenis: ${selectedType === "PEMBANGKIT" ? "Pembangkit" : selectedType === "PEMASOK" ? "Pemasok" : "Transportir"}`}
+                onRemove={() => {
+                  setLocalType("");
+                  setSelectedType("");
+                  setCurrentPage(0);
+                }}
+              />
+            )}
+            {selectedCommodity && (
+              <FilterTag
+                label={`Komoditas: ${selectedCommodity}`}
+                onRemove={() => {
+                  setLocalCommodity("");
+                  setSelectedCommodity("");
+                  setCurrentPage(0);
+                }}
+              />
+            )}
+            {selectedRegion && (
+              <FilterTag
+                label={`Lokasi: ${selectedRegion}`}
+                onRemove={() => {
+                  setLocalRegion("");
+                  setSelectedRegion("");
+                  setCurrentPage(0);
+                }}
+              />
+            )}
+            <button
+              onClick={handleResetFilters}
+              className="text-xs text-red-500 hover:text-red-700 font-medium ml-1 transition-colors"
+            >
+              Hapus Semua
+            </button>
+          </div>
+        )}
 
         {/* Table Body */}
         <div className="overflow-x-auto">
@@ -449,7 +653,7 @@ export function DaftarSiteTable({
                   Jenis
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Lokasi
+                  Region
                 </th>
                 {commodity?.includes("BBM") && (
                   <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
@@ -909,5 +1113,29 @@ export default function SiteTable() {
       <DaftarSiteTable />
       <RelasiOperasionalTable />
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Filter Tag component
+// ---------------------------------------------------------------------------
+
+function FilterTag({
+  label,
+  onRemove,
+}: {
+  label: string;
+  onRemove: () => void;
+}) {
+  return (
+    <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium">
+      {label}
+      <button
+        onClick={onRemove}
+        className="hover:bg-primary/20 rounded-full p-0.5 transition-colors"
+      >
+        <X size={12} />
+      </button>
+    </span>
   );
 }

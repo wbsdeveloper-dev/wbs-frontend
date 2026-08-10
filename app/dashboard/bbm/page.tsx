@@ -1121,7 +1121,13 @@ export default function Home() {
       });
     }
 
-    return Object.values(chartGroups);
+    const sortedData = Object.values(chartGroups).sort((a, b) => {
+      if (a.name === "Tidak Tersedia Data") return 1;
+      if (b.name === "Tidak Tersedia Data") return -1;
+      return a.name.localeCompare(b.name);
+    });
+
+    return sortedData;
   }, [
     bbmMonthlyData,
     graphicXAxisMode,
@@ -1375,11 +1381,15 @@ export default function Home() {
                       </button>
                     </div>
 
-                    {/* Toggle Switch */}
+                    {/* Main Toggle Switch */}
                     <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
                       <button
-                        onClick={() => setChartMode("akumulasi")}
-                        className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${chartMode === "akumulasi"
+                        onClick={() => {
+                          if (chartMode !== "akumulasi" && chartMode !== "nasional") {
+                            setChartMode("akumulasi");
+                          }
+                        }}
+                        className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${(chartMode === "akumulasi" || chartMode === "nasional")
                           ? "bg-white text-gray-900 shadow-sm"
                           : "text-gray-500 hover:text-gray-700"
                           }`}
@@ -1393,25 +1403,7 @@ export default function Home() {
                           : "text-gray-500 hover:text-gray-700"
                           }`}
                       >
-                        Penyaluran Harian
-                      </button>
-                      <button
-                        onClick={() => {
-                          setChartMode("nasional");
-                          setGraphicPeriod("3Y");
-                          setGraphicIntervalMode("Tahun");
-                          const now = new Date();
-                          const start = new Date(now.getFullYear() - 2, 0, 1);
-                          const end = new Date(now.getFullYear(), 11, 31);
-                          setGraphicStart(formatLocalISODate(start));
-                          setGraphicEnd(formatLocalISODate(end));
-                        }}
-                        className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${chartMode === "nasional"
-                          ? "bg-white text-gray-900 shadow-sm"
-                          : "text-gray-500 hover:text-gray-700"
-                          }`}
-                      >
-                        Grafik Tren
+                        Grafik Penyaluran
                       </button>
                     </div>
                   </div>
@@ -1476,9 +1468,48 @@ export default function Home() {
                           Produk: {graphicProduct.join(", ")}
                         </span>
                       )}
+                      {graphicModa.length > 0 && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-pink-50 text-pink-700 border border-pink-100">
+                          Moda: {graphicModa.join(", ")}
+                        </span>
+                      )}
                     </div>
                   )}
               </div>
+
+              {/* Secondary Toggle (Grafik Akumulasi vs Grafik Tren) */}
+              {(chartMode === "akumulasi" || chartMode === "nasional") && (
+                <div className="flex items-center gap-6 mb-2 border-b border-gray-100">
+                  <button
+                    onClick={() => setChartMode("akumulasi")}
+                    className={`pb-3 text-sm font-medium transition-all duration-200 relative ${chartMode === "akumulasi" ? "text-primary" : "text-gray-500 hover:text-gray-700"}`}
+                  >
+                    Bar chart
+                    {chartMode === "akumulasi" && (
+                      <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary rounded-t-full" />
+                    )}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setChartMode("nasional");
+                      setGraphicPeriod("3Y");
+                      setGraphicIntervalMode("Tahun");
+                      const now = new Date();
+                      const start = new Date(now.getFullYear() - 2, 0, 1);
+                      const end = new Date(now.getFullYear(), 11, 31);
+                      setGraphicStart(formatLocalISODate(start));
+                      setGraphicEnd(formatLocalISODate(end));
+                    }}
+                    className={`pb-3 text-sm font-medium transition-all duration-200 relative ${chartMode === "nasional" ? "text-primary" : "text-gray-500 hover:text-gray-700"}`}
+                  >
+                    Line chart
+                    {chartMode === "nasional" && (
+                      <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary rounded-t-full" />
+                    )}
+                  </button>
+                </div>
+              )}
+
               <div
                 className="w-full flex-1 min-h-0 mt-4 bg-white"
                 ref={chartRef}
@@ -1870,33 +1901,37 @@ export default function Home() {
                   </div>
 
                   {/* Interval Selectors */}
-                  <p className="block text-sm font-medium text-gray-700 mb-2">
-                    Interval
-                  </p>
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {(["Tahun", "Bulan", "Hari"] as const).map((mode) => {
-                      if (
-                        graphicPeriod === "1W" &&
-                        (mode === "Tahun" || mode === "Bulan")
-                      )
-                        return null;
-                      if (graphicPeriod === "1M" && mode === "Tahun")
-                        return null;
+                  {chartMode === "realisasi-moda" && (
+                    <>
+                      <p className="block text-sm font-medium text-gray-700 mb-2">
+                        Interval
+                      </p>
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        {(["Tahun", "Bulan", "Hari"] as const).map((mode) => {
+                          if (
+                            graphicPeriod === "1W" &&
+                            (mode === "Tahun" || mode === "Bulan")
+                          )
+                            return null;
+                          if (graphicPeriod === "1M" && mode === "Tahun")
+                            return null;
 
-                      return (
-                        <button
-                          key={mode}
-                          className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${graphicIntervalMode === mode
-                            ? "bg-primary text-white shadow-sm"
-                            : "bg-gray-50 text-gray-600 hover:bg-gray-100"
-                            }`}
-                          onClick={() => setGraphicIntervalMode(mode)}
-                        >
-                          {mode}
-                        </button>
-                      );
-                    })}
-                  </div>
+                          return (
+                            <button
+                              key={mode}
+                              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${graphicIntervalMode === mode
+                                ? "bg-primary text-white shadow-sm"
+                                : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+                                }`}
+                              onClick={() => setGraphicIntervalMode(mode)}
+                            >
+                              {mode}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
 
                   <DateRangeFilter
                     startDate={graphicStart}

@@ -36,7 +36,8 @@ import { usePrivilege } from "@/hooks/usePrivilege";
 
 export default function ReconciliationMonitorPage() {
   const { hasPrivilege } = usePrivilege();
-  const canDelete = hasPrivilege("data_management", "DELETE");
+  const canRead = hasPrivilege("monitor_rekonsiliasi_gas", "READ");
+  const canDelete = hasPrivilege("monitor_rekonsiliasi_gas", "DELETE");
   const deleteJobMutation = useDeleteReconciliationJob();
   const bulkDeleteJobsMutation = useDeleteReconciliationJobsBulk();
 
@@ -309,15 +310,17 @@ export default function ReconciliationMonitorPage() {
             <span>Live Auto-Refresh (3d)</span>
           </label>
 
-          <button
-            onClick={() => refetch()}
-            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 rounded-lg transition-colors shadow-sm cursor-pointer"
-          >
-            <RefreshCw
-              className={`w-3.5 h-3.5 ${isRefetching ? "animate-spin" : ""}`}
-            />
-            Refresh
-          </button>
+          {canRead && (
+            <button
+              onClick={() => refetch()}
+              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 rounded-lg transition-colors shadow-sm cursor-pointer"
+            >
+              <RefreshCw
+                className={`w-3.5 h-3.5 ${isRefetching ? "animate-spin" : ""}`}
+              />
+              Refresh
+            </button>
+          )}
         </div>
       </div>
 
@@ -417,76 +420,80 @@ export default function ReconciliationMonitorPage() {
           action={
             <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
               {/* Filter Sumber Data */}
-              <div className="flex items-center gap-1 bg-gray-50 border border-gray-200 px-2 py-1 rounded-md text-xs">
-                <Filter className="w-3 h-3 text-gray-400" />
-                <span className="font-semibold text-gray-600">Sumber:</span>
-                <select
-                  value={sourceFilter}
-                  onChange={(e) => {
-                    setSourceFilter(e.target.value);
-                    setPage(1);
-                  }}
-                  className="bg-transparent text-gray-800 font-medium focus:outline-none cursor-pointer text-xs"
-                >
-                  <option value="all">Semua</option>
-                  <option value="WA">WhatsApp</option>
-                  <option value="EMAIL">Email PLN</option>
-                  <option value="SPREADSHEET">Spreadsheet</option>
-                  <option value="MANUAL">Manual</option>
-                  <option value="BA">BA</option>
-                </select>
-              </div>
+              {canRead && (
+                <>
+                  <div className="flex items-center gap-1 bg-gray-50 border border-gray-200 px-2 py-1 rounded-md text-xs">
+                    <Filter className="w-3 h-3 text-gray-400" />
+                    <span className="font-semibold text-gray-600">Sumber:</span>
+                    <select
+                      value={sourceFilter}
+                      onChange={(e) => {
+                        setSourceFilter(e.target.value);
+                        setPage(1);
+                      }}
+                      className="bg-transparent text-gray-800 font-medium focus:outline-none cursor-pointer text-xs"
+                    >
+                      <option value="all">Semua</option>
+                      <option value="WA">WhatsApp</option>
+                      <option value="EMAIL">Email PLN</option>
+                      <option value="SPREADSHEET">Spreadsheet</option>
+                      <option value="MANUAL">Manual</option>
+                      <option value="BA">BA</option>
+                    </select>
+                  </div>
 
-              {/* Filter Status */}
-              <div className="flex items-center gap-1 bg-gray-50 border border-gray-200 px-2 py-1 rounded-md text-xs">
-                <Filter className="w-3 h-3 text-gray-400" />
-                <span className="font-semibold text-gray-600">Status:</span>
-                <select
-                  value={statusFilter}
-                  onChange={(e) => {
-                    setStatusFilter(e.target.value);
-                    setPage(1);
-                  }}
-                  className="bg-transparent text-gray-800 font-medium focus:outline-none cursor-pointer text-xs"
-                >
-                  <option value="all">Semua</option>
-                  <option value="RUNNING">Running</option>
-                  <option value="PENDING">Pending</option>
-                  <option value="RETRY_WAIT">Retry</option>
-                  <option value="DONE">Done</option>
-                  <option value="FAILED">Failed</option>
-                </select>
-              </div>
+                  {/* Filter Status */}
+                  <div className="flex items-center gap-1 bg-gray-50 border border-gray-200 px-2 py-1 rounded-md text-xs">
+                    <Filter className="w-3 h-3 text-gray-400" />
+                    <span className="font-semibold text-gray-600">Status:</span>
+                    <select
+                      value={statusFilter}
+                      onChange={(e) => {
+                        setStatusFilter(e.target.value);
+                        setPage(1);
+                      }}
+                      className="bg-transparent text-gray-800 font-medium focus:outline-none cursor-pointer text-xs"
+                    >
+                      <option value="all">Semua</option>
+                      <option value="RUNNING">Running</option>
+                      <option value="PENDING">Pending</option>
+                      <option value="RETRY_WAIT">Retry</option>
+                      <option value="DONE">Done</option>
+                      <option value="FAILED">Failed</option>
+                    </select>
+                  </div>
 
-              {/* Text Search Pembangkit */}
-              <div className="relative">
-                <Search className="w-3 h-3 text-gray-400 absolute left-2 top-2" />
-                <input
-                  type="text"
-                  placeholder="Pembangkit..."
-                  value={siteSearch}
-                  onChange={(e) => {
-                    setSiteSearch(e.target.value);
-                    setPage(1);
-                  }}
-                  className="pl-6 pr-2 py-1 text-xs border border-gray-200 rounded-md text-gray-800 focus:outline-none focus:ring-1 focus:ring-secondary w-28"
-                />
-              </div>
+                  {/* Text Search Pembangkit */}
+                  <div className="relative">
+                    <Search className="w-3 h-3 text-gray-400 absolute left-2 top-2" />
+                    <input
+                      type="text"
+                      placeholder="Pembangkit..."
+                      value={siteSearch}
+                      onChange={(e) => {
+                        setSiteSearch(e.target.value);
+                        setPage(1);
+                      }}
+                      className="pl-6 pr-2 py-1 text-xs border border-gray-200 rounded-md text-gray-800 focus:outline-none focus:ring-1 focus:ring-secondary w-28"
+                    />
+                  </div>
 
-              {/* Text Search Pemasok */}
-              <div className="relative">
-                <Search className="w-3 h-3 text-gray-400 absolute left-2 top-2" />
-                <input
-                  type="text"
-                  placeholder="Pemasok..."
-                  value={supplierSearch}
-                  onChange={(e) => {
-                    setSupplierSearch(e.target.value);
-                    setPage(1);
-                  }}
-                  className="pl-6 pr-2 py-1 text-xs border border-gray-200 rounded-md text-gray-800 focus:outline-none focus:ring-1 focus:ring-secondary w-28"
-                />
-              </div>
+                  {/* Text Search Pemasok */}
+                  <div className="relative">
+                    <Search className="w-3 h-3 text-gray-400 absolute left-2 top-2" />
+                    <input
+                      type="text"
+                      placeholder="Pemasok..."
+                      value={supplierSearch}
+                      onChange={(e) => {
+                        setSupplierSearch(e.target.value);
+                        setPage(1);
+                      }}
+                      className="pl-6 pr-2 py-1 text-xs border border-gray-200 rounded-md text-gray-800 focus:outline-none focus:ring-1 focus:ring-secondary w-28"
+                    />
+                  </div>
+                </>
+              )}
 
               {/* Bulk Delete Button */}
               {canDelete && selectedJobIds.length > 0 && (
@@ -549,9 +556,8 @@ export default function ReconciliationMonitorPage() {
                 items.map((job) => (
                   <tr
                     key={job.id}
-                    className={`hover:bg-gray-50/60 transition-colors ${
-                      selectedJobIds.includes(job.id) ? "bg-red-50/30" : ""
-                    }`}
+                    className={`hover:bg-gray-50/60 transition-colors ${selectedJobIds.includes(job.id) ? "bg-red-50/30" : ""
+                      }`}
                   >
                     {canDelete && (
                       <td className="px-3 py-3 text-center">
@@ -594,13 +600,15 @@ export default function ReconciliationMonitorPage() {
                     </td>
                     <td className="px-4 py-3 text-center">
                       <div className="flex items-center justify-center gap-1.5">
-                        <button
-                          onClick={() => setSelectedJob(job)}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-secondary bg-teal-50 hover:bg-teal-100 rounded-md transition-colors cursor-pointer"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                          Detail
-                        </button>
+                        {canRead && (
+                          <button
+                            onClick={() => setSelectedJob(job)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-secondary bg-teal-50 hover:bg-teal-100 rounded-md transition-colors cursor-pointer"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            Detail
+                          </button>
+                        )}
                         {canDelete && (
                           <button
                             onClick={() => setJobToDelete(job)}
@@ -699,11 +707,10 @@ export default function ReconciliationMonitorPage() {
                       <button
                         key={p}
                         onClick={() => setPage(p as number)}
-                        className={`min-w-[2rem] h-8 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer ${
-                          p === page
+                        className={`min-w-[2rem] h-8 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer ${p === page
                             ? "bg-primary text-white shadow-sm"
                             : "text-gray-700 hover:bg-gray-100"
-                        }`}
+                          }`}
                       >
                         {p}
                       </button>

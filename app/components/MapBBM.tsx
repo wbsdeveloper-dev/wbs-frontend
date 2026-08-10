@@ -318,6 +318,8 @@ export default function Map() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [modalSiteList, setModalSiteList] = useState<{
     title: string;
+    siteName?: string;
+    siteType?: string;
     list: {
       id: string;
       name: string;
@@ -364,6 +366,18 @@ export default function Map() {
     "BBM",
   );
   const { data: bbmMonthlyData } = useBbmMonthly();
+
+  const latestMonthYear = useMemo(() => {
+    if (!bbmMonthlyData || bbmMonthlyData.length === 0) return "";
+    const reportDate = bbmMonthlyData[0]?.reportDate;
+    if (!reportDate) return "";
+    const date = new Date(reportDate);
+    const months = [
+      "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+      "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+    ];
+    return `${months[date.getMonth()]} ${date.getFullYear()}`;
+  }, [bbmMonthlyData]);
 
   const filterProductOptions = useMemo(() => {
     if (!masterProductData) return [];
@@ -861,6 +875,8 @@ export default function Map() {
                                     onClick={() => {
                                       setModalSiteList({
                                         title: "Daftar Pembangkit",
+                                        siteName: site.name,
+                                        siteType: site.siteType,
                                         list: summary.pembangkitList!,
                                       });
                                       setModalSearchQuery("");
@@ -876,6 +892,8 @@ export default function Map() {
                                     onClick={() => {
                                       setModalSiteList({
                                         title: "Daftar Pemasok",
+                                        siteName: site.name,
+                                        siteType: site.siteType,
                                         list: summary.pemasokList!,
                                       });
                                       setModalSearchQuery("");
@@ -1172,7 +1190,31 @@ export default function Map() {
       {/* Pembangkit / Pemasok List Modal */}
       {modalSiteList && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-5xl max-h-[85vh] flex flex-col md:flex-row animate-fade-in overflow-hidden">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-5xl max-h-[85vh] flex flex-col animate-fade-in overflow-hidden">
+            <div className="flex justify-between items-center p-4 border-b border-gray-200 bg-gray-50/50 shrink-0">
+              <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                <span className="w-1.5 h-6 bg-primary rounded-full inline-block"></span>
+                {modalSiteList.siteName ? (
+                  <>
+                    <span className="font-medium text-gray-500">
+                      {modalSiteList.siteType === "PEMASOK" ? "TBBM" : "Pembangkit"}
+                    </span>
+                    {modalSiteList.siteName}
+                  </>
+                ) : (
+                  modalSiteList.title
+                )}
+              </h2>
+              <button
+                onClick={() => {
+                  setModalSiteList(null);
+                  setModalSearchQuery("");
+                }}
+                className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded-full transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
             {(() => {
               const PRODUCTS = filterProductOptions.length > 0 ? filterProductOptions : [
                 "HSD",
@@ -1185,6 +1227,28 @@ export default function Map() {
               ];
               const MODES = filterModaOptions.length > 0 ? filterModaOptions : ["Kapal", "Truck", "Pipa", "Lainnya"];
 
+              const handleSiteRedirect = (targetId: string) => {
+                const targetSummary = bbmSitesSummary?.find((s) => s.id === targetId);
+                if (!targetSummary) return;
+
+                if (targetSummary.siteType === "PEMBANGKIT") {
+                  setModalSiteList({
+                    title: "Daftar Pemasok",
+                    siteName: targetSummary.name,
+                    siteType: targetSummary.siteType,
+                    list: targetSummary.pemasokList || [],
+                  });
+                } else if (targetSummary.siteType === "PEMASOK") {
+                  setModalSiteList({
+                    title: "Daftar Pembangkit",
+                    siteName: targetSummary.name,
+                    siteType: targetSummary.siteType,
+                    list: targetSummary.pembangkitList || [],
+                  });
+                }
+                setModalSearchQuery("");
+              };
+
               const filteredModalList = modalSearchQuery
                 ? modalSiteList.list.filter((site) =>
                   site.name
@@ -1195,10 +1259,12 @@ export default function Map() {
 
               let grandNom = 0;
               let grandReal = 0;
+              let grandTerima = 0;
+              let grandRenom = 0;
               let grandPem = 0;
               const prodSummary: Record<
                 string,
-                { nom: number; real: number; pem: number }
+                { nom: number; real: number; terima: number; renom: number; pem: number }
               > = {};
               const modaSummary: Record<string, number> = {};
               const prodModaSummary: Record<
@@ -1207,7 +1273,7 @@ export default function Map() {
               > = {};
 
               PRODUCTS.forEach((p) => {
-                prodSummary[p] = { nom: 0, real: 0, pem: 0 };
+                prodSummary[p] = { nom: 0, real: 0, terima: 0, renom: 0, pem: 0 };
                 prodModaSummary[p] = {};
                 MODES.forEach((m) => {
                   prodModaSummary[p][m] = 0;
@@ -1218,11 +1284,15 @@ export default function Map() {
               filteredModalList.forEach((site) => {
                 grandNom += site.totalNominasi || 0;
                 grandReal += site.totalRealisasi || 0;
+                grandTerima += site.totalPenerimaan || 0;
+                grandRenom += site.totalRenominasi || 0;
                 grandPem += site.totalPemakaian || 0;
 
                 PRODUCTS.forEach((prod) => {
                   prodSummary[prod].nom += site[`totalNominasi${prod}`] || 0;
                   prodSummary[prod].real += site[`totalRealisasi${prod}`] || 0;
+                  prodSummary[prod].terima += site[`totalPenerimaan${prod}`] || 0;
+                  prodSummary[prod].renom += site[`totalRenominasi${prod}`] || 0;
                   prodSummary[prod].pem += site[`totalPemakaian${prod}`] || 0;
 
                   MODES.forEach((moda) => {
@@ -1240,32 +1310,23 @@ export default function Map() {
                 (p) =>
                   prodSummary[p].nom > 0 ||
                   prodSummary[p].real > 0 ||
+                  prodSummary[p].terima > 0 ||
+                  prodSummary[p].renom > 0 ||
                   prodSummary[p].pem > 0,
               );
               const activeModas = MODES.filter((m) => modaSummary[m] > 0);
 
               return (
-                <>
+                <div className="flex flex-col md:flex-row-reverse flex-1 overflow-hidden">
                   {/* LEFT SECTION (List) */}
-                  <div className="w-full md:w-1/2 flex flex-col bg-white overflow-hidden md:border-r border-gray-200">
-                    <div className="flex justify-between items-center p-4 border-b border-gray-200 shrink-0">
-                      <div className="flex items-center gap-3">
-                        <h3 className="text-lg font-bold text-gray-900">
-                          {modalSiteList.title}
-                        </h3>
-                        <div className="bg-orange-50 text-orange-600 font-bold text-xs px-2 py-1 rounded-full border border-orange-200">
-                          {filteredModalList.length} unit
-                        </div>
+                  <div className="w-full md:w-1/2 flex flex-col bg-white overflow-hidden md:border-l border-gray-200">
+                    <div className="flex items-center gap-3 p-4 border-b border-gray-200 shrink-0">
+                      <h3 className="text-lg font-bold text-gray-900">
+                        {modalSiteList.title}
+                      </h3>
+                      <div className="bg-orange-50 text-orange-600 font-bold text-xs px-2 py-1 rounded-full border border-orange-200">
+                        {filteredModalList.length} unit
                       </div>
-                      <button
-                        onClick={() => {
-                          setModalSiteList(null);
-                          setModalSearchQuery("");
-                        }}
-                        className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors md:hidden"
-                      >
-                        <X size={20} />
-                      </button>
                     </div>
 
                     <div className="px-4 py-3 border-b border-gray-200 bg-gray-50/50 shrink-0">
@@ -1296,6 +1357,8 @@ export default function Map() {
                               (prod) =>
                                 (p[`totalNominasi${prod}`] || 0) > 0 ||
                                 (p[`totalRealisasi${prod}`] || 0) > 0 ||
+                                (p[`totalPenerimaan${prod}`] || 0) > 0 ||
+                                (p[`totalRenominasi${prod}`] || 0) > 0 ||
                                 (p[`totalPemakaian${prod}`] || 0) > 0,
                             );
                             const siteActiveModas = MODES.filter(
@@ -1305,7 +1368,8 @@ export default function Map() {
                             return (
                               <li
                                 key={p.id || idx}
-                                className="flex flex-col bg-gray-50/50 rounded-xl border border-gray-200 overflow-hidden"
+                                onClick={() => p.id && handleSiteRedirect(p.id)}
+                                className="flex flex-col bg-gray-50/50 rounded-xl border border-gray-200 overflow-hidden cursor-pointer hover:border-primary/50 hover:shadow-md transition-all"
                               >
                                 <div className="flex items-center gap-3 p-3 border-b border-gray-200 bg-gray-50/80">
                                   <div className="w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-bold text-xs shrink-0 border border-orange-200">
@@ -1316,7 +1380,7 @@ export default function Map() {
                                   </span>
                                 </div>
 
-                                <div className="grid grid-cols-3 divide-x divide-gray-200 border-b border-gray-200">
+                                <div className="grid grid-cols-5 divide-x divide-gray-200 border-b border-gray-200">
                                   <div className="flex flex-col p-3">
                                     <span className="text-[10px] font-bold text-gray-400 mb-1 uppercase">
                                       Nominasi
@@ -1336,10 +1400,35 @@ export default function Map() {
                                     </span>
                                     <div className="flex items-baseline gap-1">
                                       <span className="font-bold text-emerald-600 text-base">
-                                        {p.totalRealisasi?.toLocaleString() ??
-                                          0}
+                                        {p.totalRealisasi?.toLocaleString() ?? 0}
                                       </span>
                                       <span className="text-xs text-emerald-600/70 font-medium">
+                                        kL
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className="flex flex-col p-3">
+                                    <span className="text-[10px] font-bold text-gray-400 mb-1 uppercase">
+                                      Penerimaan
+                                    </span>
+                                    <div className="flex items-baseline gap-1">
+                                      <span className="font-bold text-gray-800 text-base">
+                                        {p.totalPenerimaan?.toLocaleString() ?? 0}
+                                      </span>
+                                      <span className="text-xs text-gray-400 font-medium">
+                                        kL
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className="flex flex-col p-3 bg-white">
+                                    <span className="text-[10px] font-bold text-gray-400 mb-1 uppercase">
+                                      Renominasi
+                                    </span>
+                                    <div className="flex items-baseline gap-1">
+                                      <span className="font-bold text-gray-800 text-base">
+                                        {p.totalRenominasi?.toLocaleString() ?? 0}
+                                      </span>
+                                      <span className="text-xs text-gray-400 font-medium">
                                         kL
                                       </span>
                                     </div>
@@ -1350,8 +1439,7 @@ export default function Map() {
                                     </span>
                                     <div className="flex items-baseline gap-1">
                                       <span className="font-bold text-gray-800 text-base">
-                                        {p.totalPemakaian?.toLocaleString() ??
-                                          0}
+                                        {p.totalPemakaian?.toLocaleString() ?? 0}
                                       </span>
                                       <span className="text-xs text-gray-400 font-medium">
                                         kL
@@ -1380,7 +1468,7 @@ export default function Map() {
                                               <div className="flex items-center gap-4 text-xs">
                                                 <div className="flex flex-col items-center">
                                                   <span className="text-[9px] font-bold text-gray-400 uppercase">
-                                                    Nom
+                                                    Nominasi
                                                   </span>
                                                   <span className="font-medium text-gray-600">
                                                     {(
@@ -1391,7 +1479,7 @@ export default function Map() {
                                                 </div>
                                                 <div className="flex flex-col items-center">
                                                   <span className="text-[9px] font-bold text-gray-400 uppercase">
-                                                    Real
+                                                    Penyaluran
                                                   </span>
                                                   <span className="font-bold text-emerald-600">
                                                     {(
@@ -1403,7 +1491,31 @@ export default function Map() {
                                                 </div>
                                                 <div className="flex flex-col items-center">
                                                   <span className="text-[9px] font-bold text-gray-400 uppercase">
-                                                    Pem
+                                                    Penerimaan
+                                                  </span>
+                                                  <span className="font-medium text-gray-600">
+                                                    {(
+                                                      p[
+                                                      `totalPenerimaan${prod}`
+                                                      ] || 0
+                                                    ).toLocaleString()}
+                                                  </span>
+                                                </div>
+                                                <div className="flex flex-col items-center">
+                                                  <span className="text-[9px] font-bold text-gray-400 uppercase">
+                                                    Renominasi
+                                                  </span>
+                                                  <span className="font-medium text-gray-600">
+                                                    {(
+                                                      p[
+                                                      `totalRenominasi${prod}`
+                                                      ] || 0
+                                                    ).toLocaleString()}
+                                                  </span>
+                                                </div>
+                                                <div className="flex flex-col items-center">
+                                                  <span className="text-[9px] font-bold text-gray-400 uppercase">
+                                                    Pemakaian
                                                   </span>
                                                   <span className="font-medium text-gray-600">
                                                     {(
@@ -1482,18 +1594,16 @@ export default function Map() {
                   {/* RIGHT SECTION (Summary) */}
                   <div className="w-full md:w-1/2 bg-gray-50 flex flex-col shrink-0 border-t md:border-t-0 border-gray-200">
                     <div className="flex justify-between items-center p-4 border-b border-gray-200 shrink-0">
-                      <h3 className="text-lg font-bold text-gray-900">
-                        Resume
-                      </h3>
-                      <button
-                        onClick={() => {
-                          setModalSiteList(null);
-                          setModalSearchQuery("");
-                        }}
-                        className="hidden md:block p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded-full transition-colors border border-gray-200"
-                      >
-                        <X size={16} />
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-lg font-bold text-gray-900">
+                          Resume
+                        </h3>
+                        {latestMonthYear && (
+                          <span className="text-sm font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full border border-gray-200">
+                            {latestMonthYear}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <div className="p-4 overflow-y-auto flex-1 space-y-6">
                       {/* Grand Totals */}
@@ -1516,6 +1626,22 @@ export default function Map() {
                             </span>
                             <span className="font-bold text-emerald-600">
                               {grandReal.toLocaleString()} kL
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center p-3">
+                            <span className="text-gray-600 font-medium">
+                              Penerimaan
+                            </span>
+                            <span className="font-bold text-gray-800">
+                              {grandTerima.toLocaleString()} kL
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center p-3">
+                            <span className="text-gray-600 font-medium">
+                              Renominasi
+                            </span>
+                            <span className="font-bold text-gray-800">
+                              {grandRenom.toLocaleString()} kL
                             </span>
                           </div>
                           <div className="flex justify-between items-center p-3">
@@ -1608,6 +1734,24 @@ export default function Map() {
                                     )}
                                   <div className="flex justify-between items-center p-3 border-t border-gray-100">
                                     <span className="text-gray-600 font-medium">
+                                      Penerimaan
+                                    </span>
+                                    <span className="font-bold text-gray-800">
+                                      {prodSummary[prod].terima.toLocaleString()}{" "}
+                                      kL
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between items-center p-3 border-t border-gray-100">
+                                    <span className="text-gray-600 font-medium">
+                                      Renominasi
+                                    </span>
+                                    <span className="font-bold text-gray-800">
+                                      {prodSummary[prod].renom.toLocaleString()}{" "}
+                                      kL
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between items-center p-3 border-t border-gray-100">
+                                    <span className="text-gray-600 font-medium">
                                       Pemakaian
                                     </span>
                                     <span className="font-bold text-orange-600">
@@ -1657,7 +1801,7 @@ export default function Map() {
                       )}
                     </div>
                   </div>
-                </>
+                </div>
               );
             })()}
           </div>

@@ -31,9 +31,8 @@ import { usePrivilege } from "@/hooks/usePrivilege";
 export default function EmailInboxTable() {
   const { data: inbox = [], isLoading, isError, refetch } = useGetEmailInbox();
   const { hasPrivilege } = usePrivilege();
-  const canDelete =
-    hasPrivilege("email_ingest_gas", "DELETE") ||
-    hasPrivilege("data_input_gas", "DELETE");
+  const canRead = hasPrivilege("file_email_gas", "READ");
+  const canDelete = hasPrivilege("file_email_gas", "DELETE");
 
   const deleteSingleMutation = useDeleteEmailInbox();
   const deleteBulkMutation = useDeleteEmailInboxBulk();
@@ -247,28 +246,30 @@ export default function EmailInboxTable() {
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowFilters((prev) => !prev)}
-            className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-all duration-200 cursor-pointer ${
-              showFilters || activeFilterCount > 0
-                ? "bg-primary text-white border-primary"
-                : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-            }`}
-          >
-            <Filter size={16} />
-            Filter
-            {activeFilterCount > 0 && (
-              <span className="ml-1 flex items-center justify-center w-5 h-5 bg-white/20 rounded-full text-xs font-bold">
-                {activeFilterCount}
-              </span>
+            {canRead && (
+              <button
+                onClick={() => setShowFilters((prev) => !prev)}
+                className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-all duration-200 cursor-pointer ${
+                  showFilters || activeFilterCount > 0
+                    ? "bg-primary text-white border-primary"
+                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                }`}
+              >
+                <Filter size={16} />
+                Filter
+                {activeFilterCount > 0 && (
+                  <span className="ml-1 flex items-center justify-center w-5 h-5 bg-white/20 rounded-full text-xs font-bold">
+                    {activeFilterCount}
+                  </span>
+                )}
+                <ChevronDown
+                  size={14}
+                  className={`transition-transform duration-200 ${
+                    showFilters ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
             )}
-            <ChevronDown
-              size={14}
-              className={`transition-transform duration-200 ${
-                showFilters ? "rotate-180" : ""
-              }`}
-            />
-          </button>
         </div>
       </div>
 
@@ -505,30 +506,34 @@ export default function EmailInboxTable() {
                                 >
                                   {att.filename}
                                 </span>
-                                <button
-                                  onClick={() => handlePreview(att.storageRef, att.filename)}
-                                  disabled={downloadingRef !== null || previewingRef !== null}
-                                  className="p-1 rounded bg-slate-50 text-slate-700 border border-slate-300 hover:bg-slate-100 hover:text-slate-900 disabled:opacity-50 transition-colors cursor-pointer"
-                                  title="Pratinjau"
-                                >
-                                  {isPreviewing ? (
-                                    <Loader2 className="h-3.5 w-3.5 animate-spin text-slate-700" />
-                                  ) : (
-                                    <Eye className="h-3.5 w-3.5" />
-                                  )}
-                                </button>
-                                <button
-                                  onClick={() => handleDownload(att.storageRef, att.filename)}
-                                  disabled={downloadingRef !== null || previewingRef !== null}
-                                  className="p-1 rounded bg-green-50 text-green-800 border border-green-300 hover:bg-green-100 hover:text-green-900 disabled:opacity-50 transition-colors cursor-pointer"
-                                  title="Unduh"
-                                >
-                                  {isDownloading ? (
-                                    <Loader2 className="h-3.5 w-3.5 animate-spin text-green-800" />
-                                  ) : (
-                                    <Download className="h-3.5 w-3.5" />
-                                  )}
-                                </button>
+                                {canRead && (
+                                  <>
+                                    <button
+                                      onClick={() => handlePreview(att.storageRef, att.filename)}
+                                      disabled={downloadingRef !== null || previewingRef !== null}
+                                      className="p-1 rounded bg-slate-50 text-slate-700 border border-slate-300 hover:bg-slate-100 hover:text-slate-900 disabled:opacity-50 transition-colors cursor-pointer"
+                                      title="Pratinjau"
+                                    >
+                                      {isPreviewing ? (
+                                        <Loader2 className="h-3.5 w-3.5 animate-spin text-slate-700" />
+                                      ) : (
+                                        <Eye className="h-3.5 w-3.5" />
+                                      )}
+                                    </button>
+                                    <button
+                                      onClick={() => handleDownload(att.storageRef, att.filename)}
+                                      disabled={downloadingRef !== null || previewingRef !== null}
+                                      className="p-1 rounded bg-green-50 text-green-800 border border-green-300 hover:bg-green-100 hover:text-green-900 disabled:opacity-50 transition-colors cursor-pointer"
+                                      title="Unduh"
+                                    >
+                                      {isDownloading ? (
+                                        <Loader2 className="h-3.5 w-3.5 animate-spin text-green-800" />
+                                      ) : (
+                                        <Download className="h-3.5 w-3.5" />
+                                      )}
+                                    </button>
+                                  </>
+                                )}
                               </div>
                             );
                           })}

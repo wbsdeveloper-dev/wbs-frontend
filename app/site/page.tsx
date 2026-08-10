@@ -1,15 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, MapPin, ArrowRightLeft, Map, Loader2 } from "lucide-react";
+import { Plus, MapPin, ArrowRightLeft, Loader2 } from "lucide-react";
 import {
   DaftarSiteTable,
   RelasiOperasionalTable,
 } from "@/app/components/SiteTable";
 import { AddSiteModal } from "./components/AddSiteModal";
 import { AddRelationModal } from "./components/AddRelationModal";
-import dynamic from "next/dynamic";
-const SiteMap = dynamic(() => import("./components/SiteMap"), { ssr: false });
 import { useQueryClient } from "@tanstack/react-query";
 import { siteKeys } from "@/hooks/service/site-api";
 import { usePrivilege } from "@/hooks/usePrivilege";
@@ -19,7 +17,6 @@ import { useRouter } from "next/navigation";
 const tabs = [
   { label: "Daftar Pemasok & Pembangkit", icon: MapPin },
   { label: "Relasi Pemasok - Pembangkit", icon: ArrowRightLeft },
-  { label: "Peta Lokasi", icon: Map },
 ];
 
 export default function SitePage() {
@@ -132,7 +129,7 @@ export default function SitePage() {
         </div>
 
         <div className="flex gap-2 mb-2">
-          {activeTab !== 2 && canCreate && (
+          {canCreate && (
             <button
               onClick={handleAddButtonClick}
               className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white text-sm font-medium rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
@@ -140,9 +137,7 @@ export default function SitePage() {
               <Plus size={18} />
               {activeTab === 0
                 ? "Tambah"
-                : activeTab === 1
-                  ? "Tambah Relasi"
-                  : "Tambah Lokasi"}
+                : "Tambah Relasi"}
             </button>
           )}
         </div>
@@ -165,8 +160,6 @@ export default function SitePage() {
             onDelete={(id) => console.log("Delete relasi", id)}
           />
         )}
-
-        {activeTab === 2 && <SiteMap />}
       </div>
 
       {/* Modals */}

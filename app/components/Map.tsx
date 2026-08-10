@@ -269,6 +269,18 @@ export default function Map({ commodity }: { commodity?: string }) {
     enabled: canReadSites,
   });
 
+  // Enriched sites (patches missing commodity from map-locations API)
+  const enrichedSites = useMemo(() => {
+    if (!data?.sites) return [];
+    return data.sites.map(site => {
+      const masterSite = gasSites?.find(s => s.id === site.id);
+      return {
+        ...site,
+        commodity: masterSite?.commodity || site.commodity,
+      };
+    });
+  }, [data?.sites, gasSites]);
+
   // ---- UI state -----------------------------------------------------------
   const [legendExpanded, setLegendExpanded] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
@@ -313,8 +325,8 @@ export default function Map({ commodity }: { commodity?: string }) {
 
   // ---- Relational Filtering Helpers ---------------------------------------
   const getConnectedSet = useCallback((siteName: string, siteType: string) => {
-    if (!data?.sites || !relations) return null;
-    const site = data.sites.find(s => s.siteType === siteType && s.name === siteName);
+    if (!enrichedSites || !relations) return null;
+    const site = enrichedSites.find(s => s.siteType === siteType && s.name === siteName);
     if (!site) return null;
 
     const connected = new Set<string>();
@@ -340,8 +352,8 @@ export default function Map({ commodity }: { commodity?: string }) {
   const pembangkitSet = useMemo(() => selectedPembangkit ? getConnectedSet(selectedPembangkit, "PEMBANGKIT") : null, [selectedPembangkit, getConnectedSet]);
 
   const regionSet = useMemo(() => {
-    if (!selectedRegion || !data?.sites) return null;
-    const regionSites = data.sites.filter(s => s.region === selectedRegion);
+    if (!selectedRegion || !enrichedSites) return null;
+    const regionSites = enrichedSites.filter(s => s.region === selectedRegion);
     const rSet = new Set<string>();
     regionSites.forEach(s => {
       rSet.add(s.id);
@@ -353,15 +365,15 @@ export default function Map({ commodity }: { commodity?: string }) {
       }
     });
     return rSet;
-  }, [selectedRegion, data?.sites, relations]);
+  }, [selectedRegion, enrichedSites, relations]);
 
   const gasSiteIds = useMemo(() => new Set(gasSites?.map((s) => s.id) || []), [gasSites]);
 
   const regionOptions = useMemo(() => {
-    if (!data?.sites) return [];
+    if (!enrichedSites.length) return [];
     const validIds = intersect([pemasokSet, pembangkitSet]);
 
-    let validSites = data.sites;
+    let validSites = [...enrichedSites];
     if (commodity && gasSiteIds) {
       validSites = validSites.filter(s => gasSiteIds.has(s.id));
     }
@@ -369,13 +381,13 @@ export default function Map({ commodity }: { commodity?: string }) {
       validSites = validSites.filter(s => validIds.has(s.id));
     }
     return Array.from(new Set(validSites.map(s => s.region))).filter(Boolean).sort();
-  }, [data?.sites, pemasokSet, pembangkitSet, intersect, commodity, gasSiteIds]);
+  }, [enrichedSites, pemasokSet, pembangkitSet, intersect, commodity, gasSiteIds]);
 
   const pemasokNames = useMemo(() => {
-    if (!data?.sites) return [];
+    if (!enrichedSites) return [];
     const validIds = intersect([regionSet, pembangkitSet]);
 
-    let validSites = data.sites.filter(s => s.siteType === "PEMASOK");
+    let validSites = enrichedSites.filter(s => s.siteType === "PEMASOK");
     if (commodity && gasSiteIds) {
       validSites = validSites.filter(s => gasSiteIds.has(s.id));
     }
@@ -383,13 +395,13 @@ export default function Map({ commodity }: { commodity?: string }) {
       validSites = validSites.filter(s => validIds.has(s.id));
     }
     return validSites.map(s => s.name).sort();
-  }, [data?.sites, regionSet, pembangkitSet, intersect, commodity, gasSiteIds]);
+  }, [enrichedSites, regionSet, pembangkitSet, intersect, commodity, gasSiteIds]);
 
   const pembangkitNames = useMemo(() => {
-    if (!data?.sites) return [];
+    if (!enrichedSites) return [];
     const validIds = intersect([regionSet, pemasokSet]);
 
-    let validSites = data.sites.filter(s => s.siteType === "PEMBANGKIT");
+    let validSites = enrichedSites.filter(s => s.siteType === "PEMBANGKIT");
     if (commodity && gasSiteIds) {
       validSites = validSites.filter(s => gasSiteIds.has(s.id));
     }
@@ -397,7 +409,7 @@ export default function Map({ commodity }: { commodity?: string }) {
       validSites = validSites.filter(s => validIds.has(s.id));
     }
     return validSites.map(s => s.name).sort();
-  }, [data?.sites, regionSet, pemasokSet, intersect, commodity, gasSiteIds]);
+  }, [enrichedSites, regionSet, pemasokSet, intersect, commodity, gasSiteIds]);
 
   useEffect(() => {
     if (selectedRegion && !regionOptions.includes(selectedRegion)) {
@@ -419,11 +431,11 @@ export default function Map({ commodity }: { commodity?: string }) {
 
   // Filtered sites
   const filteredSites = useMemo(() => {
-    if (!data?.sites) return [];
+    if (!enrichedSites.length) return [];
     if (commodity && !gasSites) return [];
     const validIds = intersect([regionSet, pemasokSet, pembangkitSet]);
 
-    return data.sites.filter((site) => {
+    return enrichedSites.filter((site) => {
       if (commodity && !gasSiteIds.has(site.id)) return false;
 
       // Check base type and detailed type visibility
@@ -477,10 +489,10 @@ export default function Map({ commodity }: { commodity?: string }) {
     "#38BDF8";
 
   const getSiteById = (id: string): MapSite | undefined =>
-    data?.sites.find((s) => s.id === id);
+    enrichedSites.find((s) => s.id === id);
 
   const getConnectedSites = (siteId: string): MapSite[] => {
-    if (!data?.pipes || !data?.sites) return [];
+    if (!data?.pipes || !enrichedSites.length) return [];
     const connectedIds = data.pipes
       .filter(
         (pipe) => pipe.sourceSiteId === siteId || pipe.targetSiteId === siteId,
@@ -488,7 +500,7 @@ export default function Map({ commodity }: { commodity?: string }) {
       .map((pipe) =>
         pipe.sourceSiteId === siteId ? pipe.targetSiteId : pipe.sourceSiteId,
       );
-    return data.sites.filter((s) => connectedIds.includes(s.id));
+    return enrichedSites.filter((s) => connectedIds.includes(s.id));
   };
 
   const toggleSiteType = (type: string) => {
