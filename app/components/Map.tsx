@@ -31,6 +31,7 @@ import {
   useMapLocations,
   usePemasokBbtudSnapshot,
   useSupplierContractSummaries,
+  type ContractComplianceStatus,
   type MapSite,
   type SupplierContractSummary,
 } from "@/hooks/service/dashboard-api";
@@ -115,11 +116,21 @@ const CATEGORY_CONFIG: Record<
   },
 };
 
-const createCategoryIcon = (catKey: string, fallbackColor: string) => {
+const createCategoryIcon = (
+  catKey: string,
+  fallbackColor: string,
+  complianceStatus?: ContractComplianceStatus,
+) => {
   const config = CATEGORY_CONFIG[catKey] || {
     color: fallbackColor,
     svg: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="white" stroke-width="2.2"><circle cx="12" cy="12" r="8"/></svg>`,
   };
+  const alertColor =
+    complianceStatus === "BELOW_TOP"
+      ? "#DC2626"
+      : complianceStatus === "MISSING_DATA"
+        ? "#F59E0B"
+        : null;
 
   return L.divIcon({
     className: "custom-site-marker",
@@ -134,8 +145,12 @@ const createCategoryIcon = (catKey: string, fallbackColor: string) => {
         height: 30px;
         border-radius: 50% 50% 50% 0;
         transform: rotate(-45deg);
-        border: 2px solid white;
-        box-shadow: 0 3px 8px rgba(0,0,0,0.35);
+        border: 2px solid ${alertColor || "white"};
+        box-shadow: ${
+          alertColor
+            ? `0 0 0 4px ${alertColor}40, 0 3px 8px rgba(0,0,0,0.35)`
+            : "0 3px 8px rgba(0,0,0,0.35)"
+        };
         cursor: pointer;
       ">
         <div style="
@@ -146,6 +161,29 @@ const createCategoryIcon = (catKey: string, fallbackColor: string) => {
         ">
           ${config.svg}
         </div>
+        ${
+          alertColor
+            ? `<div style="
+                position: absolute;
+                top: -8px;
+                right: -8px;
+                width: 15px;
+                height: 15px;
+                border-radius: 9999px;
+                transform: rotate(45deg);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: ${alertColor};
+                color: white;
+                border: 2px solid white;
+                font-size: 9px;
+                line-height: 1;
+                font-weight: 800;
+                box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+              ">!</div>`
+            : ""
+        }
       </div>
     `,
     iconSize: [30, 30],
@@ -721,12 +759,30 @@ export default function Map({ commodity }: { commodity?: string }) {
                   site.commodity,
                 );
                 const info = getSiteCategoryInfo(site.siteType, site.commodity);
-                const icon = createCategoryIcon(catKey, info.color);
-                const connected = getConnectedSites(site.id);
                 const supplierContracts =
                   site.siteType === "PEMASOK"
                     ? supplierContractsBySiteId.get(site.id) || []
                     : [];
+                const supplierComplianceStatus:
+                  | ContractComplianceStatus
+                  | undefined = supplierContracts.some(
+                  (contract) => contract.complianceStatus === "BELOW_TOP",
+                )
+                  ? "BELOW_TOP"
+                  : supplierContracts.some(
+                        (contract) =>
+                          contract.complianceStatus === "MISSING_DATA",
+                      )
+                    ? "MISSING_DATA"
+                    : undefined;
+                const icon = createCategoryIcon(
+                  catKey,
+                  info.color,
+                  site.siteType === "PEMASOK"
+                    ? supplierComplianceStatus
+                    : undefined,
+                );
+                const connected = getConnectedSites(site.id);
 
                 return (
                   <Marker
@@ -819,12 +875,19 @@ export default function Map({ commodity }: { commodity?: string }) {
                                 {supplierContracts.map((contract) => (
                                   <div
                                     key={`${contract.supplierSiteId}:${contract.effectiveContractNumber.toLowerCase()}`}
-                                    className="rounded-md border border-gray-200 bg-gray-50 p-2"
+                                    className={`rounded-md border px-2 pt-1.5 pb-2 ${
+                                      contract.complianceStatus === "BELOW_TOP"
+                                        ? "border-red-300 bg-red-50"
+                                        : contract.complianceStatus ===
+                                            "MISSING_DATA"
+                                          ? "border-amber-300 bg-amber-50"
+                                          : "border-gray-200 bg-gray-50"
+                                    }`}
                                   >
-                                    <p className="text-[11px] font-semibold text-gray-800 break-words mb-1.5">
+                                    <p className="!mt-0 !mb-1 text-[11px] font-semibold text-gray-800 break-words">
                                       {contract.effectiveContractNumber}
                                     </p>
-                                    <div className="grid grid-cols-[36px_1fr] gap-x-2 gap-y-0.5 text-[11px]">
+                                    <div className="grid grid-cols-[52px_1fr] gap-x-2 gap-y-0.5 text-[11px]">
                                       <span className="text-gray-500">JPH</span>
                                       <span className="font-medium text-gray-800 text-right whitespace-nowrap">
                                         {contract.jphBbtud != null
@@ -843,7 +906,35 @@ export default function Map({ commodity }: { commodity?: string }) {
                                           ? `${bbtudFormatter.format(contract.tjkBbtud)} BBTUD`
                                           : "-"}
                                       </span>
+                                      <span className="text-gray-500">
+                                        Berakhir
+                                      </span>
+                                      <span className="font-medium text-gray-800 text-right whitespace-nowrap">
+                                        {contract.agreementEndDate
+                                          ? formatReportDate(
+                                              contract.agreementEndDate,
+                                            )
+                                          : "-"}
+                                      </span>
                                     </div>
+                                    {contract.complianceStatus ===
+                                      "BELOW_TOP" && (
+                                      <p className="!mt-1.5 !mb-0 border-t border-red-200 pt-1 text-[10px] font-medium text-red-700">
+                                        Realisasi H-1{" "}
+                                        {bbtudFormatter.format(
+                                          contract.d1RealizationBbtud || 0,
+                                        )}{" "}
+                                        BBTUD di bawah TOP
+                                      </p>
+                                    )}
+                                    {contract.complianceStatus ===
+                                      "MISSING_DATA" && (
+                                      <p className="!mt-1.5 !mb-0 border-t border-amber-200 pt-1 text-[10px] font-medium text-amber-700">
+                                        Data H-1 tersedia untuk{" "}
+                                        {contract.d1DataPlantCount} dari{" "}
+                                        {contract.contractPlantCount} pembangkit
+                                      </p>
+                                    )}
                                   </div>
                                 ))}
                               </div>

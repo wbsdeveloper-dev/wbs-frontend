@@ -70,14 +70,14 @@ export default function DashboardSelection() {
           <div className="flex items-center gap-3 md:gap-6">
             <ThemeToggle compact />
             <Image
-              src="/logos/danantara.png"
+              src="/logos/danantara-putih.png"
               alt="Danantara logo"
               width={100}
               height={30}
               className="theme-logo-surface object-contain w-[60px] md:w-[80px] lg:w-[100px]"
             />
             <Image
-              src="/logos/SucofindoIdSurvey.png"
+              src="/logos/sucofindo-putih.png"
               alt="Sucofindo logo"
               width={60}
               height={25}

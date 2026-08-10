@@ -70,6 +70,12 @@ export interface MapLocationsResponse {
 }
 
 /** GET /dashboard/supplier-contract-summaries */
+export type ContractComplianceStatus =
+  | "COMPLIANT"
+  | "BELOW_TOP"
+  | "MISSING_DATA"
+  | "NO_TOP";
+
 export interface SupplierContractSummary {
   supplierSiteId: string;
   supplierName: string;
@@ -79,6 +85,15 @@ export interface SupplierContractSummary {
   jphBbtud: number | null;
   topBbtud: number | null;
   tjkBbtud: number | null;
+  agreementEndDate: string | null;
+  plantSiteIds: string[];
+  plantNames: string[];
+  missingPlantSiteIds: string[];
+  d1ReportDate: string;
+  d1RealizationBbtud: number | null;
+  contractPlantCount: number;
+  d1DataPlantCount: number;
+  complianceStatus: ContractComplianceStatus;
   updatedAt: string;
 }
 
