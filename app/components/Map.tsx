@@ -36,6 +36,7 @@ import {
   type SupplierContractSummary,
 } from "@/hooks/service/dashboard-api";
 import { useRelations, useSites } from "@/hooks/service/site-api";
+import { useKertasKerjaMaster } from "@/hooks/service/kertas-kerja-api";
 import { usePrivilege } from "@/hooks/usePrivilege";
 
 interface LeafletIconPrototype {
@@ -203,6 +204,8 @@ type JsPdfWithAutoTable = jsPDF & {
   lastAutoTable: { finalY: number };
 };
 
+const COMMODITY_OPTIONS = ["Gas Pipa", "LNG"];
+
 const bbtudFormatter = new Intl.NumberFormat("id-ID", {
   minimumFractionDigits: 4,
   maximumFractionDigits: 4,
@@ -226,6 +229,15 @@ function formatReportDate(reportDate: string): string {
 export default function Map({ commodity }: { commodity?: string }) {
   const mapRef = useRef<HTMLDivElement>(null);
   const currentYear = new Date().getFullYear();
+  const [selectedCommodity, setSelectedCommodity] = useState<string | null>(
+    null,
+  );
+  const activeCommodity =
+    selectedCommodity === "Gas Pipa"
+      ? "GAS PIPA"
+      : selectedCommodity === "LNG"
+        ? "LNG"
+        : commodity || "LNG,GAS PIPA";
 
   const filterExportButtons = (node: HTMLElement) => {
     if (node?.classList?.contains("export-buttons-container")) return false;
@@ -340,7 +352,7 @@ export default function Map({ commodity }: { commodity?: string }) {
   // ---- API data -----------------------------------------------------------
   const { data, isLoading, isError, error } = useMapLocations(
     undefined,
-    commodity,
+    activeCommodity,
   );
   const {
     data: pemasokBbtudSnapshots,
@@ -351,8 +363,12 @@ export default function Map({ commodity }: { commodity?: string }) {
     data: supplierContractSummaries,
     isLoading: isSupplierContractsLoading,
     isError: isSupplierContractsError,
-  } = useSupplierContractSummaries(currentYear, commodity);
-  const { data: gasSites } = useSites(commodity ? { commodity } : undefined);
+  } = useSupplierContractSummaries(currentYear, activeCommodity);
+  const { data: gasSites } = useSites({ commodity: activeCommodity });
+  const { data: masterRegions = [] } = useKertasKerjaMaster(
+    "master_region",
+    activeCommodity,
+  );
 
   const { hasPrivilege } = usePrivilege();
   const canReadSites = hasPrivilege("site_management", "READ");
@@ -496,56 +512,45 @@ export default function Map({ commodity }: { commodity?: string }) {
     return lookup;
   }, [pemasokBbtudSnapshots]);
 
-  const regionOptions = useMemo(() => {
-    if (!data?.sites) return [];
-    const validIds = intersect([pemasokSet, pembangkitSet]);
-
-    let validSites = data.sites;
-    if (commodity && gasSiteIds) {
-      validSites = validSites.filter((s) => gasSiteIds.has(s.id));
-    }
-    if (validIds) {
-      validSites = validSites.filter((s) => validIds.has(s.id));
-    }
-    return Array.from(new Set(validSites.map((s) => s.region)))
-      .filter(Boolean)
-      .sort();
-  }, [
-    data?.sites,
-    pemasokSet,
-    pembangkitSet,
-    intersect,
-    commodity,
-    gasSiteIds,
-  ]);
+  const regionOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          masterRegions
+            .map((region) => region.name?.trim())
+            .filter((name): name is string => Boolean(name)),
+        ),
+      ).sort((a, b) => a.localeCompare(b, "id-ID")),
+    [masterRegions],
+  );
 
   const pemasokNames = useMemo(() => {
     if (!data?.sites) return [];
     const validIds = intersect([regionSet, pembangkitSet]);
 
     let validSites = data.sites.filter((s) => s.siteType === "PEMASOK");
-    if (commodity && gasSiteIds) {
+    if (gasSiteIds) {
       validSites = validSites.filter((s) => gasSiteIds.has(s.id));
     }
     if (validIds) {
       validSites = validSites.filter((s) => validIds.has(s.id));
     }
     return validSites.map((s) => s.name).sort();
-  }, [data?.sites, regionSet, pembangkitSet, intersect, commodity, gasSiteIds]);
+  }, [data?.sites, regionSet, pembangkitSet, intersect, gasSiteIds]);
 
   const pembangkitNames = useMemo(() => {
     if (!data?.sites) return [];
     const validIds = intersect([regionSet, pemasokSet]);
 
     let validSites = data.sites.filter((s) => s.siteType === "PEMBANGKIT");
-    if (commodity && gasSiteIds) {
+    if (gasSiteIds) {
       validSites = validSites.filter((s) => gasSiteIds.has(s.id));
     }
     if (validIds) {
       validSites = validSites.filter((s) => validIds.has(s.id));
     }
     return validSites.map((s) => s.name).sort();
-  }, [data?.sites, regionSet, pemasokSet, intersect, commodity, gasSiteIds]);
+  }, [data?.sites, regionSet, pemasokSet, intersect, gasSiteIds]);
 
   useEffect(() => {
     if (selectedRegion && !regionOptions.includes(selectedRegion)) {
@@ -567,12 +572,11 @@ export default function Map({ commodity }: { commodity?: string }) {
 
   // Filtered sites
   const filteredSites = useMemo(() => {
-    if (!data?.sites) return [];
-    if (commodity && !gasSites) return [];
+    if (!data?.sites || !gasSites) return [];
     const validIds = intersect([regionSet, pemasokSet, pembangkitSet]);
 
     return data.sites.filter((site) => {
-      if (commodity && !gasSiteIds.has(site.id)) return false;
+      if (!gasSiteIds.has(site.id)) return false;
 
       // Check base type and detailed type visibility
       const catKey = getSiteCategoryKey(site.siteType, site.commodity);
@@ -592,7 +596,6 @@ export default function Map({ commodity }: { commodity?: string }) {
     data?.sites,
     gasSites,
     gasSiteIds,
-    commodity,
     visibleSiteTypes,
     selectedOwners,
     regionSet,
@@ -1158,6 +1161,13 @@ export default function Map({ commodity }: { commodity?: string }) {
             Filter Map
           </p>
           <div className="flex flex-col gap-3 pr-4">
+            <FilterAutocomplete
+              label="Komoditas"
+              options={COMMODITY_OPTIONS}
+              value={selectedCommodity}
+              onChange={setSelectedCommodity}
+              placeholder="Pilih Komoditas"
+            />
             <FilterAutocomplete
               label="Region"
               options={regionOptions}

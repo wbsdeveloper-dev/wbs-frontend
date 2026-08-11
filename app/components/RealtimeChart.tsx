@@ -40,6 +40,7 @@ import {
   type FilterOption,
 } from "@/hooks/service/dashboard-api";
 import type { Contract } from "@/hooks/service/contract-api";
+import { useKertasKerjaMaster } from "@/hooks/service/kertas-kerja-api";
 import { Loader2 } from "lucide-react";
 
 const filterTypeOptions = ["Pemasok", "Pembangkit"];
@@ -775,6 +776,12 @@ export default function RealtimeChart({
   const [transportir, setTransportir] = useState<string | null>(null);
   const [region, setRegion] = useState<string | null>("Semua Region");
   const [commodity, setCommodity] = useState<string | null>("Semua Komoditas");
+  const masterRegionCommodity =
+    commodity && commodity !== "Semua Komoditas" ? commodity : "GAS PIPA,LNG";
+  const { data: masterRegions = [] } = useKertasKerjaMaster(
+    "master_region",
+    masterRegionCommodity,
+  );
   const [openModal, setOpenModal] = useState(false);
   const [note, setNote] = useState("");
   const [selectedPemasokId, setSelectedPemasokId] = useState<
@@ -947,14 +954,30 @@ export default function RealtimeChart({
     setFormattedEndDate(formattedEndDate);
   }, [startDate, endDate, onDateRangeChange]);
 
-  // Derive filter options from API data or fallback to hardcoded
-  const regionOptions = useMemo(() => {
-    let opts = ["Region 1", "Region 2"];
-    if (filtersData?.regions) {
-      opts = filtersData.regions;
+  const regionOptions = useMemo(
+    () => [
+      "Semua Region",
+      ...Array.from(
+        new Set(
+          masterRegions
+            .map((masterRegion) => masterRegion.name?.trim())
+            .filter((name): name is string => Boolean(name)),
+        ),
+      ).sort((a, b) => a.localeCompare(b, "id-ID")),
+    ],
+    [masterRegions],
+  );
+
+  useEffect(() => {
+    if (
+      region &&
+      region !== "Semua Region" &&
+      !regionOptions.includes(region)
+    ) {
+      setRegion("Semua Region");
+      onRegionChange?.(null);
     }
-    return ["Semua Region", ...opts];
-  }, [filtersData]);
+  }, [region, regionOptions, onRegionChange]);
 
   const pemasokOptions = useMemo(() => {
     let opts = ["Pemasok A", "Pemasok B"];

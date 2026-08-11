@@ -3,27 +3,24 @@
 import React, { useState } from "react";
 import Card from "@/app/components/ui/Card";
 import MasterGenericTab from "@/app/konfigurasi-bbm/data-master/components/MasterGenericTab";
-import {
-  Database,
-  MapPin,
-  Loader2
-} from "lucide-react";
+import { Database, MapPin, Loader2 } from "lucide-react";
 import { usePrivilege } from "@/hooks/usePrivilege";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useRouter } from "next/navigation";
 
-type TabType = "region";
+type TabType = "region-gas-pipa" | "region-lng";
 
 export default function KertasKerjaConfigGasPage() {
   const router = useRouter();
   const { hasPrivilege } = usePrivilege();
   const { isLoading: isAuthLoading } = useAuth();
-  
+
   const canRead = hasPrivilege("system_config", "READ");
-  const [activeTab, setActiveTab] = useState<TabType>("region");
+  const [activeTab, setActiveTab] = useState<TabType>("region-gas-pipa");
 
   const tabs = [
-    { id: "region", label: "Region", icon: MapPin },
+    { id: "region-gas-pipa", label: "Region Gas Pipa", icon: MapPin },
+    { id: "region-lng", label: "Region LNG", icon: MapPin },
   ];
 
   // Redirect if unauthorized
@@ -92,8 +89,21 @@ export default function KertasKerjaConfigGasPage() {
           </div>
 
           <div className="p-6">
-            {activeTab === "region" && (
-              <MasterGenericTab table="master_region" title="Region" comodityFilter="GAS PIPA,LNG" />
+            {activeTab === "region-gas-pipa" && (
+              <MasterGenericTab
+                key="region-gas-pipa"
+                table="master_region"
+                title="Region Gas Pipa"
+                comodityFilter="GAS PIPA"
+              />
+            )}
+            {activeTab === "region-lng" && (
+              <MasterGenericTab
+                key="region-lng"
+                table="master_region"
+                title="Region LNG"
+                comodityFilter="LNG"
+              />
             )}
           </div>
         </Card>
