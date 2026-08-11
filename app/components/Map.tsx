@@ -36,7 +36,6 @@ import {
   type SupplierContractSummary,
 } from "@/hooks/service/dashboard-api";
 import { useRelations, useSites } from "@/hooks/service/site-api";
-import { useKertasKerjaMaster } from "@/hooks/service/kertas-kerja-api";
 import { usePrivilege } from "@/hooks/usePrivilege";
 
 interface LeafletIconPrototype {
@@ -363,10 +362,6 @@ export default function Map({ commodity }: { commodity?: string }) {
     isError: isSupplierContractsError,
   } = useSupplierContractSummaries(currentYear, activeCommodity);
   const { data: gasSites } = useSites({ commodity: activeCommodity });
-  const { data: masterRegions = [] } = useKertasKerjaMaster(
-    "master_region",
-    activeCommodity,
-  );
 
   const { hasPrivilege } = usePrivilege();
   const canReadSites = hasPrivilege("site_management", "READ");
@@ -522,17 +517,6 @@ export default function Map({ commodity }: { commodity?: string }) {
     return lookup;
   }, [pemasokBbtudSnapshots]);
 
-  const regionOptions = useMemo(
-    () =>
-      Array.from(
-        new Set(
-          masterRegions
-            .map((region) => region.name?.trim())
-            .filter((name): name is string => Boolean(name)),
-        ),
-      ).sort((a, b) => a.localeCompare(b, "id-ID")),
-    [masterRegions],
-  );
   const regionOptions = useMemo(() => {
     if (!enrichedSites.length) return [];
     const validIds = intersect([pemasokSet, pembangkitSet]);
