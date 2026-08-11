@@ -80,14 +80,14 @@ export default function LoginPage() {
         <div className="p-6 pr-20 md:p-8 md:pr-24 lg:p-10 lg:pr-24 flex justify-center">
           <div className="flex items-center justify-center lg:justify-start gap-4 md:gap-6 lg:gap-10 flex-wrap">
             <Image
-              src="/logos/danantara.png"
+              src="/logos/danantara-putih.png"
               alt="Danantara logo"
               width={100}
               height={35}
               className="theme-logo-surface object-contain w-[80px] md:w-[100px] lg:w-[150px]"
             />
             <Image
-              src="/logos/SucofindoIdSurvey.png"
+              src="/logos/sucofindo-putih.png"
               alt="Sucofindo logo"
               width={60}
               height={35}

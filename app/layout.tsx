@@ -13,6 +13,10 @@ const redditSans = Reddit_Sans({
 export const metadata: Metadata = {
   title: "PLN Dashboard - Monitoring BBM",
   description: "Plan, prioritize, and accomplish your tasks with ease",
+  icons: {
+    icon: "/pln.svg",
+    shortcut: "/pln.svg",
+  },
 };
 
 const themeInitializationScript = `

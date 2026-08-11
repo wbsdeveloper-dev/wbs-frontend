@@ -45,7 +45,11 @@ interface LeafletIconPrototype {
   _getIconUrl?: () => string;
 }
 
-if (typeof window !== "undefined" && typeof L !== "undefined" && L?.Icon?.Default) {
+if (
+  typeof window !== "undefined" &&
+  typeof L !== "undefined" &&
+  L?.Icon?.Default
+) {
   delete (L.Icon.Default.prototype as LeafletIconPrototype)._getIconUrl;
   L.Icon.Default.mergeOptions({
     iconRetinaUrl:
@@ -59,7 +63,10 @@ if (typeof window !== "undefined" && typeof L !== "undefined" && L?.Icon?.Defaul
 // Category Helper & Icon Definitions (matching Gas Pipa teardrop style)
 // ---------------------------------------------------------------------------
 
-function getSiteCategoryKey(siteType: string, commodity?: string | null): string {
+function getSiteCategoryKey(
+  siteType: string,
+  commodity?: string | null,
+): string {
   if (siteType === "TRANSPORTIR") return "TRANSPORTIR";
   if (siteType === "TERMINAL") return "TERMINAL";
   if (siteType === "HANDOVER_POINT") return "HANDOVER_POINT";
@@ -77,7 +84,10 @@ function getSiteCategoryKey(siteType: string, commodity?: string | null): string
   return `${siteType}_BBM`;
 }
 
-const CATEGORY_CONFIG: Record<string, { label: string; color: string; svg: string }> = {
+const CATEGORY_CONFIG: Record<
+  string,
+  { label: string; color: string; svg: string }
+> = {
   PEMBANGKIT_BBM: {
     label: "Pembangkit (BBM)",
     color: "#1581fb", // Blue for Pembangkit BBM
@@ -745,7 +755,10 @@ export default function Map() {
 
               {/* SITE MARKERS */}
               {filteredSites.map((site) => {
-                const catKey = getSiteCategoryKey(site.siteType, site.commodity);
+                const catKey = getSiteCategoryKey(
+                  site.siteType,
+                  site.commodity,
+                );
                 const info = CATEGORY_CONFIG[catKey] || {
                   label: getSiteTypeLabel(site.siteType),
                   color: getSiteTypeColor(site.siteType),
@@ -976,8 +989,8 @@ export default function Map() {
                           key={st.type}
                           onClick={() => toggleSiteType(st.type)}
                           className={`flex items-center gap-2 w-full py-1 px-1.5 rounded-md transition-all ${isVisible
-                            ? `bg-opacity-10`
-                            : "bg-gray-100 opacity-60"
+                              ? `bg-opacity-10`
+                              : "bg-gray-100 opacity-60"
                             }`}
                           style={
                             isVisible
@@ -1113,13 +1126,16 @@ export default function Map() {
                   <button
                     onClick={() => setSelectedModes([])}
                     className={`px-3 py-1 text-xs font-medium rounded-md transition-all duration-200 cursor-pointer ${selectedModes.length === 0
-                      ? "bg-primary text-white"
-                      : "text-gray-600 hover:text-secondary hover:bg-gray-50"
+                        ? "bg-primary text-white"
+                        : "text-gray-600 hover:text-secondary hover:bg-gray-50"
                       }`}
                   >
                     All
                   </button>
-                  {(filterModaOptions.length > 0 ? filterModaOptions : ["Truck", "Vessel", "Pipeline"]).map((mode) => (
+                  {(filterModaOptions.length > 0
+                    ? filterModaOptions
+                    : ["Truck", "Vessel", "Pipeline"]
+                  ).map((mode) => (
                     <button
                       key={mode}
                       onClick={() => {
@@ -1130,8 +1146,8 @@ export default function Map() {
                         );
                       }}
                       className={`px-3 py-1 text-xs font-medium rounded-md transition-all duration-200 cursor-pointer ${selectedModes.includes(mode)
-                        ? "bg-primary text-white"
-                        : "text-gray-600 hover:text-secondary hover:bg-gray-50"
+                          ? "bg-primary text-white"
+                          : "text-gray-600 hover:text-secondary hover:bg-gray-50"
                         }`}
                     >
                       {mode}
@@ -1146,32 +1162,33 @@ export default function Map() {
                   <button
                     onClick={() => setSelectedProducts([])}
                     className={`px-3 py-1 text-xs font-medium rounded-md transition-all duration-200 cursor-pointer ${selectedProducts.length === 0
-                      ? "bg-primary text-white"
-                      : "text-gray-600 hover:text-secondary hover:bg-gray-50"
+                        ? "bg-primary text-white"
+                        : "text-gray-600 hover:text-secondary hover:bg-gray-50"
                       }`}
                   >
                     All
                   </button>
-                  {(filterProductOptions.length > 0 ? filterProductOptions : ["B30", "B35", "B40", "HSFO", "HSD", "LSFO", "IDO"]).map(
-                    (prod) => (
-                      <button
-                        key={prod}
-                        onClick={() => {
-                          setSelectedProducts((prev) =>
-                            prev.includes(prod)
-                              ? prev.filter((p) => p !== prod)
-                              : [...prev, prod],
-                          );
-                        }}
-                        className={`px-3 py-1 text-xs font-medium rounded-md transition-all duration-200 cursor-pointer ${selectedProducts.includes(prod)
+                  {(filterProductOptions.length > 0
+                    ? filterProductOptions
+                    : ["B30", "B35", "B40", "HSFO", "HSD", "LSFO", "IDO"]
+                  ).map((prod) => (
+                    <button
+                      key={prod}
+                      onClick={() => {
+                        setSelectedProducts((prev) =>
+                          prev.includes(prod)
+                            ? prev.filter((p) => p !== prod)
+                            : [...prev, prod],
+                        );
+                      }}
+                      className={`px-3 py-1 text-xs font-medium rounded-md transition-all duration-200 cursor-pointer ${selectedProducts.includes(prod)
                           ? "bg-primary text-white"
                           : "text-gray-600 hover:text-secondary hover:bg-gray-50"
-                          }`}
-                      >
-                        {prod}
-                      </button>
-                    ),
-                  )}
+                        }`}
+                    >
+                      {prod}
+                    </button>
+                  ))}
                 </div>
               </div>
             </div>
@@ -1550,7 +1567,10 @@ export default function Map() {
                                                       >
                                                         {moda
                                                           .toLowerCase()
-                                                          .includes("kapal") || moda.toLowerCase().includes("vessel") ? (
+                                                          .includes("kapal") ||
+                                                          moda
+                                                            .toLowerCase()
+                                                            .includes("vessel") ? (
                                                           <Ship
                                                             size={10}
                                                             className="text-emerald-600"
@@ -1779,7 +1799,8 @@ export default function Map() {
                                 className="flex justify-between items-center p-3"
                               >
                                 <div className="flex items-center gap-2">
-                                  {moda.toLowerCase().includes("kapal") || moda.toLowerCase().includes("vessel") ? (
+                                  {moda.toLowerCase().includes("kapal") ||
+                                    moda.toLowerCase().includes("vessel") ? (
                                     <Ship size={14} className="text-gray-500" />
                                   ) : (
                                     <Truck
