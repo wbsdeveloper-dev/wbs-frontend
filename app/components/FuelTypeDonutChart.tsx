@@ -118,7 +118,7 @@ export default function FuelTypeDonutChart({
       const totalVolume = data.reduce((sum, d) => sum + d.value, 0);
 
       const tableBody = data.flatMap((item, index) => {
-        const pct = totalVolume > 0 ? ((item.value / totalVolume) * 100).toFixed(2) : "0.00";
+        const pct = totalVolume > 0 ? ((item.value / totalVolume) * 100).toFixed(2).replace(".", ",") : "0,00";
         const rows: any[] = [
           {
             nameCell: { content: `   ${item.name}`, styles: { fontStyle: "bold", textColor: [17, 24, 39] } },
@@ -404,8 +404,8 @@ export default function FuelTypeDonutChart({
                   const item = payload[0];
                   const pct =
                     total > 0
-                      ? (((item.value as number) / total) * 100).toFixed(2)
-                      : "0.00";
+                      ? (((item.value as number) / total) * 100).toFixed(2).replace(".", ",")
+                      : "0,00";
                   return (
                     <div className="bg-white px-3 py-2 rounded-lg shadow-lg border border-gray-200 text-sm">
                       <p className="font-medium text-gray-900">{item.name}</p>
@@ -426,7 +426,7 @@ export default function FuelTypeDonutChart({
               }}
               formatter={(value: string, entry: any) => {
                 const val = entry?.payload?.value || 0;
-                const pct = total > 0 ? ((val / total) * 100).toFixed(2) : "0.00";
+                const pct = total > 0 ? ((val / total) * 100).toFixed(2).replace(".", ",") : "0,00";
                 return `${value} (${pct}%)`;
               }}
             />

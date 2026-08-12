@@ -845,7 +845,7 @@ export default function Map({ commodity }: { commodity?: string }) {
                                   <span className="font-medium text-primary">
                                     {parseFloat(
                                       String(site.capacity),
-                                    ).toLocaleString()}{" "}
+                                    ).toLocaleString("id-ID", { maximumFractionDigits: 2 })}{" "}
                                     MW
                                   </span>
                                 </div>
@@ -886,11 +886,11 @@ export default function Map({ commodity }: { commodity?: string }) {
                                   <div
                                     key={`${contract.supplierSiteId}:${contract.effectiveContractNumber.toLowerCase()}`}
                                     className={`rounded-md border px-2 pt-1.5 pb-2 ${contract.complianceStatus === "BELOW_TOP"
-                                        ? "border-red-300 bg-red-50"
-                                        : contract.complianceStatus ===
-                                          "MISSING_DATA"
-                                          ? "border-amber-300 bg-amber-50"
-                                          : "border-gray-200 bg-gray-50"
+                                      ? "border-red-300 bg-red-50"
+                                      : contract.complianceStatus ===
+                                        "MISSING_DATA"
+                                        ? "border-amber-300 bg-amber-50"
+                                        : "border-gray-200 bg-gray-50"
                                       }`}
                                   >
                                     <p className="!mt-0 !mb-1 text-[11px] font-semibold text-gray-800 break-words">
@@ -991,7 +991,7 @@ export default function Map({ commodity }: { commodity?: string }) {
                                               <>
                                                 {isPemasokBbtudLoading ? (
                                                   <span className="text-gray-500 whitespace-nowrap">
-                                                    Memuat data D-1...
+                                                    Memuat data H-1...
                                                   </span>
                                                 ) : hasBbtud ? (
                                                   <span className="font-semibold text-primary whitespace-nowrap">
@@ -1002,7 +1002,7 @@ export default function Map({ commodity }: { commodity?: string }) {
                                                   </span>
                                                 ) : (
                                                   <span className="text-gray-500 text-right">
-                                                    Data D-1 belum tersedia
+                                                    Data H-1 belum tersedia
                                                   </span>
                                                 )}
                                               </>

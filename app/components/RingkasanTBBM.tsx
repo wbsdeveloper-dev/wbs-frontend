@@ -11,7 +11,7 @@ interface RingkasanTBBMProps {
   selectedRegion: string;
 }
 
-const formatNumber = (val: number) => val === 0 ? "-" : val.toLocaleString("en-US");
+const formatNumber = (val: number) => val === 0 ? "-" : val.toLocaleString("id-ID", { maximumFractionDigits: 2 });
 
 export default function RingkasanTBBM({ templates, records, displayedMonths, allMonths, selectedRegion }: RingkasanTBBMProps) {
   

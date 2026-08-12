@@ -824,7 +824,7 @@ export default function Map() {
                             <div className="flex justify-between text-xs">
                               <span className="text-gray-500">Kapasitas:</span>
                               <span className="font-medium text-primary">
-                                {parseFloat(site.capacity).toLocaleString()} MW
+                                {parseFloat(site.capacity).toLocaleString("id-ID", { maximumFractionDigits: 2 })} MW
                               </span>
                             </div>
                           )}
@@ -862,7 +862,7 @@ export default function Map() {
                                   Total Nominasi:
                                 </span>
                                 <span className="font-medium text-primary">
-                                  {summary.totalNominasi?.toLocaleString()} kL
+                                  {summary.totalNominasi?.toLocaleString("id-ID", { maximumFractionDigits: 2 })} kL
                                 </span>
                               </div>
                               <div className="flex justify-between text-xs">
@@ -870,7 +870,7 @@ export default function Map() {
                                   Total Penyaluran:
                                 </span>
                                 <span className="font-medium text-emerald-600">
-                                  {summary.totalRealisasi?.toLocaleString()} kL
+                                  {summary.totalRealisasi?.toLocaleString("id-ID", { maximumFractionDigits: 2 })} kL
                                 </span>
                               </div>
                               <div className="flex justify-between text-xs">
@@ -878,7 +878,7 @@ export default function Map() {
                                   Total Pemakaian:
                                 </span>
                                 <span className="font-medium text-amber-600">
-                                  {summary.totalPemakaian?.toLocaleString()} kL
+                                  {summary.totalPemakaian?.toLocaleString("id-ID", { maximumFractionDigits: 2 })} kL
                                 </span>
                               </div>
 
@@ -1404,7 +1404,7 @@ export default function Map() {
                                     </span>
                                     <div className="flex items-baseline gap-1">
                                       <span className="font-bold text-gray-800 text-base">
-                                        {p.totalNominasi?.toLocaleString() ?? 0}
+                                        {p.totalNominasi?.toLocaleString("id-ID", { maximumFractionDigits: 2 }) ?? 0}
                                       </span>
                                       <span className="text-xs text-gray-400 font-medium">
                                         kL
@@ -1417,7 +1417,7 @@ export default function Map() {
                                     </span>
                                     <div className="flex items-baseline gap-1">
                                       <span className="font-bold text-emerald-600 text-base">
-                                        {p.totalRealisasi?.toLocaleString() ?? 0}
+                                        {p.totalRealisasi?.toLocaleString("id-ID", { maximumFractionDigits: 2 }) ?? 0}
                                       </span>
                                       <span className="text-xs text-emerald-600/70 font-medium">
                                         kL
@@ -1430,7 +1430,7 @@ export default function Map() {
                                     </span>
                                     <div className="flex items-baseline gap-1">
                                       <span className="font-bold text-gray-800 text-base">
-                                        {p.totalPenerimaan?.toLocaleString() ?? 0}
+                                        {p.totalPenerimaan?.toLocaleString("id-ID", { maximumFractionDigits: 2 }) ?? 0}
                                       </span>
                                       <span className="text-xs text-gray-400 font-medium">
                                         kL
@@ -1443,7 +1443,7 @@ export default function Map() {
                                     </span>
                                     <div className="flex items-baseline gap-1">
                                       <span className="font-bold text-gray-800 text-base">
-                                        {p.totalRenominasi?.toLocaleString() ?? 0}
+                                        {p.totalRenominasi?.toLocaleString("id-ID", { maximumFractionDigits: 2 }) ?? 0}
                                       </span>
                                       <span className="text-xs text-gray-400 font-medium">
                                         kL
@@ -1456,7 +1456,7 @@ export default function Map() {
                                     </span>
                                     <div className="flex items-baseline gap-1">
                                       <span className="font-bold text-gray-800 text-base">
-                                        {p.totalPemakaian?.toLocaleString() ?? 0}
+                                        {p.totalPemakaian?.toLocaleString("id-ID", { maximumFractionDigits: 2 }) ?? 0}
                                       </span>
                                       <span className="text-xs text-gray-400 font-medium">
                                         kL
@@ -1491,7 +1491,7 @@ export default function Map() {
                                                     {(
                                                       p[`totalNominasi${prod}`] ||
                                                       0
-                                                    ).toLocaleString()}
+                                                    ).toLocaleString("id-ID", { maximumFractionDigits: 2 })}
                                                   </span>
                                                 </div>
                                                 <div className="flex flex-col items-center">
@@ -1503,7 +1503,7 @@ export default function Map() {
                                                       p[
                                                       `totalRealisasi${prod}`
                                                       ] || 0
-                                                    ).toLocaleString()}
+                                                    ).toLocaleString("id-ID", { maximumFractionDigits: 2 })}
                                                   </span>
                                                 </div>
                                                 <div className="flex flex-col items-center">
@@ -1515,7 +1515,7 @@ export default function Map() {
                                                       p[
                                                       `totalPenerimaan${prod}`
                                                       ] || 0
-                                                    ).toLocaleString()}
+                                                    ).toLocaleString("id-ID", { maximumFractionDigits: 2 })}
                                                   </span>
                                                 </div>
                                                 <div className="flex flex-col items-center">
@@ -1527,7 +1527,7 @@ export default function Map() {
                                                       p[
                                                       `totalRenominasi${prod}`
                                                       ] || 0
-                                                    ).toLocaleString()}
+                                                    ).toLocaleString("id-ID", { maximumFractionDigits: 2 })}
                                                   </span>
                                                 </div>
                                                 <div className="flex flex-col items-center">
@@ -1539,7 +1539,7 @@ export default function Map() {
                                                       p[
                                                       `totalPemakaian${prod}`
                                                       ] || 0
-                                                    ).toLocaleString()}
+                                                    ).toLocaleString("id-ID", { maximumFractionDigits: 2 })}
                                                   </span>
                                                 </div>
                                               </div>
@@ -1589,7 +1589,7 @@ export default function Map() {
                                                             p[
                                                             `totalRealisasi${prod}_${moda}`
                                                             ] || 0
-                                                          ).toLocaleString()}{" "}
+                                                          ).toLocaleString("id-ID", { maximumFractionDigits: 2 })}{" "}
                                                           kL
                                                         </span>
                                                       </div>
@@ -1637,7 +1637,7 @@ export default function Map() {
                               Nominasi
                             </span>
                             <span className="font-bold text-orange-600">
-                              {grandNom.toLocaleString()} kL
+                              {grandNom.toLocaleString("id-ID", { maximumFractionDigits: 2 })} kL
                             </span>
                           </div>
                           <div className="flex justify-between items-center p-3">
@@ -1645,7 +1645,7 @@ export default function Map() {
                               Penyaluran
                             </span>
                             <span className="font-bold text-emerald-600">
-                              {grandReal.toLocaleString()} kL
+                              {grandReal.toLocaleString("id-ID", { maximumFractionDigits: 2 })} kL
                             </span>
                           </div>
                           <div className="flex justify-between items-center p-3">
@@ -1653,7 +1653,7 @@ export default function Map() {
                               Penerimaan
                             </span>
                             <span className="font-bold text-gray-800">
-                              {grandTerima.toLocaleString()} kL
+                              {grandTerima.toLocaleString("id-ID", { maximumFractionDigits: 2 })} kL
                             </span>
                           </div>
                           <div className="flex justify-between items-center p-3">
@@ -1661,7 +1661,7 @@ export default function Map() {
                               Renominasi
                             </span>
                             <span className="font-bold text-gray-800">
-                              {grandRenom.toLocaleString()} kL
+                              {grandRenom.toLocaleString("id-ID", { maximumFractionDigits: 2 })} kL
                             </span>
                           </div>
                           <div className="flex justify-between items-center p-3">
@@ -1669,7 +1669,7 @@ export default function Map() {
                               Pemakaian
                             </span>
                             <span className="font-bold text-orange-600">
-                              {grandPem.toLocaleString()} kL
+                              {grandPem.toLocaleString("id-ID", { maximumFractionDigits: 2 })} kL
                             </span>
                           </div>
                         </div>
@@ -1698,7 +1698,7 @@ export default function Map() {
                                       Nominasi
                                     </span>
                                     <span className="font-bold text-orange-600">
-                                      {prodSummary[prod].nom.toLocaleString()}{" "}
+                                      {prodSummary[prod].nom.toLocaleString("id-ID", { maximumFractionDigits: 2 })}{" "}
                                       kL
                                     </span>
                                   </div>
@@ -1707,7 +1707,7 @@ export default function Map() {
                                       Penyaluran
                                     </span>
                                     <span className="font-bold text-emerald-600">
-                                      {prodSummary[prod].real.toLocaleString()}{" "}
+                                      {prodSummary[prod].real.toLocaleString("id-ID", { maximumFractionDigits: 2 })}{" "}
                                       kL
                                     </span>
                                   </div>
@@ -1744,7 +1744,7 @@ export default function Map() {
                                               <span className="font-bold text-emerald-700 text-xs">
                                                 {prodModaSummary[prod][
                                                   moda
-                                                ].toLocaleString()}{" "}
+                                                ].toLocaleString("id-ID", { maximumFractionDigits: 2 })}{" "}
                                                 kL
                                               </span>
                                             </div>
@@ -1757,7 +1757,7 @@ export default function Map() {
                                       Penerimaan
                                     </span>
                                     <span className="font-bold text-gray-800">
-                                      {prodSummary[prod].terima.toLocaleString()}{" "}
+                                      {prodSummary[prod].terima.toLocaleString("id-ID", { maximumFractionDigits: 2 })}{" "}
                                       kL
                                     </span>
                                   </div>
@@ -1766,7 +1766,7 @@ export default function Map() {
                                       Renominasi
                                     </span>
                                     <span className="font-bold text-gray-800">
-                                      {prodSummary[prod].renom.toLocaleString()}{" "}
+                                      {prodSummary[prod].renom.toLocaleString("id-ID", { maximumFractionDigits: 2 })}{" "}
                                       kL
                                     </span>
                                   </div>
@@ -1775,7 +1775,7 @@ export default function Map() {
                                       Pemakaian
                                     </span>
                                     <span className="font-bold text-orange-600">
-                                      {prodSummary[prod].pem.toLocaleString()}{" "}
+                                      {prodSummary[prod].pem.toLocaleString("id-ID", { maximumFractionDigits: 2 })}{" "}
                                       kL
                                     </span>
                                   </div>
@@ -1813,7 +1813,7 @@ export default function Map() {
                                   </span>
                                 </div>
                                 <span className="font-bold text-emerald-600">
-                                  {modaSummary[moda].toLocaleString()} kL
+                                  {modaSummary[moda].toLocaleString("id-ID", { maximumFractionDigits: 2 })} kL
                                 </span>
                               </div>
                             ))}
