@@ -31,9 +31,11 @@ import {
   useMapLocations,
   usePemasokBbtudSnapshot,
   useSupplierContractSummaries,
+  useTransportirDownstreamBbtudSnapshot,
   type ContractComplianceStatus,
   type MapSite,
   type SupplierContractSummary,
+  type TransportirDownstreamBbtudSnapshot,
 } from "@/hooks/service/dashboard-api";
 import { useRelations, useSites } from "@/hooks/service/site-api";
 import { usePrivilege } from "@/hooks/usePrivilege";
@@ -146,10 +148,11 @@ const createCategoryIcon = (
         border-radius: 50% 50% 50% 0;
         transform: rotate(-45deg);
         border: 2px solid ${alertColor || "white"};
-        box-shadow: ${alertColor
-        ? `0 0 0 4px ${alertColor}40, 0 3px 8px rgba(0,0,0,0.35)`
-        : "0 3px 8px rgba(0,0,0,0.35)"
-      };
+        box-shadow: ${
+          alertColor
+            ? `0 0 0 4px ${alertColor}40, 0 3px 8px rgba(0,0,0,0.35)`
+            : "0 3px 8px rgba(0,0,0,0.35)"
+        };
         cursor: pointer;
       ">
         <div style="
@@ -160,8 +163,9 @@ const createCategoryIcon = (
         ">
           ${config.svg}
         </div>
-        ${alertColor
-        ? `<div style="
+        ${
+          alertColor
+            ? `<div style="
                 position: absolute;
                 top: -8px;
                 right: -8px;
@@ -180,8 +184,8 @@ const createCategoryIcon = (
                 font-weight: 800;
                 box-shadow: 0 1px 4px rgba(0,0,0,0.3);
               ">!</div>`
-        : ""
-      }
+            : ""
+        }
       </div>
     `,
     iconSize: [30, 30],
@@ -357,6 +361,11 @@ export default function Map({ commodity }: { commodity?: string }) {
     isError: isPemasokBbtudError,
   } = usePemasokBbtudSnapshot();
   const {
+    data: transportirDownstreamSnapshots,
+    isLoading: isTransportirDownstreamLoading,
+    isError: isTransportirDownstreamError,
+  } = useTransportirDownstreamBbtudSnapshot();
+  const {
     data: supplierContractSummaries,
     isLoading: isSupplierContractsLoading,
     isError: isSupplierContractsError,
@@ -372,8 +381,8 @@ export default function Map({ commodity }: { commodity?: string }) {
   // Enriched sites (patches missing commodity from map-locations API)
   const enrichedSites = useMemo(() => {
     if (!data?.sites) return [];
-    return data.sites.map(site => {
-      const masterSite = gasSites?.find(s => s.id === site.id);
+    return data.sites.map((site) => {
+      const masterSite = gasSites?.find((s) => s.id === site.id);
       return {
         ...site,
         commodity: masterSite?.commodity || site.commodity,
@@ -468,7 +477,9 @@ export default function Map({ commodity }: { commodity?: string }) {
 
   const regionSet = useMemo(() => {
     if (!selectedRegion || !enrichedSites) return null;
-    const regionSites = enrichedSites.filter((s) => s.region === selectedRegion);
+    const regionSites = enrichedSites.filter(
+      (s) => s.region === selectedRegion,
+    );
     const rSet = new Set<string>();
     regionSites.forEach((s) => {
       rSet.add(s.id);
@@ -517,19 +528,41 @@ export default function Map({ commodity }: { commodity?: string }) {
     return lookup;
   }, [pemasokBbtudSnapshots]);
 
+  const transportirDownstreamBySupplierId = useMemo(() => {
+    const lookup = new globalThis.Map<
+      string,
+      TransportirDownstreamBbtudSnapshot
+    >();
+
+    transportirDownstreamSnapshots?.forEach((supplier) => {
+      lookup.set(supplier.supplierId, supplier);
+    });
+
+    return lookup;
+  }, [transportirDownstreamSnapshots]);
+
   const regionOptions = useMemo(() => {
     if (!enrichedSites.length) return [];
     const validIds = intersect([pemasokSet, pembangkitSet]);
 
     let validSites = [...enrichedSites];
     if (commodity && gasSiteIds) {
-      validSites = validSites.filter(s => gasSiteIds.has(s.id));
+      validSites = validSites.filter((s) => gasSiteIds.has(s.id));
     }
     if (validIds) {
-      validSites = validSites.filter(s => validIds.has(s.id));
+      validSites = validSites.filter((s) => validIds.has(s.id));
     }
-    return Array.from(new Set(validSites.map(s => s.region))).filter(Boolean).sort();
-  }, [enrichedSites, pemasokSet, pembangkitSet, intersect, commodity, gasSiteIds]);
+    return Array.from(new Set(validSites.map((s) => s.region)))
+      .filter(Boolean)
+      .sort();
+  }, [
+    enrichedSites,
+    pemasokSet,
+    pembangkitSet,
+    intersect,
+    commodity,
+    gasSiteIds,
+  ]);
 
   const pemasokNames = useMemo(() => {
     if (!enrichedSites) return [];
@@ -773,18 +806,22 @@ export default function Map({ commodity }: { commodity?: string }) {
                   site.siteType === "PEMASOK"
                     ? supplierContractsBySiteId.get(site.id) || []
                     : [];
+                const transportirDownstreamSnapshot =
+                  site.siteType === "PEMASOK"
+                    ? transportirDownstreamBySupplierId.get(site.id)
+                    : undefined;
                 const supplierComplianceStatus:
                   | ContractComplianceStatus
                   | undefined = supplierContracts.some(
-                    (contract) => contract.complianceStatus === "BELOW_TOP",
-                  )
-                    ? "BELOW_TOP"
-                    : supplierContracts.some(
-                      (contract) =>
-                        contract.complianceStatus === "MISSING_DATA",
-                    )
-                      ? "MISSING_DATA"
-                      : undefined;
+                  (contract) => contract.complianceStatus === "BELOW_TOP",
+                )
+                  ? "BELOW_TOP"
+                  : supplierContracts.some(
+                        (contract) =>
+                          contract.complianceStatus === "MISSING_DATA",
+                      )
+                    ? "MISSING_DATA"
+                    : undefined;
                 const icon = createCategoryIcon(
                   catKey,
                   info.color,
@@ -885,13 +922,14 @@ export default function Map({ commodity }: { commodity?: string }) {
                                 {supplierContracts.map((contract) => (
                                   <div
                                     key={`${contract.supplierSiteId}:${contract.effectiveContractNumber.toLowerCase()}`}
-                                    className={`rounded-md border px-2 pt-1.5 pb-2 ${contract.complianceStatus === "BELOW_TOP"
+                                    className={`rounded-md border px-2 pt-1.5 pb-2 ${
+                                      contract.complianceStatus === "BELOW_TOP"
                                         ? "border-red-300 bg-red-50"
                                         : contract.complianceStatus ===
-                                          "MISSING_DATA"
+                                            "MISSING_DATA"
                                           ? "border-amber-300 bg-amber-50"
                                           : "border-gray-200 bg-gray-50"
-                                      }`}
+                                    }`}
                                   >
                                     <p className="!mt-0 !mb-1 text-[11px] font-semibold text-gray-800 break-words">
                                       {contract.effectiveContractNumber}
@@ -921,31 +959,84 @@ export default function Map({ commodity }: { commodity?: string }) {
                                       <span className="font-medium text-gray-800 text-right whitespace-nowrap">
                                         {contract.agreementEndDate
                                           ? formatReportDate(
-                                            contract.agreementEndDate,
-                                          )
+                                              contract.agreementEndDate,
+                                            )
                                           : "-"}
                                       </span>
                                     </div>
                                     {contract.complianceStatus ===
                                       "BELOW_TOP" && (
-                                        <p className="!mt-1.5 !mb-0 border-t border-red-200 pt-1 text-[10px] font-medium text-red-700">
-                                          Realisasi H-1{" "}
-                                          {bbtudFormatter.format(
-                                            contract.d1RealizationBbtud || 0,
-                                          )}{" "}
-                                          BBTUD di bawah TOP
-                                        </p>
-                                      )}
+                                      <p className="!mt-1.5 !mb-0 border-t border-red-200 pt-1 text-[10px] font-medium text-red-700">
+                                        Realisasi H-1{" "}
+                                        {bbtudFormatter.format(
+                                          contract.d1RealizationBbtud || 0,
+                                        )}{" "}
+                                        BBTUD di bawah TOP
+                                      </p>
+                                    )}
                                     {contract.complianceStatus ===
                                       "MISSING_DATA" && (
-                                        <p className="!mt-1.5 !mb-0 border-t border-amber-200 pt-1 text-[10px] font-medium text-amber-700">
-                                          Data H-1 tersedia untuk{" "}
-                                          {contract.d1DataPlantCount} dari{" "}
-                                          {contract.contractPlantCount} pembangkit
-                                        </p>
-                                      )}
+                                      <p className="!mt-1.5 !mb-0 border-t border-amber-200 pt-1 text-[10px] font-medium text-amber-700">
+                                        Data H-1 tersedia untuk{" "}
+                                        {contract.d1DataPlantCount} dari{" "}
+                                        {contract.contractPlantCount} pembangkit
+                                      </p>
+                                    )}
                                   </div>
                                 ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        {site.siteType === "PEMASOK" && (
+                          <div className="mt-2 pt-2 border-t border-gray-200">
+                            <div className="flex items-baseline justify-between gap-2 mb-1.5">
+                              <p className="!m-0 text-xs font-semibold text-gray-700">
+                                Data Transportir D-1
+                              </p>
+                              {transportirDownstreamSnapshot?.reportDate && (
+                                <span className="text-[10px] text-gray-500 whitespace-nowrap">
+                                  {formatReportDate(
+                                    transportirDownstreamSnapshot.reportDate,
+                                  )}
+                                </span>
+                              )}
+                            </div>
+
+                            {isTransportirDownstreamLoading ? (
+                              <div className="flex items-center gap-1.5 text-xs text-gray-500 py-1">
+                                <Loader2 size={12} className="animate-spin" />
+                                Memuat data transportir...
+                              </div>
+                            ) : isTransportirDownstreamError ? (
+                              <p className="!m-0 text-xs text-red-500 py-1">
+                                Data transportir gagal dimuat
+                              </p>
+                            ) : !transportirDownstreamSnapshot ||
+                              transportirDownstreamSnapshot.downstreams
+                                .length === 0 ? (
+                              <p className="!m-0 text-xs text-gray-500 py-1">
+                                Data D-1 belum tersedia
+                              </p>
+                            ) : (
+                              <div className="space-y-1">
+                                {transportirDownstreamSnapshot.downstreams.map(
+                                  (downstream) => (
+                                    <div
+                                      key={downstream.siteId}
+                                      className="flex items-baseline justify-between gap-3 rounded-md border border-amber-200 bg-amber-50 px-2 py-1.5 text-[11px]"
+                                    >
+                                      <span className="font-medium text-gray-700 min-w-0">
+                                        {downstream.siteName}
+                                      </span>
+                                      <span className="font-semibold text-amber-700 whitespace-nowrap">
+                                        {downstream.bbtud != null
+                                          ? `${bbtudFormatter.format(downstream.bbtud)} BBTUD`
+                                          : "-"}
+                                      </span>
+                                    </div>
+                                  ),
+                                )}
                               </div>
                             )}
                           </div>
@@ -967,10 +1058,10 @@ export default function Map({ commodity }: { commodity?: string }) {
                                 );
                                 const bbtudData =
                                   site.siteType === "PEMASOK" &&
-                                    c.siteType === "PEMBANGKIT"
+                                  c.siteType === "PEMBANGKIT"
                                     ? pemasokBbtudByPair.get(
-                                      `${site.id}:${c.id}`,
-                                    )
+                                        `${site.id}:${c.id}`,
+                                      )
                                     : undefined;
                                 const hasBbtud = bbtudData?.bbtud != null;
 
@@ -1075,8 +1166,9 @@ export default function Map({ commodity }: { commodity?: string }) {
                       <button
                         key={st.type}
                         onClick={() => toggleSiteType(st.type)}
-                        className={`flex items-center gap-2 w-full py-1 px-1.5 rounded-md transition-all cursor-pointer ${isVisible ? `bg-opacity-10` : "bg-gray-100 opacity-60"
-                          }`}
+                        className={`flex items-center gap-2 w-full py-1 px-1.5 rounded-md transition-all cursor-pointer ${
+                          isVisible ? `bg-opacity-10` : "bg-gray-100 opacity-60"
+                        }`}
                         style={
                           isVisible
                             ? { backgroundColor: `${config.color}1A` }
