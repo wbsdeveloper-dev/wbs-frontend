@@ -277,6 +277,20 @@ export interface PemasokBbtudSnapshot {
   pembangkits: PemasokBbtudEntry[];
 }
 
+/** GET /dashboard/transportir-downstream-bbtud-snapshot */
+export interface TransportirDownstreamBbtudEntry {
+  siteId: string;
+  siteName: string;
+  bbtud: number | null;
+}
+
+export interface TransportirDownstreamBbtudSnapshot {
+  supplierId: string;
+  supplierName: string;
+  reportDate: string;
+  downstreams: TransportirDownstreamBbtudEntry[];
+}
+
 export interface DashboardSummary {
   period: {
     start: string;
@@ -464,6 +478,8 @@ export const dashboardKeys = {
     [...dashboardKeys.all, "summary", startDate, endDate] as const,
   pemasokBbtudSnapshot: () =>
     [...dashboardKeys.all, "pemasok-bbtud-snapshot"] as const,
+  transportirDownstreamBbtudSnapshot: () =>
+    [...dashboardKeys.all, "transportir-downstream-bbtud-snapshot"] as const,
 };
 
 // ---------------------------------------------------------------------------
@@ -928,6 +944,29 @@ export function usePemasokBbtudSnapshot(
   return useQuery({
     queryKey: dashboardKeys.pemasokBbtudSnapshot(),
     queryFn: () => getPemasokBbtudSnapshot(),
+    staleTime: 5 * 60 * 1000,
+    ...options,
+  });
+}
+
+// ==========================================
+// Transportir Downstream BBTUD Snapshot (D-1)
+// ==========================================
+
+export async function getTransportirDownstreamBbtudSnapshot(): Promise<
+  TransportirDownstreamBbtudSnapshot[]
+> {
+  return dashboardFetch<TransportirDownstreamBbtudSnapshot[]>(
+    "/dashboard/transportir-downstream-bbtud-snapshot",
+  );
+}
+
+export function useTransportirDownstreamBbtudSnapshot(
+  options?: Partial<UseQueryOptions<TransportirDownstreamBbtudSnapshot[]>>,
+) {
+  return useQuery({
+    queryKey: dashboardKeys.transportirDownstreamBbtudSnapshot(),
+    queryFn: () => getTransportirDownstreamBbtudSnapshot(),
     staleTime: 5 * 60 * 1000,
     ...options,
   });

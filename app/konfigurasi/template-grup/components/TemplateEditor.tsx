@@ -397,15 +397,60 @@ export default function TemplateEditor({
         }
       } else if (field.sourceKind === "WA_REGEX_RECORDS") {
         try {
-          const regexConfigs = JSON.parse(field.sourceRef);
+          const regexConfigs = JSON.parse(field.sourceRef) as Array<{
+            regex: string;
+            sum_group?: string;
+          }>;
           const matches: string[] = [];
-          regexConfigs.forEach((config: { regex: string }) => {
+          const sumGroups = new Map<string, typeof regexConfigs>();
+
+          regexConfigs.forEach((config) => {
+            const groupName = config.sum_group?.trim();
+            if (groupName) {
+              const members = sumGroups.get(groupName) || [];
+              members.push(config);
+              sumGroups.set(groupName, members);
+              return;
+            }
+
+            // Existing behavior for ordinary configs without sum_group.
             const regex = new RegExp(config.regex, "g");
             let m: RegExpExecArray | null;
             while ((m = regex.exec(testInput)) !== null) {
               if (m[1]) matches.push(m[1]);
             }
           });
+
+          for (const members of sumGroups.values()) {
+            const values: number[] = [];
+            let isComplete = true;
+
+            for (const member of members) {
+              const match = testInput.match(new RegExp(member.regex, "i"));
+              if (!match?.[1]) {
+                isComplete = false;
+                break;
+              }
+
+              const value = Number(match[1].trim().replace(",", "."));
+              if (!Number.isFinite(value)) {
+                isComplete = false;
+                break;
+              }
+              values.push(value);
+            }
+
+            if (!isComplete) {
+              hasError = true;
+              continue;
+            }
+
+            const total = Number(
+              values.reduce((sum, value) => sum + value, 0).toPrecision(15),
+            );
+            matches.push(String(total));
+          }
+
           if (matches.length > 0) {
             result[field.fieldKey] = matches.join(", ");
           } else if (field.isRequired) {
@@ -507,759 +552,812 @@ export default function TemplateEditor({
           }
         />
 
-        <fieldset disabled={!canUpdate} className="[&_input:disabled]:opacity-60 [&_input:disabled]:bg-gray-50 [&_input:disabled]:cursor-not-allowed [&_select:disabled]:opacity-60 [&_select:disabled]:bg-gray-50 [&_select:disabled]:cursor-not-allowed [&_textarea:disabled]:opacity-60 [&_textarea:disabled]:bg-gray-50 [&_textarea:disabled]:cursor-not-allowed">
-        {/* Name */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">
-            Nama
-          </label>
-          <input
-            type="text"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent"
-          />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {/* Scope */}
-          <div>
-            <div className="flex items-center gap-1.5 mb-1.5">
-              <label className="block text-sm font-medium text-gray-700">
-                Cakupan (Scope)
-              </label>
-              <Tooltip
-                title="Menentukan dari mana data akan diambil (WA, Spreadsheet, atau Email)."
-                arrow
-                placement="top"
-              >
-                <Info className="w-4 h-4 text-gray-400 cursor-help" />
-              </Tooltip>
-            </div>
-            <div className="relative">
-              <select
-                value={formData.scope}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    scope: e.target.value as Template["scope"],
-                  })
-                }
-                className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white cursor-pointer pr-10"
-              >
-                <option value="WA_GROUP">WhatsApp Grup</option>
-                <option value="SPREADSHEET_SOURCE">Sumber Spreadsheet</option>
-                <option value="EMAIL_INGEST">Email Ingest</option>
-              </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-            </div>
+        <fieldset
+          disabled={!canUpdate}
+          className="[&_input:disabled]:opacity-60 [&_input:disabled]:bg-gray-50 [&_input:disabled]:cursor-not-allowed [&_select:disabled]:opacity-60 [&_select:disabled]:bg-gray-50 [&_select:disabled]:cursor-not-allowed [&_textarea:disabled]:opacity-60 [&_textarea:disabled]:bg-gray-50 [&_textarea:disabled]:cursor-not-allowed"
+        >
+          {/* Name */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Nama
+            </label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) =>
+                setFormData({ ...formData, name: e.target.value })
+              }
+              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent"
+            />
           </div>
-
-          {/* Parser Mode */}
-          <div>
-            <div className="flex items-center gap-1.5 mb-1.5">
-              <label className="block text-sm font-medium text-gray-700">
-                Mode Pemroses
-              </label>
-              <Tooltip
-                title="Pilih 'Rule Based' untuk parsing dengan pola regex manual, atau 'AI Assisted' untuk menggunakan kecerdasan buatan."
-                arrow
-                placement="top"
-              >
-                <Info className="w-4 h-4 text-gray-400 cursor-help" />
-              </Tooltip>
-            </div>
-            <div className="relative">
-              <select
-                value={formData.parserMode}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    parserMode: e.target.value as Template["parserMode"],
-                  })
-                }
-                className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white cursor-pointer pr-10"
-              >
-                <option value="RULE_BASED">
-                  Berdasarkan Aturan (Rule Based)
-                </option>
-                <option value="AI_ASSISTED">Bantuan AI (AI Assisted)</option>
-              </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-            </div>
-          </div>
-
-          {/* Decimal Separator */}
-          <div>
-            <div className="flex items-center gap-1.5 mb-1.5">
-              <label className="block text-sm font-medium text-gray-700">
-                Pemisah Desimal
-              </label>
-              <Tooltip
-                title="Format angka desimal yang digunakan pada pesan atau file (Koma atau Titik)."
-                arrow
-                placement="top"
-              >
-                <Info className="w-4 h-4 text-gray-400 cursor-help" />
-              </Tooltip>
-            </div>
-            <div className="relative">
-              <select
-                value={formData.decimalSeparator || ","}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    decimalSeparator: e.target.value,
-                  })
-                }
-                className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white cursor-pointer pr-10"
-              >
-                <option value=",">Koma (,)</option>
-                <option value=".">Titik (.)</option>
-              </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-            </div>
-          </div>
-
-          {/* Commodity Dropdown */}
-          <div>
-            <div className="flex items-center gap-1.5 mb-1.5">
-              <label className="block text-sm font-medium text-gray-700">
-                Komoditas
-              </label>
-              <Tooltip
-                title="Komoditas yang terkait dengan template grup ini (GAS PIPA, LNG, atau BBM)."
-                arrow
-                placement="top"
-              >
-                <Info className="w-4 h-4 text-gray-400 cursor-help" />
-              </Tooltip>
-            </div>
-            <div className="relative">
-              <select
-                value={formData.commodity || "GAS PIPA"}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    commodity: e.target.value,
-                  })
-                }
-                className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white cursor-pointer pr-10"
-              >
-                <option value="GAS PIPA">GAS PIPA</option>
-                <option value="LNG">LNG</option>
-                <option value="BBM">BBM</option>
-              </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-            </div>
-          </div>
-          
-          {/* Is Transportir Checkbox */}
-          <div className="flex items-end mb-1">
-            <div className="flex items-center pb-2">
-              <input
-                id={`is-transportir-${formData.id}`}
-                type="checkbox"
-                checked={formData.isTransportir || false}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    isTransportir: e.target.checked,
-                  })
-                }
-                className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-secondary"
-              />
-              <label
-                htmlFor={`is-transportir-${formData.id}`}
-                className="ml-2 block text-sm font-medium text-gray-700 cursor-pointer"
-              >
-                Template Transportir
-              </label>
-              <Tooltip
-                title="Jika dicentang, template ini akan diperlakukan sebagai template Transportir."
-                arrow
-                placement="top"
-              >
-                <Info className="w-4 h-4 ml-1.5 text-gray-400 cursor-help" />
-              </Tooltip>
-            </div>
-          </div>
-
-          {/* Group Configs (for WA_GROUP) */}
-          {formData.scope === "WA_GROUP" && (
-            <div className="lg:col-span-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* Scope */}
+            <div>
               <div className="flex items-center gap-1.5 mb-1.5">
                 <label className="block text-sm font-medium text-gray-700">
-                  Grup WhatsApp (Bisa Pilih Lebih Dari Satu)
+                  Cakupan (Scope)
                 </label>
                 <Tooltip
-                  title="Hubungkan template ini dengan grup WhatsApp tertentu yang akan dipantau oleh bot."
-                  arrow
-                  placement="top"
-                >
-                  <Info className="w-4 h-4 text-gray-400 cursor-help" />
-                </Tooltip>
-                {canUpdate && onAddGroup && (
-                  <button
-                    type="button"
-                    onClick={() => setIsAddingGroup(true)}
-                    className="ml-auto flex items-center gap-1 px-2 py-1 text-xs font-medium text-white bg-primary rounded hover:bg-[#0d4a5c] transition-all duration-200"
-                  >
-                    <Plus size={14} /> Tambah Baru
-                  </button>
-                )}
-              </div>
-              <div className="max-h-48 overflow-y-auto border border-gray-300 rounded-lg bg-white p-2 space-y-1">
-                {groupConfigs.length === 0 ? (
-                  <div className="p-2 text-sm text-gray-500 italic text-center">
-                    Belum ada grup tersedia
-                  </div>
-                ) : (
-                  groupConfigs.map((gc) => {
-                    const isSelected = (formData.sourceLinks || []).some(
-                      (link) =>
-                        link.sourceId === gc.id &&
-                        link.sourceType === "WA_GROUP",
-                    );
-                    return (
-                      <label
-                        key={gc.id}
-                        className={`flex items-center gap-3 p-2 rounded-md cursor-pointer transition-colors ${
-                          isSelected ? "bg-secondary/10" : "hover:bg-gray-50"
-                        } ${!gc.isEnabled && !isSelected ? "opacity-60" : ""}`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={() => toggleSourceLink(gc.id, "WA_GROUP")}
-                          className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-secondary"
-                        />
-                        <div className="flex flex-col">
-                          <span className="text-sm font-medium text-gray-900">
-                            {gc.name} {!gc.isEnabled && "⛔ (Nonaktif)"}
-                          </span>
-                          <span className="text-xs text-gray-500 font-mono">
-                            {gc.groupId}
-                          </span>
-                        </div>
-                      </label>
-                    );
-                  })
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Spreadsheet Sources (for SPREADSHEET_SOURCE) */}
-          {formData.scope === "SPREADSHEET_SOURCE" && (
-            <div className="lg:col-span-2">
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <label className="block text-sm font-medium text-gray-700">
-                  Sumber Spreadsheet (Bisa Pilih Lebih Dari Satu)
-                </label>
-                <Tooltip
-                  title="Pilih file spreadsheet yang akan digunakan sebagai sumber data."
+                  title="Menentukan dari mana data akan diambil (WA, Spreadsheet, atau Email)."
                   arrow
                   placement="top"
                 >
                   <Info className="w-4 h-4 text-gray-400 cursor-help" />
                 </Tooltip>
               </div>
-              <div className="max-h-48 overflow-y-auto border border-gray-300 rounded-lg bg-white p-2 space-y-1">
-                {spreadsheetSources.length === 0 ? (
-                  <div className="p-2 text-sm text-gray-500 italic text-center">
-                    Belum ada sumber tersedia
-                  </div>
-                ) : (
-                  spreadsheetSources.map((ss) => {
-                    const isSelected = (formData.sourceLinks || []).some(
-                      (link) =>
-                        link.sourceId === ss.id &&
-                        link.sourceType === "SPREADSHEET_SOURCE",
-                    );
-                    return (
-                      <label
-                        key={ss.id}
-                        className={`flex items-center gap-3 p-2 rounded-md cursor-pointer transition-colors ${
-                          isSelected ? "bg-secondary/10" : "hover:bg-gray-50"
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={() =>
-                            toggleSourceLink(ss.id, "SPREADSHEET_SOURCE")
-                          }
-                          className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-secondary"
-                        />
-                        <span className="text-sm font-medium text-gray-900">
-                          {ss.name}
-                        </span>
-                      </label>
-                    );
-                  })
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Email Sources (for EMAIL_INGEST) */}
-          {formData.scope === "EMAIL_INGEST" && (
-            <div className="lg:col-span-2">
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <label className="block text-sm font-medium text-gray-700">
-                  Sumber Email (Bisa Pilih Lebih Dari Satu)
-                </label>
-                <Tooltip
-                  title="Pilih email source yang akan memicu template ini ketika ada email masuk."
-                  arrow
-                  placement="top"
-                >
-                  <Info className="w-4 h-4 text-gray-400 cursor-help" />
-                </Tooltip>
-              </div>
-              <div className="max-h-48 overflow-y-auto border border-gray-300 rounded-lg bg-white p-2 space-y-1">
-                {emailSources.length === 0 ? (
-                  <div className="p-2 text-sm text-gray-500 italic text-center">
-                    Belum ada sumber tersedia
-                  </div>
-                ) : (
-                  emailSources.map((es) => {
-                    const isSelected = (formData.sourceLinks || []).some(
-                      (link) =>
-                        link.sourceId === es.id &&
-                        link.sourceType === "EMAIL_INGEST",
-                    );
-                    return (
-                      <label
-                        key={es.id}
-                        className={`flex items-center gap-3 p-2 rounded-md cursor-pointer transition-colors ${
-                          isSelected ? "bg-secondary/10" : "hover:bg-gray-50"
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={() =>
-                            toggleSourceLink(es.id, "EMAIL_INGEST")
-                          }
-                          className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-secondary"
-                        />
-                        <div className="flex flex-col">
-                          <span className="text-sm font-medium text-gray-900">
-                            {es.name}
-                          </span>
-                          <span className="text-xs text-gray-500">
-                            {es.emailAddress}
-                          </span>
-                        </div>
-                      </label>
-                    );
-                  })
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Email Parsing Settings (for EMAIL_INGEST) */}
-          {formData.scope === "EMAIL_INGEST" && (
-            <div className="lg:col-span-2 space-y-4 pt-4 border-t border-gray-200">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Target Ekstraksi Email</label>
+              <div className="relative">
                 <select
-                  value={formData.emailExtractionTarget || "BODY_TEXT"}
+                  value={formData.scope}
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      emailExtractionTarget: e.target.value as Template["emailExtractionTarget"],
+                      scope: e.target.value as Template["scope"],
                     })
                   }
-                  className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white cursor-pointer"
+                  className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white cursor-pointer pr-10"
                 >
-                  <option value="BODY_TEXT">Body Text (Teks Email)</option>
-                  <option value="ATTACHMENT_SINGLE">Satu Lampiran Tunggal</option>
-                  <option value="ATTACHMENT_MULTI_STREAM">Multi-Stream Lampiran</option>
+                  <option value="WA_GROUP">WhatsApp Grup</option>
+                  <option value="SPREADSHEET_SOURCE">Sumber Spreadsheet</option>
+                  <option value="EMAIL_INGEST">Email Ingest</option>
                 </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
               </div>
+            </div>
 
-              {(formData.emailExtractionTarget === "ATTACHMENT_SINGLE" || formData.emailExtractionTarget === "ATTACHMENT_MULTI_STREAM") && (
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id={`requires-ocr-${formData.id}`}
-                    checked={formData.requiresOcr || false}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        requiresOcr: e.target.checked,
-                      })
-                    }
-                    className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-secondary cursor-pointer"
-                  />
-                  <label htmlFor={`requires-ocr-${formData.id}`} className="text-sm font-medium text-gray-700 cursor-pointer">
-                    Gunakan OCR (Gambar/PDF ke Teks)
+            {/* Parser Mode */}
+            <div>
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <label className="block text-sm font-medium text-gray-700">
+                  Mode Pemroses
+                </label>
+                <Tooltip
+                  title="Pilih 'Rule Based' untuk parsing dengan pola regex manual, atau 'AI Assisted' untuk menggunakan kecerdasan buatan."
+                  arrow
+                  placement="top"
+                >
+                  <Info className="w-4 h-4 text-gray-400 cursor-help" />
+                </Tooltip>
+              </div>
+              <div className="relative">
+                <select
+                  value={formData.parserMode}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      parserMode: e.target.value as Template["parserMode"],
+                    })
+                  }
+                  className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white cursor-pointer pr-10"
+                >
+                  <option value="RULE_BASED">
+                    Berdasarkan Aturan (Rule Based)
+                  </option>
+                  <option value="AI_ASSISTED">Bantuan AI (AI Assisted)</option>
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              </div>
+            </div>
+
+            {/* Decimal Separator */}
+            <div>
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <label className="block text-sm font-medium text-gray-700">
+                  Pemisah Desimal
+                </label>
+                <Tooltip
+                  title="Format angka desimal yang digunakan pada pesan atau file (Koma atau Titik)."
+                  arrow
+                  placement="top"
+                >
+                  <Info className="w-4 h-4 text-gray-400 cursor-help" />
+                </Tooltip>
+              </div>
+              <div className="relative">
+                <select
+                  value={formData.decimalSeparator || ","}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      decimalSeparator: e.target.value,
+                    })
+                  }
+                  className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white cursor-pointer pr-10"
+                >
+                  <option value=",">Koma (,)</option>
+                  <option value=".">Titik (.)</option>
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              </div>
+            </div>
+
+            {/* Commodity Dropdown */}
+            <div>
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <label className="block text-sm font-medium text-gray-700">
+                  Komoditas
+                </label>
+                <Tooltip
+                  title="Komoditas yang terkait dengan template grup ini (GAS PIPA, LNG, atau BBM)."
+                  arrow
+                  placement="top"
+                >
+                  <Info className="w-4 h-4 text-gray-400 cursor-help" />
+                </Tooltip>
+              </div>
+              <div className="relative">
+                <select
+                  value={formData.commodity || "GAS PIPA"}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      commodity: e.target.value,
+                    })
+                  }
+                  className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white cursor-pointer pr-10"
+                >
+                  <option value="GAS PIPA">GAS PIPA</option>
+                  <option value="LNG">LNG</option>
+                  <option value="BBM">BBM</option>
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              </div>
+            </div>
+
+            {/* Is Transportir Checkbox */}
+            <div className="flex items-end mb-1">
+              <div className="flex items-center pb-2">
+                <input
+                  id={`is-transportir-${formData.id}`}
+                  type="checkbox"
+                  checked={formData.isTransportir || false}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      isTransportir: e.target.checked,
+                    })
+                  }
+                  className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-secondary"
+                />
+                <label
+                  htmlFor={`is-transportir-${formData.id}`}
+                  className="ml-2 block text-sm font-medium text-gray-700 cursor-pointer"
+                >
+                  Template Transportir
+                </label>
+                <Tooltip
+                  title="Jika dicentang, template ini akan diperlakukan sebagai template Transportir."
+                  arrow
+                  placement="top"
+                >
+                  <Info className="w-4 h-4 ml-1.5 text-gray-400 cursor-help" />
+                </Tooltip>
+              </div>
+            </div>
+
+            {/* Group Configs (for WA_GROUP) */}
+            {formData.scope === "WA_GROUP" && (
+              <div className="lg:col-span-2">
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Grup WhatsApp (Bisa Pilih Lebih Dari Satu)
                   </label>
+                  <Tooltip
+                    title="Hubungkan template ini dengan grup WhatsApp tertentu yang akan dipantau oleh bot."
+                    arrow
+                    placement="top"
+                  >
+                    <Info className="w-4 h-4 text-gray-400 cursor-help" />
+                  </Tooltip>
+                  {canUpdate && onAddGroup && (
+                    <button
+                      type="button"
+                      onClick={() => setIsAddingGroup(true)}
+                      className="ml-auto flex items-center gap-1 px-2 py-1 text-xs font-medium text-white bg-primary rounded hover:bg-[#0d4a5c] transition-all duration-200"
+                    >
+                      <Plus size={14} /> Tambah Baru
+                    </button>
+                  )}
                 </div>
-              )}
-
-              {formData.requiresOcr && (formData.emailExtractionTarget === "ATTACHMENT_SINGLE" || formData.emailExtractionTarget === "ATTACHMENT_MULTI_STREAM") && (
-                <div className="mt-3">
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Halaman PDF Spesifik (Opsional)</label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={formData.streamConfiguration?.pageNumber || ""}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        streamConfiguration: {
-                          ...formData.streamConfiguration,
-                          pageNumber: e.target.value ? parseInt(e.target.value, 10) : undefined,
-                        },
-                      })
-                    }
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent"
-                    placeholder="Contoh: 1"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Kosongkan atau isi 1 untuk membaca halaman pertama saja. Isi halaman spesifik jika data berada di halaman lain.</p>
+                <div className="max-h-48 overflow-y-auto border border-gray-300 rounded-lg bg-white p-2 space-y-1">
+                  {groupConfigs.length === 0 ? (
+                    <div className="p-2 text-sm text-gray-500 italic text-center">
+                      Belum ada grup tersedia
+                    </div>
+                  ) : (
+                    groupConfigs.map((gc) => {
+                      const isSelected = (formData.sourceLinks || []).some(
+                        (link) =>
+                          link.sourceId === gc.id &&
+                          link.sourceType === "WA_GROUP",
+                      );
+                      return (
+                        <label
+                          key={gc.id}
+                          className={`flex items-center gap-3 p-2 rounded-md cursor-pointer transition-colors ${
+                            isSelected ? "bg-secondary/10" : "hover:bg-gray-50"
+                          } ${!gc.isEnabled && !isSelected ? "opacity-60" : ""}`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => toggleSourceLink(gc.id, "WA_GROUP")}
+                            className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-secondary"
+                          />
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium text-gray-900">
+                              {gc.name} {!gc.isEnabled && "⛔ (Nonaktif)"}
+                            </span>
+                            <span className="text-xs text-gray-500 font-mono">
+                              {gc.groupId}
+                            </span>
+                          </div>
+                        </label>
+                      );
+                    })
+                  )}
                 </div>
-              )}
+              </div>
+            )}
 
-              {formData.emailExtractionTarget === "ATTACHMENT_MULTI_STREAM" && (
+            {/* Spreadsheet Sources (for SPREADSHEET_SOURCE) */}
+            {formData.scope === "SPREADSHEET_SOURCE" && (
+              <div className="lg:col-span-2">
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Sumber Spreadsheet (Bisa Pilih Lebih Dari Satu)
+                  </label>
+                  <Tooltip
+                    title="Pilih file spreadsheet yang akan digunakan sebagai sumber data."
+                    arrow
+                    placement="top"
+                  >
+                    <Info className="w-4 h-4 text-gray-400 cursor-help" />
+                  </Tooltip>
+                </div>
+                <div className="max-h-48 overflow-y-auto border border-gray-300 rounded-lg bg-white p-2 space-y-1">
+                  {spreadsheetSources.length === 0 ? (
+                    <div className="p-2 text-sm text-gray-500 italic text-center">
+                      Belum ada sumber tersedia
+                    </div>
+                  ) : (
+                    spreadsheetSources.map((ss) => {
+                      const isSelected = (formData.sourceLinks || []).some(
+                        (link) =>
+                          link.sourceId === ss.id &&
+                          link.sourceType === "SPREADSHEET_SOURCE",
+                      );
+                      return (
+                        <label
+                          key={ss.id}
+                          className={`flex items-center gap-3 p-2 rounded-md cursor-pointer transition-colors ${
+                            isSelected ? "bg-secondary/10" : "hover:bg-gray-50"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() =>
+                              toggleSourceLink(ss.id, "SPREADSHEET_SOURCE")
+                            }
+                            className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-secondary"
+                          />
+                          <span className="text-sm font-medium text-gray-900">
+                            {ss.name}
+                          </span>
+                        </label>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Email Sources (for EMAIL_INGEST) */}
+            {formData.scope === "EMAIL_INGEST" && (
+              <div className="lg:col-span-2">
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Sumber Email (Bisa Pilih Lebih Dari Satu)
+                  </label>
+                  <Tooltip
+                    title="Pilih email source yang akan memicu template ini ketika ada email masuk."
+                    arrow
+                    placement="top"
+                  >
+                    <Info className="w-4 h-4 text-gray-400 cursor-help" />
+                  </Tooltip>
+                </div>
+                <div className="max-h-48 overflow-y-auto border border-gray-300 rounded-lg bg-white p-2 space-y-1">
+                  {emailSources.length === 0 ? (
+                    <div className="p-2 text-sm text-gray-500 italic text-center">
+                      Belum ada sumber tersedia
+                    </div>
+                  ) : (
+                    emailSources.map((es) => {
+                      const isSelected = (formData.sourceLinks || []).some(
+                        (link) =>
+                          link.sourceId === es.id &&
+                          link.sourceType === "EMAIL_INGEST",
+                      );
+                      return (
+                        <label
+                          key={es.id}
+                          className={`flex items-center gap-3 p-2 rounded-md cursor-pointer transition-colors ${
+                            isSelected ? "bg-secondary/10" : "hover:bg-gray-50"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() =>
+                              toggleSourceLink(es.id, "EMAIL_INGEST")
+                            }
+                            className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-secondary"
+                          />
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium text-gray-900">
+                              {es.name}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              {es.emailAddress}
+                            </span>
+                          </div>
+                        </label>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Email Parsing Settings (for EMAIL_INGEST) */}
+            {formData.scope === "EMAIL_INGEST" && (
+              <div className="lg:col-span-2 space-y-4 pt-4 border-t border-gray-200">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Pemisah Stream Lampiran (Regex)</label>
-                  <input
-                    type="text"
-                    value={formData.streamConfiguration?.separator || ""}
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Target Ekstraksi Email
+                  </label>
+                  <select
+                    value={formData.emailExtractionTarget || "BODY_TEXT"}
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        streamConfiguration: {
-                          ...formData.streamConfiguration,
-                          separator: e.target.value,
-                        },
+                        emailExtractionTarget: e.target
+                          .value as Template["emailExtractionTarget"],
                       })
                     }
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent"
-                    placeholder="\n---\n"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Gunakan regex untuk memisahkan data lampiran menjadi beberapa stream.</p>
+                    className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white cursor-pointer"
+                  >
+                    <option value="BODY_TEXT">Body Text (Teks Email)</option>
+                    <option value="ATTACHMENT_SINGLE">
+                      Satu Lampiran Tunggal
+                    </option>
+                    <option value="ATTACHMENT_MULTI_STREAM">
+                      Multi-Stream Lampiran
+                    </option>
+                  </select>
                 </div>
-              )}
 
-              {/* --- Metric type override --- */}
-              {(formData.emailExtractionTarget === "ATTACHMENT_SINGLE" || formData.emailExtractionTarget === "ATTACHMENT_MULTI_STREAM") && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Override Jenis Metrik (Opsional)</label>
-                  <input
-                    type="text"
-                    value={formData.streamConfiguration?.metricType || ""}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        streamConfiguration: {
-                          ...formData.streamConfiguration,
-                          metricType: e.target.value || undefined,
-                        },
-                      })
-                    }
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent"
-                    placeholder="Contoh: ENERGY_BBTUD"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Paksa nilai <code>metric_type</code> menjadi nilai ini — menggantikan apapun yang dibaca oleh AI/Regex.
-                    Kosongkan jika tidak ingin mengganti.
-                  </p>
-                </div>
-              )}
-
-              {/* --- Konversi ke BBTUD --- */}
-              {(formData.emailExtractionTarget === "ATTACHMENT_SINGLE" || formData.emailExtractionTarget === "ATTACHMENT_MULTI_STREAM") && (
-                <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                  <input
-                    type="checkbox"
-                    id={`convert-bbtud-${formData.id}`}
-                    checked={!!formData.streamConfiguration?.convertToBbtud}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        streamConfiguration: {
-                          ...formData.streamConfiguration,
-                          convertToBbtud: e.target.checked,
-                        },
-                      })
-                    }
-                    className="w-4 h-4 text-amber-600 border-gray-300 rounded focus:ring-amber-500 cursor-pointer mt-0.5"
-                  />
-                  <div>
-                    <label htmlFor={`convert-bbtud-${formData.id}`} className="text-sm font-medium text-amber-800 cursor-pointer">
-                      Konversi Nilai ke BBTUD (÷ 1000)
+                {(formData.emailExtractionTarget === "ATTACHMENT_SINGLE" ||
+                  formData.emailExtractionTarget ===
+                    "ATTACHMENT_MULTI_STREAM") && (
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id={`requires-ocr-${formData.id}`}
+                      checked={formData.requiresOcr || false}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          requiresOcr: e.target.checked,
+                        })
+                      }
+                      className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-secondary cursor-pointer"
+                    />
+                    <label
+                      htmlFor={`requires-ocr-${formData.id}`}
+                      className="text-sm font-medium text-gray-700 cursor-pointer"
+                    >
+                      Gunakan OCR (Gambar/PDF ke Teks)
                     </label>
-                    <p className="text-xs text-amber-700 mt-0.5">
-                      Jika dicentang, nilai yang diekstrak akan dibagi 1000 dan satuan (<code>unit</code>) diubah menjadi <strong>BBTUD</strong>.
-                      Cocok untuk mengonversi data MMBTU → BBTUD.
+                  </div>
+                )}
+
+                {formData.requiresOcr &&
+                  (formData.emailExtractionTarget === "ATTACHMENT_SINGLE" ||
+                    formData.emailExtractionTarget ===
+                      "ATTACHMENT_MULTI_STREAM") && (
+                    <div className="mt-3">
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        Halaman PDF Spesifik (Opsional)
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={formData.streamConfiguration?.pageNumber || ""}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            streamConfiguration: {
+                              ...formData.streamConfiguration,
+                              pageNumber: e.target.value
+                                ? parseInt(e.target.value, 10)
+                                : undefined,
+                            },
+                          })
+                        }
+                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent"
+                        placeholder="Contoh: 1"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Kosongkan atau isi 1 untuk membaca halaman pertama saja.
+                        Isi halaman spesifik jika data berada di halaman lain.
+                      </p>
+                    </div>
+                  )}
+
+                {formData.emailExtractionTarget ===
+                  "ATTACHMENT_MULTI_STREAM" && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                      Pemisah Stream Lampiran (Regex)
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.streamConfiguration?.separator || ""}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          streamConfiguration: {
+                            ...formData.streamConfiguration,
+                            separator: e.target.value,
+                          },
+                        })
+                      }
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent"
+                      placeholder="\n---\n"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Gunakan regex untuk memisahkan data lampiran menjadi
+                      beberapa stream.
                     </p>
                   </div>
-                </div>
-              )}
-            </div>
-          )}
+                )}
 
-          {/* Is Default */}
-          <div className="flex items-center gap-3 pt-6">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={formData.isDefault}
-                onChange={(e) =>
-                  setFormData({ ...formData, isDefault: e.target.checked })
-                }
-                className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-secondary"
-              />
-              <span className="text-sm text-gray-700 font-medium">
-                Tetapkan sebagai Utama (Default)
-              </span>
-            </label>
-            <Tooltip
-              title="Jika diaktifkan, template ini akan digunakan secara otomatis jika tidak ada template lain yang cocok."
-              arrow
-              placement="right"
-            >
-              <Info className="w-3.5 h-3.5 text-gray-400 cursor-help" />
-            </Tooltip>
-          </div>
-        </div>
+                {/* --- Metric type override --- */}
+                {(formData.emailExtractionTarget === "ATTACHMENT_SINGLE" ||
+                  formData.emailExtractionTarget ===
+                    "ATTACHMENT_MULTI_STREAM") && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                      Override Jenis Metrik (Opsional)
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.streamConfiguration?.metricType || ""}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          streamConfiguration: {
+                            ...formData.streamConfiguration,
+                            metricType: e.target.value || undefined,
+                          },
+                        })
+                      }
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent"
+                      placeholder="Contoh: ENERGY_BBTUD"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Paksa nilai <code>metric_type</code> menjadi nilai ini —
+                      menggantikan apapun yang dibaca oleh AI/Regex. Kosongkan
+                      jika tidak ingin mengganti.
+                    </p>
+                  </div>
+                )}
 
-        {/* Hints Section */}
-        <div className="mt-4 pt-4 border-t border-gray-200">
-          <h4 className="text-sm font-medium text-gray-700 mb-3">
-            Petunjuk & Konfigurasi (Hints)
-          </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {formData.scope === "WA_GROUP" && (
-              <>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">
-                    Kata Kunci WA (Hint)
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.waKeywordHint || ""}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        waKeywordHint: e.target.value,
-                      })
-                    }
-                    placeholder="e.g., LAPORAN HARIAN"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">
-                    Pengirim WA (Hint)
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.waSenderHint || ""}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        waSenderHint: e.target.value,
-                      })
-                    }
-                    placeholder="e.g., PLN"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary"
-                  />
-                </div>
-              </>
+                {/* --- Konversi ke BBTUD --- */}
+                {(formData.emailExtractionTarget === "ATTACHMENT_SINGLE" ||
+                  formData.emailExtractionTarget ===
+                    "ATTACHMENT_MULTI_STREAM") && (
+                  <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <input
+                      type="checkbox"
+                      id={`convert-bbtud-${formData.id}`}
+                      checked={!!formData.streamConfiguration?.convertToBbtud}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          streamConfiguration: {
+                            ...formData.streamConfiguration,
+                            convertToBbtud: e.target.checked,
+                          },
+                        })
+                      }
+                      className="w-4 h-4 text-amber-600 border-gray-300 rounded focus:ring-amber-500 cursor-pointer mt-0.5"
+                    />
+                    <div>
+                      <label
+                        htmlFor={`convert-bbtud-${formData.id}`}
+                        className="text-sm font-medium text-amber-800 cursor-pointer"
+                      >
+                        Konversi Nilai ke BBTUD (÷ 1000)
+                      </label>
+                      <p className="text-xs text-amber-700 mt-0.5">
+                        Jika dicentang, nilai yang diekstrak akan dibagi 1000
+                        dan satuan (<code>unit</code>) diubah menjadi{" "}
+                        <strong>BBTUD</strong>. Cocok untuk mengonversi data
+                        MMBTU → BBTUD.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
-            {formData.scope === "SPREADSHEET_SOURCE" && (
-              <>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">
-                    Tab Sheet (Hint)
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.sheetTabHint || ""}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        sheetTabHint: e.target.value,
-                      })
-                    }
-                    placeholder="e.g., Gas Pipa"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">
-                    Baris Header Sheet
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.sheetHeaderRow || ""}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        sheetHeaderRow: parseInt(e.target.value) || null,
-                      })
-                    }
-                    placeholder="1"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary"
-                  />
-                </div>
-              </>
-            )}
-            {formData.scope === "EMAIL_INGEST" && (
-              <>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">
-                    Tab Excel (Hint)
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.sheetTabHint || ""}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        sheetTabHint: e.target.value,
-                      })
-                    }
-                    placeholder="e.g., Sheet1, Laporan"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary"
-                  />
-                  <p className="text-xs text-gray-400 mt-1">Nama tab di file Excel yang akan diproses</p>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
 
-        {/* AI Settings */}
-        {formData.parserMode === "AI_ASSISTED" && (
-          <div className="mt-4 pt-4 border-t border-gray-200">
-            <div className="flex items-center gap-1.5 mb-3">
-              <h4 className="text-sm font-medium text-gray-700">
-                Pengaturan AI
-              </h4>
+            {/* Is Default */}
+            <div className="flex items-center gap-3 pt-6">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.isDefault}
+                  onChange={(e) =>
+                    setFormData({ ...formData, isDefault: e.target.checked })
+                  }
+                  className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-secondary"
+                />
+                <span className="text-sm text-gray-700 font-medium">
+                  Tetapkan sebagai Utama (Default)
+                </span>
+              </label>
               <Tooltip
-                title="Konfigurasi model AI untuk mengekstrak data dari pesan menggunakan kecerdasan buatan."
+                title="Jika diaktifkan, template ini akan digunakan secara otomatis jika tidak ada template lain yang cocok."
                 arrow
-                placement="top"
+                placement="right"
               >
                 <Info className="w-3.5 h-3.5 text-gray-400 cursor-help" />
               </Tooltip>
             </div>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">
-                  Model AI
-                </label>
-                <div className="relative">
-                  <select
-                    value={formData.aiModel || ""}
-                    onChange={(e) =>
-                      setFormData({ ...formData, aiModel: e.target.value })
-                    }
-                    className="w-full appearance-none px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white cursor-pointer pr-10"
-                  >
-                    <option value="">Pilih Model</option>
-                    {isLoadingModels ? (
-                      <option disabled>Memuat model...</option>
-                    ) : (
-                      aiModels.map((model) => (
-                        <option key={model.id} value={model.id}>
-                          {model.name}
-                          {model.isDefault ? " (Default)" : ""}
-                        </option>
-                      ))
-                    )}
-                  </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                </div>
-              </div>
-              <div>
-                <div className="flex items-center gap-1.5 mb-1">
-                  <label className="block text-xs text-gray-500">
-                    Templat Prompt AI
-                  </label>
-                  <Tooltip
-                    title="Instruksi spesifik yang dikirimkan ke AI untuk memberitahu cara ekstraksi."
-                    arrow
-                    placement="top"
-                  >
-                    <Info className="w-3.5 h-3.5 text-gray-400 cursor-help" />
-                  </Tooltip>
-                </div>
-                <textarea
-                  value={formData.aiPromptTemplate || ""}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      aiPromptTemplate: e.target.value,
-                    })
-                  }
-                  rows={5}
-                  placeholder={
-                    formData.scope === "EMAIL_INGEST"
-                      ? "Contoh: Kamu adalah asisten ekstraksi data. Dari data tabel Excel berikut, ekstrak semua record dengan field: siteName, metricType, periodType, periodValue, value, unit.\n\nGunakan {{DATA}} sebagai placeholder untuk data file Excel."
-                      : "Use {{DATA}} as placeholder for the data content..."
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary resize-none font-mono"
-                />
-                {formData.scope === "EMAIL_INGEST" && (
-                  <p className="text-xs text-gray-500 mt-1 flex items-start gap-1">
-                    <span className="text-cyan-600 font-medium">💡 Email Ingest:</span>
-                    Gunakan <code className="bg-gray-100 px-1 rounded">{"{{DATA}}"}</code> sebagai placeholder di mana data dari file Excel/PDF attachment akan disisipkan ke dalam prompt.
-                  </p>
-                )}
+          </div>
 
-              </div>
-              <div>
-                <div className="flex items-center gap-1.5 mb-1">
-                  <label className="block text-xs text-gray-500">
-                    Skema Output AI (JSON)
-                  </label>
-                  <Tooltip
-                    title="Struktur data JSON yang akan dihasilkan oleh AI."
-                    arrow
-                    placement="top"
-                  >
-                    <Info className="w-3.5 h-3.5 text-gray-400 cursor-help" />
-                  </Tooltip>
-                </div>
-                <textarea
-                  value={
-                    formData.aiOutputSchema
-                      ? JSON.stringify(formData.aiOutputSchema, null, 2)
-                      : ""
-                  }
-                  onChange={(e) => {
-                    const raw = e.target.value;
-                    try {
-                      const parsed = raw ? JSON.parse(raw) : null;
-                      setFormData({ ...formData, aiOutputSchema: parsed });
-                    } catch {
-                      // Allow typing invalid JSON mid-edit; store raw as-is
-                      // by wrapping in a simple object so it doesn't break the type
-                      setFormData({
-                        ...formData,
-                        aiOutputSchema: { __raw: raw } as Record<
-                          string,
-                          unknown
-                        >,
-                      });
-                    }
-                  }}
-                  rows={3}
-                  placeholder='{"type": "object", "properties": {...}}'
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary resize-none font-mono"
-                />
-              </div>
+          {/* Hints Section */}
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <h4 className="text-sm font-medium text-gray-700 mb-3">
+              Petunjuk & Konfigurasi (Hints)
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {formData.scope === "WA_GROUP" && (
+                <>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">
+                      Kata Kunci WA (Hint)
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.waKeywordHint || ""}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          waKeywordHint: e.target.value,
+                        })
+                      }
+                      placeholder="e.g., LAPORAN HARIAN"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">
+                      Pengirim WA (Hint)
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.waSenderHint || ""}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          waSenderHint: e.target.value,
+                        })
+                      }
+                      placeholder="e.g., PLN"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary"
+                    />
+                  </div>
+                </>
+              )}
+              {formData.scope === "SPREADSHEET_SOURCE" && (
+                <>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">
+                      Tab Sheet (Hint)
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.sheetTabHint || ""}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          sheetTabHint: e.target.value,
+                        })
+                      }
+                      placeholder="e.g., Gas Pipa"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">
+                      Baris Header Sheet
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.sheetHeaderRow || ""}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          sheetHeaderRow: parseInt(e.target.value) || null,
+                        })
+                      }
+                      placeholder="1"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary"
+                    />
+                  </div>
+                </>
+              )}
+              {formData.scope === "EMAIL_INGEST" && (
+                <>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">
+                      Tab Excel (Hint)
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.sheetTabHint || ""}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          sheetTabHint: e.target.value,
+                        })
+                      }
+                      placeholder="e.g., Sheet1, Laporan"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary"
+                    />
+                    <p className="text-xs text-gray-400 mt-1">
+                      Nama tab di file Excel yang akan diproses
+                    </p>
+                  </div>
+                </>
+              )}
             </div>
           </div>
-        )}
+
+          {/* AI Settings */}
+          {formData.parserMode === "AI_ASSISTED" && (
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <div className="flex items-center gap-1.5 mb-3">
+                <h4 className="text-sm font-medium text-gray-700">
+                  Pengaturan AI
+                </h4>
+                <Tooltip
+                  title="Konfigurasi model AI untuk mengekstrak data dari pesan menggunakan kecerdasan buatan."
+                  arrow
+                  placement="top"
+                >
+                  <Info className="w-3.5 h-3.5 text-gray-400 cursor-help" />
+                </Tooltip>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">
+                    Model AI
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={formData.aiModel || ""}
+                      onChange={(e) =>
+                        setFormData({ ...formData, aiModel: e.target.value })
+                      }
+                      className="w-full appearance-none px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white cursor-pointer pr-10"
+                    >
+                      <option value="">Pilih Model</option>
+                      {isLoadingModels ? (
+                        <option disabled>Memuat model...</option>
+                      ) : (
+                        aiModels.map((model) => (
+                          <option key={model.id} value={model.id}>
+                            {model.name}
+                            {model.isDefault ? " (Default)" : ""}
+                          </option>
+                        ))
+                      )}
+                    </select>
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                  </div>
+                </div>
+                <div>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <label className="block text-xs text-gray-500">
+                      Templat Prompt AI
+                    </label>
+                    <Tooltip
+                      title="Instruksi spesifik yang dikirimkan ke AI untuk memberitahu cara ekstraksi."
+                      arrow
+                      placement="top"
+                    >
+                      <Info className="w-3.5 h-3.5 text-gray-400 cursor-help" />
+                    </Tooltip>
+                  </div>
+                  <textarea
+                    value={formData.aiPromptTemplate || ""}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        aiPromptTemplate: e.target.value,
+                      })
+                    }
+                    rows={5}
+                    placeholder={
+                      formData.scope === "EMAIL_INGEST"
+                        ? "Contoh: Kamu adalah asisten ekstraksi data. Dari data tabel Excel berikut, ekstrak semua record dengan field: siteName, metricType, periodType, periodValue, value, unit.\n\nGunakan {{DATA}} sebagai placeholder untuk data file Excel."
+                        : "Use {{DATA}} as placeholder for the data content..."
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary resize-none font-mono"
+                  />
+                  {formData.scope === "EMAIL_INGEST" && (
+                    <p className="text-xs text-gray-500 mt-1 flex items-start gap-1">
+                      <span className="text-cyan-600 font-medium">
+                        💡 Email Ingest:
+                      </span>
+                      Gunakan{" "}
+                      <code className="bg-gray-100 px-1 rounded">
+                        {"{{DATA}}"}
+                      </code>{" "}
+                      sebagai placeholder di mana data dari file Excel/PDF
+                      attachment akan disisipkan ke dalam prompt.
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <label className="block text-xs text-gray-500">
+                      Skema Output AI (JSON)
+                    </label>
+                    <Tooltip
+                      title="Struktur data JSON yang akan dihasilkan oleh AI."
+                      arrow
+                      placement="top"
+                    >
+                      <Info className="w-3.5 h-3.5 text-gray-400 cursor-help" />
+                    </Tooltip>
+                  </div>
+                  <textarea
+                    value={
+                      formData.aiOutputSchema
+                        ? JSON.stringify(formData.aiOutputSchema, null, 2)
+                        : ""
+                    }
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      try {
+                        const parsed = raw ? JSON.parse(raw) : null;
+                        setFormData({ ...formData, aiOutputSchema: parsed });
+                      } catch {
+                        // Allow typing invalid JSON mid-edit; store raw as-is
+                        // by wrapping in a simple object so it doesn't break the type
+                        setFormData({
+                          ...formData,
+                          aiOutputSchema: { __raw: raw } as Record<
+                            string,
+                            unknown
+                          >,
+                        });
+                      }
+                    }}
+                    rows={3}
+                    placeholder='{"type": "object", "properties": {...}}'
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary resize-none font-mono"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
         </fieldset>
       </Card>
 
@@ -1585,7 +1683,7 @@ export default function TemplateEditor({
                     Pola / Referensi (JSON Editor)
                   </label>
                   <Tooltip
-                    title="Pola (JSON array) yang digunakan untuk menemukan baris-baris data secara berulang."
+                    title="JSON array untuk ekstraksi record. Opsional: beri beberapa objek sum_group yang sama untuk menghasilkan satu total; semua anggotanya wajib ditemukan. Objek tanpa sum_group tetap menghasilkan record biasa."
                     arrow
                     placement="top"
                   >
@@ -1617,7 +1715,7 @@ export default function TemplateEditor({
                 }
                 rows={12}
                 placeholder={
-                  '[\n  {"metric_type": "FLOWRATE", "regex": "Flow:\\s*([\\d.]+)"}\n]'
+                  '[\n  {"metric_type":"ENERGY_BBTUD","period_type":"day","regex":"A:\\\\s*([\\\\d.,]+)","unit":"BBTUD","sum_group":"total_gas","sum_as_supplier":"NR"},\n  {"metric_type":"ENERGY_BBTUD","period_type":"day","regex":"B:\\\\s*([\\\\d.,]+)","unit":"BBTUD","sum_group":"total_gas"}\n]'
                 }
                 className="w-full px-3 py-3 border border-gray-300 rounded-lg text-[13px] text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary font-mono resize-none bg-gray-50/80 shadow-inner leading-relaxed"
               />
@@ -1867,9 +1965,7 @@ export default function TemplateEditor({
           {selectedBotGroupId && (
             <div className="px-3 py-2 bg-secondary/5 border border-secondary/20 rounded-lg">
               <p className="text-xs text-gray-500">Group yang dipilih:</p>
-              <p className="text-sm font-medium text-primary">
-                {newGroupName}
-              </p>
+              <p className="text-sm font-medium text-primary">{newGroupName}</p>
               <p className="text-xs text-gray-400 font-mono mt-0.5">
                 {selectedBotGroupId}
               </p>
