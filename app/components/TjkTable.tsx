@@ -10,7 +10,7 @@ import {
   GridRenderCellParams,
 } from "@mui/x-data-grid";
 import { Box, CircularProgress } from "@mui/material";
-import { RefreshCw, Pencil } from "lucide-react";
+import { RefreshCw, Pencil, ChevronLeft, ChevronRight } from "lucide-react";
 
 const formatTanggal = (dateStr?: string | null) => {
   if (!dateStr || dateStr === "-") return "-";
@@ -103,6 +103,10 @@ const TjkTable = forwardRef<TjkTableRef, { isEditMode: boolean }>(
     const updateContract = useUpdateContract();
     const apiRef = useGridApiRef();
     const [rows, setRows] = useState<any[]>([]);
+    const [paginationModel, setPaginationModel] = useState({
+      page: 0,
+      pageSize: 10,
+    });
 
     useEffect(() => {
       if (contracts) {
@@ -313,18 +317,125 @@ const TjkTable = forwardRef<TjkTableRef, { isEditMode: boolean }>(
                 }
               }
             }}
-            slots={{ toolbar: GridToolbar }}
+            slots={{
+              toolbar: GridToolbar,
+              footer: () => {
+                const totalItems = rows.length;
+                const totalPages = Math.max(1, Math.ceil(totalItems / paginationModel.pageSize));
+                const startIndex = paginationModel.page * paginationModel.pageSize;
+                const endIndex = startIndex + paginationModel.pageSize;
+
+                return (
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-4 py-3 border-t border-[var(--border)] gap-3 bg-white rounded-b-xl">
+                    {/* Left: info + page size */}
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <span className="text-sm text-gray-600">
+                        Menampilkan{" "}
+                        {totalItems > 0 ? (
+                          <>
+                            {startIndex + 1}-{Math.min(endIndex, totalItems)} dari{" "}
+                            {totalItems}
+                          </>
+                        ) : (
+                          "0"
+                        )}{" "}
+                        data
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <label htmlFor="page-size-tjk" className="text-sm text-gray-500">
+                          Baris:
+                        </label>
+                        <select
+                          id="page-size-tjk"
+                          value={paginationModel.pageSize}
+                          onChange={(e) => {
+                            setPaginationModel({ page: 0, pageSize: Number(e.target.value) });
+                          }}
+                          className="px-2 py-1 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-secondary/40 focus:border-secondary transition-all duration-200"
+                        >
+                          {[5, 10, 25, 50].map((size) => (
+                            <option key={size} value={size}>
+                              {size}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Right: page buttons */}
+                    {totalPages > 1 && (
+                      <div className="flex items-center gap-1">
+                        {/* Previous */}
+                        <button
+                          onClick={() => setPaginationModel((prev) => ({ ...prev, page: Math.max(0, prev.page - 1) }))}
+                          disabled={paginationModel.page === 0}
+                          className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <ChevronLeft size={16} />
+                        </button>
+
+                        {/* Page numbers */}
+                        {(() => {
+                          const pages: (number | "...")[] = [];
+                          const currentPage = paginationModel.page;
+                          const displayPage = currentPage + 1; // 1-indexed for display
+                          if (totalPages <= 7) {
+                            for (let i = 1; i <= totalPages; i++) pages.push(i);
+                          } else {
+                            pages.push(1);
+                            if (displayPage > 3) pages.push("...");
+                            const start = Math.max(2, displayPage - 1);
+                            const end = Math.min(totalPages - 1, displayPage + 1);
+                            for (let i = start; i <= end; i++) pages.push(i);
+                            if (displayPage < totalPages - 2) pages.push("...");
+                            pages.push(totalPages);
+                          }
+                          return pages.map((p, idx) =>
+                            p === "..." ? (
+                              <span
+                                key={`ellipsis-${idx}`}
+                                className="px-1 text-sm text-gray-400 select-none"
+                              >
+                                …
+                              </span>
+                            ) : (
+                              <button
+                                key={p}
+                                onClick={() => setPaginationModel((prev) => ({ ...prev, page: (p as number) - 1 }))}
+                                className={`min-w-[2rem] h-8 rounded-lg text-sm font-medium transition-all duration-200 ${
+                                  p === displayPage
+                                    ? "bg-primary text-white shadow-sm"
+                                    : "text-gray-700 hover:bg-gray-100"
+                                }`}
+                              >
+                                {p}
+                              </button>
+                            ),
+                          );
+                        })()}
+
+                        {/* Next */}
+                        <button
+                          onClick={() => setPaginationModel((prev) => ({ ...prev, page: Math.min(totalPages - 1, prev.page + 1) }))}
+                          disabled={paginationModel.page === totalPages - 1}
+                          className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <ChevronRight size={16} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              },
+            }}
             slotProps={{
               toolbar: {
                 showQuickFilter: true,
                 quickFilterProps: { debounceMs: 500 },
               },
             }}
-            initialState={{
-              pagination: {
-                paginationModel: { page: 0, pageSize: 10 },
-              },
-            }}
+            paginationModel={paginationModel}
+            onPaginationModelChange={setPaginationModel}
             rowHeight={56}
             pageSizeOptions={[5, 10, 25, 50]}
             columnHeaderHeight={56}

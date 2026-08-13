@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { X, CheckCircle2, AlertCircle } from "lucide-react";
+import { Autocomplete, TextField } from "@mui/material";
 import { useCreateReconciliationRecord } from "@/hooks/service/monitoring-api";
 import { useFilters } from "@/hooks/service/dashboard-api";
 import { useQueryClient } from "@tanstack/react-query";
@@ -150,46 +151,86 @@ export default function AddReconciliationModal({
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Pembangkit <span className="text-red-500">*</span>
             </label>
-            <select
-              value={formData.siteId}
-              onChange={(e) => {
-                const selected = pembangkitGasPipa.find(
-                  (p) => p.id === e.target.value,
-                );
+            <Autocomplete
+              options={pembangkitGasPipa || []}
+              getOptionLabel={(option) => option.name}
+              value={
+                pembangkitGasPipa?.find((p) => p.id === formData.siteId) || null
+              }
+              onChange={(event, newValue) => {
                 setFormData({
                   ...formData,
-                  siteId: e.target.value,
-                  siteName: selected ? selected.name : "",
+                  siteId: newValue ? newValue.id : "",
+                  siteName: newValue ? newValue.name : "",
                 });
               }}
-              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all"
-            >
-              <option value="">Pilih Pembangkit</option>
-              {pembangkitGasPipa.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
+              isOptionEqualToValue={(option, value) => option.id === value?.id}
+              renderOption={(props, option) => {
+                const { key, ...otherProps } = props as any;
+                return (
+                  <li key={option.id} {...otherProps}>
+                    {option.name}
+                  </li>
+                );
+              }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  placeholder="Pilih Pembangkit"
+                  variant="outlined"
+                  size="small"
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: "0.75rem",
+                      backgroundColor: "var(--surface)",
+                    },
+                  }}
+                />
+              )}
+              className="w-full"
+            />
           </div>
           <div className="col-span-2 sm:col-span-1">
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Pemasok <span className="text-red-500">*</span>
             </label>
-            <select
-              value={formData.supplierName}
-              onChange={(e) =>
-                setFormData({ ...formData, supplierName: e.target.value })
+            <Autocomplete
+              options={pemasokGasPipa || []}
+              getOptionLabel={(option) => option.name}
+              value={
+                pemasokGasPipa?.find((p) => p.name === formData.supplierName) || null
               }
-              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all"
-            >
-              <option value="">Pilih Pemasok</option>
-              {pemasokGasPipa.map((p) => (
-                <option key={p.id} value={p.name}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
+              onChange={(event, newValue) => {
+                setFormData({
+                  ...formData,
+                  supplierName: newValue ? newValue.name : "",
+                });
+              }}
+              isOptionEqualToValue={(option, value) => option.name === value?.name}
+              renderOption={(props, option) => {
+                const { key, ...otherProps } = props as any;
+                return (
+                  <li key={option.id} {...otherProps}>
+                    {option.name}
+                  </li>
+                );
+              }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  placeholder="Pilih Pemasok"
+                  variant="outlined"
+                  size="small"
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: "0.75rem",
+                      backgroundColor: "var(--surface)",
+                    },
+                  }}
+                />
+              )}
+              className="w-full"
+            />
           </div>
           <div className="col-span-2 sm:col-span-1">
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -302,19 +343,6 @@ export default function AddReconciliationModal({
                 setFormData({ ...formData, finalValue: e.target.value })
               }
               className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all"
-            />
-          </div>
-          <div className="col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Resolution
-            </label>
-            <textarea
-              value={formData.resolution}
-              onChange={(e) =>
-                setFormData({ ...formData, resolution: e.target.value })
-              }
-              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all resize-none"
-              rows={2}
             />
           </div>
         </div>

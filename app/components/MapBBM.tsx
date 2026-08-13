@@ -977,47 +977,46 @@ export default function Map() {
                     </button>
                   </div>
 
-                  {/* Site type toggles — driven by legend */}
-                  {customLegend?.siteTypes
-                    .filter(
-                      (st) => st.type === "PEMBANGKIT" || st.type === "PEMASOK",
-                    )
-                    .map((st) => {
-                      const isVisible = visibleSiteTypes[st.type] ?? true;
-                      return (
-                        <button
-                          key={st.type}
-                          onClick={() => toggleSiteType(st.type)}
-                          className={`flex items-center gap-2 w-full py-1 px-1.5 rounded-md transition-all ${isVisible
-                              ? `bg-opacity-10`
-                              : "bg-gray-100 opacity-60"
-                            }`}
-                          style={
-                            isVisible
-                              ? { backgroundColor: `${st.color}1A` }
-                              : undefined
-                          }
+                  {/* Site type toggles — BBM specific */}
+                  {["PEMBANGKIT_BBM", "PEMASOK_BBM"].map((catKey) => {
+                    const stType = catKey === "PEMBANGKIT_BBM" ? "PEMBANGKIT" : "PEMASOK";
+                    const isVisible = visibleSiteTypes[stType] ?? true;
+                    const config = CATEGORY_CONFIG[catKey];
+                    
+                    return (
+                      <button
+                        key={stType}
+                        onClick={() => toggleSiteType(stType)}
+                        className={`flex items-center gap-2 w-full py-1 px-1.5 rounded-md transition-all cursor-pointer ${isVisible
+                            ? `bg-opacity-10`
+                            : "bg-gray-100 opacity-60"
+                          }`}
+                        style={
+                          isVisible
+                            ? { backgroundColor: `${config.color}1A` }
+                            : undefined
+                        }
+                      >
+                        <span
+                          className="w-3.5 h-3.5 rounded-full flex items-center justify-center flex-shrink-0"
+                          style={{ backgroundColor: config.color }}
                         >
                           <span
-                            className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full`}
-                            style={{
-                              backgroundColor: st.color,
-                              boxShadow: isVisible
-                                ? `0 0 0 4px ${st.color}33`
-                                : "none",
-                            }}
+                            className="scale-75"
+                            dangerouslySetInnerHTML={{ __html: config.svg }}
                           />
-                          <span className="text-gray-700 text-xs flex-1 text-left">
-                            {getSiteTypeLabel(st.type)}
-                          </span>
-                          {isVisible ? (
-                            <Eye size={14} style={{ color: st.color }} />
-                          ) : (
-                            <EyeOff size={14} className="text-gray-400" />
-                          )}
-                        </button>
-                      );
-                    })}
+                        </span>
+                        <span className="text-gray-700 text-xs flex-1 text-left font-medium truncate">
+                          {stType === "PEMBANGKIT" ? "Pembangkit" : "TBBM"}
+                        </span>
+                        {isVisible ? (
+                          <Eye size={14} style={{ color: config.color }} />
+                        ) : (
+                          <EyeOff size={14} className="text-gray-400" />
+                        )}
+                      </button>
+                    );
+                  })}
 
                   {/* Pipe type legend items */}
                   {customLegend?.pipeTypes &&

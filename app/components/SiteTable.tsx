@@ -334,7 +334,7 @@ export function DaftarSiteTable({
 
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(0);
-  const [itemsPerPage] = useState(5);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleteWarningOpen, setDeleteWarningOpen] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
@@ -463,7 +463,7 @@ export function DaftarSiteTable({
           <div className="flex items-center gap-1.5">
             <Menu size={20} className="text-gray-500" />
             <span className="text-sm font-medium text-gray-700">
-              Tabel Daftar Pemasok & Pembangkit
+              {isBbm ? "Tabel Daftar TBBM & Pembangkit" : "Tabel Daftar Pemasok & Pembangkit"}
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -504,7 +504,7 @@ export function DaftarSiteTable({
                     type="text"
                     value={localSearchTerm}
                     onChange={(e) => setLocalSearchTerm(e.target.value)}
-                    placeholder="Nama pemasok / pembangkit"
+                    placeholder={isBbm ? "Nama TBBM / pembangkit" : "Nama pemasok / pembangkit"}
                     className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
                   />
                 </div>
@@ -647,7 +647,7 @@ export function DaftarSiteTable({
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Nama Pemasok / Pembangkit
+                  {isBbm ? "Nama TBBM / Pembangkit" : "Nama Pemasok / Pembangkit"}
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   Jenis
@@ -748,34 +748,107 @@ export function DaftarSiteTable({
         </div>
 
         {/* Pagination */}
-        {!isLoading && totalPages > 1 && (
-          <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200">
-            <div className="text-sm text-gray-600">
-              Menampilkan {startIndex + 1}-
-              {Math.min(endIndex, sites?.length || 0)} dari {sites?.length || 0}{" "}
-              data
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
-                disabled={currentPage === 0}
-                className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <ChevronLeft size={16} />
-              </button>
-              <span className="text-sm text-gray-700">
-                Halaman {currentPage + 1} dari {totalPages}
+        {!isLoading && (
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-4 py-3 border-t border-gray-200 gap-3">
+            {/* Left: info + page size */}
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="text-sm text-gray-600">
+                Menampilkan{" "}
+                {(sites?.length || 0) > 0 ? (
+                  <>
+                    {startIndex + 1}-{Math.min(endIndex, sites?.length || 0)} dari{" "}
+                    {sites?.length || 0}
+                  </>
+                ) : (
+                  "0"
+                )}{" "}
+                data
               </span>
-              <button
-                onClick={() =>
-                  setCurrentPage((p) => Math.min(totalPages - 1, p + 1))
-                }
-                disabled={currentPage === totalPages - 1}
-                className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <ChevronRight size={16} />
-              </button>
+              <div className="flex items-center gap-1.5">
+                <label htmlFor="page-size-site" className="text-sm text-gray-500">
+                  Baris:
+                </label>
+                <select
+                  id="page-size-site"
+                  value={itemsPerPage}
+                  onChange={(e) => {
+                    setItemsPerPage(Number(e.target.value));
+                    setCurrentPage(0);
+                  }}
+                  className="px-2 py-1 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-secondary/40 focus:border-secondary transition-all duration-200"
+                >
+                  {[5, 10, 25, 50].map((size) => (
+                    <option key={size} value={size}>
+                      {size}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
+
+            {/* Right: page buttons */}
+            {totalPages > 1 && (
+              <div className="flex items-center gap-1">
+                {/* Previous */}
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
+                  disabled={currentPage === 0}
+                  className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+
+                {/* Page numbers */}
+                {(() => {
+                  const pages: (number | "...")[] = [];
+                  const displayPage = currentPage + 1; // 1-indexed for display
+                  if (totalPages <= 7) {
+                    for (let i = 1; i <= totalPages; i++) pages.push(i);
+                  } else {
+                    pages.push(1);
+                    if (displayPage > 3) pages.push("...");
+                    const start = Math.max(2, displayPage - 1);
+                    const end = Math.min(totalPages - 1, displayPage + 1);
+                    for (let i = start; i <= end; i++) pages.push(i);
+                    if (displayPage < totalPages - 2) pages.push("...");
+                    pages.push(totalPages);
+                  }
+                  return pages.map((p, idx) =>
+                    p === "..." ? (
+                      <span
+                        key={`ellipsis-${idx}`}
+                        className="px-1 text-sm text-gray-400 select-none"
+                      >
+                        …
+                      </span>
+                    ) : (
+                      <button
+                        key={p}
+                        onClick={() => setCurrentPage((p as number) - 1)}
+                        className={`min-w-[2rem] h-8 rounded-lg text-sm font-medium transition-all duration-200 ${
+                          p === displayPage
+                            ? "bg-primary text-white shadow-sm"
+                            : "text-gray-700 hover:bg-gray-100"
+                        }`}
+                      >
+                        {p}
+                      </button>
+                    ),
+                  );
+                })()}
+
+                {/* Next */}
+                <button
+                  onClick={() =>
+                    setCurrentPage((p) => Math.min(totalPages - 1, p + 1))
+                  }
+                  disabled={currentPage === totalPages - 1}
+                  className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -812,7 +885,7 @@ export function RelasiOperasionalTable({
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedCommodity, setSelectedCommodity] = useState<string>("");
   const [currentPage, setCurrentPage] = useState(0);
-  const [itemsPerPage] = useState(5);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleteWarningOpen, setDeleteWarningOpen] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
@@ -1057,34 +1130,107 @@ export function RelasiOperasionalTable({
         </div>
 
         {/* Pagination */}
-        {!isLoading && totalPages > 1 && (
-          <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200">
-            <div className="text-sm text-gray-600">
-              Menampilkan {startIndex + 1}-
-              {Math.min(endIndex, filteredRelations?.length || 0)} dari{" "}
-              {filteredRelations?.length || 0} data
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
-                disabled={currentPage === 0}
-                className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <ChevronLeft size={16} />
-              </button>
-              <span className="text-sm text-gray-700">
-                Halaman {currentPage + 1} dari {totalPages}
+        {!isLoading && (
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-4 py-3 border-t border-gray-200 gap-3">
+            {/* Left: info + page size */}
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="text-sm text-gray-600">
+                Menampilkan{" "}
+                {(filteredRelations?.length || 0) > 0 ? (
+                  <>
+                    {startIndex + 1}-{Math.min(endIndex, filteredRelations?.length || 0)} dari{" "}
+                    {filteredRelations?.length || 0}
+                  </>
+                ) : (
+                  "0"
+                )}{" "}
+                data
               </span>
-              <button
-                onClick={() =>
-                  setCurrentPage((p) => Math.min(totalPages - 1, p + 1))
-                }
-                disabled={currentPage === totalPages - 1}
-                className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <ChevronRight size={16} />
-              </button>
+              <div className="flex items-center gap-1.5">
+                <label htmlFor="page-size-rel" className="text-sm text-gray-500">
+                  Baris:
+                </label>
+                <select
+                  id="page-size-rel"
+                  value={itemsPerPage}
+                  onChange={(e) => {
+                    setItemsPerPage(Number(e.target.value));
+                    setCurrentPage(0);
+                  }}
+                  className="px-2 py-1 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-secondary/40 focus:border-secondary transition-all duration-200"
+                >
+                  {[5, 10, 25, 50].map((size) => (
+                    <option key={size} value={size}>
+                      {size}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
+
+            {/* Right: page buttons */}
+            {totalPages > 1 && (
+              <div className="flex items-center gap-1">
+                {/* Previous */}
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
+                  disabled={currentPage === 0}
+                  className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+
+                {/* Page numbers */}
+                {(() => {
+                  const pages: (number | "...")[] = [];
+                  const displayPage = currentPage + 1; // 1-indexed for display
+                  if (totalPages <= 7) {
+                    for (let i = 1; i <= totalPages; i++) pages.push(i);
+                  } else {
+                    pages.push(1);
+                    if (displayPage > 3) pages.push("...");
+                    const start = Math.max(2, displayPage - 1);
+                    const end = Math.min(totalPages - 1, displayPage + 1);
+                    for (let i = start; i <= end; i++) pages.push(i);
+                    if (displayPage < totalPages - 2) pages.push("...");
+                    pages.push(totalPages);
+                  }
+                  return pages.map((p, idx) =>
+                    p === "..." ? (
+                      <span
+                        key={`ellipsis-${idx}`}
+                        className="px-1 text-sm text-gray-400 select-none"
+                      >
+                        …
+                      </span>
+                    ) : (
+                      <button
+                        key={p}
+                        onClick={() => setCurrentPage((p as number) - 1)}
+                        className={`min-w-[2rem] h-8 rounded-lg text-sm font-medium transition-all duration-200 ${
+                          p === displayPage
+                            ? "bg-primary text-white shadow-sm"
+                            : "text-gray-700 hover:bg-gray-100"
+                        }`}
+                      >
+                        {p}
+                      </button>
+                    ),
+                  );
+                })()}
+
+                {/* Next */}
+                <button
+                  onClick={() =>
+                    setCurrentPage((p) => Math.min(totalPages - 1, p + 1))
+                  }
+                  disabled={currentPage === totalPages - 1}
+                  className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
