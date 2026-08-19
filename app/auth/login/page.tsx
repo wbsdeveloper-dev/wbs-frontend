@@ -79,20 +79,38 @@ export default function LoginPage() {
         {/* Logos Header */}
         <div className="p-6 pr-20 md:p-8 md:pr-24 lg:p-10 lg:pr-24 flex justify-center">
           <div className="flex items-center justify-center lg:justify-start gap-4 md:gap-6 lg:gap-10 flex-wrap">
-            <Image
-              src="/logos/danantara-putih.png"
-              alt="Danantara logo"
-              width={100}
-              height={35}
-              className="theme-logo-surface object-contain w-[80px] md:w-[100px] lg:w-[150px]"
-            />
-            <Image
-              src="/logos/sucofindo-putih.png"
-              alt="Sucofindo logo"
-              width={60}
-              height={35}
-              className="theme-logo-surface object-contain w-[50px] md:w-[60px] lg:w-[100px] relative top-[-2px]"
-            />
+            <div className="w-[80px] md:w-[100px] lg:w-[150px]">
+              <Image
+                src="/logos/danantara.png"
+                alt="Danantara logo"
+                width={100}
+                height={35}
+                className="theme-logo-surface h-auto w-full object-contain dark:hidden"
+              />
+              <Image
+                src="/logos/danantara-putih.png"
+                alt="Danantara logo"
+                width={100}
+                height={35}
+                className="theme-logo-surface hidden h-auto w-full object-contain dark:block"
+              />
+            </div>
+            <div className="relative top-[-2px] w-[50px] md:w-[60px] lg:w-[100px]">
+              <Image
+                src="/logos/SucofindoIdSurvey.png"
+                alt="Sucofindo logo"
+                width={60}
+                height={35}
+                className="theme-logo-surface h-auto w-full object-contain dark:hidden"
+              />
+              <Image
+                src="/logos/sucofindo-putih.png"
+                alt="Sucofindo logo"
+                width={60}
+                height={35}
+                className="theme-logo-surface hidden h-auto w-full object-contain dark:block"
+              />
+            </div>
             <Image
               src="/logos/pln-epi.png"
               alt="PLN EPI logo"
