@@ -366,7 +366,7 @@ export function AddSiteModal({
               Komoditas
             </label>
             <Autocomplete
-              options={["GAS PIPA", "LNG", "BBM"]}
+              options={["GAS PIPA", "LNG"]}
               value={formData.commodity || null}
               onChange={(event, newValue) => {
                 setFormData({ ...formData, commodity: newValue || "" });

@@ -148,11 +148,10 @@ const createCategoryIcon = (
         border-radius: 50% 50% 50% 0;
         transform: rotate(-45deg);
         border: 2px solid ${alertColor || "white"};
-        box-shadow: ${
-          alertColor
-            ? `0 0 0 4px ${alertColor}40, 0 3px 8px rgba(0,0,0,0.35)`
-            : "0 3px 8px rgba(0,0,0,0.35)"
-        };
+        box-shadow: ${alertColor
+        ? `0 0 0 4px ${alertColor}40, 0 3px 8px rgba(0,0,0,0.35)`
+        : "0 3px 8px rgba(0,0,0,0.35)"
+      };
         cursor: pointer;
       ">
         <div style="
@@ -163,9 +162,8 @@ const createCategoryIcon = (
         ">
           ${config.svg}
         </div>
-        ${
-          alertColor
-            ? `<div style="
+        ${alertColor
+        ? `<div style="
                 position: absolute;
                 top: -8px;
                 right: -8px;
@@ -184,8 +182,8 @@ const createCategoryIcon = (
                 font-weight: 800;
                 box-shadow: 0 1px 4px rgba(0,0,0,0.3);
               ">!</div>`
-            : ""
-        }
+        : ""
+      }
       </div>
     `,
     iconSize: [30, 30],
@@ -813,15 +811,15 @@ export default function Map({ commodity }: { commodity?: string }) {
                 const supplierComplianceStatus:
                   | ContractComplianceStatus
                   | undefined = supplierContracts.some(
-                  (contract) => contract.complianceStatus === "BELOW_TOP",
-                )
-                  ? "BELOW_TOP"
-                  : supplierContracts.some(
-                        (contract) =>
-                          contract.complianceStatus === "MISSING_DATA",
-                      )
-                    ? "MISSING_DATA"
-                    : undefined;
+                    (contract) => contract.complianceStatus === "BELOW_TOP",
+                  )
+                    ? "BELOW_TOP"
+                    : supplierContracts.some(
+                      (contract) =>
+                        contract.complianceStatus === "MISSING_DATA",
+                    )
+                      ? "MISSING_DATA"
+                      : undefined;
                 const icon = createCategoryIcon(
                   catKey,
                   info.color,
@@ -882,7 +880,7 @@ export default function Map({ commodity }: { commodity?: string }) {
                                   <span className="font-medium text-primary">
                                     {parseFloat(
                                       String(site.capacity),
-                                    ).toLocaleString()}{" "}
+                                    ).toLocaleString("id-ID", { maximumFractionDigits: 2 })}{" "}
                                     MW
                                   </span>
                                 </div>
@@ -922,14 +920,13 @@ export default function Map({ commodity }: { commodity?: string }) {
                                 {supplierContracts.map((contract) => (
                                   <div
                                     key={`${contract.supplierSiteId}:${contract.effectiveContractNumber.toLowerCase()}`}
-                                    className={`rounded-md border px-2 pt-1.5 pb-2 ${
-                                      contract.complianceStatus === "BELOW_TOP"
+                                    className={`rounded-md border px-2 pt-1.5 pb-2 ${contract.complianceStatus === "BELOW_TOP"
                                         ? "border-red-300 bg-red-50"
                                         : contract.complianceStatus ===
-                                            "MISSING_DATA"
+                                          "MISSING_DATA"
                                           ? "border-amber-300 bg-amber-50"
                                           : "border-gray-200 bg-gray-50"
-                                    }`}
+                                      }`}
                                   >
                                     <p className="!mt-0 !mb-1 text-[11px] font-semibold text-gray-800 break-words">
                                       {contract.effectiveContractNumber}
@@ -959,29 +956,29 @@ export default function Map({ commodity }: { commodity?: string }) {
                                       <span className="font-medium text-gray-800 text-right whitespace-nowrap">
                                         {contract.agreementEndDate
                                           ? formatReportDate(
-                                              contract.agreementEndDate,
-                                            )
+                                            contract.agreementEndDate,
+                                          )
                                           : "-"}
                                       </span>
                                     </div>
                                     {contract.complianceStatus ===
                                       "BELOW_TOP" && (
-                                      <p className="!mt-1.5 !mb-0 border-t border-red-200 pt-1 text-[10px] font-medium text-red-700">
-                                        Realisasi H-1{" "}
-                                        {bbtudFormatter.format(
-                                          contract.d1RealizationBbtud || 0,
-                                        )}{" "}
-                                        BBTUD di bawah TOP
-                                      </p>
-                                    )}
+                                        <p className="!mt-1.5 !mb-0 border-t border-red-200 pt-1 text-[10px] font-medium text-red-700">
+                                          Realisasi H-1{" "}
+                                          {bbtudFormatter.format(
+                                            contract.d1RealizationBbtud || 0,
+                                          )}{" "}
+                                          BBTUD di bawah TOP
+                                        </p>
+                                      )}
                                     {contract.complianceStatus ===
                                       "MISSING_DATA" && (
-                                      <p className="!mt-1.5 !mb-0 border-t border-amber-200 pt-1 text-[10px] font-medium text-amber-700">
-                                        Data H-1 tersedia untuk{" "}
-                                        {contract.d1DataPlantCount} dari{" "}
-                                        {contract.contractPlantCount} pembangkit
-                                      </p>
-                                    )}
+                                        <p className="!mt-1.5 !mb-0 border-t border-amber-200 pt-1 text-[10px] font-medium text-amber-700">
+                                          Data H-1 tersedia untuk{" "}
+                                          {contract.d1DataPlantCount} dari{" "}
+                                          {contract.contractPlantCount} pembangkit
+                                        </p>
+                                      )}
                                   </div>
                                 ))}
                               </div>
@@ -1058,10 +1055,10 @@ export default function Map({ commodity }: { commodity?: string }) {
                                 );
                                 const bbtudData =
                                   site.siteType === "PEMASOK" &&
-                                  c.siteType === "PEMBANGKIT"
+                                    c.siteType === "PEMBANGKIT"
                                     ? pemasokBbtudByPair.get(
-                                        `${site.id}:${c.id}`,
-                                      )
+                                      `${site.id}:${c.id}`,
+                                    )
                                     : undefined;
                                 const hasBbtud = bbtudData?.bbtud != null;
 
@@ -1082,7 +1079,7 @@ export default function Map({ commodity }: { commodity?: string }) {
                                               <>
                                                 {isPemasokBbtudLoading ? (
                                                   <span className="text-gray-500 whitespace-nowrap">
-                                                    Memuat data D-1...
+                                                    Memuat data H-1...
                                                   </span>
                                                 ) : hasBbtud ? (
                                                   <span className="font-semibold text-primary whitespace-nowrap">
@@ -1093,7 +1090,7 @@ export default function Map({ commodity }: { commodity?: string }) {
                                                   </span>
                                                 ) : (
                                                   <span className="text-gray-500 text-right">
-                                                    Data D-1 belum tersedia
+                                                    Data H-1 belum tersedia
                                                   </span>
                                                 )}
                                               </>
@@ -1166,9 +1163,8 @@ export default function Map({ commodity }: { commodity?: string }) {
                       <button
                         key={st.type}
                         onClick={() => toggleSiteType(st.type)}
-                        className={`flex items-center gap-2 w-full py-1 px-1.5 rounded-md transition-all cursor-pointer ${
-                          isVisible ? `bg-opacity-10` : "bg-gray-100 opacity-60"
-                        }`}
+                        className={`flex items-center gap-2 w-full py-1 px-1.5 rounded-md transition-all cursor-pointer ${isVisible ? `bg-opacity-10` : "bg-gray-100 opacity-60"
+                          }`}
                         style={
                           isVisible
                             ? { backgroundColor: `${config.color}1A` }
