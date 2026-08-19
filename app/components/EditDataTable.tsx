@@ -341,7 +341,10 @@ export default function EditDataTable({
   // 4-decimal formatter
   const fmt4 = (val: number | null | undefined): string => {
     if (val == null) return "-";
-    return val.toFixed(4);
+    return new Intl.NumberFormat("id-ID", {
+      minimumFractionDigits: 4,
+      maximumFractionDigits: 4,
+    }).format(val);
   };
 
   // Only show filter UI if the parent provides onFilterChange
@@ -445,9 +448,9 @@ export default function EditDataTable({
       Komoditas: r.commodity || "-",
       Periode: r.periodType || "-",
       Jam: r.periodValue || "-",
-      MMSCFD: r.finalValueMmscfd ?? "-",
-      BBTUD: r.finalValueBbtud ?? "-",
-      Status: formatNormalizeText(r.status || "-"),
+      MMSCFD: fmt4(r.finalValueMmscfd),
+      BBTUD: fmt4(r.finalValueBbtud),
+      "Sumber Data": formatNormalizeText(r.status || "-"),
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
@@ -467,7 +470,7 @@ export default function EditDataTable({
     doc.setFontSize(10);
     doc.text(`Dicetak pada: ${new Date().toLocaleString("id-ID")}`, 14, 22);
 
-    const tableColumn = ["No", "Tanggal", "Pemasok", "Pembangkit", "Komoditas", "Periode", "Jam", "MMSCFD", "BBTUD", "Status"];
+    const tableColumn = ["No", "Tanggal", "Pemasok", "Pembangkit", "Komoditas", "Periode", "Jam", "MMSCFD", "BBTUD", "Sumber Data"];
     const tableRows = allRecords.map((r, i) => [
       i + 1,
       r.reportDate || "-",
@@ -476,8 +479,8 @@ export default function EditDataTable({
       r.commodity || "-",
       r.periodType || "-",
       r.periodValue || "-",
-      r.finalValueMmscfd ?? "-",
-      r.finalValueBbtud ?? "-",
+      fmt4(r.finalValueMmscfd),
+      fmt4(r.finalValueBbtud),
       formatNormalizeText(r.status || "-"),
     ]);
 
@@ -905,21 +908,21 @@ export default function EditDataTable({
                     <Th label="BBTUD" field="finalValueBbtud" rowSpan={2} />
                     <Th label="Sumber Data" field="finalSourceBbtud" rowSpan={2} />
                     <Th label="BA" colSpan={2} />
-                    <Th label="WA" colSpan={2} />
                     <Th label="EMAIL" colSpan={2} />
                     <Th label="SHEET" colSpan={2} />
+                    <Th label="WA" colSpan={2} />
                     <Th label="ID" colSpan={2} />
                     {hasAction && <Th label="Aksi" rowSpan={2} />}
                   </tr>
                   <tr>
                     <Th label="MMSCFD" field="baValueMmscfd" />
                     <Th label="BBTUD" field="baValueBbtud" />
-                    <Th label="MMSCFD" field="waValueMmscfd" />
-                    <Th label="BBTUD" field="waValueBbtud" />
                     <Th label="MMSCFD" field="plnValueMmscfd" />
                     <Th label="BBTUD" field="plnValueBbtud" />
                     <Th label="MMSCFD" field="sheetValueMmscfd" />
                     <Th label="BBTUD" field="sheetValueBbtud" />
+                    <Th label="MMSCFD" field="waValueMmscfd" />
+                    <Th label="BBTUD" field="waValueBbtud" />
                     <Th label="BBTUD" />
                     <Th label="MMSCFD" />
                   </tr>
@@ -1010,12 +1013,6 @@ export default function EditDataTable({
                           {fmt4(record.baValueBbtud)}
                         </td>
                         <td className="px-4 py-3 text-center text-gray-700 font-mono">
-                          {fmt4(record.waValueMmscfd)}
-                        </td>
-                        <td className="px-4 py-3 text-center text-gray-700 font-mono">
-                          {fmt4(record.waValueBbtud)}
-                        </td>
-                        <td className="px-4 py-3 text-center text-gray-700 font-mono">
                           {fmt4(record.plnValueMmscfd)}
                         </td>
                         <td className="px-4 py-3 text-center text-gray-700 font-mono">
@@ -1026,6 +1023,12 @@ export default function EditDataTable({
                         </td>
                         <td className="px-4 py-3 text-center text-gray-700 font-mono">
                           {fmt4(record.sheetValueBbtud)}
+                        </td>
+                        <td className="px-4 py-3 text-center text-gray-700 font-mono">
+                          {fmt4(record.waValueMmscfd)}
+                        </td>
+                        <td className="px-4 py-3 text-center text-gray-700 font-mono">
+                          {fmt4(record.waValueBbtud)}
                         </td>
                         <td className="px-4 py-3 text-center text-gray-500 font-mono text-xs truncate max-w-[100px]" title={record.idBbtud || ""}>
                           {record.idBbtud || "-"}

@@ -100,6 +100,7 @@ export function RolePrivilegeModal({ open, onClose, role }: RolePrivilegeModalPr
     // Transform Set back to Array for API
     // Filter out any legacy resources that are no longer valid (not in resourcesData)
     const validResourceKeys = new Set(resourcesData?.map(r => r.key) || []);
+    ['file_email_gas', 'monitor_rekonsiliasi_gas', 'log_riwayat_gas'].forEach(k => validResourceKeys.add(k));
     const privilegesPayload: PrivilegeMapping[] = Object.entries(privilegeMap)
       .filter(([resource]) => validResourceKeys.size === 0 || validResourceKeys.has(resource))
       .map(([resource, actionsSet]) => ({
@@ -124,6 +125,7 @@ export function RolePrivilegeModal({ open, onClose, role }: RolePrivilegeModalPr
     { key: 'data_input_gas', label: 'Data Input' },
     { key: 'data_transportir_gas', label: 'Data Transportir' },
     { key: 'file_berita_acara_gas', label: 'File Berita Acara' },
+    { key: 'file_email_gas', label: 'File Email' },
     { key: 'site_management_gas', label: 'Pemasok & Pembangkit' },
     { key: 'contracts_gas', label: 'Kontrak & Dokumen' },
     { key: 'users_gas', label: 'Pengguna' },
@@ -132,6 +134,8 @@ export function RolePrivilegeModal({ open, onClose, role }: RolePrivilegeModalPr
     { key: 'spreadsheet_source_gas', label: 'Spreadsheet' },
     { key: 'api_keys_gas', label: 'API Keys' },
     { key: 'system_config_gas', label: 'Data Master' },
+    { key: 'monitor_rekonsiliasi_gas', label: 'Monitor Rekonsiliasi' },
+    { key: 'log_riwayat_gas', label: 'Log Riwayat' },
     { key: 'bot_management_gas', label: 'Manajemen Bot' },
     { key: 'external_gas', label: 'Eksternal (Non EPI)' },
   ];

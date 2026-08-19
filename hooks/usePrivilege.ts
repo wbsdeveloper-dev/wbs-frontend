@@ -15,6 +15,7 @@ export type Resource =
   | "system_config" | "system_config_gas" | "system_config_bbm"
   | "bot_management" | "bot_management_gas" | "bot_management_bbm"
   | "notification" | "notification_gas" | "notification_bbm"
+  | "file_email_gas" | "monitor_rekonsiliasi_gas" | "log_riwayat_gas"
   | string;
 
 export type Action = "CREATE" | "READ" | "UPDATE" | "DELETE";

@@ -110,7 +110,7 @@ export default function Sidebar() {
         {
           title: "File Email",
           path: "/edit/email-files",
-          resource: "email_ingest_gas",
+          resource: "file_email_gas",
         },
       ],
     },
@@ -164,12 +164,12 @@ export default function Sidebar() {
         {
           title: "Monitor Rekonsiliasi",
           path: "/reconciliation-monitor",
-          resource: "data_input_gas",
+          resource: "monitor_rekonsiliasi_gas",
         },
         {
           title: "Log Riwayat",
           path: "/konfigurasi/log-riwayat",
-          resource: "system_config_gas",
+          resource: "log_riwayat_gas",
         },
       ],
     },

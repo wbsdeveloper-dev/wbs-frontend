@@ -69,20 +69,38 @@ export default function DashboardSelection() {
 
           <div className="flex items-center gap-3 md:gap-6">
             <ThemeToggle compact />
-            <Image
-              src="/logos/danantara.png"
-              alt="Danantara logo"
-              width={100}
-              height={30}
-              className="theme-logo-surface object-contain w-[60px] md:w-[80px] lg:w-[100px]"
-            />
-            <Image
-              src="/logos/SucofindoIdSurvey.png"
-              alt="Sucofindo logo"
-              width={60}
-              height={25}
-              className="theme-logo-surface object-contain w-[40px] md:w-[50px] lg:w-[60px] mb-3"
-            />
+            <div className="w-[60px] md:w-[80px] lg:w-[100px]">
+              <Image
+                src="/logos/danantara.png"
+                alt="Danantara logo"
+                width={100}
+                height={30}
+                className="theme-logo-surface h-auto w-full object-contain dark:hidden"
+              />
+              <Image
+                src="/logos/danantara-putih.png"
+                alt="Danantara logo"
+                width={100}
+                height={30}
+                className="theme-logo-surface hidden h-auto w-full object-contain dark:block"
+              />
+            </div>
+            <div className="mb-3 w-[40px] md:w-[50px] lg:w-[60px]">
+              <Image
+                src="/logos/SucofindoIdSurvey.png"
+                alt="Sucofindo logo"
+                width={60}
+                height={25}
+                className="theme-logo-surface h-auto w-full object-contain dark:hidden"
+              />
+              <Image
+                src="/logos/sucofindo-putih.png"
+                alt="Sucofindo logo"
+                width={60}
+                height={25}
+                className="theme-logo-surface hidden h-auto w-full object-contain dark:block"
+              />
+            </div>
             <Image
               src="/logos/pln-epi.png"
               alt="PLN EPI logo"

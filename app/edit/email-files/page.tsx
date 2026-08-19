@@ -13,7 +13,7 @@ export default function EmailFilesPage() {
   const router = useRouter();
   const { hasPrivilege } = usePrivilege();
   const { isLoading: isAuthLoading } = useAuth();
-  const canRead = hasPrivilege("email_ingest_gas", "READ") || hasPrivilege("data_input_gas", "READ");
+  const canRead = hasPrivilege("file_email_gas", "READ");
   const { refetch, isRefetching } = useGetEmailInbox();
 
   React.useEffect(() => {
@@ -51,14 +51,16 @@ export default function EmailFilesPage() {
               Daftar email masuk dan lampiran file yang diterima oleh sistem untuk rekonsiliasi data.
             </p>
           </div>
-          <button
-            onClick={() => refetch()}
-            disabled={isRefetching}
-            className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:shadow-sm transition-all disabled:opacity-50 self-start sm:self-auto"
-          >
-            <RefreshCw className={`w-4 h-4 ${isRefetching ? "animate-spin text-primary" : "text-gray-500"}`} />
-            <span>{isRefetching ? "Memuat..." : "Refresh Data"}</span>
-          </button>
+          {canRead && (
+            <button
+              onClick={() => refetch()}
+              disabled={isRefetching}
+              className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:shadow-sm transition-all disabled:opacity-50 self-start sm:self-auto"
+            >
+              <RefreshCw className={`w-4 h-4 ${isRefetching ? "animate-spin text-primary" : "text-gray-500"}`} />
+              <span>{isRefetching ? "Memuat..." : "Refresh Data"}</span>
+            </button>
+          )}
         </div>
       </div>
 

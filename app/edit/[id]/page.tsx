@@ -255,7 +255,7 @@ export default function EditRecordPage() {
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
           <div className="px-6 py-4 border-b border-gray-200">
             <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">
-              Resolusi & Status
+              Status
             </h2>
           </div>
           <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -264,11 +264,6 @@ export default function EditRecordPage() {
               value={form.status ?? ""}
               options={STATUS_OPTIONS}
               onChange={(v) => handleChange("status", v)}
-            />
-            <TextField
-              label="Resolusi"
-              value={form.resolution ?? ""}
-              onChange={(v) => handleChange("resolution", v === "" ? null : v)}
             />
             <div className="sm:col-span-2">
               <TextAreaField

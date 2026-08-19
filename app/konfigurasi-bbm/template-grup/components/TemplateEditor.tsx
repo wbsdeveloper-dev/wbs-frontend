@@ -393,15 +393,60 @@ export default function TemplateEditor({
         }
       } else if (field.sourceKind === "WA_REGEX_RECORDS") {
         try {
-          const regexConfigs = JSON.parse(field.sourceRef);
+          const regexConfigs = JSON.parse(field.sourceRef) as Array<{
+            regex: string;
+            sum_group?: string;
+          }>;
           const matches: string[] = [];
-          regexConfigs.forEach((config: { regex: string }) => {
+          const sumGroups = new Map<string, typeof regexConfigs>();
+
+          regexConfigs.forEach((config) => {
+            const groupName = config.sum_group?.trim();
+            if (groupName) {
+              const members = sumGroups.get(groupName) || [];
+              members.push(config);
+              sumGroups.set(groupName, members);
+              return;
+            }
+
+            // Existing behavior for ordinary configs without sum_group.
             const regex = new RegExp(config.regex, "g");
             let m: RegExpExecArray | null;
             while ((m = regex.exec(testInput)) !== null) {
               if (m[1]) matches.push(m[1]);
             }
           });
+
+          for (const members of sumGroups.values()) {
+            const values: number[] = [];
+            let isComplete = true;
+
+            for (const member of members) {
+              const match = testInput.match(new RegExp(member.regex, "i"));
+              if (!match?.[1]) {
+                isComplete = false;
+                break;
+              }
+
+              const value = Number(match[1].trim().replace(",", "."));
+              if (!Number.isFinite(value)) {
+                isComplete = false;
+                break;
+              }
+              values.push(value);
+            }
+
+            if (!isComplete) {
+              hasError = true;
+              continue;
+            }
+
+            const total = Number(
+              values.reduce((sum, value) => sum + value, 0).toPrecision(15),
+            );
+            matches.push(String(total));
+          }
+
           if (matches.length > 0) {
             result[field.fieldKey] = matches.join(", ");
           } else if (field.isRequired) {
@@ -651,7 +696,7 @@ export default function TemplateEditor({
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             </div>
           </div>
-          
+
           {/* Is Transportir Checkbox */}
           <div className="flex items-end mb-1">
             <div className="flex items-center pb-2">
@@ -863,24 +908,33 @@ export default function TemplateEditor({
           {formData.scope === "EMAIL_INGEST" && (
             <div className="lg:col-span-2 space-y-4 pt-4 border-t border-gray-200">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Target Ekstraksi Email</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Target Ekstraksi Email
+                </label>
                 <select
                   value={formData.emailExtractionTarget || "BODY_TEXT"}
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      emailExtractionTarget: e.target.value as Template["emailExtractionTarget"],
+                      emailExtractionTarget: e.target
+                        .value as Template["emailExtractionTarget"],
                     })
                   }
                   className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white cursor-pointer"
                 >
                   <option value="BODY_TEXT">Body Text (Teks Email)</option>
-                  <option value="ATTACHMENT_SINGLE">Satu Lampiran Tunggal</option>
-                  <option value="ATTACHMENT_MULTI_STREAM">Multi-Stream Lampiran</option>
+                  <option value="ATTACHMENT_SINGLE">
+                    Satu Lampiran Tunggal
+                  </option>
+                  <option value="ATTACHMENT_MULTI_STREAM">
+                    Multi-Stream Lampiran
+                  </option>
                 </select>
               </div>
 
-              {(formData.emailExtractionTarget === "ATTACHMENT_SINGLE" || formData.emailExtractionTarget === "ATTACHMENT_MULTI_STREAM") && (
+              {(formData.emailExtractionTarget === "ATTACHMENT_SINGLE" ||
+                formData.emailExtractionTarget ===
+                  "ATTACHMENT_MULTI_STREAM") && (
                 <div className="flex items-center gap-2">
                   <input
                     type="checkbox"
@@ -894,38 +948,53 @@ export default function TemplateEditor({
                     }
                     className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-secondary cursor-pointer"
                   />
-                  <label htmlFor={`requires-ocr-${formData.id}`} className="text-sm font-medium text-gray-700 cursor-pointer">
+                  <label
+                    htmlFor={`requires-ocr-${formData.id}`}
+                    className="text-sm font-medium text-gray-700 cursor-pointer"
+                  >
                     Gunakan OCR (Gambar/PDF ke Teks)
                   </label>
                 </div>
               )}
 
-              {formData.requiresOcr && (formData.emailExtractionTarget === "ATTACHMENT_SINGLE" || formData.emailExtractionTarget === "ATTACHMENT_MULTI_STREAM") && (
-                <div className="mt-3">
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Halaman PDF Spesifik (Opsional)</label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={formData.streamConfiguration?.pageNumber || ""}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        streamConfiguration: {
-                          ...formData.streamConfiguration,
-                          pageNumber: e.target.value ? parseInt(e.target.value, 10) : undefined,
-                        },
-                      })
-                    }
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent"
-                    placeholder="Contoh: 1"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Kosongkan atau isi 1 untuk membaca halaman pertama saja. Isi halaman spesifik jika data berada di halaman lain.</p>
-                </div>
-              )}
+              {formData.requiresOcr &&
+                (formData.emailExtractionTarget === "ATTACHMENT_SINGLE" ||
+                  formData.emailExtractionTarget ===
+                    "ATTACHMENT_MULTI_STREAM") && (
+                  <div className="mt-3">
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                      Halaman PDF Spesifik (Opsional)
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={formData.streamConfiguration?.pageNumber || ""}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          streamConfiguration: {
+                            ...formData.streamConfiguration,
+                            pageNumber: e.target.value
+                              ? parseInt(e.target.value, 10)
+                              : undefined,
+                          },
+                        })
+                      }
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent"
+                      placeholder="Contoh: 1"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Kosongkan atau isi 1 untuk membaca halaman pertama saja.
+                      Isi halaman spesifik jika data berada di halaman lain.
+                    </p>
+                  </div>
+                )}
 
               {formData.emailExtractionTarget === "ATTACHMENT_MULTI_STREAM" && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Pemisah Stream Lampiran (Regex)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Pemisah Stream Lampiran (Regex)
+                  </label>
                   <input
                     type="text"
                     value={formData.streamConfiguration?.separator || ""}
@@ -941,14 +1010,21 @@ export default function TemplateEditor({
                     className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent"
                     placeholder="\n---\n"
                   />
-                  <p className="text-xs text-gray-500 mt-1">Gunakan regex untuk memisahkan data lampiran menjadi beberapa stream.</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Gunakan regex untuk memisahkan data lampiran menjadi
+                    beberapa stream.
+                  </p>
                 </div>
               )}
 
               {/* --- Metric type override --- */}
-              {(formData.emailExtractionTarget === "ATTACHMENT_SINGLE" || formData.emailExtractionTarget === "ATTACHMENT_MULTI_STREAM") && (
+              {(formData.emailExtractionTarget === "ATTACHMENT_SINGLE" ||
+                formData.emailExtractionTarget ===
+                  "ATTACHMENT_MULTI_STREAM") && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Override Jenis Metrik (Opsional)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Override Jenis Metrik (Opsional)
+                  </label>
                   <input
                     type="text"
                     value={formData.streamConfiguration?.metricType || ""}
@@ -965,14 +1041,17 @@ export default function TemplateEditor({
                     placeholder="Contoh: ENERGY_BBTUD"
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    Paksa nilai <code>metric_type</code> menjadi nilai ini — menggantikan apapun yang dibaca oleh AI/Regex.
-                    Kosongkan jika tidak ingin mengganti.
+                    Paksa nilai <code>metric_type</code> menjadi nilai ini —
+                    menggantikan apapun yang dibaca oleh AI/Regex. Kosongkan
+                    jika tidak ingin mengganti.
                   </p>
                 </div>
               )}
 
               {/* --- Konversi ke BBTUD --- */}
-              {(formData.emailExtractionTarget === "ATTACHMENT_SINGLE" || formData.emailExtractionTarget === "ATTACHMENT_MULTI_STREAM") && (
+              {(formData.emailExtractionTarget === "ATTACHMENT_SINGLE" ||
+                formData.emailExtractionTarget ===
+                  "ATTACHMENT_MULTI_STREAM") && (
                 <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                   <input
                     type="checkbox"
@@ -990,12 +1069,17 @@ export default function TemplateEditor({
                     className="w-4 h-4 text-amber-600 border-gray-300 rounded focus:ring-amber-500 cursor-pointer mt-0.5"
                   />
                   <div>
-                    <label htmlFor={`convert-bbtud-${formData.id}`} className="text-sm font-medium text-amber-800 cursor-pointer">
+                    <label
+                      htmlFor={`convert-bbtud-${formData.id}`}
+                      className="text-sm font-medium text-amber-800 cursor-pointer"
+                    >
                       Konversi Nilai ke BBTUD (÷ 1000)
                     </label>
                     <p className="text-xs text-amber-700 mt-0.5">
-                      Jika dicentang, nilai yang diekstrak akan dibagi 1000 dan satuan (<code>unit</code>) diubah menjadi <strong>BBTUD</strong>.
-                      Cocok untuk mengonversi data MMBTU → BBTUD.
+                      Jika dicentang, nilai yang diekstrak akan dibagi 1000 dan
+                      satuan (<code>unit</code>) diubah menjadi{" "}
+                      <strong>BBTUD</strong>. Cocok untuk mengonversi data MMBTU
+                      → BBTUD.
                     </p>
                   </div>
                 </div>
@@ -1548,7 +1632,7 @@ export default function TemplateEditor({
                     Pola / Referensi (JSON Editor)
                   </label>
                   <Tooltip
-                    title="Pola (JSON array) yang digunakan untuk menemukan baris-baris data secara berulang."
+                    title="JSON array untuk ekstraksi record. Opsional: beri beberapa objek sum_group yang sama untuk menghasilkan satu total; semua anggotanya wajib ditemukan. Objek tanpa sum_group tetap menghasilkan record biasa."
                     arrow
                     placement="top"
                   >
@@ -1580,7 +1664,7 @@ export default function TemplateEditor({
                 }
                 rows={12}
                 placeholder={
-                  '[\n  {"metric_type": "FLOWRATE", "regex": "Flow:\\s*([\\d.]+)"}\n]'
+                  '[\n  {"metric_type":"ENERGY_BBTUD","period_type":"day","regex":"A:\\\\s*([\\\\d.,]+)","unit":"BBTUD","sum_group":"total_gas","sum_as_supplier":"NR"},\n  {"metric_type":"ENERGY_BBTUD","period_type":"day","regex":"B:\\\\s*([\\\\d.,]+)","unit":"BBTUD","sum_group":"total_gas"}\n]'
                 }
                 className="w-full px-3 py-3 border border-gray-300 rounded-lg text-[13px] text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary font-mono resize-none bg-gray-50/80 shadow-inner leading-relaxed"
               />
@@ -1802,9 +1886,7 @@ export default function TemplateEditor({
           {selectedBotGroupId && (
             <div className="px-3 py-2 bg-secondary/5 border border-secondary/20 rounded-lg">
               <p className="text-xs text-gray-500">Group yang dipilih:</p>
-              <p className="text-sm font-medium text-primary">
-                {newGroupName}
-              </p>
+              <p className="text-sm font-medium text-primary">{newGroupName}</p>
               <p className="text-xs text-gray-400 font-mono mt-0.5">
                 {selectedBotGroupId}
               </p>

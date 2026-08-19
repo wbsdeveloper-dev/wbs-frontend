@@ -1281,53 +1281,61 @@ export default function InputBAValidasiModal({
                             <input
                               type="text"
                               readOnly
-                              value={extractedRecords
+                              value={new Intl.NumberFormat("id-ID", {
+                                minimumFractionDigits: 4,
+                                maximumFractionDigits: 4,
+                              }).format(extractedRecords
                                 .reduce(
                                   (sum, r) =>
                                     sum +
                                     (parseFloat(r.stream1Flowrate || "0") || 0),
                                   0,
-                                )
-                                .toFixed(4)}
+                                ))}
                               className="w-full px-2 py-2 bg-gray-50 border border-gray-300 rounded-lg font-bold text-gray-900 text-right text-xs"
                             />
                             <input
                               type="text"
                               readOnly
-                              value={extractedRecords
+                              value={new Intl.NumberFormat("id-ID", {
+                                minimumFractionDigits: 4,
+                                maximumFractionDigits: 4,
+                              }).format(extractedRecords
                                 .reduce(
                                   (sum, r) =>
                                     sum +
                                     (parseFloat(r.stream1Volume || "0") || 0),
                                   0,
-                                )
-                                .toFixed(4)}
+                                ))}
                               className="w-full px-2 py-2 bg-gray-50 border border-gray-300 rounded-lg font-bold text-gray-900 text-right text-xs"
                             />
                             <input
                               type="text"
                               readOnly
-                              value={extractedRecords
+                              value={new Intl.NumberFormat("id-ID", {
+                                minimumFractionDigits: 4,
+                                maximumFractionDigits: 4,
+                              }).format(extractedRecords
                                 .reduce(
                                   (sum, r) =>
                                     sum +
                                     (parseFloat(r.stream2Flowrate || "0") || 0),
                                   0,
-                                )
-                                .toFixed(4)}
+                                ))}
                               className="w-full px-2 py-2 bg-gray-50 border border-gray-300 rounded-lg font-bold text-gray-900 text-right text-xs"
                             />
                             <input
                               type="text"
                               readOnly
-                              value={extractedRecords
+                              value={new Intl.NumberFormat("id-ID", {
+                                minimumFractionDigits: 4,
+                                maximumFractionDigits: 4,
+                              }).format(extractedRecords
                                 .reduce(
                                   (sum, r) =>
                                     sum +
                                     (parseFloat(r.stream2Volume || "0") || 0),
                                   0,
-                                )
-                                .toFixed(4)}
+                                ))}
                               className="w-full px-2 py-2 bg-gray-50 border border-gray-300 rounded-lg font-bold text-gray-900 text-right text-xs"
                             />
                           </>
@@ -1335,7 +1343,10 @@ export default function InputBAValidasiModal({
                         <input
                           type="text"
                           readOnly
-                          value={extractedRecords
+                          value={new Intl.NumberFormat("id-ID", {
+                            minimumFractionDigits: 4,
+                            maximumFractionDigits: 4,
+                          }).format(extractedRecords
                             .filter(
                               (r) =>
                                 formData.jenisBa !== "Multi Pembangkit" ||
@@ -1344,14 +1355,16 @@ export default function InputBAValidasiModal({
                             .reduce(
                               (sum, r) => sum + (parseFloat(r.flowrate) || 0),
                               0,
-                            )
-                            .toFixed(4)}
+                            ))}
                           className={`w-full px-2 py-2 bg-gray-50 border border-gray-300 rounded-lg font-bold text-gray-900 text-right ${formData.jenisBa === "Multi Stream" ? "text-xs" : "text-sm"}`}
                         />
                         <input
                           type="text"
                           readOnly
-                          value={extractedRecords
+                          value={new Intl.NumberFormat("id-ID", {
+                            minimumFractionDigits: 4,
+                            maximumFractionDigits: 4,
+                          }).format(extractedRecords
                             .filter(
                               (r) =>
                                 formData.jenisBa !== "Multi Pembangkit" ||
@@ -1360,8 +1373,7 @@ export default function InputBAValidasiModal({
                             .reduce(
                               (sum, r) => sum + (parseFloat(r.volume) || 0),
                               0,
-                            )
-                            .toFixed(4)}
+                            ))}
                           className={`w-full px-2 py-2 bg-gray-50 border border-gray-300 rounded-lg font-bold text-gray-900 text-right ${formData.jenisBa === "Multi Stream" ? "text-xs" : "text-sm"}`}
                         />
                       </div>

@@ -118,7 +118,10 @@ export default function TemplateList({
           <div onClick={() => onSelect(template)}>
             {/* Header */}
             <div className="flex items-start justify-between gap-2 mb-2">
-              <h4 className="text-sm font-semibold text-gray-900 line-clamp-1">
+              <h4 
+                className="text-sm font-semibold text-gray-900 line-clamp-1"
+                title={template.name}
+              >
                 {template.name}
               </h4>
               <span className="text-xs text-gray-400 shrink-0">

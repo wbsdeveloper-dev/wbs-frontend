@@ -204,8 +204,8 @@ export default function PieChartDetailModal({
                     const item = payload[0];
                     const pct =
                       total > 0
-                        ? (((item.value as number) / total) * 100).toFixed(2)
-                        : "0.00";
+                        ? (((item.value as number) / total) * 100).toFixed(2).replace(".", ",")
+                        : "0,00";
                     return (
                       <div className="bg-white px-3 py-2 rounded-lg shadow-lg border border-gray-200 text-sm">
                         <p className="font-medium text-gray-900">{item.name}</p>
@@ -233,7 +233,7 @@ export default function PieChartDetailModal({
           <div className="p-4 md:p-6 text-gray-900 h-[300px] md:h-[400px] overflow-auto border border-gray-200 rounded-lg">
             {data.map((item: DataItem, index: number) => {
               const pct =
-                total > 0 ? ((item.value / total) * 100).toFixed(2) : "0.00";
+                total > 0 ? ((item.value / total) * 100).toFixed(2).replace(".", ",") : "0,00";
               return (
                 <div
                   key={index}
