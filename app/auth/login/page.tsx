@@ -5,6 +5,7 @@ import { Eye, EyeOff, LogIn, Loader2, AlertCircle } from "lucide-react";
 import Image from "next/image";
 import { useAuth } from "@/components/providers/auth-provider";
 import ThemeToggle from "@/components/ui/ThemeToggle";
+import { useAppTheme } from "@/components/providers/ThemeProvider";
 
 const REMEMBER_ME_KEY = "wbs_remember_me";
 const SAVED_EMAIL_KEY = "wbs_saved_email";
@@ -12,6 +13,7 @@ const SAVED_PASSWORD_KEY = "wbs_saved_password";
 
 export default function LoginPage() {
   const { login } = useAuth();
+  const { isDark } = useAppTheme();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -80,14 +82,14 @@ export default function LoginPage() {
         <div className="p-6 pr-20 md:p-8 md:pr-24 lg:p-10 lg:pr-24 flex justify-center">
           <div className="flex items-center justify-center lg:justify-start gap-6 md:gap-8 lg:gap-12 flex-nowrap">
             <Image
-              src="/logos/danantara-putih.png"
+              src={isDark ? "/logos/danantara-putih.png" : "/logos/danantara.png"}
               alt="Danantara logo"
               width={150}
               height={45}
               className="theme-logo-surface object-contain h-[28px] md:h-[35px] lg:h-[45px] w-auto"
             />
             <Image
-              src="/logos/sucofindo-putih.png"
+              src={isDark ? "/logos/sucofindo-putih.png" : "/logos/SucofindoIdSurvey.png"}
               alt="Sucofindo logo"
               width={100}
               height={45}
