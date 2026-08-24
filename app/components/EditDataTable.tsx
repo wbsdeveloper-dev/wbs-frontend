@@ -23,6 +23,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -200,26 +201,26 @@ const mapSourceToBadgeStatus = (source: string | null | undefined): string => {
 
 const ActionButtons = ({
   id,
-  onEdit,
+  editHref,
   onDelete,
   canUpdate,
   canDelete,
 }: {
   id: string;
-  onEdit: (id: string) => void;
+  editHref: string;
   onDelete: (id: string) => void;
   canUpdate: boolean;
   canDelete: boolean;
 }) => (
   <div className="flex items-center justify-center gap-1">
     {canUpdate && (
-      <button
-        onClick={() => onEdit(id)}
-        className="p-1.5 text-primary hover:bg-primary/10 rounded-lg transition-colors"
+      <Link
+        href={editHref}
+        className="p-1.5 text-primary hover:bg-primary/10 rounded-lg transition-colors inline-block"
         title="Edit"
       >
         <Pencil size={16} />
-      </button>
+      </Link>
     )}
     {canDelete && (
       <button
@@ -1042,7 +1043,7 @@ export default function EditDataTable({
                       <td className="px-4 py-3 text-center">
                         <ActionButtons
                           id={record.idBbtud || record.idMmscfd || ""}
-                          onEdit={(id) => router.push(`/edit/${id}`)}
+                          editHref={`/edit/${record.idBbtud || record.idMmscfd || ""}`}
                           onDelete={(id) =>
                             handleDeleteClick(
                               id,

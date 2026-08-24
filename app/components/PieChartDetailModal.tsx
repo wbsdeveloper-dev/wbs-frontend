@@ -2,6 +2,7 @@
 import { useMemo } from "react";
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { ChevronDown } from "lucide-react";
 import { CHART_COLORS } from "@/app/_constants";
 import { Modal } from "@/app/components/ui";
 
@@ -31,10 +32,12 @@ interface PieChartDetailModalProps {
   tabs?: string[];
   descriptionPrefix?: string;
   unit?: string;
-  /** Optional moda filter support */
   moda?: string | null;
   onModaChange?: (value: string | null) => void;
   modaOptions?: string[];
+  commodity?: string | null;
+  onCommodityChange?: (value: string | null) => void;
+  commodityOptions?: string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -58,6 +61,9 @@ export default function PieChartDetailModal({
   moda,
   onModaChange,
   modaOptions = [],
+  commodity,
+  onCommodityChange,
+  commodityOptions,
 }: PieChartDetailModalProps) {
   const total = useMemo(() => data.reduce((sum, d) => sum + d.value, 0), [data]);
 
@@ -112,7 +118,28 @@ export default function PieChartDetailModal({
     <Modal isOpen={isOpen} onClose={onClose}>
       {/* Header area */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+        <div className="flex items-center gap-2">
+          <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+          
+          {/* Commodity select */}
+          {commodityOptions && onCommodityChange && (
+            <div className="relative inline-flex items-center w-max">
+              <select
+                value={commodity || ""}
+                onChange={(e) => onCommodityChange(e.target.value)}
+                className="appearance-none flex items-center gap-1.5 px-3 py-1.5 pr-8 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer text-gray-500 hover:bg-gray-100 border border-transparent bg-transparent outline-none focus:bg-secondary/10 focus:text-primary focus:border-secondary/30"
+              >
+                {commodityOptions.map((opt) => (
+                  <option key={opt} value={opt} className="text-gray-700 bg-white">
+                    {opt}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="w-4 h-4 text-gray-500 absolute right-2 pointer-events-none" />
+            </div>
+          )}
+        </div>
+        
         <div className="flex items-center gap-3 flex-wrap">
           {/* Pemasok / Pembangkit tabs */}
           <div className="inline-flex bg-gray-100 rounded-lg p-0.5">

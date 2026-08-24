@@ -537,10 +537,14 @@ export interface BbmSiteSummary {
 export async function getBbmSitesSummary(filters?: {
   moda?: string;
   product?: string;
+  startDate?: string;
+  endDate?: string;
 }): Promise<BbmSiteSummary[]> {
   const params = new URLSearchParams();
   if (filters?.moda) params.append("moda", filters.moda);
   if (filters?.product) params.append("product", filters.product);
+  if (filters?.startDate) params.append("startDate", filters.startDate);
+  if (filters?.endDate) params.append("endDate", filters.endDate);
 
   const qs = params.toString() ? `?${params.toString()}` : "";
   const url = `${DASHBOARD_API_HOST}/bbm-monthly/sites-summary${qs}`;
@@ -568,7 +572,7 @@ export async function getBbmSitesSummary(filters?: {
 }
 
 export function useBbmSitesSummary(
-  filters?: { moda?: string; product?: string },
+  filters?: { moda?: string; product?: string; startDate?: string; endDate?: string },
   options?: Partial<UseQueryOptions<BbmSiteSummary[]>>
 ) {
   return useQuery({

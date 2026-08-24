@@ -306,7 +306,7 @@ export function DaftarSiteTable({
 
   const isBbm = commodity?.includes("BBM");
   const isGasPipa = commodity?.includes("GAS PIPA") || commodity?.includes("LNG");
-  
+
   const regionCommodityFilter = isBbm ? "BBM" : isGasPipa ? "GAS PIPA" : undefined;
 
   const { data: rawRegions = [] } = useKertasKerjaMaster(
@@ -470,7 +470,7 @@ export function DaftarSiteTable({
             <button
               onClick={() => setShowFilters((v) => !v)}
               className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-all duration-200 ${showFilters || activeFilterCount > 0
-                ? "bg-primary text-white border-primary"
+                ? isBbm ? "bg-[#ea580c] text-white border-[#ea580c]" : "bg-primary text-white border-primary"
                 : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
                 }`}
             >
@@ -577,7 +577,9 @@ export function DaftarSiteTable({
               </button>
               <button
                 onClick={handleApplyFilters}
-                className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
+                className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white rounded-lg transition-all duration-200 hover:shadow-md active:scale-95 ${
+                  isBbm ? "bg-[#ea580c] hover:bg-[#c2410c]" : "bg-primary hover:bg-[#0d4a5c]"
+                }`}
               >
                 <Search size={14} />
                 Terapkan Filter
@@ -825,11 +827,10 @@ export function DaftarSiteTable({
                       <button
                         key={p}
                         onClick={() => setCurrentPage((p as number) - 1)}
-                        className={`min-w-[2rem] h-8 rounded-lg text-sm font-medium transition-all duration-200 ${
-                          p === displayPage
-                            ? "bg-primary text-white shadow-sm"
+                        className={`min-w-[2rem] h-8 rounded-lg text-sm font-medium transition-all duration-200 ${p === displayPage
+                            ? isBbm ? "bg-[#ea580c] text-white shadow-sm" : "bg-primary text-white shadow-sm"
                             : "text-gray-700 hover:bg-gray-100"
-                        }`}
+                          }`}
                       >
                         {p}
                       </button>
@@ -1207,11 +1208,10 @@ export function RelasiOperasionalTable({
                       <button
                         key={p}
                         onClick={() => setCurrentPage((p as number) - 1)}
-                        className={`min-w-[2rem] h-8 rounded-lg text-sm font-medium transition-all duration-200 ${
-                          p === displayPage
+                        className={`min-w-[2rem] h-8 rounded-lg text-sm font-medium transition-all duration-200 ${p === displayPage
                             ? "bg-primary text-white shadow-sm"
                             : "text-gray-700 hover:bg-gray-100"
-                        }`}
+                          }`}
                       >
                         {p}
                       </button>

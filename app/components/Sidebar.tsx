@@ -406,10 +406,10 @@ export default function Sidebar() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-gray-800 font-semibold text-xs truncate">
-                  {user?.email || "User"}
+                  {user?.fullName || "User"}
                 </p>
                 <p className="text-gray-500 text-[10px] truncate">
-                  {user?.roles?.join(", ") || "User"}
+                  {user?.email || "User"}
                 </p>
               </div>
               {!isBbmRoute && canReadNotification && (
