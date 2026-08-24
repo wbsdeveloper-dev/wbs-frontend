@@ -18,8 +18,10 @@ export default function AddBbmModal({ setOpenModal, onSuccess }: Props) {
     moda: "Truck",
     unit: "KILOLITER",
     nomination: "",
-    realization: "",
-    usage: "",
+    realization: "", // Penyaluran
+    receipt: "", // Penerimaan
+    renomination: "", // Renominasi
+    usage: "", // Pemakaian
   });
 
   const [showSuccess, setShowSuccess] = useState(false);
@@ -41,6 +43,7 @@ export default function AddBbmModal({ setOpenModal, onSuccess }: Props) {
     try {
       setError(null);
       const payload: any = {
+        reportDate: formData.monthDate ? `${formData.monthDate}-01` : undefined,
         monthDate: formData.monthDate,
         siteId: formData.siteId,
         supplierId: formData.supplierId,
@@ -53,7 +56,12 @@ export default function AddBbmModal({ setOpenModal, onSuccess }: Props) {
         payload.nomination = Number(formData.nomination);
       if (formData.realization !== "")
         payload.realization = Number(formData.realization);
-      if (formData.usage !== "") payload.usage = Number(formData.usage);
+      if (formData.receipt !== "")
+        payload.receipt = Number(formData.receipt);
+      if (formData.renomination !== "")
+        payload.renomination = Number(formData.renomination);
+      if (formData.usage !== "") 
+        payload.usage = Number(formData.usage);
 
       await createRecord.mutateAsync(payload);
 
@@ -265,13 +273,27 @@ export default function AddBbmModal({ setOpenModal, onSuccess }: Props) {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Penerimaan
+                Penyaluran (Realisasi)
               </label>
               <input
                 type="number"
                 value={formData.realization}
                 onChange={(e) =>
                   setFormData({ ...formData, realization: e.target.value })
+                }
+                className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Penerimaan
+              </label>
+              <input
+                type="number"
+                value={formData.receipt}
+                onChange={(e) =>
+                  setFormData({ ...formData, receipt: e.target.value })
                 }
                 className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all"
               />
@@ -293,6 +315,20 @@ export default function AddBbmModal({ setOpenModal, onSuccess }: Props) {
                 value={formData.nomination}
                 onChange={(e) =>
                   setFormData({ ...formData, nomination: e.target.value })
+                }
+                className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Renominasi
+              </label>
+              <input
+                type="number"
+                value={formData.renomination}
+                onChange={(e) =>
+                  setFormData({ ...formData, renomination: e.target.value })
                 }
                 className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all"
               />

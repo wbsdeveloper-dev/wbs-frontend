@@ -377,6 +377,7 @@ export const dashboardKeys = {
     endDate: string,
     by: string,
     region?: string,
+    commodity?: string,
   ) =>
     [
       ...dashboardKeys.all,
@@ -385,6 +386,7 @@ export const dashboardKeys = {
       endDate,
       by,
       region,
+      commodity,
     ] as const,
   topSuppliers: (
     startDate: string,
@@ -519,9 +521,10 @@ export async function getDistribution(
   endDate: string,
   by: "supplier" | "plant",
   region?: string,
+  commodity?: string,
 ) {
   return dashboardFetch<DistributionResponse>(
-    `/dashboard/distribution${buildQuery({ startDate, endDate, by, region })}`,
+    `/dashboard/distribution${buildQuery({ startDate, endDate, by, region, commodity })}`,
   );
 }
 
@@ -675,11 +678,12 @@ export function useDistribution(
   endDate: string,
   by: "supplier" | "plant",
   region?: string,
+  commodity?: string,
   options?: Partial<UseQueryOptions<DistributionResponse>>,
 ) {
   return useQuery({
-    queryKey: dashboardKeys.distribution(startDate, endDate, by, region),
-    queryFn: () => getDistribution(startDate, endDate, by, region),
+    queryKey: dashboardKeys.distribution(startDate, endDate, by, region, commodity),
+    queryFn: () => getDistribution(startDate, endDate, by, region, commodity),
     ...options,
   });
 }

@@ -364,11 +364,19 @@ export default function Map() {
   const [selectedModes, setSelectedModes] = useState<string[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
 
+  const currentMonth = new Date().getMonth() + 1;
+  const currentYear = new Date().getFullYear();
+
+  const startDateStr = `${currentYear}-${String(currentMonth).padStart(2, "0")}-01`;
+  const endDateStr = `${currentYear}-${String(currentMonth).padStart(2, "0")}-${String(new Date(currentYear, currentMonth, 0).getDate()).padStart(2, "0")}`;
+
   const { data: bbmSitesSummary, isLoading: isSummaryLoading } =
     useBbmSitesSummary({
       moda: selectedModes.length > 0 ? selectedModes.join(",") : undefined,
       product:
         selectedProducts.length > 0 ? selectedProducts.join(",") : undefined,
+      startDate: startDateStr,
+      endDate: endDateStr,
     });
 
   const { data: masterProductData } = useKertasKerjaMaster(
@@ -378,16 +386,12 @@ export default function Map() {
   const { data: bbmMonthlyData } = useBbmMonthly();
 
   const latestMonthYear = useMemo(() => {
-    if (!bbmMonthlyData || bbmMonthlyData.length === 0) return "";
-    const reportDate = bbmMonthlyData[0]?.reportDate;
-    if (!reportDate) return "";
-    const date = new Date(reportDate);
     const months = [
       "Januari", "Februari", "Maret", "April", "Mei", "Juni",
       "Juli", "Agustus", "September", "Oktober", "November", "Desember"
     ];
-    return `${months[date.getMonth()]} ${date.getFullYear()}`;
-  }, [bbmMonthlyData]);
+    return `${months[currentMonth - 1]} ${currentYear}`;
+  }, [currentMonth, currentYear]);
 
   const filterProductOptions = useMemo(() => {
     if (!masterProductData) return [];

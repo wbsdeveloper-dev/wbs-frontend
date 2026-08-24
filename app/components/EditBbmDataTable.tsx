@@ -21,6 +21,7 @@ import {
   FileText,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import type { BbmRecord } from "@/hooks/service/bbm-api";
 import { usePrivilege } from "@/hooks/usePrivilege";
 import { useDeleteBbmMonthly } from "@/hooks/service/bbm-api";
@@ -36,26 +37,26 @@ interface EditBbmDataTableProps {
 
 const ActionButtons = ({
   id,
-  onEdit,
+  editHref,
   onDelete,
   canUpdate,
   canDelete,
 }: {
   id: string;
-  onEdit: (id: string) => void;
+  editHref: string;
   onDelete: (id: string) => void;
   canUpdate: boolean;
   canDelete: boolean;
 }) => (
   <div className="flex items-center justify-center gap-1">
     {canUpdate && (
-      <button
-        onClick={() => onEdit(id)}
-        className="p-1.5 text-primary hover:bg-primary/10 rounded-lg transition-colors"
+      <Link
+        href={editHref}
+        className="p-1.5 text-primary hover:bg-primary/10 rounded-lg transition-colors inline-block"
         title="Edit"
       >
         <Pencil size={16} />
-      </button>
+      </Link>
     )}
     {canDelete && (
       <button
@@ -774,7 +775,7 @@ export default function EditBbmDataTable({
                       <td className="px-4 py-3 text-center">
                         <ActionButtons
                           id={rowId}
-                          onEdit={(id) => router.push(`/edit-bbm/${id}`)}
+                          editHref={`/edit-bbm/${rowId}`}
                           onDelete={(id) =>
                             handleDeleteClick(
                               id,

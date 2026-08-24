@@ -25,6 +25,7 @@ export interface RefreshResponse {
 export interface UserProfile {
   userId: string;
   email: string;
+  fullName?: string;
   roles: string[];
   privileges: Record<string, string[]>;
 }

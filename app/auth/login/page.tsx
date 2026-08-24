@@ -78,27 +78,27 @@ export default function LoginPage() {
         />
         {/* Logos Header */}
         <div className="p-6 pr-20 md:p-8 md:pr-24 lg:p-10 lg:pr-24 flex justify-center">
-          <div className="flex items-center justify-center lg:justify-start gap-4 md:gap-6 lg:gap-10 flex-wrap">
+          <div className="flex items-center justify-center lg:justify-start gap-6 md:gap-8 lg:gap-12 flex-nowrap">
             <Image
               src="/logos/danantara-putih.png"
               alt="Danantara logo"
-              width={100}
-              height={35}
-              className="theme-logo-surface object-contain w-[80px] md:w-[100px] lg:w-[150px]"
+              width={150}
+              height={45}
+              className="theme-logo-surface object-contain h-[28px] md:h-[35px] lg:h-[45px] w-auto"
             />
             <Image
               src="/logos/sucofindo-putih.png"
               alt="Sucofindo logo"
-              width={60}
-              height={35}
-              className="theme-logo-surface object-contain w-[50px] md:w-[60px] lg:w-[100px] relative top-[-2px]"
+              width={100}
+              height={45}
+              className="theme-logo-surface object-contain h-[28px] md:h-[35px] lg:h-[45px] w-auto"
             />
             <Image
               src="/logos/pln-epi.png"
               alt="PLN EPI logo"
-              width={100}
-              height={35}
-              className="theme-logo-surface object-contain w-[80px] md:w-[100px] lg:w-[140px]"
+              width={140}
+              height={45}
+              className="theme-logo-surface object-contain h-[28px] md:h-[35px] lg:h-[45px] w-auto"
             />
           </div>
         </div>

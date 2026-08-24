@@ -43,8 +43,8 @@ export default function AddReconciliationModal({
   const { data: filtersData } = useFilters();
   const queryClient = useQueryClient();
 
-  const pembangkitGasPipa = filtersData?.pembangkit?.filter((p) => p.commodity === "GAS PIPA") || [];
-  const pemasokGasPipa = filtersData?.pemasok?.filter((p) => p.commodity === "GAS PIPA") || [];
+  const pembangkitGasPipa = filtersData?.pembangkit?.filter((p) => p.commodity === "GAS PIPA" || p.commodity === "LNG") || [];
+  const pemasokGasPipa = filtersData?.pemasok?.filter((p) => p.commodity === "GAS PIPA" || p.commodity === "LNG") || [];
 
   const handleSave = async () => {
     try {

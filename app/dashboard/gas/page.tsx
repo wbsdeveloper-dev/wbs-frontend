@@ -62,6 +62,7 @@ export default function GasDashboard() {
 
   const { isOpen, open, close } = useModal();
   const [filterType, setFilterType] = useState<string | null>("Pemasok");
+  const [distributionCommodity, setDistributionCommodity] = useState<string | null>("GAS PIPA");
 
   useEffect(() => {
     if (!isAuthLoading && !canRead) {
@@ -107,6 +108,7 @@ export default function GasDashboard() {
     distributionEndDate,
     distributionBy as "supplier" | "plant",
     selectedRegion,
+    distributionCommodity || undefined,
   );
 
   // Top suppliers/plants date filters
@@ -385,15 +387,29 @@ export default function GasDashboard() {
   // Transform distribution data for pie chart component
   const dataPieChart = useMemo(() => {
     if (!distributionData) return [];
-    const items = Array.isArray(distributionData)
+    let items = Array.isArray(distributionData)
       ? distributionData
       : distributionData.items;
     if (!Array.isArray(items)) return [];
+
+    // Local filtering by commodity since backend /dashboard/distribution might not support commodity param
+    if (allSites && distributionCommodity) {
+      const targetCommodity = distributionCommodity.toUpperCase();
+      const commoditySites = new Set(
+        allSites
+          .filter((s) => s.commodity?.toUpperCase() === targetCommodity || (s.commodity?.toUpperCase().includes(targetCommodity)))
+          .map((s) => s.name.toLowerCase())
+      );
+      items = items.filter((item: { name: string; value: number }) =>
+        commoditySites.has(item.name.toLowerCase())
+      );
+    }
+
     return items.map((item: { name: string; value: number }) => ({
       name: item.name,
       value: item.value,
     }));
-  }, [distributionData]);
+  }, [distributionData, allSites, distributionCommodity]);
 
   const topPemasokList = useMemo(() => {
     if (!topSuppliersData?.items) return [];
@@ -489,6 +505,9 @@ export default function GasDashboard() {
                     endDate={distributionEndDate}
                     onStartDateChange={setDistributionStartDate}
                     onEndDateChange={setDistributionEndDate}
+                    commodity={distributionCommodity}
+                    onCommodityChange={setDistributionCommodity}
+                    commodityOptions={["GAS PIPA", "LNG"]}
                   />
                 </div>
               )}
@@ -547,11 +566,11 @@ export default function GasDashboard() {
                 </div>
               )}
               {isLngPlantsLoading ? (
-                <div className="bg-white rounded-xl p-6 flex items-center justify-center w-[360px] min-w-[360px] md:w-[420px] md:min-w-[420px] flex-shrink-0">
+                <div className="bg-white rounded-xl p-6 flex items-center justify-center w-[360px] min-w-[360px] md:w-[440px] md:min-w-[440px] flex-shrink-0">
                   <Loader2 className="animate-spin text-secondary" size={32} />
                 </div>
               ) : (
-                <div className="w-[360px] min-w-[360px] md:w-[420px] md:min-w-[420px] flex-shrink-0">
+                <div className="w-[360px] min-w-[360px] md:w-[460px] md:min-w-[460px] flex-shrink-0">
                   <TopVolumeList
                     title="Top 5 Volume Pembangkit (LNG)"
                     list={topLngPembangkitList}
@@ -596,6 +615,9 @@ export default function GasDashboard() {
         endDate={distributionEndDate}
         onStartDateChange={setDistributionStartDate}
         onEndDateChange={setDistributionEndDate}
+        commodity={distributionCommodity}
+        onCommodityChange={setDistributionCommodity}
+        commodityOptions={["GAS PIPA", "LNG"]}
       />
     </div>
   );
