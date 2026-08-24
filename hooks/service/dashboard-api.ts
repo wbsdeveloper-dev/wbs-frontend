@@ -85,6 +85,8 @@ export interface SupplierContractSummary {
   jphBbtud: number | null;
   topBbtud: number | null;
   tjkBbtud: number | null;
+  akumulasi: number;
+  realisasi: number | null;
   agreementEndDate: string | null;
   plantSiteIds: string[];
   plantNames: string[];
