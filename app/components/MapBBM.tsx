@@ -363,12 +363,20 @@ export default function Map() {
 
   const [selectedModes, setSelectedModes] = useState<string[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
+  const [selectedPeriod, setSelectedPeriod] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  });
 
-  const currentMonth = new Date().getMonth() + 1;
-  const currentYear = new Date().getFullYear();
+  const { startDateStr, endDateStr } = useMemo(() => {
+    const [year, month] = selectedPeriod.split("-").map(Number);
+    const lastDay = new Date(year, month, 0).getDate();
 
-  const startDateStr = `${currentYear}-${String(currentMonth).padStart(2, "0")}-01`;
-  const endDateStr = `${currentYear}-${String(currentMonth).padStart(2, "0")}-${String(new Date(currentYear, currentMonth, 0).getDate()).padStart(2, "0")}`;
+    return {
+      startDateStr: `${selectedPeriod}-01`,
+      endDateStr: `${selectedPeriod}-${String(lastDay).padStart(2, "0")}`,
+    };
+  }, [selectedPeriod]);
 
   const { data: bbmSitesSummary, isLoading: isSummaryLoading } =
     useBbmSitesSummary({
@@ -385,13 +393,14 @@ export default function Map() {
   );
   const { data: bbmMonthlyData } = useBbmMonthly();
 
-  const latestMonthYear = useMemo(() => {
+  const selectedMonthYearLabel = useMemo(() => {
+    const [year, month] = selectedPeriod.split("-").map(Number);
     const months = [
       "Januari", "Februari", "Maret", "April", "Mei", "Juni",
       "Juli", "Agustus", "September", "Oktober", "November", "Desember"
     ];
-    return `${months[currentMonth - 1]} ${currentYear}`;
-  }, [currentMonth, currentYear]);
+    return `${months[month - 1]} ${year}`;
+  }, [selectedPeriod]);
 
   const filterProductOptions = useMemo(() => {
     if (!masterProductData) return [];
@@ -688,9 +697,14 @@ export default function Map() {
       <div className="lg:col-span-9 lg:pr-6">
         <div ref={mapRef} className="bg-white pb-2">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-base md:text-lg font-semibold text-gray-900">
-              Titik Lokasi TBBM dan Pembangkit
-            </h3>
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="text-base md:text-lg font-semibold text-gray-900">
+                Titik Lokasi TBBM dan Pembangkit
+              </h3>
+              <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full border border-gray-200">
+                {selectedMonthYearLabel}
+              </span>
+            </div>
             <div className="export-buttons-container flex items-center gap-2 bg-gray-100 rounded-lg p-0.5">
               <button
                 onClick={handleExportImage}
@@ -1096,6 +1110,26 @@ export default function Map() {
             Filter Map
           </p>
           <div className="flex flex-col gap-3 pr-4">
+            <div>
+              <label
+                htmlFor="map-bbm-period"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
+                Periode (Bulan & Tahun)
+              </label>
+              <input
+                id="map-bbm-period"
+                type="month"
+                value={selectedPeriod}
+                onChange={(event) => {
+                  if (!event.target.value) return;
+                  setSelectedPeriod(event.target.value);
+                  setModalSiteList(null);
+                  setModalSearchQuery("");
+                }}
+                className="w-full px-3 py-2 rounded-lg text-sm border border-[var(--border)] bg-[var(--surface)] text-gray-700 hover:border-[var(--border-strong)] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+              />
+            </div>
             <FilterAutocomplete
               label="Region"
               options={regionOptions}
@@ -1621,11 +1655,9 @@ export default function Map() {
                         <h3 className="text-lg font-bold text-gray-900">
                           Resume
                         </h3>
-                        {latestMonthYear && (
-                          <span className="text-sm font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full border border-gray-200">
-                            {latestMonthYear}
-                          </span>
-                        )}
+                        <span className="text-sm font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full border border-gray-200">
+                          {selectedMonthYearLabel}
+                        </span>
                       </div>
                     </div>
                     <div className="p-4 overflow-y-auto flex-1 space-y-6">
