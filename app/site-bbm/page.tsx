@@ -47,6 +47,7 @@ export default function SitePage() {
 
   const canRead = hasPrivilege("site_management", "READ");
   const canCreate = hasPrivilege("site_management", "CREATE");
+  const canUpdate = hasPrivilege("site_management", "UPDATE");
 
   const [editingSiteId, setEditingSiteId] = useState<string | null>(null);
   const [editingRelationId, setEditingRelationId] = useState<string | null>(
@@ -146,23 +147,23 @@ export default function SitePage() {
         </div>
 
         <div className="flex gap-2 mb-2">
-          {activeTab === 0 && canCreate && (
-            <>
-              <button
-                onClick={handleDownloadTemplate}
-                className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-all duration-200 hover:shadow-md active:scale-95 whitespace-nowrap"
-              >
-                <FileSpreadsheet size={16} className="text-green-600" />
-                Download Template
-              </button>
-              <button
-                onClick={() => setBulkUploadOpen(true)}
-                className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-all duration-200 hover:shadow-md active:scale-95 whitespace-nowrap"
-              >
-                <Upload size={16} className="text-primary" />
-                Update Multi Data
-              </button>
-            </>
+          {activeTab === 0 && canRead && (
+            <button
+              onClick={handleDownloadTemplate}
+              className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-all duration-200 hover:shadow-md active:scale-95 whitespace-nowrap"
+            >
+              <FileSpreadsheet size={16} className="text-green-600" />
+              Download Template
+            </button>
+          )}
+          {activeTab === 0 && canUpdate && (
+            <button
+              onClick={() => setBulkUploadOpen(true)}
+              className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-all duration-200 hover:shadow-md active:scale-95 whitespace-nowrap"
+            >
+              <Upload size={16} className="text-primary" />
+              Update Multi Data
+            </button>
           )}
           {canCreate && (
             <button

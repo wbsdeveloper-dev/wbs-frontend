@@ -2,6 +2,7 @@
 // from WBS Platform Backend API.
 
 import { getAccessToken } from "@/lib/auth";
+import { kertasKerjaKeys } from "./kertas-kerja-api";
 import {
   useQuery,
   useMutation,
@@ -10,7 +11,8 @@ import {
   type UseMutationOptions,
 } from "@tanstack/react-query";
 
-export const SITE_API_HOST = process.env.NEXT_PUBLIC_API_HOST || "http://localhost:3005/api";
+export const SITE_API_HOST =
+  process.env.NEXT_PUBLIC_API_HOST || "http://localhost:3005/api";
 
 // ---------------------------------------------------------------------------
 // Standard API envelope
@@ -91,11 +93,11 @@ async function siteFetch<T>(
   const body = (await res.json()) as ApiResponse<T>;
 
   if (!body.success) {
-    const msg = extractErrorMessage(body.error, body.message || "Unknown API error");
-    throw new SiteApiError(
-      res.status,
-      msg,
+    const msg = extractErrorMessage(
+      body.error,
+      body.message || "Unknown API error",
     );
+    throw new SiteApiError(res.status, msg);
   }
 
   return body.data;
@@ -240,6 +242,9 @@ export interface SiteRelation {
   status: "ACTIVE" | "INACTIVE";
   priority: number;
   commodity: string;
+  transport_mode?: string | null;
+  capacity_value?: number | null;
+  capacity_unit?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -250,6 +255,7 @@ export interface CreateRelationPayload {
   relation_type: string;
   commodity: string;
   priority?: number;
+  transport_mode?: string | null;
 }
 
 export interface UpdateRelationPayload {
@@ -259,6 +265,43 @@ export interface UpdateRelationPayload {
   commodity?: string;
   priority?: number;
   status?: "ACTIVE" | "INACTIVE";
+  transport_mode?: string | null;
+}
+
+export interface BbmSiteCommitPayload {
+  fileName: string;
+  confirmedReferences: Array<{
+    type: "REGION" | "KIT" | "UPK" | "UNIT";
+    name: string;
+    confirmed: true;
+  }>;
+  rows: Array<{
+    sheetName?: string;
+    rowNumber: number;
+    mode: "existing" | "create";
+    siteId?: string;
+    name: string;
+    siteType: "PEMBANGKIT" | "PEMASOK";
+    region?: string;
+    unitId?: string;
+    unitName?: string;
+    upkId?: string;
+    upkName?: string;
+    kitId?: string;
+    kitName?: string;
+    capacityMw?: number;
+    capacity?: number;
+    isEnabled?: boolean;
+  }>;
+}
+
+export interface BbmSiteCommitResult {
+  importId: string;
+  rows: number;
+  referencesCreated: number;
+  sitesCreated: number;
+  sitesUpdated: number;
+  sitesUnchanged: number;
 }
 
 export interface DeleteRelationResponse {
@@ -322,7 +365,6 @@ export interface UpdateSiteHistoryPayload {
   notes?: string | null;
 }
 
-
 // ---------------------------------------------------------------------------
 // Helper to build query string
 // ---------------------------------------------------------------------------
@@ -348,8 +390,13 @@ function buildQuery(
 export const siteKeys = {
   all: ["sites"] as const,
   dropdowns: () => [...siteKeys.all, "dropdowns"] as const,
-  sites: (filters?: { type?: string; region?: string; search?: string }) =>
-    [...siteKeys.all, "list", filters] as const,
+  sites: (filters?: {
+    type?: string;
+    region?: string;
+    search?: string;
+    commodity?: string | string[];
+    includeDisabled?: boolean;
+  }) => [...siteKeys.all, "list", filters] as const,
   site: (id: string) => [...siteKeys.all, "detail", id] as const,
   relations: (active?: boolean) =>
     [...siteKeys.all, "relations", active] as const,
@@ -376,16 +423,18 @@ export function getSites(filters?: {
   region?: string;
   search?: string;
   commodity?: string | string[];
+  includeDisabled?: boolean;
 }) {
   const queryParams: Record<string, any> = {
     type: filters?.type,
     region: filters?.region,
     search: filters?.search,
+    includeDisabled: filters?.includeDisabled,
   };
 
   if (filters?.commodity) {
     if (Array.isArray(filters.commodity)) {
-      queryParams.commodity = filters.commodity.join(',');
+      queryParams.commodity = filters.commodity.join(",");
     } else {
       queryParams.commodity = filters.commodity;
     }
@@ -446,7 +495,9 @@ export function updateRelation(id: string, payload: UpdateRelationPayload) {
   });
 }
 
-export async function deleteRelation(id: string): Promise<DeleteRelationResponse> {
+export async function deleteRelation(
+  id: string,
+): Promise<DeleteRelationResponse> {
   return siteFetch<DeleteRelationResponse>(`/dim/site-relations/${id}`, {
     method: "DELETE",
   });
@@ -458,18 +509,24 @@ export async function deleteRelation(id: string): Promise<DeleteRelationResponse
 
 export async function getSiteHistory(
   siteId: string,
-  siteType: "PEMBANGKIT" | "PEMASOK"
+  siteType: "PEMBANGKIT" | "PEMASOK",
 ): Promise<SiteHistoryRow[]> {
-  const path = siteType === "PEMBANGKIT" ? `/dim/plants/${siteId}/history` : `/dim/suppliers/${siteId}/history`;
+  const path =
+    siteType === "PEMBANGKIT"
+      ? `/dim/plants/${siteId}/history`
+      : `/dim/suppliers/${siteId}/history`;
   return siteFetch<SiteHistoryRow[]>(path);
 }
 
 export async function createSiteHistory(
   siteId: string,
   siteType: "PEMBANGKIT" | "PEMASOK",
-  payload: CreateSiteHistoryPayload
+  payload: CreateSiteHistoryPayload,
 ): Promise<SiteHistoryRow> {
-  const path = siteType === "PEMBANGKIT" ? `/dim/plants/${siteId}/history` : `/dim/suppliers/${siteId}/history`;
+  const path =
+    siteType === "PEMBANGKIT"
+      ? `/dim/plants/${siteId}/history`
+      : `/dim/suppliers/${siteId}/history`;
   return siteFetch<SiteHistoryRow>(path, {
     method: "POST",
     body: JSON.stringify(payload),
@@ -480,9 +537,12 @@ export async function updateSiteHistory(
   siteId: string,
   historyId: string,
   siteType: "PEMBANGKIT" | "PEMASOK",
-  payload: UpdateSiteHistoryPayload
+  payload: UpdateSiteHistoryPayload,
 ): Promise<SiteHistoryRow> {
-  const path = siteType === "PEMBANGKIT" ? `/dim/plants/${siteId}/history/${historyId}` : `/dim/suppliers/${siteId}/history/${historyId}`;
+  const path =
+    siteType === "PEMBANGKIT"
+      ? `/dim/plants/${siteId}/history/${historyId}`
+      : `/dim/suppliers/${siteId}/history/${historyId}`;
   return siteFetch<SiteHistoryRow>(path, {
     method: "PATCH",
     body: JSON.stringify(payload),
@@ -492,14 +552,16 @@ export async function updateSiteHistory(
 export async function deleteSiteHistory(
   siteId: string,
   historyId: string,
-  siteType: "PEMBANGKIT" | "PEMASOK"
+  siteType: "PEMBANGKIT" | "PEMASOK",
 ): Promise<{ deleted: boolean }> {
-  const path = siteType === "PEMBANGKIT" ? `/dim/plants/${siteId}/history/${historyId}` : `/dim/suppliers/${siteId}/history/${historyId}`;
+  const path =
+    siteType === "PEMBANGKIT"
+      ? `/dim/plants/${siteId}/history/${historyId}`
+      : `/dim/suppliers/${siteId}/history/${historyId}`;
   return siteFetch<{ deleted: boolean }>(path, {
     method: "DELETE",
   });
 }
-
 
 // ---------------------------------------------------------------------------
 // API functions — Site Mappings
@@ -540,6 +602,7 @@ export function useSites(
     search?: string;
     capacity?: string;
     commodity?: string | string[];
+    includeDisabled?: boolean;
   },
   options?: Partial<UseQueryOptions<Site[]>>,
 ) {
@@ -731,7 +794,7 @@ export function useCreateMapping(
 export function useSiteHistory(
   siteId: string,
   siteType: "PEMBANGKIT" | "PEMASOK",
-  options?: Partial<UseQueryOptions<SiteHistoryRow[]>>
+  options?: Partial<UseQueryOptions<SiteHistoryRow[]>>,
 ) {
   return useQuery({
     queryKey: siteKeys.history(siteId),
@@ -742,11 +805,22 @@ export function useSiteHistory(
 }
 
 export function useCreateSiteHistory(
-  options?: Partial<UseMutationOptions<SiteHistoryRow, Error, { siteId: string; siteType: "PEMBANGKIT" | "PEMASOK"; payload: CreateSiteHistoryPayload }>>
+  options?: Partial<
+    UseMutationOptions<
+      SiteHistoryRow,
+      Error,
+      {
+        siteId: string;
+        siteType: "PEMBANGKIT" | "PEMASOK";
+        payload: CreateSiteHistoryPayload;
+      }
+    >
+  >,
 ) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ siteId, siteType, payload }) => createSiteHistory(siteId, siteType, payload),
+    mutationFn: ({ siteId, siteType, payload }) =>
+      createSiteHistory(siteId, siteType, payload),
     onSuccess: (_, { siteId }) => {
       qc.invalidateQueries({ queryKey: siteKeys.history(siteId) });
     },
@@ -755,11 +829,23 @@ export function useCreateSiteHistory(
 }
 
 export function useUpdateSiteHistory(
-  options?: Partial<UseMutationOptions<SiteHistoryRow, Error, { siteId: string; historyId: string; siteType: "PEMBANGKIT" | "PEMASOK"; payload: UpdateSiteHistoryPayload }>>
+  options?: Partial<
+    UseMutationOptions<
+      SiteHistoryRow,
+      Error,
+      {
+        siteId: string;
+        historyId: string;
+        siteType: "PEMBANGKIT" | "PEMASOK";
+        payload: UpdateSiteHistoryPayload;
+      }
+    >
+  >,
 ) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ siteId, historyId, siteType, payload }) => updateSiteHistory(siteId, historyId, siteType, payload),
+    mutationFn: ({ siteId, historyId, siteType, payload }) =>
+      updateSiteHistory(siteId, historyId, siteType, payload),
     onSuccess: (_, { siteId }) => {
       qc.invalidateQueries({ queryKey: siteKeys.history(siteId) });
     },
@@ -768,11 +854,18 @@ export function useUpdateSiteHistory(
 }
 
 export function useDeleteSiteHistory(
-  options?: Partial<UseMutationOptions<{ deleted: boolean }, Error, { siteId: string; historyId: string; siteType: "PEMBANGKIT" | "PEMASOK" }>>
+  options?: Partial<
+    UseMutationOptions<
+      { deleted: boolean },
+      Error,
+      { siteId: string; historyId: string; siteType: "PEMBANGKIT" | "PEMASOK" }
+    >
+  >,
 ) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ siteId, historyId, siteType }) => deleteSiteHistory(siteId, historyId, siteType),
+    mutationFn: ({ siteId, historyId, siteType }) =>
+      deleteSiteHistory(siteId, historyId, siteType),
     onSuccess: (_, { siteId }) => {
       qc.invalidateQueries({ queryKey: siteKeys.history(siteId) });
     },
@@ -801,10 +894,36 @@ export function useBulkUpdateSites(
   });
 }
 
+export function commitBbmSites(payload: BbmSiteCommitPayload) {
+  return siteFetch<BbmSiteCommitResult>("/sites/bbm-import/commit", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function useCommitBbmSites(
+  options?: Partial<
+    UseMutationOptions<BbmSiteCommitResult, Error, BbmSiteCommitPayload>
+  >,
+) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: commitBbmSites,
+    onSuccess: (...args) => {
+      qc.invalidateQueries({ queryKey: siteKeys.all });
+      qc.invalidateQueries({ queryKey: kertasKerjaKeys.masters() });
+      qc.invalidateQueries({ queryKey: ["dashboard", "map-locations"] });
+      qc.invalidateQueries({ queryKey: ["bbm", "sites-summary"] });
+      options?.onSuccess?.(...args);
+    },
+    ...options,
+  });
+}
+
 export async function downloadSiteTemplate(): Promise<void> {
   const url = `${SITE_API_HOST}/sites/download-template`;
   const accessToken = getAccessToken();
-  
+
   const res = await fetch(url, {
     headers: {
       ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
@@ -819,10 +938,9 @@ export async function downloadSiteTemplate(): Promise<void> {
   const downloadUrl = window.URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = downloadUrl;
-  a.download = "Template_Site_BBM_Bulk.xlsx";
+  a.download = "Template_Site_BBM.xlsx";
   document.body.appendChild(a);
   a.click();
   a.remove();
   window.URL.revokeObjectURL(downloadUrl);
 }
-
