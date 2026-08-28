@@ -13,7 +13,7 @@ import {
   Tooltip,
 } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-import L, { LatLngTuple } from "leaflet";
+import L from "leaflet";
 import {
   Eye,
   EyeOff,
@@ -40,6 +40,7 @@ import { useRelations, useSites } from "@/hooks/service/site-api";
 import { useBbmMonthly } from "@/hooks/service/bbm-api";
 import { useKertasKerjaMaster } from "@/hooks/service/kertas-kerja-api";
 import { usePrivilege } from "@/hooks/usePrivilege";
+import { getValidMapPosition } from "@/lib/map-coordinate";
 
 interface LeafletIconPrototype {
   _getIconUrl?: () => string;
@@ -171,40 +172,6 @@ const buildIcons = (legend: MapLegend): Record<string, L.DivIcon> => {
     icons[st.type] = createCategoryIcon(catKey, st.color);
   });
   return icons;
-};
-
-// ---------------------------------------------------------------------------
-// Coordinate helpers
-// ---------------------------------------------------------------------------
-
-const parseCoordinate = (
-  value: string | number | null | undefined,
-  min: number,
-  max: number,
-): number | null => {
-  if (value == null) return null;
-
-  const normalized = String(value).trim().replace(",", ".");
-  if (!normalized) return null;
-
-  const coordinate = Number(normalized);
-  if (!Number.isFinite(coordinate) || coordinate < min || coordinate > max) {
-    return null;
-  }
-
-  return coordinate;
-};
-
-const getValidSitePosition = (
-  site: Pick<MapSite, "lat" | "lng">,
-): LatLngTuple | null => {
-  const lat = parseCoordinate(site.lat, -90, 90);
-  const lng = parseCoordinate(site.lng, -180, 180);
-
-  // Zero is currently used as a placeholder for coordinates that are not set.
-  if (lat == null || lng == null || lat === 0 || lng === 0) return null;
-
-  return [lat, lng];
 };
 
 // ---------------------------------------------------------------------------
@@ -612,7 +579,7 @@ export default function Map() {
       if (validIds && !validIds.has(site.id)) return false;
 
       // Leaflet throws when either coordinate is NaN, infinite, or out of range.
-      if (!getValidSitePosition(site)) return false;
+      if (!getValidMapPosition(site)) return false;
 
       if (bbmSitesSummary) {
         const summary = bbmSitesSummary.find((s) => s.id === site.id);
@@ -789,8 +756,8 @@ export default function Map() {
                   const target = getSiteById(pipe.targetSiteId);
                   if (!source || !target) return null;
 
-                  const sourcePosition = getValidSitePosition(source);
-                  const targetPosition = getValidSitePosition(target);
+                  const sourcePosition = getValidMapPosition(source);
+                  const targetPosition = getValidMapPosition(target);
                   if (!sourcePosition || !targetPosition) return null;
 
                   return (
@@ -819,7 +786,7 @@ export default function Map() {
 
               {/* SITE MARKERS */}
               {filteredSites.map((site) => {
-                const position = getValidSitePosition(site);
+                const position = getValidMapPosition(site);
                 if (!position) return null;
 
                 const catKey = getSiteCategoryKey(

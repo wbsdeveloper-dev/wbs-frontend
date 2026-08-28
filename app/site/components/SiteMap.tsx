@@ -10,7 +10,7 @@ import {
   Tooltip,
 } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-import L, { LatLngTuple } from "leaflet";
+import L from "leaflet";
 import {
   MapPin,
   Filter,
@@ -22,6 +22,7 @@ import {
   PowerOff,
 } from "lucide-react";
 import { getAccessToken } from "@/lib/auth";
+import { getValidMapPosition } from "@/lib/map-coordinate";
 
 type LeafletIconPrototype = {
   _getIconUrl?: () => string;
@@ -46,8 +47,8 @@ interface MapSite {
     | "TERMINAL"
     | "HANDOVER_POINT";
   commodity?: string | null;
-  lat: number;
-  lng: number;
+  lat: string | number | null;
+  lng: string | number | null;
   region: string;
   isEnabled: boolean;
 }
@@ -140,7 +141,10 @@ async function updateSiteStatus(
 
 // ── Category Helper & Icon Definitions ─────────────────────────────────────
 
-function getSiteCategoryKey(siteType: string, commodity?: string | null): string {
+function getSiteCategoryKey(
+  siteType: string,
+  commodity?: string | null,
+): string {
   if (siteType === "TRANSPORTIR") return "TRANSPORTIR";
   if (siteType === "TERMINAL") return "TERMINAL";
   if (siteType === "HANDOVER_POINT") return "HANDOVER_POINT";
@@ -158,7 +162,10 @@ function getSiteCategoryKey(siteType: string, commodity?: string | null): string
   return `${siteType}_GAS_PIPA`; // default for gas page
 }
 
-const CATEGORY_CONFIG: Record<string, { label: string; color: string; svg: string }> = {
+const CATEGORY_CONFIG: Record<
+  string,
+  { label: string; color: string; svg: string }
+> = {
   PEMBANGKIT_LNG: {
     label: "Pembangkit (LNG)",
     color: "#1581fb", // Vibrant Blue for LNG Pembangkit
@@ -307,6 +314,8 @@ export default function SiteMap() {
 
         if (selectedRegion && site.region !== selectedRegion) return false;
 
+        if (!getValidMapPosition(site)) return false;
+
         return true;
       });
   }, [
@@ -360,11 +369,13 @@ export default function SiteMap() {
   // Get site category info
   const getSiteCategoryInfo = (siteType: string, commodity?: string | null) => {
     const catKey = getSiteCategoryKey(siteType, commodity);
-    return CATEGORY_CONFIG[catKey] || {
-      label: siteType,
-      color: "#999999",
-      svg: "",
-    };
+    return (
+      CATEGORY_CONFIG[catKey] || {
+        label: siteType,
+        color: "#999999",
+        svg: "",
+      }
+    );
   };
 
   // Get pipe type label
@@ -451,11 +462,7 @@ export default function SiteMap() {
         >
           <Filter size={16} />
           <span>Filter</span>
-          {legendExpanded ? (
-            <ChevronUp size={16} />
-          ) : (
-            <ChevronDown size={16} />
-          )}
+          {legendExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
         </button>
       </div>
 
@@ -663,21 +670,16 @@ export default function SiteMap() {
 
               if (!sourceSite || !targetSite) return null;
 
+              const sourcePosition = getValidMapPosition(sourceSite);
+              const targetPosition = getValidMapPosition(targetSite);
+              if (!sourcePosition || !targetPosition) return null;
+
               const pipeColor = getPipeTypeColor(pipe.relationType);
 
               return (
                 <Polyline
                   key={pipe.id}
-                  positions={[
-                    [
-                      Number(sourceSite.lat),
-                      Number(sourceSite.lng),
-                    ] as LatLngTuple,
-                    [
-                      Number(targetSite.lat),
-                      Number(targetSite.lng),
-                    ] as LatLngTuple,
-                  ]}
+                  positions={[sourcePosition, targetPosition]}
                   color={pipeColor}
                   weight={3}
                   opacity={0.7}
@@ -697,18 +699,19 @@ export default function SiteMap() {
 
           {/* Site Markers */}
           {filteredSites.map((site) => {
+            const position = getValidMapPosition(site);
+            if (!position) return null;
+
             const catKey = getSiteCategoryKey(site.siteType, site.commodity);
             const info = getSiteCategoryInfo(site.siteType, site.commodity);
             const icon = createCustomIcon(catKey, info.color);
             const isUpdating = updatingSiteId === site.id;
-            const displayStatus = isUpdating
-              ? !site.isEnabled
-              : site.isEnabled;
+            const displayStatus = isUpdating ? !site.isEnabled : site.isEnabled;
 
             return (
               <Marker
                 key={site.id}
-                position={[Number(site.lat), Number(site.lng)] as LatLngTuple}
+                position={position}
                 icon={icon}
                 opacity={displayStatus ? 1 : 0.5}
               >
@@ -767,8 +770,7 @@ export default function SiteMap() {
                       <div className="flex justify-between">
                         <span className="text-gray-500">Koordinat:</span>
                         <span>
-                          {site.lat != null ? Number(site.lat).toFixed(4) : ""},{" "}
-                          {site.lng != null ? Number(site.lng).toFixed(4) : ""}
+                          {position[0].toFixed(4)}, {position[1].toFixed(4)}
                         </span>
                       </div>
                     </div>
