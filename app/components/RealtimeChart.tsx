@@ -938,7 +938,7 @@ export default function RealtimeChart({
     let actualStartStr = startDate || chartFlowData?.period?.start || new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
     let actualEndStr = endDate || chartFlowData?.period?.end || new Date().toISOString().split("T")[0];
 
-    if (chartFlowData?.granularity === "day") {
+    if (chartFlowData?.granularity === "day" || chartFlowData?.granularity === "month") {
       const today = new Date();
       const tzOffset = today.getTimezoneOffset() * 60000;
       const todayStr = new Date(today.getTime() - tzOffset).toISOString().split("T")[0];
