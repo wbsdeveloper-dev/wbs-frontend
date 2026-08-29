@@ -13,7 +13,7 @@ import {
   Tooltip,
 } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-import L, { LatLngTuple } from "leaflet";
+import L from "leaflet";
 import {
   Eye,
   EyeOff,
@@ -39,6 +39,7 @@ import {
 } from "@/hooks/service/dashboard-api";
 import { useRelations, useSites } from "@/hooks/service/site-api";
 import { usePrivilege } from "@/hooks/usePrivilege";
+import { getValidMapPosition } from "@/lib/map-coordinate";
 
 interface LeafletIconPrototype {
   _getIconUrl?: () => string;
@@ -627,6 +628,8 @@ export default function Map({ commodity }: { commodity?: string }) {
 
       if (validIds && !validIds.has(site.id)) return false;
 
+      if (!getValidMapPosition(site)) return false;
+
       if (site.siteType === "PEMBANGKIT" && site.owner) {
         if (!selectedOwners.has(site.owner)) return false;
       }
@@ -769,13 +772,14 @@ export default function Map({ commodity }: { commodity?: string }) {
                   const target = getSiteById(pipe.targetSiteId);
                   if (!source || !target) return null;
 
+                  const sourcePosition = getValidMapPosition(source);
+                  const targetPosition = getValidMapPosition(target);
+                  if (!sourcePosition || !targetPosition) return null;
+
                   return (
                     <Polyline
                       key={pipe.id}
-                      positions={[
-                        [Number(source.lat), Number(source.lng)] as LatLngTuple,
-                        [Number(target.lat), Number(target.lng)] as LatLngTuple,
-                      ]}
+                      positions={[sourcePosition, targetPosition]}
                       pathOptions={{
                         color: getPipeTypeColor(pipe.relationType),
                         weight: 3,
@@ -797,6 +801,9 @@ export default function Map({ commodity }: { commodity?: string }) {
 
               {/* SITE MARKERS */}
               {filteredSites.map((site) => {
+                const position = getValidMapPosition(site);
+                if (!position) return null;
+
                 const catKey = getSiteCategoryKey(
                   site.siteType,
                   site.commodity,
@@ -832,13 +839,7 @@ export default function Map({ commodity }: { commodity?: string }) {
                 const connected = getConnectedSites(site.id);
 
                 return (
-                  <Marker
-                    key={site.id}
-                    position={
-                      [Number(site.lat), Number(site.lng)] as LatLngTuple
-                    }
-                    icon={icon}
-                  >
+                  <Marker key={site.id} position={position} icon={icon}>
                     <Popup
                       keepInView
                       autoPan

@@ -66,6 +66,11 @@ function formatLocalISODate(date: Date) {
   return `${y}-${m}-${d}`;
 }
 
+function formatDisplayDate(date: string) {
+  const [year, month, day] = date.split("-");
+  return `${day}-${month}-${year}`;
+}
+
 // Helper to get current month date range
 function getCurrentMonthRange() {
   const now = new Date();
@@ -1430,7 +1435,8 @@ export default function Home() {
                     <div className="flex flex-wrap gap-1.5 mb-6 max-w-xl">
                       {graphicStart && graphicEnd && (
                         <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-700 border border-blue-100">
-                          Periode: {graphicStart} s/d {graphicEnd}
+                          Periode: {formatDisplayDate(graphicStart)} s/d{" "}
+                          {formatDisplayDate(graphicEnd)}
                         </span>
                       )}
                       {graphicRegion.length > 0 && (
@@ -1869,8 +1875,11 @@ export default function Home() {
                             newStart = formatLocalISODate(start);
                             newEnd = formatLocalISODate(now);
                           } else if (item.val === "1M") {
-                            const start = new Date(now);
-                            start.setDate(now.getDate() - 31);
+                            const start = new Date(
+                              now.getFullYear(),
+                              now.getMonth(),
+                              1,
+                            );
                             newStart = formatLocalISODate(start);
                             newEnd = formatLocalISODate(now);
                           } else if (item.val === "1Y") {

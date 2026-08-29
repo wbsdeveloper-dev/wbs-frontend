@@ -1,670 +1,882 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import {
-  X,
-  Upload,
-  CheckCircle2,
-  AlertTriangle,
+  AlertCircle,
   ArrowLeft,
+  CheckCircle2,
   Loader2,
   Save,
-  Check,
-  AlertCircle,
-  Plus
+  Upload,
+  X,
 } from "lucide-react";
 import * as XLSX from "xlsx";
-import { useSites, useBulkUpdateSites } from "@/hooks/service/site-api";
+import {
+  useCommitBbmSites,
+  useSites,
+  type BbmSiteCommitResult,
+  type Site,
+} from "@/hooks/service/site-api";
 import { useKertasKerjaMaster } from "@/hooks/service/kertas-kerja-api";
+import {
+  bbmReferenceKey,
+  getBbmSiteImportConflicts,
+  getPendingBbmReferences,
+  mergeBbmSiteImportRows,
+  normalizeImportText,
+  parseBbmSiteMatrix,
+  toBbmSiteCommitRows,
+  type ParsedBbmSiteRow,
+} from "./bbm-site-import";
 
 type Props = {
   setOpenModal: (value: boolean) => void;
   onSuccess?: () => void;
 };
 
-interface ParsedSiteRow {
-  id: string | null; // Null means new site
-  name: string;
-  site_type: "PEMBANGKIT" | "PEMASOK" | "TRANSPORTIR" | null;
-  region: string;
-  capacity: number | null;
-  capacity_mw: number | null;
-  is_enabled: boolean;
-  kit_id: string | null;
-  upk_id: string | null;
-  unit_id: string | null;
+type Step = "upload" | "match" | "confirm";
+const CREATE_VALUE = "__create__";
 
-  // Validation & UI
-  typeText: string;
-  statusText: string;
-  kitText: string;
-  upkText: string;
-  unitText: string;
-  isNew: boolean;
-  hasChanged: boolean;
-  errors: string[];
-  isValid: boolean;
-  originalSite?: any;
+function numberOrUndefined(value: string): number | undefined {
+  if (!value.trim()) return undefined;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : undefined;
 }
 
-export default function BulkUploadSiteModal({ setOpenModal, onSuccess }: Props) {
+function changedNumber(current: number | undefined, next: number | undefined) {
+  return next !== undefined && Number(current ?? 0) !== Number(next);
+}
+
+export default function BulkUploadSiteModal({
+  setOpenModal,
+  onSuccess,
+}: Props) {
+  const [step, setStep] = useState<Step>("upload");
   const [file, setFile] = useState<File | null>(null);
-  const [parsedRows, setParsedRows] = useState<ParsedSiteRow[]>([]);
-  const [step, setStep] = useState<"upload" | "preview">("upload");
+  const [compatibleSheets, setCompatibleSheets] = useState<string[]>([]);
+  const [selectedSheet, setSelectedSheet] = useState("");
+  const [rows, setRows] = useState<ParsedBbmSiteRow[]>([]);
+  const [confirmedReferenceKeys, setConfirmedReferenceKeys] = useState<
+    string[]
+  >([]);
   const [error, setError] = useState<string | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
   const [isParsing, setIsParsing] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
-
+  const [result, setResult] = useState<BbmSiteCommitResult | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
-  // Fetch all sites with commodity BBM for client-side diffing and lookup
-  const { data: dbSites = [] } = useSites({ commodity: ["BBM"] });
-  const bulkSaveMutation = useBulkUpdateSites();
 
-  // Fetch reference lists for resolution
-  const { data: jenisKits = [] } = useKertasKerjaMaster("master_jenis_kit");
-  const { data: upks = [] } = useKertasKerjaMaster("master_unit_pelaksana");
+  const { data: sites = [], isLoading: sitesLoading } = useSites({
+    commodity: ["BBM"],
+    includeDisabled: true,
+  });
+  const { data: regions = [] } = useKertasKerjaMaster("master_region", "BBM");
+  const { data: kits = [] } = useKertasKerjaMaster("master_jenis_kit", "BBM");
+  const { data: upks = [] } = useKertasKerjaMaster(
+    "master_unit_pelaksana",
+    "BBM",
+  );
   const { data: units = [] } = useKertasKerjaMaster("master_unit");
+  const commitMutation = useCommitBbmSites();
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      setFile(e.target.files[0]);
-      setError(null);
+  const updateRow = (key: string, patch: Partial<ParsedBbmSiteRow>) => {
+    setRows((current) =>
+      current.map((row) => (row.key === key ? { ...row, ...patch } : row)),
+    );
+  };
+
+  const getSite = (row: ParsedBbmSiteRow): Site | undefined =>
+    sites.find((site) => site.id === row.siteId);
+
+  const permanentErrors = (row: ParsedBbmSiteRow) =>
+    row.errors.filter(
+      (message) =>
+        !message.startsWith("Region ") &&
+        !message.startsWith("Jenis Kit ") &&
+        !message.startsWith("Unit Pelaksana ") &&
+        !message.startsWith('Unit "') &&
+        !message.startsWith("Tipe Site tidak sesuai"),
+    );
+
+  const isReferenceConfirmed = (
+    type: "REGION" | "KIT" | "UPK" | "UNIT",
+    name?: string,
+  ) =>
+    Boolean(
+      name && confirmedReferenceKeys.includes(bbmReferenceKey(type, name)),
+    );
+
+  const validationErrors = (row: ParsedBbmSiteRow): string[] => {
+    const messages = [...permanentErrors(row)];
+    const selected = getSite(row);
+    if (!row.siteType) messages.push("Tipe Site belum valid.");
+    if (row.mode === "existing" && !selected) {
+      messages.push("Pilih site existing atau pilih Buat Site Baru.");
     }
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      setFile(e.dataTransfer.files[0]);
-      setError(null);
-    }
-  };
-
-  const parseExcelNumber = (val: unknown): number | null => {
-    if (val === undefined || val === null) return null;
-    const s = String(val).trim();
     if (
-      s === "" ||
-      s === "-" ||
-      s === "#DIV/0!" ||
-      s === "#N/A" ||
-      s === "#VALUE!"
-    )
-      return null;
-    const num = parseFloat(s.replace(/,/g, ""));
-    return isNaN(num) ? null : num;
+      row.mode === "existing" &&
+      selected &&
+      row.siteType &&
+      selected.site_type !== row.siteType
+    ) {
+      messages.push("Site existing tidak sesuai dengan Tipe Site.");
+    }
+    if (row.mode === "create" && !row.createConfirmed) {
+      messages.push("Pembuatan site baru belum dikonfirmasi.");
+    }
+    if (row.newRegionName && !isReferenceConfirmed("REGION", row.newRegionName))
+      messages.push(`Konfirmasi pembuatan Region "${row.newRegionName}".`);
+    if (row.siteType === "PEMBANGKIT") {
+      if (row.newKitName && !isReferenceConfirmed("KIT", row.newKitName))
+        messages.push(`Konfirmasi pembuatan Jenis Kit "${row.newKitName}".`);
+      if (row.newUpkName && !isReferenceConfirmed("UPK", row.newUpkName))
+        messages.push(
+          `Konfirmasi pembuatan Unit Pelaksana "${row.newUpkName}".`,
+        );
+      if (row.newUnitName && !isReferenceConfirmed("UNIT", row.newUnitName))
+        messages.push(`Konfirmasi pembuatan Unit "${row.newUnitName}".`);
+    }
+    return [...new Set(messages)];
   };
 
-  const handleParseData = async () => {
+  const conflicts = useMemo(() => getBbmSiteImportConflicts(rows), [rows]);
+  const pendingReferences = useMemo(
+    () => getPendingBbmReferences(rows),
+    [rows],
+  );
+  const previewRows = useMemo(() => mergeBbmSiteImportRows(rows), [rows]);
+  const invalidCount = rows.filter(
+    (row) => validationErrors(row).length > 0 || conflicts.has(row.key),
+  ).length;
+  const canContinue = rows.length > 0 && invalidCount === 0;
+
+  const actionFor = (row: ParsedBbmSiteRow) => {
+    const createsReference = Boolean(
+      row.newRegionName || row.newKitName || row.newUpkName || row.newUnitName,
+    );
+    if (row.mode === "create")
+      return createsReference ? "Buat Site + Master" : "Buat Site";
+    const site = getSite(row);
+    if (!site) return "Belum cocok";
+    const changesSite =
+      site.name !== row.raw.name ||
+      (row.region !== undefined && site.region !== row.region) ||
+      (row.kitId !== undefined && site.kit_id !== row.kitId) ||
+      (row.upkId !== undefined && site.upk_id !== row.upkId) ||
+      (row.unitId !== undefined && site.unit_id !== row.unitId) ||
+      changedNumber(site.capacity, row.capacity) ||
+      changedNumber(site.capacity_mw, row.capacityMw) ||
+      (row.isEnabled !== undefined && site.is_enabled !== row.isEnabled);
+    if (changesSite && createsReference) return "Update Site + Master";
+    if (changesSite) return "Update Site";
+    return createsReference ? "Buat Master" : "Site sama";
+  };
+
+  const handleFileSelected = (nextFile: File | null) => {
+    setFile(nextFile);
+    setCompatibleSheets([]);
+    setSelectedSheet("");
+    setRows([]);
+    setConfirmedReferenceKeys([]);
+    setError(null);
+  };
+
+  const handleParse = async () => {
     if (!file) {
-      setError("Pilih file template untuk diunggah");
+      setError("Pilih file Excel terlebih dahulu.");
+      return;
+    }
+    if (sitesLoading) {
+      setError("Data site masih dimuat. Tunggu beberapa saat lalu coba lagi.");
       return;
     }
     setIsParsing(true);
     setError(null);
-
     try {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        try {
-          const data = e.target?.result;
-          if (!data) throw new Error("File empty");
-          const workbook = XLSX.read(data, { type: "array" });
-
-          const sheetName = workbook.SheetNames[0];
-          const worksheet = workbook.Sheets[sheetName];
-          if (!worksheet) throw new Error("Sheet data tidak ditemukan");
-
-          const jsonData = XLSX.utils.sheet_to_json<any[]>(worksheet, {
-            header: 1,
-            defval: null,
-          });
-
-          if (jsonData.length < 2) {
-            setError("Format file tidak sesuai (harus ada minimal baris header dan satu baris data).");
-            return;
-          }
-
-          // Header mapping
-          const headerRow = jsonData[0];
-          const colMap: Record<string, number> = {};
-          headerRow.forEach((cell: any, idx: number) => {
-            if (cell) {
-              const label = String(cell).toLowerCase().trim();
-              if (label === "id") colMap["id"] = idx;
-              else if (label.includes("nama site") || label.includes("pemasok") || label.includes("pembangkit")) colMap["name"] = idx;
-              else if (label.includes("tipe site") || label.includes("jenis site") || label.includes("tipe") || label === "jenis") colMap["site_type"] = idx;
-              else if (label.includes("region") || label.includes("lokasi")) colMap["region"] = idx;
-              else if (label.includes("jenis kit") || label.includes("kit")) colMap["kit"] = idx;
-              else if (label.includes("unit pelaksana") || label.includes("pelaksana") || label.includes("upk")) colMap["upk"] = idx;
-              else if (label.includes("unit")) colMap["unit"] = idx;
-              else if (label.includes("kapasitas (kl)") || label.includes("kapasitas kl")) colMap["capacity"] = idx;
-              else if (label.includes("kapasitas (mw)") || label.includes("kapasitas mw")) colMap["capacity_mw"] = idx;
-              else if (label.includes("status")) colMap["status"] = idx;
-            }
-          });
-
-          // Verify columns
-          const required = ["name", "site_type", "region"];
-          const missing = required.filter((key) => colMap[key] === undefined);
-          if (missing.length > 0) {
-            setError(`Kolom wajib tidak ditemukan: ${missing.map(m => m.toUpperCase()).join(", ")}`);
-            return;
-          }
-
-          const rows: ParsedSiteRow[] = [];
-          for (let rIdx = 1; rIdx < jsonData.length; rIdx++) {
-            const row = jsonData[rIdx];
-            if (!row || row.length === 0) continue;
-
-            if (row.every((cell) => cell === null || String(cell).trim() === "")) continue;
-
-            const idRaw = colMap["id"] !== undefined ? String(row[colMap["id"]] || "").trim() : "";
-            const nameRaw = String(row[colMap["name"]] || "").trim();
-            const typeRaw = String(row[colMap["site_type"]] || "").trim();
-            const regionRaw = String(row[colMap["region"]] || "").trim();
-            const kitRaw = colMap["kit"] !== undefined ? String(row[colMap["kit"]] || "").trim() : "";
-            const upkRaw = colMap["upk"] !== undefined ? String(row[colMap["upk"]] || "").trim() : "";
-            const unitRaw = colMap["unit"] !== undefined ? String(row[colMap["unit"]] || "").trim() : "";
-            const capacityRaw = colMap["capacity"] !== undefined ? parseExcelNumber(row[colMap["capacity"]]) : null;
-            const capacityMwRaw = colMap["capacity_mw"] !== undefined ? parseExcelNumber(row[colMap["capacity_mw"]]) : null;
-            const statusRaw = colMap["status"] !== undefined ? String(row[colMap["status"]] || "").toLowerCase().trim() : "aktif";
-
-            if (!nameRaw && !typeRaw && !regionRaw) continue;
-
-            // Map and validate site type
-            let mappedType: ParsedSiteRow["site_type"] = null;
-            const lowerType = typeRaw.toLowerCase();
-            if (lowerType.includes("pembangkit") || lowerType === "pembangkit") mappedType = "PEMBANGKIT";
-            else if (lowerType.includes("pemasok") || lowerType.includes("supplier") || lowerType === "pemasok") mappedType = "PEMASOK";
-            else if (lowerType.includes("transportir") || lowerType === "transportir") mappedType = "TRANSPORTIR";
-
-            // Map status
-            const isEnabled = statusRaw === "aktif" || statusRaw === "active" || statusRaw === "true" || statusRaw === "yes" || statusRaw === "1";
-
-            const errors: string[] = [];
-            if (!nameRaw) errors.push("Nama site tidak boleh kosong.");
-            if (!mappedType) errors.push(`Tipe site "${typeRaw || 'Empty'}" tidak valid (harus Pembangkit, Pemasok, atau Transportir).`);
-            if (!regionRaw) errors.push("Region tidak boleh kosong.");
-
-            // Resolve references
-            let kitId: string | null = null;
-            if (kitRaw) {
-              const matched = jenisKits.find((k: any) => k.name.toLowerCase().trim() === kitRaw.toLowerCase());
-              if (matched) kitId = matched.id;
-              else errors.push(`Jenis Kit "${kitRaw}" tidak ditemukan.`);
-            }
-
-            let upkId: string | null = null;
-            if (upkRaw) {
-              const matched = upks.find((u: any) => u.name.toLowerCase().trim() === upkRaw.toLowerCase());
-              if (matched) upkId = matched.id;
-              else errors.push(`Unit Pelaksana "${upkRaw}" tidak ditemukan.`);
-            }
-
-            let unitId: string | null = null;
-            if (unitRaw) {
-              const matched = units.find((u: any) => u.name.toLowerCase().trim() === unitRaw.toLowerCase());
-              if (matched) unitId = matched.id;
-              else errors.push(`Unit "${unitRaw}" tidak ditemukan.`);
-            }
-
-            // Diffing
-            let isNew = true;
-            let hasChanged = false;
-            let originalSite: any = undefined;
-
-            if (idRaw) {
-              isNew = false;
-              originalSite = dbSites.find((s) => s.id === idRaw);
-              if (!originalSite) {
-                errors.push(`ID "${idRaw}" tidak ditemukan di database.`);
-              } else {
-                // Check if values changed
-                const nameDiff = originalSite.name !== nameRaw;
-                const typeDiff = originalSite.site_type !== mappedType;
-                const regionDiff = originalSite.region !== regionRaw;
-                
-                const origCap = originalSite.capacity !== null ? Number(originalSite.capacity) : null;
-                const capacityDiff = origCap !== capacityRaw;
-
-                const origCapMw = originalSite.capacity_mw !== null ? Number(originalSite.capacity_mw) : null;
-                const capacityMwDiff = origCapMw !== capacityMwRaw;
-
-                const statusDiff = originalSite.is_enabled !== isEnabled;
-
-                const kitDiff = (originalSite.kit_id || "") !== (kitId || "");
-                const upkDiff = (originalSite.upk_id || "") !== (upkId || "");
-                const unitDiff = (originalSite.unit_id || "") !== (unitId || "");
-
-                hasChanged = nameDiff || typeDiff || regionDiff || capacityDiff || capacityMwDiff || statusDiff || kitDiff || upkDiff || unitDiff;
-              }
-            }
-
-            rows.push({
-              id: idRaw || null,
-              name: nameRaw,
-              site_type: mappedType,
-              region: regionRaw,
-              capacity: capacityRaw,
-              capacity_mw: capacityMwRaw,
-              is_enabled: isEnabled,
-              kit_id: kitId,
-              upk_id: upkId,
-              unit_id: unitId,
-
-              typeText: typeRaw,
-              statusText: statusRaw,
-              kitText: kitRaw,
-              upkText: upkRaw,
-              unitText: unitRaw,
-              isNew,
-              hasChanged,
-              errors,
-              isValid: errors.length === 0,
-              originalSite
-            });
-          }
-
-          if (rows.length === 0) {
-            setError("Tidak ada data site yang valid ditemukan. Cek isi file Anda.");
-            return;
-          }
-
-          setParsedRows(rows);
-          setStep("preview");
-        } catch (err: any) {
-          console.error(err);
-          setError("Gagal memproses file Excel: " + err.message);
-        } finally {
-          setIsParsing(false);
-        }
+      const workbook = XLSX.read(await file.arrayBuffer(), { type: "array" });
+      const parseSheet = (sheetName: string) => {
+        const worksheet = workbook.Sheets[sheetName];
+        if (!worksheet)
+          throw new Error(`Sheet "${sheetName}" tidak ditemukan.`);
+        const matrix = XLSX.utils.sheet_to_json<unknown[]>(worksheet, {
+          header: 1,
+          defval: null,
+          raw: true,
+        });
+        return parseBbmSiteMatrix(matrix, {
+          sites,
+          regions,
+          kits,
+          upks,
+          units,
+          sheetName,
+        });
       };
-      reader.readAsArrayBuffer(file);
-    } catch (err: any) {
-      console.error(err);
-      setError("Gagal membaca file: " + err.message);
+
+      let targetSheet = selectedSheet;
+      if (!targetSheet) {
+        let oldFormatError: Error | undefined;
+        const detected = workbook.SheetNames.filter((sheetName) => {
+          try {
+            return parseSheet(sheetName).length > 0;
+          } catch (caught) {
+            if (
+              caught instanceof Error &&
+              caught.message.includes("format pasangan lama")
+            ) {
+              oldFormatError = caught;
+            }
+            return false;
+          }
+        });
+        if (detected.length === 0) {
+          throw (
+            oldFormatError ??
+            new Error(
+              "Tidak ada sheet dengan kolom Nama Site dan Tipe Site yang dapat diproses.",
+            )
+          );
+        }
+        setCompatibleSheets(detected);
+        if (detected.length > 1) return;
+        [targetSheet] = detected;
+        setSelectedSheet(targetSheet);
+      }
+
+      const parsed = parseSheet(targetSheet);
+      if (!parsed.length)
+        throw new Error("Tidak ada baris site yang dapat diproses.");
+      setRows(parsed);
+      setStep("match");
+    } catch (caught) {
+      setError(
+        caught instanceof Error ? caught.message : "Gagal membaca Excel.",
+      );
+    } finally {
       setIsParsing(false);
     }
   };
 
-  const handleSaveToDatabase = async () => {
-    // We only update rows that are valid and have actually changed (or are new)
-    const validRows = parsedRows.filter((r) => r.isValid && (r.isNew || r.hasChanged));
-    if (validRows.length === 0) {
-      setError("Tidak ada perubahan atau data baru yang valid untuk disimpan.");
-      return;
-    }
-
-    setIsSaving(true);
+  const handleCommit = async () => {
+    if (!file || !canContinue) return;
     setError(null);
-
     try {
-      const payload = validRows.map((r) => ({
-        id: r.id,
-        name: r.name,
-        site_type: r.site_type,
-        region: r.region,
-        capacity: r.capacity,
-        capacity_mw: r.capacity_mw,
-        is_enabled: r.is_enabled,
-        kit_id: r.kit_id,
-        upk_id: r.upk_id,
-        unit_id: r.unit_id,
-        commodity: "BBM"
-      }));
-
-      await bulkSaveMutation.mutateAsync({ sites: payload });
-      setShowSuccess(true);
-      if (onSuccess) onSuccess();
-
-      setTimeout(() => {
-        setOpenModal(false);
-      }, 2000);
-    } catch (err: any) {
-      console.error(err);
-      setError(err.message || "Gagal menyimpan data ke database");
-    } finally {
-      setIsSaving(false);
+      const committed = await commitMutation.mutateAsync({
+        fileName: file.name,
+        confirmedReferences: pendingReferences
+          .filter((reference) => confirmedReferenceKeys.includes(reference.key))
+          .map((reference) => ({
+            type: reference.type,
+            name: reference.name,
+            confirmed: true as const,
+          })),
+        rows: toBbmSiteCommitRows(rows),
+      });
+      setResult(committed);
+      onSuccess?.();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Transaksi gagal.");
     }
   };
 
-  const removeFile = () => {
-    setFile(null);
-    setError(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-  };
-
-  const resetToUpload = () => {
-    setStep("upload");
-    setParsedRows([]);
-    setError(null);
-  };
-
-  const totalValidToSave = parsedRows.filter((r) => r.isValid && (r.isNew || r.hasChanged)).length;
-  const totalNoChanges = parsedRows.filter((r) => r.isValid && !r.isNew && !r.hasChanged).length;
-  const totalInvalid = parsedRows.filter((r) => !r.isValid).length;
+  const selectClass =
+    "w-full min-w-[150px] rounded-lg border border-gray-300 bg-white px-2 py-2 text-xs text-gray-800 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15";
+  const inputClass =
+    "w-full min-w-[120px] rounded-lg border border-gray-300 px-2 py-2 text-xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15";
 
   return (
-    <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fadeIn">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] flex flex-col overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+    <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+      <div className="flex max-h-[94vh] w-full max-w-[1450px] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+        <header className="flex items-start justify-between border-b bg-gray-50 px-6 py-4">
           <div>
             <h2 className="text-xl font-bold text-gray-900">
-              Bulk Update TBBM & Pembangkit (Site)
+              Update Multi Site BBM
             </h2>
-            <p className="text-sm text-gray-500 mt-1">
-              Edit nilai kapasitas, status, region, jenis kit, unit pelaksana, atau nama langsung pada Excel dan upload kembali.
+            <p className="mt-1 text-sm text-gray-500">
+              Tambah atau perbarui Pembangkit/TBBM tanpa membuat relasi.
             </p>
           </div>
           <button
             onClick={() => setOpenModal(false)}
-            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
+            className="rounded-lg p-2 hover:bg-gray-200"
           >
             <X size={20} />
           </button>
+        </header>
+
+        <div className="flex items-center justify-center gap-3 border-b px-6 py-3 text-xs font-semibold">
+          {(["upload", "match", "confirm"] as Step[]).map((item, index) => (
+            <React.Fragment key={item}>
+              <span
+                className={step === item ? "text-primary" : "text-gray-400"}
+              >
+                {index + 1}.{" "}
+                {item === "upload"
+                  ? "Upload"
+                  : item === "match"
+                    ? "Pencocokan"
+                    : "Konfirmasi"}
+              </span>
+              {index < 2 && <span className="h-px w-12 bg-gray-300" />}
+            </React.Fragment>
+          ))}
         </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <main className="overflow-y-auto p-6">
           {error && (
-            <div className="mb-6 flex gap-3 p-4 bg-red-50 text-red-700 rounded-xl border border-red-100 items-start">
-              <AlertTriangle size={20} className="shrink-0 mt-0.5" />
-              <div className="text-sm font-medium">{error}</div>
+            <div className="mb-4 flex gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+              <AlertCircle size={18} className="shrink-0" /> {error}
             </div>
           )}
 
-          {showSuccess && (
-            <div className="mb-6 flex gap-3 p-4 bg-green-50 text-green-700 rounded-xl border border-green-100 items-center">
-              <CheckCircle2 size={24} className="shrink-0 text-green-600 animate-bounce" />
-              <div className="font-semibold text-lg">
-                Berhasil memperbarui data site di database!
-              </div>
-            </div>
-          )}
-
-          {step === "upload" ? (
-            <div className="space-y-6">
-              <div
-                onDragOver={handleDragOver}
-                onDrop={handleDrop}
-                onClick={() => fileInputRef.current?.click()}
-                className={`border-2 border-dashed rounded-2xl p-10 flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ${
-                  file
-                    ? "border-primary bg-primary/5"
-                    : "border-gray-300 hover:border-primary hover:bg-gray-50"
-                }`}
-              >
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileChange}
-                  accept=".xlsx, .xls"
-                  className="hidden"
+          {result ? (
+            <div className="mx-auto max-w-xl py-10 text-center">
+              <CheckCircle2 size={64} className="mx-auto text-green-500" />
+              <h3 className="mt-4 text-xl font-bold">Import site berhasil</h3>
+              <div className="mt-6 grid grid-cols-2 gap-3 text-sm md:grid-cols-4">
+                <Summary
+                  label="Master dibuat"
+                  value={result.referencesCreated}
                 />
-                <div className="p-4 bg-gray-100 text-gray-600 rounded-full mb-4">
-                  <Upload size={32} />
-                </div>
-                {file ? (
-                  <div className="text-center">
-                    <p className="text-base font-semibold text-gray-900">
-                      {file.name}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {(file.size / 1024).toFixed(1)} KB
-                    </p>
-                  </div>
-                ) : (
-                  <div className="text-center">
-                    <p className="text-base font-semibold text-gray-700">
-                      Tarik & Letakkan file Excel pre-populated Anda di sini
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      atau klik untuk menjelajahi file (.xlsx, .xls)
-                    </p>
-                  </div>
+                <Summary label="Site dibuat" value={result.sitesCreated} />
+                <Summary label="Site diperbarui" value={result.sitesUpdated} />
+                <Summary label="Tidak berubah" value={result.sitesUnchanged} />
+              </div>
+              <button
+                onClick={() => setOpenModal(false)}
+                className="mt-7 rounded-lg bg-primary px-5 py-2.5 font-semibold text-white"
+              >
+                Tutup
+              </button>
+            </div>
+          ) : step === "upload" ? (
+            <div className="mx-auto max-w-3xl space-y-5">
+              <div
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  handleFileSelected(event.dataTransfer.files[0] ?? null);
+                }}
+                className="rounded-2xl border-2 border-dashed border-gray-300 p-10 text-center hover:border-primary"
+              >
+                <Upload size={42} className="mx-auto text-primary" />
+                <p className="mt-3 font-semibold">
+                  Tarik file Excel atau pilih file
+                </p>
+                <p className="mt-1 text-xs text-gray-500">
+                  Wajib memiliki kolom Nama Site dan Tipe Site.
+                </p>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".xlsx,.xls"
+                  className="hidden"
+                  onChange={(event) =>
+                    handleFileSelected(event.target.files?.[0] ?? null)
+                  }
+                />
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="mt-4 rounded-lg border px-4 py-2 text-sm font-semibold"
+                >
+                  Pilih File
+                </button>
+                {file && (
+                  <p className="mt-3 text-sm text-green-700">{file.name}</p>
                 )}
               </div>
 
-              {file && (
-                <div className="flex justify-end gap-3">
-                  <button
-                    onClick={removeFile}
-                    className="px-4 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors"
+              {compatibleSheets.length > 1 && (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+                  <label className="text-sm font-semibold">
+                    Pilih sheet data site
+                  </label>
+                  <select
+                    value={selectedSheet}
+                    onChange={(event) => setSelectedSheet(event.target.value)}
+                    className={`${selectClass} mt-2`}
                   >
-                    Hapus File
-                  </button>
-                  <button
-                    onClick={handleParseData}
-                    disabled={isParsing}
-                    className="flex items-center gap-2 px-5 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:brightness-90 transition-all active:scale-95 disabled:opacity-50"
-                  >
-                    {isParsing ? (
-                      <>
-                        <Loader2 size={16} className="animate-spin" />
-                        Memproses...
-                      </>
-                    ) : (
-                      "Lanjutkan ke Preview"
-                    )}
-                  </button>
+                    <option value="">Pilih sheet</option>
+                    {compatibleSheets.map((sheetName) => (
+                      <option key={sheetName}>{sheetName}</option>
+                    ))}
+                  </select>
                 </div>
               )}
+
+              <div className="flex justify-end">
+                <button
+                  disabled={
+                    !file ||
+                    isParsing ||
+                    (compatibleSheets.length > 1 && !selectedSheet)
+                  }
+                  onClick={handleParse}
+                  className="flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 font-semibold text-white disabled:opacity-50"
+                >
+                  {isParsing && <Loader2 size={16} className="animate-spin" />}
+                  Proses File
+                </button>
+              </div>
+            </div>
+          ) : step === "match" ? (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between text-sm">
+                <span>
+                  {rows.length} baris site · {invalidCount} perlu diselesaikan
+                </span>
+                <span className="font-semibold text-red-600">
+                  Relasi tidak diproses
+                </span>
+              </div>
+              {pendingReferences.length > 0 && (
+                <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
+                  <strong>Konfirmasi master baru</strong>
+                  <p className="mt-1 text-xs">
+                    Nilai berikut belum ada di daftar master. Centang setiap
+                    nilai yang disetujui untuk dibuat saat seluruh site
+                    disimpan.
+                  </p>
+                  <div className="mt-3 grid gap-2 md:grid-cols-2">
+                    {pendingReferences.map((reference) => (
+                      <label
+                        key={reference.key}
+                        className="flex items-start gap-2 rounded-lg border border-amber-200 bg-white p-3"
+                      >
+                        <input
+                          type="checkbox"
+                          className="mt-0.5"
+                          checked={confirmedReferenceKeys.includes(
+                            reference.key,
+                          )}
+                          onChange={(event) =>
+                            setConfirmedReferenceKeys((current) =>
+                              event.target.checked
+                                ? [...new Set([...current, reference.key])]
+                                : current.filter(
+                                    (key) => key !== reference.key,
+                                  ),
+                            )
+                          }
+                        />
+                        <span>
+                          Buat <strong>{reference.label}</strong>:{" "}
+                          {reference.name}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div className="max-h-[58vh] overflow-auto rounded-xl border">
+                <table className="min-w-[1600px] w-full text-xs">
+                  <thead className="sticky top-0 z-10 bg-gray-100 text-left text-gray-600">
+                    <tr>
+                      <Th>Baris / Error</Th>
+                      <Th>Nama Site</Th>
+                      <Th>Tipe Site</Th>
+                      <Th>Cocokkan Site</Th>
+                      <Th>Region</Th>
+                      <Th>Jenis Kit</Th>
+                      <Th>Unit Pelaksana</Th>
+                      <Th>Unit</Th>
+                      <Th>Kapasitas kL</Th>
+                      <Th>Kapasitas MW</Th>
+                      <Th>Status</Th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {rows.map((row) => {
+                      const messages = [
+                        ...validationErrors(row),
+                        ...(conflicts.get(row.key) ?? []),
+                      ];
+                      const eligibleSites = sites.filter(
+                        (site) => site.site_type === row.siteType,
+                      );
+                      return (
+                        <tr
+                          key={row.key}
+                          className={
+                            messages.length
+                              ? "bg-red-50/50 align-top"
+                              : "align-top"
+                          }
+                        >
+                          <td className="px-3 py-3">
+                            <strong>
+                              {row.sheetName ? `${row.sheetName} · ` : ""}#
+                              {row.rowNumber}
+                            </strong>
+                            {messages.map((message) => (
+                              <p
+                                key={message}
+                                className="mt-1 max-w-[230px] text-red-600"
+                              >
+                                {message}
+                              </p>
+                            ))}
+                          </td>
+                          <td className="px-3 py-3 font-semibold">
+                            {row.raw.name || "-"}
+                          </td>
+                          <td className="px-3 py-3">
+                            {row.siteType === "PEMBANGKIT"
+                              ? "Pembangkit"
+                              : row.siteType === "PEMASOK"
+                                ? "TBBM/Pemasok"
+                                : row.raw.siteType || "-"}
+                          </td>
+                          <td className="px-3 py-3">
+                            <select
+                              className={selectClass}
+                              value={
+                                row.mode === "create"
+                                  ? CREATE_VALUE
+                                  : row.siteId
+                              }
+                              onChange={(event) => {
+                                if (event.target.value === CREATE_VALUE) {
+                                  updateRow(row.key, {
+                                    mode: "create",
+                                    siteId: "",
+                                    createConfirmed: false,
+                                  });
+                                } else {
+                                  updateRow(row.key, {
+                                    mode: "existing",
+                                    siteId: event.target.value,
+                                    createConfirmed: false,
+                                  });
+                                }
+                              }}
+                            >
+                              <option value="">Pilih site</option>
+                              {eligibleSites.map((site) => (
+                                <option key={site.id} value={site.id}>
+                                  {site.name}
+                                  {!site.is_enabled ? " (nonaktif)" : ""}
+                                </option>
+                              ))}
+                              <option value={CREATE_VALUE}>
+                                + Buat Site Baru
+                              </option>
+                            </select>
+                            {row.mode === "create" && (
+                              <label className="mt-2 flex gap-2 text-[11px]">
+                                <input
+                                  type="checkbox"
+                                  checked={row.createConfirmed}
+                                  onChange={(event) =>
+                                    updateRow(row.key, {
+                                      createConfirmed: event.target.checked,
+                                    })
+                                  }
+                                />
+                                Konfirmasi buat site baru
+                              </label>
+                            )}
+                          </td>
+                          <td className="px-3 py-3">
+                            <select
+                              className={selectClass}
+                              value={
+                                row.newRegionName
+                                  ? CREATE_VALUE
+                                  : (row.region ?? "")
+                              }
+                              onChange={(event) => {
+                                if (event.target.value === CREATE_VALUE) {
+                                  updateRow(row.key, {
+                                    region: row.raw.region,
+                                    newRegionName: row.raw.region,
+                                  });
+                                } else {
+                                  updateRow(row.key, {
+                                    region: event.target.value || undefined,
+                                    newRegionName: undefined,
+                                  });
+                                }
+                              }}
+                            >
+                              <option value="">Tidak update</option>
+                              {regions.map((item) => (
+                                <option key={item.id} value={item.name}>
+                                  {item.name}
+                                </option>
+                              ))}
+                              {row.raw.region &&
+                                !regions.some(
+                                  (item) =>
+                                    normalizeImportText(item.name) ===
+                                    normalizeImportText(row.raw.region),
+                                ) && (
+                                  <option value={CREATE_VALUE}>
+                                    + Buat baru: {row.raw.region}
+                                  </option>
+                                )}
+                            </select>
+                          </td>
+                          <ReferenceCell
+                            disabled={row.siteType !== "PEMBANGKIT"}
+                            value={row.kitId}
+                            newName={row.newKitName}
+                            rawName={row.raw.kit}
+                            items={kits}
+                            onChange={(value, newName) =>
+                              updateRow(row.key, {
+                                kitId: value,
+                                newKitName: newName,
+                              })
+                            }
+                          />
+                          <ReferenceCell
+                            disabled={row.siteType !== "PEMBANGKIT"}
+                            value={row.upkId}
+                            newName={row.newUpkName}
+                            rawName={row.raw.upk}
+                            items={upks}
+                            onChange={(value, newName) =>
+                              updateRow(row.key, {
+                                upkId: value,
+                                newUpkName: newName,
+                              })
+                            }
+                          />
+                          <ReferenceCell
+                            disabled={row.siteType !== "PEMBANGKIT"}
+                            value={row.unitId}
+                            newName={row.newUnitName}
+                            rawName={row.raw.unit}
+                            items={units}
+                            onChange={(value, newName) =>
+                              updateRow(row.key, {
+                                unitId: value,
+                                newUnitName: newName,
+                              })
+                            }
+                          />
+                          <td className="px-3 py-3">
+                            <input
+                              disabled={row.siteType !== "PEMBANGKIT"}
+                              className={inputClass}
+                              type="number"
+                              min="0"
+                              value={row.capacity ?? ""}
+                              placeholder="Tidak update"
+                              onChange={(event) =>
+                                updateRow(row.key, {
+                                  capacity: numberOrUndefined(
+                                    event.target.value,
+                                  ),
+                                })
+                              }
+                            />
+                          </td>
+                          <td className="px-3 py-3">
+                            <input
+                              disabled={row.siteType !== "PEMBANGKIT"}
+                              className={inputClass}
+                              type="number"
+                              min="0"
+                              value={row.capacityMw ?? ""}
+                              placeholder="Tidak update"
+                              onChange={(event) =>
+                                updateRow(row.key, {
+                                  capacityMw: numberOrUndefined(
+                                    event.target.value,
+                                  ),
+                                })
+                              }
+                            />
+                          </td>
+                          <td className="px-3 py-3">
+                            <select
+                              className={selectClass}
+                              value={
+                                row.isEnabled === undefined
+                                  ? ""
+                                  : row.isEnabled
+                                    ? "true"
+                                    : "false"
+                              }
+                              onChange={(event) =>
+                                updateRow(row.key, {
+                                  isEnabled:
+                                    event.target.value === ""
+                                      ? undefined
+                                      : event.target.value === "true",
+                                })
+                              }
+                            >
+                              <option value="">Tidak update</option>
+                              <option value="true">Aktif</option>
+                              <option value="false">Tidak Aktif</option>
+                            </select>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <div className="flex justify-between">
+                <button
+                  onClick={() => setStep("upload")}
+                  className="flex items-center gap-2 rounded-lg border px-4 py-2"
+                >
+                  <ArrowLeft size={16} /> Kembali
+                </button>
+                <button
+                  disabled={!canContinue}
+                  onClick={() => setStep("confirm")}
+                  className="rounded-lg bg-primary px-5 py-2.5 font-semibold text-white disabled:opacity-50"
+                >
+                  Tinjau Konfirmasi
+                </button>
+              </div>
             </div>
           ) : (
-            <div className="space-y-6">
-              {/* Validation Summary Info */}
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 bg-blue-50/50 border border-blue-100 rounded-2xl">
-                <div className="space-y-1">
-                  <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
-                    <AlertCircle size={16} className="text-blue-500" />
-                    Preview Perubahan Site
-                  </h3>
-                  <p className="text-xs text-gray-600">
-                    Nilai yang berubah atau baris baru akan disimpan. Baris yang memiliki error tidak akan disimpan.
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <span className="inline-flex items-center px-3 py-1 bg-green-50 border border-green-200 text-green-700 text-xs font-semibold rounded-full">
-                    {totalValidToSave} Perubahan / Baru
-                  </span>
-                  <span className="inline-flex items-center px-3 py-1 bg-gray-50 border border-gray-200 text-gray-600 text-xs font-semibold rounded-full">
-                    {totalNoChanges} Tidak Berubah
-                  </span>
-                  {totalInvalid > 0 && (
-                    <span className="inline-flex items-center px-3 py-1 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-full">
-                      {totalInvalid} Error (Dilewati)
-                    </span>
-                  )}
-                </div>
+            <div className="space-y-5">
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                <strong>Konfirmasi transaksi site_dim</strong>
+                <p className="mt-1 text-xs">
+                  Semua site diproses atomik. Tidak ada relasi TBBM–Pembangkit
+                  yang dibuat atau diperbarui.
+                </p>
               </div>
-
-              {/* Table Preview */}
-              <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-                <div className="overflow-x-auto max-h-[400px]">
-                  <table className="w-full text-xs text-left">
-                    <thead className="bg-gray-50 border-b border-gray-200 sticky top-0">
-                      <tr>
-                        <th className="px-4 py-3 font-semibold text-gray-700 w-12 text-center">No</th>
-                        <th className="px-4 py-3 font-semibold text-gray-700">Tipe Aksi</th>
-                        <th className="px-4 py-3 font-semibold text-gray-700">Nama Site</th>
-                        <th className="px-4 py-3 font-semibold text-gray-700">Tipe Site</th>
-                        <th className="px-4 py-3 font-semibold text-gray-700">Region</th>
-                        <th className="px-4 py-3 font-semibold text-gray-700">Jenis Kit</th>
-                        <th className="px-4 py-3 font-semibold text-gray-700">Unit Pelaksana</th>
-                        <th className="px-4 py-3 font-semibold text-gray-700">Unit</th>
-                        <th className="px-4 py-3 font-semibold text-gray-700 text-center">Kapasitas (kL)</th>
-                        <th className="px-4 py-3 font-semibold text-gray-700 text-center">Kapasitas (MW)</th>
-                        <th className="px-4 py-3 font-semibold text-gray-700 text-center">Status</th>
+              <div className="max-h-[56vh] overflow-auto rounded-xl border">
+                <table className="w-full min-w-[1000px] text-xs">
+                  <thead className="sticky top-0 bg-gray-100 text-left">
+                    <tr>
+                      <Th>Baris</Th>
+                      <Th>Nama</Th>
+                      <Th>Jenis</Th>
+                      <Th>Atribut</Th>
+                      <Th>Aksi</Th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {previewRows.map((row) => (
+                      <tr key={row.key} className="align-top">
+                        <td className="px-3 py-3 font-bold">
+                          {row.sheetName ? `${row.sheetName} · ` : ""}#
+                          {row.rowNumber}
+                        </td>
+                        <td className="px-3 py-3">
+                          <strong>{row.raw.name}</strong>
+                          <p className="text-gray-500">
+                            {row.mode === "existing"
+                              ? getSite(row)?.name
+                              : "Site baru"}
+                          </p>
+                        </td>
+                        <td className="px-3 py-3">
+                          {row.siteType === "PEMBANGKIT"
+                            ? "Pembangkit"
+                            : "TBBM/Pemasok"}
+                        </td>
+                        <td className="px-3 py-3 text-gray-700">
+                          Region: {row.region ?? "tidak update"}
+                          {row.newRegionName ? " (master baru)" : ""}
+                          <br />
+                          Kit/UPK/Unit:{" "}
+                          {row.newKitName ??
+                            (row.kitId ? "dipilih" : "-")} /{" "}
+                          {row.newUpkName ?? (row.upkId ? "dipilih" : "-")} /{" "}
+                          {row.newUnitName ?? (row.unitId ? "dipilih" : "-")}
+                          <br />
+                          kL: {row.capacity ?? "tidak update"}; MW:{" "}
+                          {row.capacityMw ?? "tidak update"}
+                        </td>
+                        <td className="px-3 py-3">
+                          <span className="rounded-full bg-blue-100 px-2.5 py-1 font-semibold text-blue-700">
+                            {actionFor(row)}
+                          </span>
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                      {parsedRows.map((row, index) => {
-                        const orig = row.originalSite;
-                        const origCap = orig?.capacity !== null && orig?.capacity !== undefined ? Number(orig.capacity) : null;
-                        const origCapMw = orig?.capacity_mw !== null && orig?.capacity_mw !== undefined ? Number(orig.capacity_mw) : null;
-
-                        const nameChanged = orig && orig.name !== row.name;
-                        const typeChanged = orig && orig.site_type !== row.site_type;
-                        const regionChanged = orig && orig.region !== row.region;
-                        const capacityChanged = orig && origCap !== row.capacity;
-                        const capacityMwChanged = orig && origCapMw !== row.capacity_mw;
-                        const statusChanged = orig && orig.is_enabled !== row.is_enabled;
-
-                        const origKitName = orig ? (jenisKits.find((k: any) => k.id === orig.kit_id)?.name || "") : "";
-                        const kitChanged = orig && origKitName !== row.kitText;
-
-                        const origUpkName = orig ? (upks.find((u: any) => u.id === orig.upk_id)?.name || "") : "";
-                        const upkChanged = orig && origUpkName !== row.upkText;
-
-                        const origUnitName = orig ? (units.find((u: any) => u.id === orig.unit_id)?.name || "") : "";
-                        const unitChanged = orig && origUnitName !== row.unitText;
-
-                        return (
-                          <tr
-                            key={index}
-                            className={`hover:bg-gray-50/50 transition-colors ${
-                              !row.isValid
-                                ? "bg-red-50/30"
-                                : row.isNew
-                                ? "bg-green-50/20"
-                                : row.hasChanged
-                                ? "bg-amber-50/20"
-                                : ""
-                            }`}
-                          >
-                            <td className="px-4 py-3 text-center font-medium text-gray-500">
-                              {index + 1}
-                            </td>
-                            <td className="px-4 py-3">
-                              {!row.isValid ? (
-                                <span title={row.errors.join(", ")} className="inline-flex items-center gap-1 text-red-700 bg-red-50 border border-red-150 px-2 py-0.5 rounded-full font-bold text-[10px]">
-                                  <AlertCircle size={10} />
-                                  Error
-                                </span>
-                              ) : row.isNew ? (
-                                <span className="inline-flex items-center gap-1 text-green-700 bg-green-50 border border-green-150 px-2 py-0.5 rounded-full font-bold text-[10px]">
-                                  <Plus size={10} />
-                                  Baru
-                                </span>
-                              ) : row.hasChanged ? (
-                                <span className="inline-flex items-center gap-1 text-amber-700 bg-amber-50 border border-amber-150 px-2 py-0.5 rounded-full font-bold text-[10px]">
-                                  Update
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-1 text-gray-500 bg-gray-50 border border-gray-150 px-2 py-0.5 rounded-full text-[10px]">
-                                  Sama
-                                </span>
-                              )}
-                            </td>
-                            <td className="px-4 py-3">
-                              <span className={nameChanged ? "text-amber-800 font-bold bg-amber-100/50 px-1 rounded" : "text-gray-900"}>
-                                {row.name}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3">
-                              <span className={typeChanged ? "text-amber-800 font-bold bg-amber-100/50 px-1 rounded" : "text-gray-700"}>
-                                {row.site_type === "PEMBANGKIT" ? "Pembangkit" : row.site_type === "PEMASOK" ? "Pemasok" : row.site_type === "TRANSPORTIR" ? "Transportir" : row.typeText}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3">
-                              <span className={regionChanged ? "text-amber-800 font-bold bg-amber-100/50 px-1 rounded" : "text-gray-700"}>
-                                {row.region}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3">
-                              <span className={kitChanged ? "text-amber-800 font-bold bg-amber-100/50 px-1 rounded" : "text-gray-700"}>
-                                {row.kitText || "-"}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3">
-                              <span className={upkChanged ? "text-amber-800 font-bold bg-amber-100/50 px-1 rounded" : "text-gray-700"}>
-                                {row.upkText || "-"}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3">
-                              <span className={unitChanged ? "text-amber-800 font-bold bg-amber-100/50 px-1 rounded" : "text-gray-700"}>
-                                {row.unitText || "-"}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3 text-center">
-                              <span className={capacityChanged ? "text-amber-800 font-bold bg-amber-100/50 px-1 rounded" : "text-gray-700"}>
-                                {row.capacity !== null ? `${row.capacity} kL` : "-"}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3 text-center">
-                              <span className={capacityMwChanged ? "text-amber-800 font-bold bg-amber-100/50 px-1 rounded" : "text-gray-700"}>
-                                {row.capacity_mw !== null ? `${row.capacity_mw} MW` : "-"}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3 text-center">
-                              <span
-                                className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-semibold ${
-                                  statusChanged ? "bg-amber-100 border border-amber-300 text-amber-850" :
-                                  row.is_enabled
-                                    ? "bg-green-55 text-green-700"
-                                    : "bg-gray-100 text-gray-600"
-                                }`}
-                              >
-                                {row.is_enabled ? "Aktif" : "Tidak Aktif"}
-                              </span>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-
-              {/* Actions */}
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between">
                 <button
-                  onClick={resetToUpload}
-                  className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors"
+                  onClick={() => setStep("match")}
+                  className="flex items-center gap-2 rounded-lg border px-4 py-2"
                 >
-                  <ArrowLeft size={16} />
-                  Kembali
+                  <ArrowLeft size={16} /> Kembali
                 </button>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setOpenModal(false)}
-                    className="px-4 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors"
-                  >
-                    Batal
-                  </button>
-                  <button
-                    onClick={handleSaveToDatabase}
-                    disabled={isSaving || totalValidToSave === 0}
-                    className="flex items-center gap-2 px-5 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:brightness-90 transition-all active:scale-95 disabled:opacity-50"
-                  >
-                    {isSaving ? (
-                      <>
-                        <Loader2 size={16} className="animate-spin" />
-                        Menyimpan...
-                      </>
-                    ) : (
-                      <>
-                        <Save size={16} />
-                        Simpan ke Database ({totalValidToSave})
-                      </>
-                    )}
-                  </button>
-                </div>
+                <button
+                  disabled={commitMutation.isPending}
+                  onClick={handleCommit}
+                  className="flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 font-semibold text-white disabled:opacity-50"
+                >
+                  {commitMutation.isPending ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <Save size={16} />
+                  )}{" "}
+                  Simpan Semua Site
+                </button>
               </div>
             </div>
           )}
-        </div>
+        </main>
       </div>
     </div>
+  );
+}
+
+function Th({ children }: { children: React.ReactNode }) {
+  return <th className="px-3 py-3 font-semibold">{children}</th>;
+}
+
+function Summary({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-xl bg-gray-50 p-4">
+      <strong className="block text-xl">{value}</strong>
+      {label}
+    </div>
+  );
+}
+
+function ReferenceCell({
+  value,
+  newName,
+  rawName,
+  items,
+  disabled,
+  onChange,
+}: {
+  value: string | undefined;
+  newName: string | undefined;
+  rawName: string;
+  items: Array<{ id: string; name: string }>;
+  disabled: boolean;
+  onChange: (value: string | undefined, newName: string | undefined) => void;
+}) {
+  return (
+    <td className="px-3 py-3">
+      <select
+        disabled={disabled}
+        value={newName ? CREATE_VALUE : (value ?? "")}
+        onChange={(event) =>
+          event.target.value === CREATE_VALUE
+            ? onChange(undefined, rawName)
+            : onChange(event.target.value || undefined, undefined)
+        }
+        className="w-full min-w-[150px] rounded-lg border border-gray-300 bg-white px-2 py-2 text-xs disabled:bg-gray-100"
+      >
+        <option value="">Tidak update</option>
+        {items.map((item) => (
+          <option key={item.id} value={item.id}>
+            {item.name}
+          </option>
+        ))}
+        {rawName &&
+          !items.some(
+            (item) =>
+              normalizeImportText(item.name) === normalizeImportText(rawName),
+          ) && <option value={CREATE_VALUE}>+ Buat baru: {rawName}</option>}
+      </select>
+    </td>
   );
 }

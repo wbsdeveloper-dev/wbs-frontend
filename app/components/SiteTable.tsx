@@ -1055,6 +1055,9 @@ export function RelasiOperasionalTable({
                   Komoditas
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  Moda Angkutan
+                </th>
+                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   Status
                 </th>
                 {hasAction && (
@@ -1068,7 +1071,7 @@ export function RelasiOperasionalTable({
               {isLoading ? (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={7}
                     className="px-4 py-8 text-center text-gray-500"
                   >
                     Memuat data...
@@ -1077,7 +1080,7 @@ export function RelasiOperasionalTable({
               ) : paginatedRelations.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={7}
                     className="px-4 py-8 text-center text-gray-500"
                   >
                     {debouncedSearch
@@ -1102,6 +1105,9 @@ export function RelasiOperasionalTable({
                     </td>
                     <td className="px-4 py-3 text-center text-gray-700">
                       {relation.commodity}
+                    </td>
+                    <td className="px-4 py-3 text-center text-gray-700">
+                      {relation.transport_mode || "-"}
                     </td>
                     <td className="px-4 py-3 text-center">
                       <StatusBadge
