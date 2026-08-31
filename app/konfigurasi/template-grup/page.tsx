@@ -116,7 +116,7 @@ export default function TemplateGrupPage() {
   const router = useRouter();
   const { hasPrivilege } = usePrivilege();
   const { isLoading: isAuthLoading } = useAuth();
-  
+
   const canRead = hasPrivilege("template_group", "READ");
   const canCreate = hasPrivilege("template_group", "CREATE");
 
@@ -136,7 +136,8 @@ export default function TemplateGrupPage() {
     "WA_GROUP" | "SPREADSHEET_SOURCE" | "EMAIL_INGEST"
   >("WA_GROUP");
   const [newTemplateDecimal, setNewTemplateDecimal] = useState<string>(",");
-  const [newTemplateCommodity, setNewTemplateCommodity] = useState<string>("GAS PIPA");
+  const [newTemplateCommodity, setNewTemplateCommodity] =
+    useState<string>("GAS PIPA");
 
   const [isTestModalOpen, setIsTestModalOpen] = useState(false);
   const [testGroupId, setTestGroupId] = useState("");
@@ -145,6 +146,7 @@ export default function TemplateGrupPage() {
     allowed: boolean;
     groupConfigId: string | null;
     template: RoutingTestTemplatePreview | null;
+    templates: RoutingTestTemplatePreview[];
   } | null>(null);
 
   // ---------------------------------------------------------------------------
@@ -172,7 +174,8 @@ export default function TemplateGrupPage() {
   const { data: botGroups = [] } = useBotGroups(BOT_PRIMARY_API);
 
   // Fetch real spreadsheet sources from API
-  const { data: spreadsheetSourcesRaw = [] } = useSpreadsheetSources("GAS PIPA,LNG");
+  const { data: spreadsheetSourcesRaw = [] } =
+    useSpreadsheetSources("GAS PIPA,LNG");
   const spreadsheetSources = useMemo(() => {
     return spreadsheetSourcesRaw.filter(
       (s) => s.commodity === "GAS PIPA" || s.commodity === "LNG",
@@ -203,7 +206,7 @@ export default function TemplateGrupPage() {
   // Filter templates client-side to strictly show GAS PIPA and LNG templates
   const filteredTemplates = useMemo(() => {
     return templates.filter(
-      (t) => t.commodity === "GAS PIPA" || t.commodity === "LNG"
+      (t) => t.commodity === "GAS PIPA" || t.commodity === "LNG",
     );
   }, [templates]);
 
@@ -850,36 +853,54 @@ export default function TemplateGrupPage() {
                     Akses ditolak. Group ini dinonaktifkan atau belum disync.
                   </p>
                 </div>
-              ) : testResult.template ? (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-medium text-gray-500 w-24">
-                      Template:
-                    </span>
-                    <span className="text-sm font-medium text-primary">
-                      {testResult.template.name}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-medium text-gray-500 w-24">
-                      Parser Mode:
-                    </span>
-                    <span className="text-sm text-gray-700">
-                      {testResult.template.parserMode}
-                    </span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <span className="text-xs font-medium text-gray-500 w-24 pt-0.5">
-                      Penjelasan:
-                    </span>
-                    <span className="text-sm text-gray-700 flex-1">
-                      {testResult.groupConfigId
-                        ? "Dipilih karena group ini secara eksplisit terhubung dengan template ini (Priority 1)."
-                        : testResult.template.waKeywordHint
-                          ? "Dipilih karena pesan mengandung keyword yang cocok dengan global template (Priority 2)."
-                          : "Dipilih sebagai template default fallback karena tidak ada match spesifik (Priority 3)."}
-                    </span>
-                  </div>
+              ) : !!(testResult.templates?.length || testResult.template) ? (
+                <div className="space-y-3">
+                  <p className="text-sm text-gray-700">
+                    Pesan akan diproses oleh{" "}
+                    <strong>
+                      {testResult.templates?.length || 1} template
+                    </strong>
+                    {testResult.templates?.length > 1
+                      ? " secara independen."
+                      : "."}
+                  </p>
+                  {(testResult.templates?.length
+                    ? testResult.templates
+                    : testResult.template
+                      ? [testResult.template]
+                      : []
+                  ).map((template, index) => (
+                    <div
+                      key={template.id}
+                      className="rounded-lg border border-gray-200 bg-white p-3 space-y-1.5"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-sm font-medium text-primary">
+                          {index + 1}. {template.name}
+                        </span>
+                        {template.commodity && (
+                          <span className="rounded bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700">
+                            {template.commodity}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-600">
+                        Parser: {template.parserMode}
+                        {template.matchedKeyword
+                          ? ` • Keyword: “${template.matchedKeyword}”`
+                          : " • Fallback tanpa keyword"}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {template.reason === "GROUP_KEYWORD"
+                          ? "Keyword cocok pada template yang terhubung ke group (Priority 1)."
+                          : template.reason === "GROUP_CATCH_ALL"
+                            ? "Catch-all template pada group (Priority 1)."
+                            : template.reason === "GLOBAL_KEYWORD"
+                              ? "Keyword cocok pada template global (Priority 2)."
+                              : "Template default global (Priority 3)."}
+                      </p>
+                    </div>
+                  ))}
                 </div>
               ) : (
                 <div className="text-sm text-amber-600 flex items-start gap-2">
