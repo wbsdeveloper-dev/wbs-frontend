@@ -99,18 +99,18 @@ export default function PieChartDetailModal({
         "id-ID",
         {
           day: "numeric",
-          month: "short",
+          month: "long",
           year: "numeric",
         },
       );
       const end = new Date(endDate + "T00:00:00").toLocaleDateString("id-ID", {
         day: "numeric",
-        month: "short",
+        month: "long",
         year: "numeric",
       });
-      return `${start} - ${end}`;
+      return start === end ? start : `${start} - ${end}`;
     } catch {
-      return `${startDate} - ${endDate}`;
+      return startDate === endDate ? startDate : `${startDate} - ${endDate}`;
     }
   })();
 

@@ -144,7 +144,10 @@ export interface Template {
   scope: "WA_GROUP" | "SPREADSHEET_SOURCE" | "EMAIL_INGEST";
   status: "DRAFT" | "ACTIVE" | "DEPRECATED";
   parserMode: "RULE_BASED" | "AI_ASSISTED";
-  emailExtractionTarget?: "BODY_TEXT" | "ATTACHMENT_SINGLE" | "ATTACHMENT_MULTI_STREAM";
+  emailExtractionTarget?:
+    | "BODY_TEXT"
+    | "ATTACHMENT_SINGLE"
+    | "ATTACHMENT_MULTI_STREAM";
   requiresOcr?: boolean;
   streamConfiguration?: any;
   sourceLinks: SourceLink[];
@@ -171,7 +174,10 @@ export interface CreateTemplatePayload {
   name: string;
   scope: "WA_GROUP" | "SPREADSHEET_SOURCE" | "EMAIL_INGEST";
   parserMode?: "RULE_BASED" | "AI_ASSISTED";
-  emailExtractionTarget?: "BODY_TEXT" | "ATTACHMENT_SINGLE" | "ATTACHMENT_MULTI_STREAM";
+  emailExtractionTarget?:
+    | "BODY_TEXT"
+    | "ATTACHMENT_SINGLE"
+    | "ATTACHMENT_MULTI_STREAM";
   requiresOcr?: boolean;
   streamConfiguration?: any;
   sourceLinks?: SourceLink[];
@@ -201,7 +207,10 @@ export interface UpdateTemplatePayload {
   name?: string;
   scope?: "WA_GROUP" | "SPREADSHEET_SOURCE" | "EMAIL_INGEST";
   parserMode?: "RULE_BASED" | "AI_ASSISTED";
-  emailExtractionTarget?: "BODY_TEXT" | "ATTACHMENT_SINGLE" | "ATTACHMENT_MULTI_STREAM";
+  emailExtractionTarget?:
+    | "BODY_TEXT"
+    | "ATTACHMENT_SINGLE"
+    | "ATTACHMENT_MULTI_STREAM";
   requiresOcr?: boolean;
   streamConfiguration?: any;
   isDefault?: boolean;
@@ -245,12 +254,23 @@ export interface RoutingTestTemplatePreview {
   name: string;
   parserMode: string;
   waKeywordHint?: string | null;
+  commodity?: string | null;
+  matchedKeyword?: string | null;
+  reason?:
+    | "GROUP_KEYWORD"
+    | "GROUP_CATCH_ALL"
+    | "GLOBAL_KEYWORD"
+    | "GLOBAL_DEFAULT";
+  priority?: 1 | 2 | 3;
 }
 
 export interface RoutingTestResponse {
   allowed: boolean;
   groupConfigId: string | null;
+  /** Primary match retained for backwards compatibility. */
   template: RoutingTestTemplatePreview | null;
+  /** Every template that will independently process the message. */
+  templates: RoutingTestTemplatePreview[];
 }
 
 // ---------------------------------------------------------------------------
@@ -431,7 +451,11 @@ export interface TestTemplateParseResult {
   };
 }
 
-export function testTemplateParse(payload: { inboxId: string; template: any; fields: any[] }) {
+export function testTemplateParse(payload: {
+  inboxId: string;
+  template: any;
+  fields: any[];
+}) {
   return configFetch<TestTemplateParseResult>(`/config/templates/test-parse`, {
     method: "POST",
     body: JSON.stringify(payload),
@@ -712,7 +736,9 @@ export function useAiModels(options?: Partial<UseQueryOptions<AiModel[]>>) {
 
 export function getSpreadsheetSources(commodity?: string) {
   const query = commodity ? `?commodity=${encodeURIComponent(commodity)}` : "";
-  return configFetch<SpreadsheetSource[]>(`/config/spreadsheet-sources${query}`);
+  return configFetch<SpreadsheetSource[]>(
+    `/config/spreadsheet-sources${query}`,
+  );
 }
 
 export function getSpreadsheetSource(id: string) {
@@ -1090,7 +1116,10 @@ export interface EmailInboxRecord {
 }
 
 export function useGetEmailInbox(
-  options?: Omit<UseQueryOptions<EmailInboxRecord[], Error>, "queryKey" | "queryFn">,
+  options?: Omit<
+    UseQueryOptions<EmailInboxRecord[], Error>,
+    "queryKey" | "queryFn"
+  >,
 ) {
   return useQuery<EmailInboxRecord[], Error>({
     queryKey: ["email-inbox"],
@@ -1099,7 +1128,10 @@ export function useGetEmailInbox(
   });
 }
 
-export async function downloadEmailAttachment(storageRef: string, fileName: string) {
+export async function downloadEmailAttachment(
+  storageRef: string,
+  fileName: string,
+) {
   const accessToken = getAccessToken();
   const url = `${CONFIG_API_HOST}/config/email-inbox/attachment/download?storageRef=${encodeURIComponent(storageRef)}&fileName=${encodeURIComponent(fileName)}`;
 
@@ -1129,7 +1161,10 @@ export async function downloadEmailAttachment(storageRef: string, fileName: stri
   windowUrl.revokeObjectURL(blobUrl);
 }
 
-export async function previewEmailAttachment(storageRef: string, fileName: string) {
+export async function previewEmailAttachment(
+  storageRef: string,
+  fileName: string,
+) {
   const accessToken = getAccessToken();
   const url = `${CONFIG_API_HOST}/config/email-inbox/attachment/download?storageRef=${encodeURIComponent(storageRef)}&fileName=${encodeURIComponent(fileName)}`;
 
@@ -1146,28 +1181,34 @@ export async function previewEmailAttachment(storageRef: string, fileName: strin
 
   const blob = await res.blob();
   const windowUrl = window.URL || window.webkitURL;
-  
+
   // Set accurate mime type for standard files so browser previews them
   let mimeType = blob.type;
   if (fileName.toLowerCase().endsWith(".pdf")) {
     mimeType = "application/pdf";
   } else if (fileName.toLowerCase().endsWith(".png")) {
     mimeType = "image/png";
-  } else if (fileName.toLowerCase().endsWith(".jpg") || fileName.toLowerCase().endsWith(".jpeg")) {
+  } else if (
+    fileName.toLowerCase().endsWith(".jpg") ||
+    fileName.toLowerCase().endsWith(".jpeg")
+  ) {
     mimeType = "image/jpeg";
   } else if (fileName.toLowerCase().endsWith(".txt")) {
     mimeType = "text/plain";
   }
-  
+
   const previewBlob = new Blob([blob], { type: mimeType });
   const blobUrl = windowUrl.createObjectURL(previewBlob);
   window.open(blobUrl, "_blank");
 }
 
 export async function deleteEmailInbox(id: string): Promise<void> {
-  await configFetch<{ id: string; deleted: boolean }>(`/config/email-inbox/${id}`, {
-    method: "DELETE",
-  });
+  await configFetch<{ id: string; deleted: boolean }>(
+    `/config/email-inbox/${id}`,
+    {
+      method: "DELETE",
+    },
+  );
 }
 
 export function useDeleteEmailInbox() {
@@ -1181,10 +1222,13 @@ export function useDeleteEmailInbox() {
 }
 
 export async function deleteEmailInboxBulk(ids: string[]): Promise<void> {
-  await configFetch<{ deletedCount: number }>("/config/email-inbox/bulk-delete", {
-    method: "POST",
-    body: JSON.stringify({ ids }),
-  });
+  await configFetch<{ deletedCount: number }>(
+    "/config/email-inbox/bulk-delete",
+    {
+      method: "POST",
+      body: JSON.stringify({ ids }),
+    },
+  );
 }
 
 export function useDeleteEmailInboxBulk() {
@@ -1196,4 +1240,3 @@ export function useDeleteEmailInboxBulk() {
     },
   });
 }
-

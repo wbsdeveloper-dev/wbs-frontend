@@ -146,6 +146,7 @@ export default function TemplateGrupPage() {
     allowed: boolean;
     groupConfigId: string | null;
     template: RoutingTestTemplatePreview | null;
+    templates: RoutingTestTemplatePreview[];
   } | null>(null);
 
   // ---------------------------------------------------------------------------
@@ -419,12 +420,13 @@ export default function TemplateGrupPage() {
       {/* Notification Toast */}
       {notification && (
         <div
-          className={`fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg animate-slideIn ${notification.type === "success"
-            ? "bg-green-50 text-green-800 border border-green-200"
-            : notification.type === "error"
-              ? "bg-red-50 text-red-800 border border-red-200"
-              : "bg-blue-50 text-blue-800 border border-blue-200"
-            }`}
+          className={`fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg animate-slideIn ${
+            notification.type === "success"
+              ? "bg-green-50 text-green-800 border border-green-200"
+              : notification.type === "error"
+                ? "bg-red-50 text-red-800 border border-red-200"
+                : "bg-blue-50 text-blue-800 border border-blue-200"
+          }`}
         >
           {notification.type === "success" && <CheckCircle size={18} />}
           {notification.type === "error" && <AlertCircle size={18} />}
@@ -535,10 +537,11 @@ export default function TemplateGrupPage() {
             <button
               key={tab.key}
               onClick={() => setScopeFilter(tab.key)}
-              className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap ${scopeFilter === tab.key
-                ? "bg-primary text-white shadow-sm"
-                : "text-gray-600 hover:bg-gray-100"
-                }`}
+              className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap ${
+                scopeFilter === tab.key
+                  ? "bg-primary text-white shadow-sm"
+                  : "text-gray-600 hover:bg-gray-100"
+              }`}
             >
               {tab.icon}
               {tab.label}
@@ -584,9 +587,9 @@ export default function TemplateGrupPage() {
 
         {/* Right Panel - Template Editor (70%) or split with Email Panel */}
         {scopeFilter === "EMAIL_INGEST" &&
-          selectedTemplate?.sourceLinks?.some(
-            (l) => l.sourceType === "EMAIL_INGEST",
-          ) ? (
+        selectedTemplate?.sourceLinks?.some(
+          (l) => l.sourceType === "EMAIL_INGEST",
+        ) ? (
           <>
             {/* Editor (50%) */}
             <div className="lg:col-span-4">
@@ -691,9 +694,9 @@ export default function TemplateGrupPage() {
                 onChange={(e) =>
                   setNewTemplateScope(
                     e.target.value as
-                    | "WA_GROUP"
-                    | "SPREADSHEET_SOURCE"
-                    | "EMAIL_INGEST",
+                      | "WA_GROUP"
+                      | "SPREADSHEET_SOURCE"
+                      | "EMAIL_INGEST",
                   )
                 }
                 className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white cursor-pointer pr-10"
@@ -845,36 +848,54 @@ export default function TemplateGrupPage() {
                     Akses ditolak. Group ini dinonaktifkan atau belum disync.
                   </p>
                 </div>
-              ) : testResult.template ? (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-medium text-gray-500 w-24">
-                      Template:
-                    </span>
-                    <span className="text-sm font-medium text-primary">
-                      {testResult.template.name}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-medium text-gray-500 w-24">
-                      Parser Mode:
-                    </span>
-                    <span className="text-sm text-gray-700">
-                      {testResult.template.parserMode}
-                    </span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <span className="text-xs font-medium text-gray-500 w-24 pt-0.5">
-                      Penjelasan:
-                    </span>
-                    <span className="text-sm text-gray-700 flex-1">
-                      {testResult.groupConfigId
-                        ? "Dipilih karena group ini secara eksplisit terhubung dengan template ini (Priority 1)."
-                        : testResult.template.waKeywordHint
-                          ? "Dipilih karena pesan mengandung keyword yang cocok dengan global template (Priority 2)."
-                          : "Dipilih sebagai template default fallback karena tidak ada match spesifik (Priority 3)."}
-                    </span>
-                  </div>
+              ) : !!(testResult.templates?.length || testResult.template) ? (
+                <div className="space-y-3">
+                  <p className="text-sm text-gray-700">
+                    Pesan akan diproses oleh{" "}
+                    <strong>
+                      {testResult.templates?.length || 1} template
+                    </strong>
+                    {testResult.templates?.length > 1
+                      ? " secara independen."
+                      : "."}
+                  </p>
+                  {(testResult.templates?.length
+                    ? testResult.templates
+                    : testResult.template
+                      ? [testResult.template]
+                      : []
+                  ).map((template, index) => (
+                    <div
+                      key={template.id}
+                      className="rounded-lg border border-gray-200 bg-white p-3 space-y-1.5"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-sm font-medium text-primary">
+                          {index + 1}. {template.name}
+                        </span>
+                        {template.commodity && (
+                          <span className="rounded bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700">
+                            {template.commodity}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-600">
+                        Parser: {template.parserMode}
+                        {template.matchedKeyword
+                          ? ` • Keyword: “${template.matchedKeyword}”`
+                          : " • Fallback tanpa keyword"}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {template.reason === "GROUP_KEYWORD"
+                          ? "Keyword cocok pada template yang terhubung ke group (Priority 1)."
+                          : template.reason === "GROUP_CATCH_ALL"
+                            ? "Catch-all template pada group (Priority 1)."
+                            : template.reason === "GLOBAL_KEYWORD"
+                              ? "Keyword cocok pada template global (Priority 2)."
+                              : "Template default global (Priority 3)."}
+                      </p>
+                    </div>
+                  ))}
                 </div>
               ) : (
                 <div className="text-sm text-amber-600 flex items-start gap-2">
