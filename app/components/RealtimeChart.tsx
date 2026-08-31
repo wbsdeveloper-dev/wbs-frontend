@@ -935,8 +935,25 @@ export default function RealtimeChart({
       onDateRangeChange?.(startDate, endDate);
     }
 
-    const dateStart = startDate ? new Date(startDate) : new Date();
-    const dateEnd = endDate ? new Date(endDate) : new Date();
+    let actualStartStr = startDate || chartFlowData?.period?.start || new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+    let actualEndStr = endDate || chartFlowData?.period?.end || new Date().toISOString().split("T")[0];
+
+    if (chartFlowData?.granularity === "day" || chartFlowData?.granularity === "month") {
+      const today = new Date();
+      const tzOffset = today.getTimezoneOffset() * 60000;
+      const todayStr = new Date(today.getTime() - tzOffset).toISOString().split("T")[0];
+      
+      if (actualEndStr >= todayStr) {
+        const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+        actualEndStr = new Date(yesterday.getTime() - tzOffset).toISOString().split("T")[0];
+      }
+      if (actualStartStr > actualEndStr) {
+        actualStartStr = actualEndStr;
+      }
+    }
+
+    const dateStart = new Date(actualStartStr);
+    const dateEnd = new Date(actualEndStr);
 
     const formattedStartDate = new Intl.DateTimeFormat("id-ID", {
       day: "2-digit",
@@ -952,7 +969,7 @@ export default function RealtimeChart({
 
     setFormattedStartDate(formattedStartDate);
     setFormattedEndDate(formattedEndDate);
-  }, [startDate, endDate, onDateRangeChange]);
+  }, [startDate, endDate, chartFlowData?.period?.start, chartFlowData?.period?.end, chartFlowData?.granularity, onDateRangeChange]);
 
   const regionOptions = useMemo(
     () => [
@@ -1066,7 +1083,41 @@ export default function RealtimeChart({
       return { name: series.name, lookup };
     });
 
-    return sortedTimestamps.map((rawTs) => {
+    // For hourly data, find the index of the latest update hour (last hour with volume > 0)
+    let lastValidIndex = sortedTimestamps.length - 1;
+    if (chartFlowData.granularity === "hour") {
+      let foundData = false;
+      for (let i = sortedTimestamps.length - 1; i >= 0; i--) {
+        const ts = sortedTimestamps[i];
+        let hasData = false;
+        seriesLookups.forEach(({ lookup }) => {
+          const data = lookup.get(ts);
+          if (data && data.value > 0) {
+            hasData = true;
+          }
+        });
+        if (hasData) {
+          lastValidIndex = i;
+          foundData = true;
+          break;
+        }
+      }
+      if (!foundData) {
+        lastValidIndex = sortedTimestamps.length - 1;
+      }
+    }
+
+    let finalTimestamps = sortedTimestamps;
+    if (chartFlowData.granularity === "hour") {
+      finalTimestamps = sortedTimestamps.slice(0, lastValidIndex + 1);
+    } else if (chartFlowData.granularity === "day") {
+      const today = new Date();
+      const tzOffset = today.getTimezoneOffset() * 60000;
+      const todayStr = new Date(today.getTime() - tzOffset).toISOString().split("T")[0];
+      finalTimestamps = sortedTimestamps.filter((ts) => ts < todayStr);
+    }
+
+    return finalTimestamps.map((rawTs, index) => {
       let label = formatTimestamp(rawTs);
       let monthStr = "";
       let yearStr = "";
@@ -1083,13 +1134,18 @@ export default function RealtimeChart({
 
       const values: Record<string, number> = {};
       const flowrates: Record<string, number> = {};
-      seriesLookups.forEach(({ name, lookup }) => {
-        const data = lookup.get(rawTs);
-        if (data !== undefined) {
-          values[name] = data.value;
-          flowrates[name] = data.flowrate;
-        }
-      });
+      
+      // Only include values if not hourly, or if index is within valid range
+      if (chartFlowData.granularity !== "hour" || index <= lastValidIndex) {
+        seriesLookups.forEach(({ name, lookup }) => {
+          const data = lookup.get(rawTs);
+          if (data !== undefined) {
+            values[name] = data.value;
+            flowrates[name] = data.flowrate;
+          }
+        });
+      }
+
       return {
         label,
         values,
@@ -1194,7 +1250,7 @@ export default function RealtimeChart({
     }
 
     const padding = (domainMax - domainMin) * 0.12 || 5;
-    return [Math.floor(domainMin - padding), Math.ceil(domainMax + padding)];
+    return [0, Math.ceil(domainMax + padding)];
   }, [chartData]);
 
   // Determine dynamic chart height — taller for more series

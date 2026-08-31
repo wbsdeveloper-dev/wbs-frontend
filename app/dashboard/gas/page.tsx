@@ -43,15 +43,28 @@ function getCurrentMonthRange() {
   };
 }
 
-// Helper to get date range from 2 days ago to today
-function getTwoDaysAgoRange() {
-  const now = new Date();
-  const start = new Date();
-  start.setDate(now.getDate() - 2);
+// Helper to get yesterday date range
+function getYesterdayRange() {
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const formatted = yesterday.toISOString().split("T")[0];
   return {
-    startDate: start.toISOString().split("T")[0],
-    endDate: now.toISOString().split("T")[0],
+    startDate: formatted,
+    endDate: formatted,
   };
+}
+
+// Helper to get day difference
+function getDaysDifference(start: string, end: string) {
+  try {
+    const startDate = new Date(start + "T00:00:00");
+    const endDate = new Date(end + "T00:00:00");
+    const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+    return diffDays || 1;
+  } catch {
+    return 1;
+  }
 }
 
 export default function GasDashboard() {
@@ -72,12 +85,12 @@ export default function GasDashboard() {
 
   const todayDate = useMemo(() => new Date().toISOString().split("T")[0], []);
   const { startDate, endDate } = useMemo(() => getCurrentMonthRange(), []);
-  const { startDate: twoDaysAgoStart, endDate: twoDaysAgoEnd } = useMemo(
-    () => getTwoDaysAgoRange(),
+  const { startDate: yesterdayStart, endDate: yesterdayEnd } = useMemo(
+    () => getYesterdayRange(),
     []
   );
-  const [distributionStartDate, setDistributionStartDate] = useState(twoDaysAgoStart);
-  const [distributionEndDate, setDistributionEndDate] = useState(twoDaysAgoEnd);
+  const [distributionStartDate, setDistributionStartDate] = useState(yesterdayStart);
+  const [distributionEndDate, setDistributionEndDate] = useState(yesterdayEnd);
   const [startDateFilter, setStartDateFilter] = useState<string | null>(
     todayDate,
   );
@@ -112,32 +125,32 @@ export default function GasDashboard() {
   );
 
   // Top suppliers/plants date filters
-  const [topSuppliersStart, setTopSuppliersStart] = useState(twoDaysAgoStart);
-  const [topSuppliersEnd, setTopSuppliersEnd] = useState(twoDaysAgoEnd);
-  const [topPlantsStart, setTopPlantsStart] = useState(twoDaysAgoStart);
-  const [topPlantsEnd, setTopPlantsEnd] = useState(twoDaysAgoEnd);
+  const [topSuppliersStart, setTopSuppliersStart] = useState(yesterdayStart);
+  const [topSuppliersEnd, setTopSuppliersEnd] = useState(yesterdayEnd);
+  const [topPlantsStart, setTopPlantsStart] = useState(yesterdayStart);
+  const [topPlantsEnd, setTopPlantsEnd] = useState(yesterdayEnd);
 
   // Top LNG suppliers/plants date filters
-  const [topLngSuppliersStart, setTopLngSuppliersStart] = useState(twoDaysAgoStart);
-  const [topLngSuppliersEnd, setTopLngSuppliersEnd] = useState(twoDaysAgoEnd);
-  const [topLngPlantsStart, setTopLngPlantsStart] = useState(twoDaysAgoStart);
-  const [topLngPlantsEnd, setTopLngPlantsEnd] = useState(twoDaysAgoEnd);
+  const [topLngSuppliersStart, setTopLngSuppliersStart] = useState(yesterdayStart);
+  const [topLngSuppliersEnd, setTopLngSuppliersEnd] = useState(yesterdayEnd);
+  const [topLngPlantsStart, setTopLngPlantsStart] = useState(yesterdayStart);
+  const [topLngPlantsEnd, setTopLngPlantsEnd] = useState(yesterdayEnd);
 
   const formattedTopSuppliersPeriod = useMemo(() => {
     try {
       const start = new Date(topSuppliersStart + "T00:00:00").toLocaleDateString("id-ID", {
         day: "numeric",
-        month: "short",
+        month: "long",
         year: "numeric",
       });
       const end = new Date(topSuppliersEnd + "T00:00:00").toLocaleDateString("id-ID", {
         day: "numeric",
-        month: "short",
+        month: "long",
         year: "numeric",
       });
-      return `${start} - ${end}`;
+      return start === end ? start : `${start} - ${end}`;
     } catch {
-      return `${topSuppliersStart} - ${topSuppliersEnd}`;
+      return topSuppliersStart === topSuppliersEnd ? topSuppliersStart : `${topSuppliersStart} - ${topSuppliersEnd}`;
     }
   }, [topSuppliersStart, topSuppliersEnd]);
 
@@ -145,17 +158,17 @@ export default function GasDashboard() {
     try {
       const start = new Date(topPlantsStart + "T00:00:00").toLocaleDateString("id-ID", {
         day: "numeric",
-        month: "short",
+        month: "long",
         year: "numeric",
       });
       const end = new Date(topPlantsEnd + "T00:00:00").toLocaleDateString("id-ID", {
         day: "numeric",
-        month: "short",
+        month: "long",
         year: "numeric",
       });
-      return `${start} - ${end}`;
+      return start === end ? start : `${start} - ${end}`;
     } catch {
-      return `${topPlantsStart} - ${topPlantsEnd}`;
+      return topPlantsStart === topPlantsEnd ? topPlantsStart : `${topPlantsStart} - ${topPlantsEnd}`;
     }
   }, [topPlantsStart, topPlantsEnd]);
 
@@ -163,17 +176,17 @@ export default function GasDashboard() {
     try {
       const start = new Date(topLngSuppliersStart + "T00:00:00").toLocaleDateString("id-ID", {
         day: "numeric",
-        month: "short",
+        month: "long",
         year: "numeric",
       });
       const end = new Date(topLngSuppliersEnd + "T00:00:00").toLocaleDateString("id-ID", {
         day: "numeric",
-        month: "short",
+        month: "long",
         year: "numeric",
       });
-      return `${start} - ${end}`;
+      return start === end ? start : `${start} - ${end}`;
     } catch {
-      return `${topLngSuppliersStart} - ${topLngSuppliersEnd}`;
+      return topLngSuppliersStart === topLngSuppliersEnd ? topLngSuppliersStart : `${topLngSuppliersStart} - ${topLngSuppliersEnd}`;
     }
   }, [topLngSuppliersStart, topLngSuppliersEnd]);
 
@@ -181,17 +194,17 @@ export default function GasDashboard() {
     try {
       const start = new Date(topLngPlantsStart + "T00:00:00").toLocaleDateString("id-ID", {
         day: "numeric",
-        month: "short",
+        month: "long",
         year: "numeric",
       });
       const end = new Date(topLngPlantsEnd + "T00:00:00").toLocaleDateString("id-ID", {
         day: "numeric",
-        month: "short",
+        month: "long",
         year: "numeric",
       });
-      return `${start} - ${end}`;
+      return start === end ? start : `${start} - ${end}`;
     } catch {
-      return `${topLngPlantsStart} - ${topLngPlantsEnd}`;
+      return topLngPlantsStart === topLngPlantsEnd ? topLngPlantsStart : `${topLngPlantsStart} - ${topLngPlantsEnd}`;
     }
   }, [topLngPlantsStart, topLngPlantsEnd]);
 
@@ -413,39 +426,43 @@ export default function GasDashboard() {
 
   const topPemasokList = useMemo(() => {
     if (!topSuppliersData?.items) return [];
+    const days = getDaysDifference(topSuppliersStart, topSuppliersEnd);
     return topSuppliersData.items.map(
       (item: { name: string; value: number }) => ({
         name: item.name,
-        volume: `${item.value.toFixed(1)}`,
+        volume: `${(item.value / days).toFixed(1)}`,
       }),
     );
-  }, [topSuppliersData]);
+  }, [topSuppliersData, topSuppliersStart, topSuppliersEnd]);
 
   const topPembangkitList = useMemo(() => {
     if (!topPlantsData?.items) return [];
+    const days = getDaysDifference(topPlantsStart, topPlantsEnd);
     return topPlantsData.items.map((item: { name: string; value: number }) => ({
       name: item.name,
-      volume: `${item.value.toFixed(2)}`,
+      volume: `${(item.value / days).toFixed(2)}`,
     }));
-  }, [topPlantsData]);
+  }, [topPlantsData, topPlantsStart, topPlantsEnd]);
 
   const topLngPemasokList = useMemo(() => {
     if (!topLngSuppliersData?.items) return [];
+    const days = getDaysDifference(topLngSuppliersStart, topLngSuppliersEnd);
     return topLngSuppliersData.items.map(
       (item: { name: string; value: number }) => ({
         name: item.name,
-        volume: `${item.value.toFixed(1)}`,
+        volume: `${(item.value / days).toFixed(1)}`,
       }),
     );
-  }, [topLngSuppliersData]);
+  }, [topLngSuppliersData, topLngSuppliersStart, topLngSuppliersEnd]);
 
   const topLngPembangkitList = useMemo(() => {
     if (!topLngPlantsData?.items) return [];
+    const days = getDaysDifference(topLngPlantsStart, topLngPlantsEnd);
     return topLngPlantsData.items.map((item: { name: string; value: number }) => ({
       name: item.name,
-      volume: `${item.value.toFixed(2)}`,
+      volume: `${(item.value / days).toFixed(2)}`,
     }));
-  }, [topLngPlantsData]);
+  }, [topLngPlantsData, topLngPlantsStart, topLngPlantsEnd]);
 
   if (isAuthLoading || !canRead) {
     return (
