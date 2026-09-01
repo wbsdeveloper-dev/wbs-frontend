@@ -930,28 +930,36 @@ export default function RealtimeChart({
     year: "numeric",
   }).format(today);
 
-  useEffect(() => {
-    if (startDate && endDate) {
-      onDateRangeChange?.(startDate, endDate);
-    }
+  const { actualStartStr, actualEndStr } = useMemo(() => {
+    let startStr = startDate || chartFlowData?.period?.start || new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+    let endStr = endDate || chartFlowData?.period?.end || new Date().toISOString().split("T")[0];
 
-    let actualStartStr = startDate || chartFlowData?.period?.start || new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
-    let actualEndStr = endDate || chartFlowData?.period?.end || new Date().toISOString().split("T")[0];
+    const hasExplicitDateFilter = !!startDate || !!endDate;
 
-    if (chartFlowData?.granularity === "day" || chartFlowData?.granularity === "month") {
+    if (!hasExplicitDateFilter && (chartFlowData?.granularity === "day" || chartFlowData?.granularity === "month")) {
       const today = new Date();
       const tzOffset = today.getTimezoneOffset() * 60000;
       const todayStr = new Date(today.getTime() - tzOffset).toISOString().split("T")[0];
       
-      if (actualEndStr >= todayStr) {
+      if (endStr >= todayStr) {
         const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
-        actualEndStr = new Date(yesterday.getTime() - tzOffset).toISOString().split("T")[0];
+        endStr = new Date(yesterday.getTime() - tzOffset).toISOString().split("T")[0];
       }
-      if (actualStartStr > actualEndStr) {
-        actualStartStr = actualEndStr;
+      if (startStr > endStr) {
+        startStr = endStr;
       }
     }
+    
+    return { actualStartStr: startStr, actualEndStr: endStr };
+  }, [startDate, endDate, chartFlowData?.period?.start, chartFlowData?.period?.end, chartFlowData?.granularity]);
 
+  useEffect(() => {
+    if (startDate && endDate) {
+      onDateRangeChange?.(startDate, endDate);
+    }
+  }, [startDate, endDate, onDateRangeChange]);
+
+  useEffect(() => {
     const dateStart = new Date(actualStartStr);
     const dateEnd = new Date(actualEndStr);
 
@@ -969,7 +977,7 @@ export default function RealtimeChart({
 
     setFormattedStartDate(formattedStartDate);
     setFormattedEndDate(formattedEndDate);
-  }, [startDate, endDate, chartFlowData?.period?.start, chartFlowData?.period?.end, chartFlowData?.granularity, onDateRangeChange]);
+  }, [actualStartStr, actualEndStr]);
 
   const regionOptions = useMemo(
     () => [
@@ -1110,11 +1118,19 @@ export default function RealtimeChart({
     let finalTimestamps = sortedTimestamps;
     if (chartFlowData.granularity === "hour") {
       finalTimestamps = sortedTimestamps.slice(0, lastValidIndex + 1);
-    } else if (chartFlowData.granularity === "day") {
-      const today = new Date();
-      const tzOffset = today.getTimezoneOffset() * 60000;
-      const todayStr = new Date(today.getTime() - tzOffset).toISOString().split("T")[0];
-      finalTimestamps = sortedTimestamps.filter((ts) => ts < todayStr);
+    } else {
+      let startCmp = actualStartStr;
+      let endCmp = actualEndStr;
+      
+      if (chartFlowData.granularity === "month") {
+        startCmp = actualStartStr.slice(0, 7);
+        endCmp = actualEndStr.slice(0, 7);
+      } else if (chartFlowData.granularity === "year") {
+        startCmp = actualStartStr.slice(0, 4);
+        endCmp = actualEndStr.slice(0, 4);
+      }
+      
+      finalTimestamps = sortedTimestamps.filter((ts) => ts >= startCmp && ts <= endCmp);
     }
 
     return finalTimestamps.map((rawTs, index) => {
