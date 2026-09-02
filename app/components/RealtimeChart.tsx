@@ -940,7 +940,7 @@ export default function RealtimeChart({
       const today = new Date();
       const tzOffset = today.getTimezoneOffset() * 60000;
       const todayStr = new Date(today.getTime() - tzOffset).toISOString().split("T")[0];
-      
+
       if (endStr >= todayStr) {
         const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
         endStr = new Date(yesterday.getTime() - tzOffset).toISOString().split("T")[0];
@@ -949,7 +949,7 @@ export default function RealtimeChart({
         startStr = endStr;
       }
     }
-    
+
     return { actualStartStr: startStr, actualEndStr: endStr };
   }, [startDate, endDate, chartFlowData?.period?.start, chartFlowData?.period?.end, chartFlowData?.granularity]);
 
@@ -1121,7 +1121,7 @@ export default function RealtimeChart({
     } else {
       let startCmp = actualStartStr;
       let endCmp = actualEndStr;
-      
+
       if (chartFlowData.granularity === "month") {
         startCmp = actualStartStr.slice(0, 7);
         endCmp = actualEndStr.slice(0, 7);
@@ -1129,7 +1129,7 @@ export default function RealtimeChart({
         startCmp = actualStartStr.slice(0, 4);
         endCmp = actualEndStr.slice(0, 4);
       }
-      
+
       finalTimestamps = sortedTimestamps.filter((ts) => ts >= startCmp && ts <= endCmp);
     }
 
@@ -1150,7 +1150,7 @@ export default function RealtimeChart({
 
       const values: Record<string, number> = {};
       const flowrates: Record<string, number> = {};
-      
+
       // Only include values if not hourly, or if index is within valid range
       if (chartFlowData.granularity !== "hour" || index <= lastValidIndex) {
         seriesLookups.forEach(({ name, lookup }) => {
@@ -1315,7 +1315,7 @@ export default function RealtimeChart({
     return value.toLocaleString("id-ID", { maximumFractionDigits: 2 });
   }, []);
 
-  const submitNote = () => {};
+  const submitNote = () => { };
 
   if (topLineActive === null) return null;
 
@@ -1396,21 +1396,19 @@ export default function RealtimeChart({
                 <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
                   <button
                     onClick={() => setChartMode("non-transportir")}
-                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
-                      chartMode === "non-transportir"
-                        ? "bg-white text-gray-900 shadow-sm"
-                        : "text-gray-500 hover:text-gray-700"
-                    }`}
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${chartMode === "non-transportir"
+                      ? "bg-white text-gray-900 shadow-sm"
+                      : "text-gray-500 hover:text-gray-700"
+                      }`}
                   >
                     Non-Transportir
                   </button>
                   <button
                     onClick={() => setChartMode("transportir")}
-                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
-                      chartMode === "transportir"
-                        ? "bg-white text-gray-900 shadow-sm"
-                        : "text-gray-500 hover:text-gray-700"
-                    }`}
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${chartMode === "transportir"
+                      ? "bg-white text-gray-900 shadow-sm"
+                      : "text-gray-500 hover:text-gray-700"
+                      }`}
                   >
                     Transportir
                   </button>
@@ -1552,7 +1550,7 @@ export default function RealtimeChart({
                       left: 5,
                       bottom:
                         period === "1M" ||
-                        (period === "3Y" && intervalMode === "Hari")
+                          (period === "3Y" && intervalMode === "Hari")
                           ? 50
                           : 10,
                     }}
@@ -1574,7 +1572,7 @@ export default function RealtimeChart({
                       }
                       height={
                         period === "1M" ||
-                        (period === "3Y" && intervalMode === "Hari")
+                          (period === "3Y" && intervalMode === "Hari")
                           ? 60
                           : period === "3Y" && intervalMode === "Bulan"
                             ? 50
@@ -1704,11 +1702,10 @@ export default function RealtimeChart({
                 {seriesKeys.length > 0 && (
                   <div className="mt-3">
                     <div
-                      className={`flex flex-wrap justify-center gap-x-5 gap-y-2 px-3 py-2.5 rounded-lg bg-gray-50/80 border border-gray-100 ${
-                        seriesKeys.length > 10
-                          ? "max-h-[80px] overflow-y-auto"
-                          : ""
-                      }`}
+                      className={`flex flex-wrap justify-center gap-x-5 gap-y-2 px-3 py-2.5 rounded-lg bg-gray-50/80 border border-gray-100 ${seriesKeys.length > 10
+                        ? "max-h-[80px] overflow-y-auto"
+                        : ""
+                        }`}
                     >
                       {seriesKeys.map((key) => (
                         <div
@@ -1940,23 +1937,23 @@ export default function RealtimeChart({
             {(chartMode === "transportir" ||
               filterType == "Pembangkit" ||
               pemasok) && (
-              <FilterAutocomplete
-                label="Pembangkit"
-                options={pembangkitOptions}
-                value={pembangkit}
-                onChange={(val) => {
-                  setPembangkit(val);
-                  if (onPembangkitChange) {
-                    const found = filtersData?.pembangkit?.find(
-                      (p: FilterOption) => p.name === val,
-                    );
-                    setSelectedPembangkitId(found?.id ?? undefined);
-                    onPembangkitChange(found?.id ?? null);
-                  }
-                }}
-                placeholder="Pilih Pembangkit"
-              />
-            )}
+                <FilterAutocomplete
+                  label="Pembangkit"
+                  options={pembangkitOptions}
+                  value={pembangkit}
+                  onChange={(val) => {
+                    setPembangkit(val);
+                    if (onPembangkitChange) {
+                      const found = filtersData?.pembangkit?.find(
+                        (p: FilterOption) => p.name === val,
+                      );
+                      setSelectedPembangkitId(found?.id ?? undefined);
+                      onPembangkitChange(found?.id ?? null);
+                    }
+                  }}
+                  placeholder="Pilih Pembangkit"
+                />
+              )}
             {chartMode !== "transportir" &&
               pembangkit &&
               (!pemasok ||
@@ -2052,11 +2049,10 @@ export default function RealtimeChart({
                       ].map((item) => (
                         <button
                           key={item.label}
-                          className={`px-3 py-2 text-sm font-medium rounded-md transition-colors text-center ${
-                            period === item.val
-                              ? "bg-primary text-white shadow-sm"
-                              : "bg-gray-50 text-gray-600 hover:bg-gray-100"
-                          }`}
+                          className={`px-3 py-2 text-sm font-medium rounded-md transition-colors text-center ${period === item.val
+                            ? "bg-primary text-white shadow-sm"
+                            : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+                            }`}
                           onClick={() => {
                             setPeriod(item.val);
                             // Sensible default interval based on period
@@ -2121,11 +2117,10 @@ export default function RealtimeChart({
                           return (
                             <button
                               key={mode}
-                              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                                intervalMode === mode
-                                  ? "text-white shadow-sm"
-                                  : "bg-gray-50 text-gray-600 hover:bg-gray-100"
-                              }`}
+                              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${intervalMode === mode
+                                ? "text-white shadow-sm"
+                                : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+                                }`}
                               style={
                                 intervalMode === mode
                                   ? { backgroundColor: "var(--theme-primary)" }
@@ -2192,9 +2187,9 @@ export default function RealtimeChart({
                             color: "var(--theme-primary)",
                           },
                           "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
-                            {
-                              backgroundColor: "var(--theme-primary)",
-                            },
+                          {
+                            backgroundColor: "var(--theme-primary)",
+                          },
                         }}
                       />
                     </div>
@@ -2210,9 +2205,9 @@ export default function RealtimeChart({
                             color: "var(--theme-primary)",
                           },
                           "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
-                            {
-                              backgroundColor: "var(--theme-primary)",
-                            },
+                          {
+                            backgroundColor: "var(--theme-primary)",
+                          },
                         }}
                       />
                     </div>
@@ -2228,9 +2223,9 @@ export default function RealtimeChart({
                             color: "var(--theme-primary)",
                           },
                           "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
-                            {
-                              backgroundColor: "var(--theme-primary)",
-                            },
+                          {
+                            backgroundColor: "var(--theme-primary)",
+                          },
                         }}
                       />
                     </div>

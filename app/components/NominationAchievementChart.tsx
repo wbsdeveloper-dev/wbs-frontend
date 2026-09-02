@@ -150,10 +150,11 @@ export default function NominationAchievementChart({
             <div className="flex items-center gap-1">
               <button
                 onClick={() => setShowDateFilter(!showDateFilter)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer ${showDateFilter
-                  ? "bg-secondary/10 text-primary border border-secondary/30"
-                  : "text-gray-500 hover:bg-gray-100 border border-transparent"
-                  }`}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer ${
+                  showDateFilter
+                    ? "bg-secondary/10 text-primary border border-secondary/30"
+                    : "text-gray-500 hover:bg-gray-100 border border-transparent"
+                }`}
               >
                 <Calendar className="w-4 h-4" />
                 <span className="hidden sm:inline">Tanggal</span>
@@ -212,84 +213,104 @@ export default function NominationAchievementChart({
         </div>
       )}
 
-      <div className="flex items-center justify-center mt-4">
-        <div className="inline-flex bg-gray-100 rounded-lg p-0.5 border border-transparent">
-          <button
-            onClick={() => setTab("Penyaluran")}
-            className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer ${tab === "Penyaluran"
-              ? "bg-primary text-white shadow-sm"
-              : "text-gray-600 hover:text-gray-900"
-              }`}
-          >
-            Penyaluran
-          </button>
-          <button
-            onClick={() => setTab("Pemakaian")}
-            className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer ${tab === "Pemakaian"
-              ? "bg-primary text-white shadow-sm"
-              : "text-gray-600 hover:text-gray-900"
-              }`}
-          >
-            Pemakaian
-          </button>
-        </div>
-      </div>
-
-      <div className="flex-1 flex flex-col items-center justify-center relative mt-4">
-        <div className="h-56 w-full relative">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={data}
-                cx="50%"
-                cy="50%"
-                innerRadius="70%"
-                outerRadius="90%"
-                startAngle={90}
-                endAngle={-270}
-                dataKey="value"
-                stroke="none"
-                cornerRadius={10}
+      {nominasi > 0 ? (
+        <>
+          <div className="flex items-center justify-center mt-4">
+            <div className="inline-flex bg-gray-100 rounded-lg p-0.5 border border-transparent">
+              <button
+                onClick={() => setTab("Penyaluran")}
+                className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer ${
+                  tab === "Penyaluran"
+                    ? "bg-primary text-white shadow-sm"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
               >
-                <Cell fill={primaryColor} />
-                <Cell fill={secondaryColor} />
-              </Pie>
-            </PieChart>
-          </ResponsiveContainer>
+                Penyaluran
+              </button>
+              <button
+                onClick={() => setTab("Pemakaian")}
+                className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer ${
+                  tab === "Pemakaian"
+                    ? "bg-primary text-white shadow-sm"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                Pemakaian
+              </button>
+            </div>
+          </div>
 
-          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-            <span className="text-3xl font-extrabold text-slate-800">
-              {percentage}%
-            </span>
-            <span className="text-[10px] font-bold text-gray-400 tracking-[0.2em] mt-2">
-              TERCAPAI
-            </span>
-          </div>
-        </div>
-      </div>
+          <div className="flex-1 flex flex-col items-center justify-center relative mt-4">
+            <div className="h-56 w-full relative">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={data}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius="70%"
+                    outerRadius="90%"
+                    startAngle={90}
+                    endAngle={-270}
+                    dataKey="value"
+                    stroke="none"
+                    cornerRadius={10}
+                  >
+                    <Cell fill={primaryColor} />
+                    <Cell fill={secondaryColor} />
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
 
-      <div className="border-t border-gray-50 space-y-4 mb-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="w-2.5 h-2.5 rounded-full bg-secondary" />
-            <span className="text-sm font-medium text-gray-500">Nominasi</span>
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <span className="text-3xl font-extrabold text-slate-800">
+                  {percentage}%
+                </span>
+                <span className="text-[10px] font-bold text-gray-400 tracking-[0.2em] mt-2">
+                  TERCAPAI
+                </span>
+              </div>
+            </div>
           </div>
-          <span className="text-sm font-extrabold text-slate-800">
-            {formatKL(nominasi)}
-          </span>
-        </div>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="w-2.5 h-2.5 rounded-full bg-secondary" />
-            <span className="text-sm font-medium text-gray-500">
-              {tab === "Penyaluran" ? "Penyaluran" : "Pemakaian"}
-            </span>
+
+          <div className="border-t border-gray-50 space-y-4 mb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="w-2.5 h-2.5 rounded-full bg-secondary" />
+                <span className="text-sm font-medium text-gray-500">
+                  Nominasi
+                </span>
+              </div>
+              <span className="text-sm font-extrabold text-slate-800">
+                {formatKL(nominasi)}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="w-2.5 h-2.5 rounded-full bg-secondary" />
+                <span className="text-sm font-medium text-gray-500">
+                  {tab === "Penyaluran" ? "Penyaluran" : "Pemakaian"}
+                </span>
+              </div>
+              <span className="text-sm font-extrabold text-slate-800">
+                {formatKL(value)}
+              </span>
+            </div>
           </div>
-          <span className="text-sm font-extrabold text-slate-800">
-            {formatKL(value)}
-          </span>
+        </>
+      ) : (
+        <div className="flex-1 flex flex-col items-center justify-center text-center px-6 py-12">
+          <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+            <FileText className="w-6 h-6 text-gray-400" />
+          </div>
+          <p className="text-sm font-semibold text-gray-700">
+            Belum ada data nominasi
+          </p>
+          <p className="text-xs text-gray-500 mt-1 max-w-[260px]">
+            Data nominasi belum tersedia untuk periode yang dipilih.
+          </p>
         </div>
-      </div>
+      )}
 
       {description && (
         <p className="text-xs text-gray-500 mt-auto pt-4 border-t border-gray-100 min-h-[32px]">
