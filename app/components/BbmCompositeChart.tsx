@@ -14,6 +14,7 @@ import {
   ReferenceLine,
 } from "recharts";
 import { Loader2 } from "lucide-react";
+import ChartEmptyState from "./ChartEmptyState";
 import type { BbmRealizationByModaResponse } from "@/hooks/service/bbm-api";
 
 // ---------------------------------------------------------------------------
@@ -223,9 +224,10 @@ export default function BbmCompositeChart({
 
   if (chartData.length === 0) {
     return (
-      <div className="flex items-center justify-center h-full text-gray-400 text-sm">
-        Tidak ada data realisasi yang cocok dengan filter
-      </div>
+      <ChartEmptyState
+        title="Belum ada data penyaluran BBM"
+        description="Data penyaluran BBM per moda belum tersedia untuk filter dan periode yang dipilih."
+      />
     );
   }
 

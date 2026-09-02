@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Calendar, ChevronDown, ChevronUp } from "lucide-react";
+import { Calendar, ChevronDown, ChevronUp, FileText } from "lucide-react";
 
 interface TopVolumeItem {
   name: string;
@@ -25,6 +25,9 @@ interface TopVolumeListProps {
   onModaChange?: (value: string | null) => void;
   productOptions?: string[];
   modaOptions?: string[];
+  /** Contextual copy shown when the filtered list has no results. */
+  emptyStateTitle?: string;
+  emptyStateDescription?: string;
 }
 
 export default function TopVolumeList({
@@ -42,6 +45,8 @@ export default function TopVolumeList({
   onModaChange,
   productOptions = [],
   modaOptions = [],
+  emptyStateTitle = "Belum ada data penyaluran",
+  emptyStateDescription = "Data penyaluran belum tersedia untuk filter dan periode yang dipilih.",
 }: TopVolumeListProps) {
   const [showDateFilter, setShowDateFilter] = useState(false);
   const [tempStartDate, setTempStartDate] = useState(startDate);
@@ -76,10 +81,11 @@ export default function TopVolumeList({
         {hasDateFilter && (
           <button
             onClick={() => setShowDateFilter(!showDateFilter)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer ${showDateFilter
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer ${
+              showDateFilter
                 ? "bg-secondary/10 text-primary border border-secondary/30"
                 : "text-gray-500 hover:bg-gray-100 border border-transparent"
-              }`}
+            }`}
           >
             <Calendar className="w-4 h-4" />
             <span className="hidden sm:inline">Filter</span>
@@ -141,7 +147,9 @@ export default function TopVolumeList({
                   >
                     <option value="">Semua Produk</option>
                     {productOptions.map((opt) => (
-                      <option key={opt} value={opt}>{opt}</option>
+                      <option key={opt} value={opt}>
+                        {opt}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -158,7 +166,9 @@ export default function TopVolumeList({
                   >
                     <option value="">Semua Moda</option>
                     {modaOptions.map((opt) => (
-                      <option key={opt} value={opt}>{opt}</option>
+                      <option key={opt} value={opt}>
+                        {opt}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -178,17 +188,26 @@ export default function TopVolumeList({
       )}
 
       {/* List */}
-      <div className="overflow-auto flex-1 p-5 min-h-[150px]">
+      <div className="overflow-auto flex-1 p-5 min-h-[250px]">
         {list.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-sm text-gray-400">
-            Tidak ada data
+          <div className="flex h-full flex-col items-center justify-center text-center px-6 py-12">
+            <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+              <FileText className="w-6 h-6 text-gray-400" />
+            </div>
+            <p className="text-sm font-semibold text-gray-700">
+              {emptyStateTitle}
+            </p>
+            <p className="text-xs text-gray-500 mt-1 max-w-[260px]">
+              {emptyStateDescription}
+            </p>
           </div>
         ) : (
           list.map((value, index) => (
             <div
               key={index}
-              className={`text-gray-900 flex justify-between py-1.5 ${list.length - 1 != index ? "border-b border-gray-400" : ""
-                }`}
+              className={`text-gray-900 flex justify-between py-1.5 ${
+                list.length - 1 != index ? "border-b border-gray-400" : ""
+              }`}
             >
               <div>{value.name}</div>
               <div className="flex gap-1 font-bold">

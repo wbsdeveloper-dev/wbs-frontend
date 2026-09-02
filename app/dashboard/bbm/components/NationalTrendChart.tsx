@@ -11,6 +11,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import ChartEmptyState from "@/app/components/ChartEmptyState";
 
 interface TrendData {
   year: number;
@@ -78,7 +79,9 @@ export function NationalTrendChart({
 
       data.forEach((item) => {
         const p = item.product || "LAINNYA";
-        let lineKey = (item as any).mode_value ? `${(item as any).mode_value} - ${p}` : p;
+        let lineKey = (item as any).mode_value
+          ? `${(item as any).mode_value} - ${p}`
+          : p;
         if (item.jenis_data) lineKey = `${item.jenis_data} - ${lineKey}`;
         productsSet.add(lineKey);
         const tp = `${item.year}-${item.month.toString().padStart(2, "0")}`;
@@ -99,7 +102,9 @@ export function NationalTrendChart({
 
       data.forEach((item) => {
         const p = item.product || "LAINNYA";
-        let lineKey = (item as any).mode_value ? `${(item as any).mode_value} - ${p}` : p;
+        let lineKey = (item as any).mode_value
+          ? `${(item as any).mode_value} - ${p}`
+          : p;
         if (item.jenis_data) lineKey = `${item.jenis_data} - ${lineKey}`;
         const tp = `${item.year}-${item.month.toString().padStart(2, "0")}`;
         // Add instead of overwrite, in case of multiple mode values falling in the same bucket?
@@ -133,7 +138,9 @@ export function NationalTrendChart({
       // X-axis is Months
       const linesSet = new Set<string>();
       data.forEach((item) => {
-        let lineKey = (item as any).mode_value ? `${(item as any).mode_value} ${item.year}` : String(item.year);
+        let lineKey = (item as any).mode_value
+          ? `${(item as any).mode_value} ${item.year}`
+          : String(item.year);
         if (item.jenis_data) lineKey = `${item.jenis_data} - ${lineKey}`;
         linesSet.add(lineKey);
       });
@@ -147,9 +154,12 @@ export function NationalTrendChart({
 
       data.forEach((item) => {
         if (item.month >= 1 && item.month <= 12) {
-          let lineKey = (item as any).mode_value ? `${(item as any).mode_value} ${item.year}` : String(item.year);
+          let lineKey = (item as any).mode_value
+            ? `${(item as any).mode_value} ${item.year}`
+            : String(item.year);
           if (item.jenis_data) lineKey = `${item.jenis_data} - ${lineKey}`;
-          tableDataMap[lineKey][item.month - 1] = parseFloat(item.total_volume) || 0;
+          tableDataMap[lineKey][item.month - 1] =
+            parseFloat(item.total_volume) || 0;
         }
       });
 
@@ -178,6 +188,11 @@ export function NationalTrendChart({
           <div className="flex items-center justify-center h-full">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
           </div>
+        ) : lines.length === 0 ? (
+          <ChartEmptyState
+            title="Belum ada data tren BBM"
+            description="Data tren nasional BBM belum tersedia untuk kategori, filter, dan periode yang dipilih."
+          />
         ) : (
           <ResponsiveContainer width="100%" height="100%">
             <LineChart

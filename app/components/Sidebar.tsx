@@ -142,7 +142,7 @@ export default function Sidebar() {
           resource: "email_ingest_gas",
         },
         {
-          title: "Template Grup",
+          title: "Template Data",
           path: "/konfigurasi/template-grup",
           resource: "template_group_gas",
         },
@@ -221,7 +221,7 @@ export default function Sidebar() {
           resource: "users_bbm",
         },
         {
-          title: "Template Grup",
+          title: "Template Data",
           path: "/konfigurasi-bbm/template-grup",
           resource: "template_group_bbm",
         },

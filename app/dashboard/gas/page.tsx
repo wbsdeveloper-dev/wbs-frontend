@@ -75,7 +75,9 @@ export default function GasDashboard() {
 
   const { isOpen, open, close } = useModal();
   const [filterType, setFilterType] = useState<string | null>("Pemasok");
-  const [distributionCommodity, setDistributionCommodity] = useState<string | null>("GAS PIPA");
+  const [distributionCommodity, setDistributionCommodity] = useState<
+    string | null
+  >("GAS PIPA");
 
   useEffect(() => {
     if (!isAuthLoading && !canRead) {
@@ -87,9 +89,10 @@ export default function GasDashboard() {
   const { startDate, endDate } = useMemo(() => getCurrentMonthRange(), []);
   const { startDate: yesterdayStart, endDate: yesterdayEnd } = useMemo(
     () => getYesterdayRange(),
-    []
+    [],
   );
-  const [distributionStartDate, setDistributionStartDate] = useState(yesterdayStart);
+  const [distributionStartDate, setDistributionStartDate] =
+    useState(yesterdayStart);
   const [distributionEndDate, setDistributionEndDate] = useState(yesterdayEnd);
   const [startDateFilter, setStartDateFilter] = useState<string | null>(
     todayDate,
@@ -107,9 +110,9 @@ export default function GasDashboard() {
   const [selectedPembangkitId, setSelectedPembangkitId] = useState<
     string | undefined
   >(undefined);
-  const [selectedRegion, setSelectedRegion] = useState<
-    string | undefined
-  >(undefined);
+  const [selectedRegion, setSelectedRegion] = useState<string | undefined>(
+    undefined,
+  );
   const [selectedCommodity, setSelectedCommodity] = useState<
     string | undefined
   >(undefined);
@@ -131,86 +134,122 @@ export default function GasDashboard() {
   const [topPlantsEnd, setTopPlantsEnd] = useState(yesterdayEnd);
 
   // Top LNG suppliers/plants date filters
-  const [topLngSuppliersStart, setTopLngSuppliersStart] = useState(yesterdayStart);
+  const [topLngSuppliersStart, setTopLngSuppliersStart] =
+    useState(yesterdayStart);
   const [topLngSuppliersEnd, setTopLngSuppliersEnd] = useState(yesterdayEnd);
   const [topLngPlantsStart, setTopLngPlantsStart] = useState(yesterdayStart);
   const [topLngPlantsEnd, setTopLngPlantsEnd] = useState(yesterdayEnd);
 
   const formattedTopSuppliersPeriod = useMemo(() => {
     try {
-      const start = new Date(topSuppliersStart + "T00:00:00").toLocaleDateString("id-ID", {
+      const start = new Date(
+        topSuppliersStart + "T00:00:00",
+      ).toLocaleDateString("id-ID", {
         day: "numeric",
         month: "long",
         year: "numeric",
       });
-      const end = new Date(topSuppliersEnd + "T00:00:00").toLocaleDateString("id-ID", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      });
+      const end = new Date(topSuppliersEnd + "T00:00:00").toLocaleDateString(
+        "id-ID",
+        {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        },
+      );
       return start === end ? start : `${start} - ${end}`;
     } catch {
-      return topSuppliersStart === topSuppliersEnd ? topSuppliersStart : `${topSuppliersStart} - ${topSuppliersEnd}`;
+      return topSuppliersStart === topSuppliersEnd
+        ? topSuppliersStart
+        : `${topSuppliersStart} - ${topSuppliersEnd}`;
     }
   }, [topSuppliersStart, topSuppliersEnd]);
 
   const formattedTopPlantsPeriod = useMemo(() => {
     try {
-      const start = new Date(topPlantsStart + "T00:00:00").toLocaleDateString("id-ID", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      });
-      const end = new Date(topPlantsEnd + "T00:00:00").toLocaleDateString("id-ID", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      });
+      const start = new Date(topPlantsStart + "T00:00:00").toLocaleDateString(
+        "id-ID",
+        {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        },
+      );
+      const end = new Date(topPlantsEnd + "T00:00:00").toLocaleDateString(
+        "id-ID",
+        {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        },
+      );
       return start === end ? start : `${start} - ${end}`;
     } catch {
-      return topPlantsStart === topPlantsEnd ? topPlantsStart : `${topPlantsStart} - ${topPlantsEnd}`;
+      return topPlantsStart === topPlantsEnd
+        ? topPlantsStart
+        : `${topPlantsStart} - ${topPlantsEnd}`;
     }
   }, [topPlantsStart, topPlantsEnd]);
 
   const formattedTopLngSuppliersPeriod = useMemo(() => {
     try {
-      const start = new Date(topLngSuppliersStart + "T00:00:00").toLocaleDateString("id-ID", {
+      const start = new Date(
+        topLngSuppliersStart + "T00:00:00",
+      ).toLocaleDateString("id-ID", {
         day: "numeric",
         month: "long",
         year: "numeric",
       });
-      const end = new Date(topLngSuppliersEnd + "T00:00:00").toLocaleDateString("id-ID", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      });
+      const end = new Date(topLngSuppliersEnd + "T00:00:00").toLocaleDateString(
+        "id-ID",
+        {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        },
+      );
       return start === end ? start : `${start} - ${end}`;
     } catch {
-      return topLngSuppliersStart === topLngSuppliersEnd ? topLngSuppliersStart : `${topLngSuppliersStart} - ${topLngSuppliersEnd}`;
+      return topLngSuppliersStart === topLngSuppliersEnd
+        ? topLngSuppliersStart
+        : `${topLngSuppliersStart} - ${topLngSuppliersEnd}`;
     }
   }, [topLngSuppliersStart, topLngSuppliersEnd]);
 
   const formattedTopLngPlantsPeriod = useMemo(() => {
     try {
-      const start = new Date(topLngPlantsStart + "T00:00:00").toLocaleDateString("id-ID", {
+      const start = new Date(
+        topLngPlantsStart + "T00:00:00",
+      ).toLocaleDateString("id-ID", {
         day: "numeric",
         month: "long",
         year: "numeric",
       });
-      const end = new Date(topLngPlantsEnd + "T00:00:00").toLocaleDateString("id-ID", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      });
+      const end = new Date(topLngPlantsEnd + "T00:00:00").toLocaleDateString(
+        "id-ID",
+        {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        },
+      );
       return start === end ? start : `${start} - ${end}`;
     } catch {
-      return topLngPlantsStart === topLngPlantsEnd ? topLngPlantsStart : `${topLngPlantsStart} - ${topLngPlantsEnd}`;
+      return topLngPlantsStart === topLngPlantsEnd
+        ? topLngPlantsStart
+        : `${topLngPlantsStart} - ${topLngPlantsEnd}`;
     }
   }, [topLngPlantsStart, topLngPlantsEnd]);
 
   // Fetch top suppliers and plants (GAS PIPA)
   const { data: topSuppliersData, isLoading: isSuppliersLoading } =
-    useTopSuppliers(topSuppliersStart, topSuppliersEnd, 5, selectedRegion, "GAS PIPA");
+    useTopSuppliers(
+      topSuppliersStart,
+      topSuppliersEnd,
+      5,
+      selectedRegion,
+      "GAS PIPA",
+    );
   const { data: topPlantsData, isLoading: isPlantsLoading } = useTopPlants(
     topPlantsStart,
     topPlantsEnd,
@@ -221,14 +260,15 @@ export default function GasDashboard() {
 
   // Fetch top LNG suppliers and plants
   const { data: topLngSuppliersData, isLoading: isLngSuppliersLoading } =
-    useTopSuppliers(topLngSuppliersStart, topLngSuppliersEnd, 5, selectedRegion, "LNG");
-  const { data: topLngPlantsData, isLoading: isLngPlantsLoading } = useTopPlants(
-    topLngPlantsStart,
-    topLngPlantsEnd,
-    5,
-    selectedRegion,
-    "LNG",
-  );
+    useTopSuppliers(
+      topLngSuppliersStart,
+      topLngSuppliersEnd,
+      5,
+      selectedRegion,
+      "LNG",
+    );
+  const { data: topLngPlantsData, isLoading: isLngPlantsLoading } =
+    useTopPlants(topLngPlantsStart, topLngPlantsEnd, 5, selectedRegion, "LNG");
 
   // Fetch chart flow data
   const { data: chartFlowData, isLoading: isChartLoading } = useChartFlow(
@@ -260,13 +300,15 @@ export default function GasDashboard() {
     if (!selectedRegion || !allSites) return filtersData;
 
     const selectedRegionLower = selectedRegion.toLowerCase();
-    const regionSites = allSites.filter(s => s.region?.toLowerCase() === selectedRegionLower);
-    const regionSiteIds = new Set(regionSites.map(s => s.id));
+    const regionSites = allSites.filter(
+      (s) => s.region?.toLowerCase() === selectedRegionLower,
+    );
+    const regionSiteIds = new Set(regionSites.map((s) => s.id));
 
     return {
       ...filtersData,
-      pemasok: filtersData.pemasok.filter(p => regionSiteIds.has(p.id)),
-      pembangkit: filtersData.pembangkit.filter(p => regionSiteIds.has(p.id)),
+      pemasok: filtersData.pemasok.filter((p) => regionSiteIds.has(p.id)),
+      pembangkit: filtersData.pembangkit.filter((p) => regionSiteIds.has(p.id)),
     };
   }, [filtersData, selectedRegion, allSites]);
 
@@ -276,12 +318,14 @@ export default function GasDashboard() {
     if (!selectedRegion || !allSites) return chartFlowData;
 
     const selectedRegionLower = selectedRegion.toLowerCase();
-    const regionSites = allSites.filter(s => s.region?.toLowerCase() === selectedRegionLower);
-    const regionSiteIds = new Set(regionSites.map(s => s.id));
+    const regionSites = allSites.filter(
+      (s) => s.region?.toLowerCase() === selectedRegionLower,
+    );
+    const regionSiteIds = new Set(regionSites.map((s) => s.id));
 
     return {
       ...chartFlowData,
-      series: chartFlowData.series.filter(s => regionSiteIds.has(s.siteId))
+      series: chartFlowData.series.filter((s) => regionSiteIds.has(s.siteId)),
     };
   }, [chartFlowData, selectedRegion, allSites]);
 
@@ -410,11 +454,15 @@ export default function GasDashboard() {
       const targetCommodity = distributionCommodity.toUpperCase();
       const commoditySites = new Set(
         allSites
-          .filter((s) => s.commodity?.toUpperCase() === targetCommodity || (s.commodity?.toUpperCase().includes(targetCommodity)))
-          .map((s) => s.name.toLowerCase())
+          .filter(
+            (s) =>
+              s.commodity?.toUpperCase() === targetCommodity ||
+              s.commodity?.toUpperCase().includes(targetCommodity),
+          )
+          .map((s) => s.name.toLowerCase()),
       );
       items = items.filter((item: { name: string; value: number }) =>
-        commoditySites.has(item.name.toLowerCase())
+        commoditySites.has(item.name.toLowerCase()),
       );
     }
 
@@ -458,10 +506,12 @@ export default function GasDashboard() {
   const topLngPembangkitList = useMemo(() => {
     if (!topLngPlantsData?.items) return [];
     const days = getDaysDifference(topLngPlantsStart, topLngPlantsEnd);
-    return topLngPlantsData.items.map((item: { name: string; value: number }) => ({
-      name: item.name,
-      volume: `${(item.value / days).toFixed(2)}`,
-    }));
+    return topLngPlantsData.items.map(
+      (item: { name: string; value: number }) => ({
+        name: item.name,
+        volume: `${(item.value / days).toFixed(2)}`,
+      }),
+    );
   }, [topLngPlantsData, topLngPlantsStart, topLngPlantsEnd]);
 
   if (isAuthLoading || !canRead) {
@@ -525,6 +575,8 @@ export default function GasDashboard() {
                     commodity={distributionCommodity}
                     onCommodityChange={setDistributionCommodity}
                     commodityOptions={["GAS PIPA", "LNG"]}
+                    emptyStateTitle={`Belum ada data volume ${distributionCommodity === "LNG" ? "LNG" : "Gas Pipa"}`}
+                    emptyStateDescription={`Data volume ${distributionCommodity === "LNG" ? "LNG" : "Gas Pipa"} belum tersedia untuk filter dan periode yang dipilih.`}
                   />
                 </div>
               )}
@@ -543,6 +595,8 @@ export default function GasDashboard() {
                     endDate={topSuppliersEnd}
                     onStartDateChange={setTopSuppliersStart}
                     onEndDateChange={setTopSuppliersEnd}
+                    emptyStateTitle="Belum ada data volume pemasok Gas Pipa"
+                    emptyStateDescription="Data volume pemasok Gas Pipa belum tersedia untuk region dan periode yang dipilih."
                   />
                 </div>
               )}
@@ -561,6 +615,8 @@ export default function GasDashboard() {
                     endDate={topPlantsEnd}
                     onStartDateChange={setTopPlantsStart}
                     onEndDateChange={setTopPlantsEnd}
+                    emptyStateTitle="Belum ada data volume pembangkit Gas Pipa"
+                    emptyStateDescription="Data volume pembangkit Gas Pipa belum tersedia untuk region dan periode yang dipilih."
                   />
                 </div>
               )}
@@ -579,6 +635,8 @@ export default function GasDashboard() {
                     endDate={topLngSuppliersEnd}
                     onStartDateChange={setTopLngSuppliersStart}
                     onEndDateChange={setTopLngSuppliersEnd}
+                    emptyStateTitle="Belum ada data volume pemasok LNG"
+                    emptyStateDescription="Data volume pemasok LNG belum tersedia untuk region dan periode yang dipilih."
                   />
                 </div>
               )}
@@ -597,6 +655,8 @@ export default function GasDashboard() {
                     endDate={topLngPlantsEnd}
                     onStartDateChange={setTopLngPlantsStart}
                     onEndDateChange={setTopLngPlantsEnd}
+                    emptyStateTitle="Belum ada data volume pembangkit LNG"
+                    emptyStateDescription="Data volume pembangkit LNG belum tersedia untuk region dan periode yang dipilih."
                   />
                 </div>
               )}
