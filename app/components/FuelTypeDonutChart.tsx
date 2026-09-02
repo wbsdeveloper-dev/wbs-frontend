@@ -9,7 +9,14 @@ import {
   Legend,
   Tooltip,
 } from "recharts";
-import { Expand, Calendar, ChevronDown, ChevronUp, Image as ImageIcon, FileText } from "lucide-react";
+import {
+  Expand,
+  Calendar,
+  ChevronDown,
+  ChevronUp,
+  Image as ImageIcon,
+  FileText,
+} from "lucide-react";
 import * as htmlToImage from "html-to-image";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -43,6 +50,9 @@ type Props = {
   commodity?: string | null;
   onCommodityChange?: (value: string | null) => void;
   commodityOptions?: string[];
+  /** Contextual copy shown when the filtered chart has no volume. */
+  emptyStateTitle?: string;
+  emptyStateDescription?: string;
 };
 
 export default function FuelTypeDonutChart({
@@ -65,6 +75,8 @@ export default function FuelTypeDonutChart({
   commodity,
   onCommodityChange,
   commodityOptions,
+  emptyStateTitle = "Belum ada data volume BBM",
+  emptyStateDescription = "Data volume BBM belum tersedia untuk filter dan periode yang dipilih.",
 }: Props) {
   const [showDateFilter, setShowDateFilter] = useState(false);
   const [tempStartDate, setTempStartDate] = useState(startDate);
@@ -123,12 +135,24 @@ export default function FuelTypeDonutChart({
       const totalVolume = data.reduce((sum, d) => sum + d.value, 0);
 
       const tableBody = data.flatMap((item, index) => {
-        const pct = totalVolume > 0 ? ((item.value / totalVolume) * 100).toFixed(2).replace(".", ",") : "0,00";
+        const pct =
+          totalVolume > 0
+            ? ((item.value / totalVolume) * 100).toFixed(2).replace(".", ",")
+            : "0,00";
         const rows: any[] = [
           {
-            nameCell: { content: `   ${item.name}`, styles: { fontStyle: "bold", textColor: [17, 24, 39] } },
-            pctCell: { content: `(${pct}%)`, styles: { textColor: [107, 114, 128] } },
-            volCell: { content: `${item.value.toLocaleString("id-ID", { maximumFractionDigits: 2 })} ${unit}`, styles: { fontStyle: "bold", textColor: [17, 24, 39] } },
+            nameCell: {
+              content: `   ${item.name}`,
+              styles: { fontStyle: "bold", textColor: [17, 24, 39] },
+            },
+            pctCell: {
+              content: `(${pct}%)`,
+              styles: { textColor: [107, 114, 128] },
+            },
+            volCell: {
+              content: `${item.value.toLocaleString("id-ID", { maximumFractionDigits: 2 })} ${unit}`,
+              styles: { fontStyle: "bold", textColor: [17, 24, 39] },
+            },
             originalIndex: index,
           },
         ];
@@ -138,9 +162,15 @@ export default function FuelTypeDonutChart({
             .filter(([_, val]) => val > 0)
             .forEach(([moda, val]) => {
               rows.push({
-                nameCell: { content: `      - ${moda.toLowerCase()}`, styles: { textColor: [107, 114, 128] } },
+                nameCell: {
+                  content: `      - ${moda.toLowerCase()}`,
+                  styles: { textColor: [107, 114, 128] },
+                },
                 pctCell: { content: "" },
-                volCell: { content: `${val.toLocaleString("id-ID", { maximumFractionDigits: 2 })} ${unit}`, styles: { fontStyle: "bold", textColor: [55, 65, 81] } },
+                volCell: {
+                  content: `${val.toLocaleString("id-ID", { maximumFractionDigits: 2 })} ${unit}`,
+                  styles: { fontStyle: "bold", textColor: [55, 65, 81] },
+                },
                 originalIndex: -1,
               });
             });
@@ -168,10 +198,19 @@ export default function FuelTypeDonutChart({
         },
         didDrawCell: (hookData) => {
           const raw = hookData.row.raw as any;
-          if (hookData.column.dataKey === "nameCell" && raw.originalIndex !== -1) {
-            const colorHex = CHART_COLORS[raw.originalIndex % CHART_COLORS.length];
+          if (
+            hookData.column.dataKey === "nameCell" &&
+            raw.originalIndex !== -1
+          ) {
+            const colorHex =
+              CHART_COLORS[raw.originalIndex % CHART_COLORS.length];
             pdf.setFillColor(colorHex);
-            pdf.circle(hookData.cell.x + 4, hookData.cell.y + hookData.cell.height / 2, 1.5, "F");
+            pdf.circle(
+              hookData.cell.x + 4,
+              hookData.cell.y + hookData.cell.height / 2,
+              1.5,
+              "F",
+            );
           }
         },
       });
@@ -199,11 +238,14 @@ export default function FuelTypeDonutChart({
   /** Format YYYY-MM-DD → human-readable Indonesian date */
   const formattedDate = (() => {
     try {
-      const start = new Date(startDate + "T00:00:00").toLocaleDateString("id-ID", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      });
+      const start = new Date(startDate + "T00:00:00").toLocaleDateString(
+        "id-ID",
+        {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        },
+      );
       const end = new Date(endDate + "T00:00:00").toLocaleDateString("id-ID", {
         day: "numeric",
         month: "long",
@@ -215,7 +257,10 @@ export default function FuelTypeDonutChart({
     }
   })();
 
-  const total = useMemo(() => data.reduce((sum, d) => sum + d.value, 0), [data]);
+  const total = useMemo(
+    () => data.reduce((sum, d) => sum + d.value, 0),
+    [data],
+  );
 
   const chartData = useMemo(() => {
     if (total === 0) return data;
@@ -235,7 +280,7 @@ export default function FuelTypeDonutChart({
       grouped.push({
         name: "Lain-lain",
         value: lainLainValue,
-        originalIndex: -1
+        originalIndex: -1,
       });
     }
 
@@ -243,11 +288,16 @@ export default function FuelTypeDonutChart({
   }, [data, total]);
 
   return (
-    <div ref={chartRef} className="bg-white rounded-xl p-6 border border-gray-200 flex flex-col h-full">
+    <div
+      ref={chartRef}
+      className="bg-white rounded-xl p-6 border border-gray-200 flex flex-col h-full"
+    >
       {/* Header row */}
       <div className="flex justify-between items-start">
         <div className="flex flex-col">
-          <h3 className="text-lg font-semibold text-gray-900 whitespace-nowrap truncate mr-2">{title}</h3>
+          <h3 className="text-lg font-semibold text-gray-900 whitespace-nowrap truncate mr-2">
+            {title}
+          </h3>
           {commodityOptions && onCommodityChange && (
             <div className="relative inline-flex items-center mt-1 w-max">
               <select
@@ -256,7 +306,11 @@ export default function FuelTypeDonutChart({
                 className="appearance-none flex items-center gap-1.5 px-3 py-1.5 pr-8 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer text-gray-500 hover:bg-gray-100 border border-transparent bg-transparent outline-none focus:bg-secondary/10 focus:text-primary focus:border-secondary/30"
               >
                 {commodityOptions.map((opt) => (
-                  <option key={opt} value={opt} className="text-gray-700 bg-white">
+                  <option
+                    key={opt}
+                    value={opt}
+                    className="text-gray-700 bg-white"
+                  >
                     {opt}
                   </option>
                 ))}
@@ -286,10 +340,11 @@ export default function FuelTypeDonutChart({
             {/* Date filter toggle */}
             <button
               onClick={() => setShowDateFilter(!showDateFilter)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer ${showDateFilter
-                ? "bg-secondary/10 text-primary border border-secondary/30"
-                : "text-gray-500 hover:bg-gray-100 border border-transparent"
-                }`}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer ${
+                showDateFilter
+                  ? "bg-secondary/10 text-primary border border-secondary/30"
+                  : "text-gray-500 hover:bg-gray-100 border border-transparent"
+              }`}
             >
               <Calendar className="w-4 h-4" />
               <span className="hidden sm:inline">
@@ -385,10 +440,11 @@ export default function FuelTypeDonutChart({
           {tabs.map((type) => (
             <button
               key={type}
-              className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer ${filterType === type
-                ? "bg-primary text-white shadow-sm"
-                : "text-gray-600 hover:text-gray-900"
-                }`}
+              className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer ${
+                filterType === type
+                  ? "bg-primary text-white shadow-sm"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
               onClick={() => changeFilterType(type)}
             >
               {type}
@@ -398,64 +454,81 @@ export default function FuelTypeDonutChart({
       </div>
 
       {/* Chart */}
-      <div className="flex-1 w-full min-h-[250px] flex flex-col items-center justify-center">
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie
-              data={chartData}
-              cx="50%"
-              cy="50%"
-              innerRadius={60}
-              outerRadius={90}
-              paddingAngle={2}
-              dataKey="value"
-            >
-              {chartData.map((entry, index) => (
-                <Cell
-                  key={`cell-${index}`}
-                  fill={
-                    entry.originalIndex !== -1
-                      ? CHART_COLORS[entry.originalIndex % CHART_COLORS.length]
-                      : "#cbd5e1" // gray for Lain-lain
+      {total > 0 ? (
+        <div className="flex-1 w-full min-h-[250px] flex flex-col items-center justify-center">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={chartData}
+                cx="50%"
+                cy="50%"
+                innerRadius={60}
+                outerRadius={90}
+                paddingAngle={2}
+                dataKey="value"
+              >
+                {chartData.map((entry, index) => (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={
+                      entry.originalIndex !== -1
+                        ? CHART_COLORS[
+                            entry.originalIndex % CHART_COLORS.length
+                          ]
+                        : "#cbd5e1" // gray for Lain-lain
+                    }
+                  />
+                ))}
+              </Pie>
+              <Tooltip
+                content={({ active, payload }) => {
+                  if (active && payload && payload.length) {
+                    const item = payload[0];
+                    const pct = (((item.value as number) / total) * 100)
+                      .toFixed(2)
+                      .replace(".", ",");
+                    return (
+                      <div className="bg-white px-3 py-2 rounded-lg shadow-lg border border-gray-200 text-sm">
+                        <p className="font-medium text-gray-900">{item.name}</p>
+                        <p className="text-gray-600">{pct}%</p>
+                      </div>
+                    );
                   }
-                />
-              ))}
-            </Pie>
-            <Tooltip
-              content={({ active, payload }) => {
-                if (active && payload && payload.length) {
-                  const item = payload[0];
-                  const pct =
-                    total > 0
-                      ? (((item.value as number) / total) * 100).toFixed(2).replace(".", ",")
-                      : "0,00";
-                  return (
-                    <div className="bg-white px-3 py-2 rounded-lg shadow-lg border border-gray-200 text-sm">
-                      <p className="font-medium text-gray-900">{item.name}</p>
-                      <p className="text-gray-600">{pct}%</p>
-                    </div>
-                  );
-                }
-                return null;
-              }}
-            />
-            <Legend
-              verticalAlign="bottom"
-              height={50}
-              iconType="circle"
-              wrapperStyle={{
-                maxHeight: 80,
-                overflowY: "auto",
-              }}
-              formatter={(value: string, entry: any) => {
-                const val = entry?.payload?.value || 0;
-                const pct = total > 0 ? ((val / total) * 100).toFixed(2).replace(".", ",") : "0,00";
-                return `${value} (${pct}%)`;
-              }}
-            />
-          </PieChart>
-        </ResponsiveContainer>
-      </div>
+                  return null;
+                }}
+              />
+              <Legend
+                verticalAlign="bottom"
+                height={50}
+                iconType="circle"
+                wrapperStyle={{
+                  maxHeight: 80,
+                  overflowY: "auto",
+                }}
+                formatter={(value: string, entry: any) => {
+                  const val = entry?.payload?.value || 0;
+                  const pct = ((val / total) * 100)
+                    .toFixed(2)
+                    .replace(".", ",");
+                  return `${value} (${pct}%)`;
+                }}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+      ) : (
+        <div className="flex-1 min-h-[250px] flex flex-col items-center justify-center text-center px-6 py-12">
+          <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+            <FileText className="w-6 h-6 text-gray-400" />
+          </div>
+          <p className="text-sm font-semibold text-gray-700">
+            {emptyStateTitle}
+          </p>
+          <p className="text-xs text-gray-500 mt-1 max-w-[260px]">
+            {emptyStateDescription}
+          </p>
+        </div>
+      )}
 
       {/* Dynamic footer */}
       <p className="text-xs text-gray-500 mt-auto pt-4 border-t border-gray-200 min-h-[32px]">

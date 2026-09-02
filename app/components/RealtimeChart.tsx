@@ -27,6 +27,7 @@ import {
 } from "recharts";
 
 import FilterAutocomplete from "./FilterAutocomplete";
+import ChartEmptyState from "./ChartEmptyState";
 import SupplierResumeTable from "./SupplierResumeTable";
 import { Switch } from "@mui/material";
 import NoteSection from "./NoteSection";
@@ -935,17 +936,32 @@ export default function RealtimeChart({
       onDateRangeChange?.(startDate, endDate);
     }
 
-    let actualStartStr = startDate || chartFlowData?.period?.start || new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
-    let actualEndStr = endDate || chartFlowData?.period?.end || new Date().toISOString().split("T")[0];
+    let actualStartStr =
+      startDate ||
+      chartFlowData?.period?.start ||
+      new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .split("T")[0];
+    let actualEndStr =
+      endDate ||
+      chartFlowData?.period?.end ||
+      new Date().toISOString().split("T")[0];
 
-    if (chartFlowData?.granularity === "day" || chartFlowData?.granularity === "month") {
+    if (
+      chartFlowData?.granularity === "day" ||
+      chartFlowData?.granularity === "month"
+    ) {
       const today = new Date();
       const tzOffset = today.getTimezoneOffset() * 60000;
-      const todayStr = new Date(today.getTime() - tzOffset).toISOString().split("T")[0];
-      
+      const todayStr = new Date(today.getTime() - tzOffset)
+        .toISOString()
+        .split("T")[0];
+
       if (actualEndStr >= todayStr) {
         const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
-        actualEndStr = new Date(yesterday.getTime() - tzOffset).toISOString().split("T")[0];
+        actualEndStr = new Date(yesterday.getTime() - tzOffset)
+          .toISOString()
+          .split("T")[0];
       }
       if (actualStartStr > actualEndStr) {
         actualStartStr = actualEndStr;
@@ -969,7 +985,14 @@ export default function RealtimeChart({
 
     setFormattedStartDate(formattedStartDate);
     setFormattedEndDate(formattedEndDate);
-  }, [startDate, endDate, chartFlowData?.period?.start, chartFlowData?.period?.end, chartFlowData?.granularity, onDateRangeChange]);
+  }, [
+    startDate,
+    endDate,
+    chartFlowData?.period?.start,
+    chartFlowData?.period?.end,
+    chartFlowData?.granularity,
+    onDateRangeChange,
+  ]);
 
   const regionOptions = useMemo(
     () => [
@@ -1113,7 +1136,9 @@ export default function RealtimeChart({
     } else if (chartFlowData.granularity === "day") {
       const today = new Date();
       const tzOffset = today.getTimezoneOffset() * 60000;
-      const todayStr = new Date(today.getTime() - tzOffset).toISOString().split("T")[0];
+      const todayStr = new Date(today.getTime() - tzOffset)
+        .toISOString()
+        .split("T")[0];
       finalTimestamps = sortedTimestamps.filter((ts) => ts < todayStr);
     }
 
@@ -1134,7 +1159,7 @@ export default function RealtimeChart({
 
       const values: Record<string, number> = {};
       const flowrates: Record<string, number> = {};
-      
+
       // Only include values if not hourly, or if index is within valid range
       if (chartFlowData.granularity !== "hour" || index <= lastValidIndex) {
         seriesLookups.forEach(({ name, lookup }) => {
@@ -1409,9 +1434,11 @@ export default function RealtimeChart({
                   </div>
                 ) : transportirKeys.huluKeys.length === 0 &&
                   transportirKeys.hilirKeys.length === 0 ? (
-                  <div className="flex justify-center items-center w-full h-[500px] text-gray-500 text-xl font-semibold">
-                    Data untuk periode ini tidak tersedia
-                  </div>
+                  <ChartEmptyState
+                    title="Belum ada data transportir gas"
+                    description="Data transportir gas belum tersedia untuk pemasok, pembangkit, dan periode yang dipilih."
+                    className="h-[500px]"
+                  />
                 ) : (
                   <>
                     <ResponsiveContainer width="100%" height={500}>
@@ -1724,9 +1751,11 @@ export default function RealtimeChart({
                 )}
               </>
             ) : (
-              <div className="flex justify-center items-center w-full h-[300px] text-gray-500 text-xl font-semibold">
-                Data chart belum tersedia
-              </div>
+              <ChartEmptyState
+                title="Belum ada data Grafik Gas"
+                description="Data penyaluran gas belum tersedia untuk pemasok, pembangkit, filter, dan periode yang dipilih."
+                className="h-[300px]"
+              />
             )}
             {/* <p className="text-xs text-gray-500 mt-4 pt-4 border-t border-gray-200">
             Visualisasi data realtime perbandingan pemasok dan pembangkit harian
