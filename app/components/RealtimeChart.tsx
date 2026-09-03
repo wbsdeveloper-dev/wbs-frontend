@@ -27,7 +27,6 @@ import {
 } from "recharts";
 
 import FilterAutocomplete from "./FilterAutocomplete";
-import ChartEmptyState from "./ChartEmptyState";
 import SupplierResumeTable from "./SupplierResumeTable";
 import { Switch } from "@mui/material";
 import NoteSection from "./NoteSection";
@@ -79,6 +78,8 @@ export interface RealtimeChartProps {
     startDate: string | null,
     endDate: string | null,
   ) => void;
+  emptyStateTitle?: string;
+  emptyStateDescription?: string;
 }
 
 type ChartItem = {
@@ -712,6 +713,8 @@ export default function RealtimeChart({
   onRegionChange,
   onCommodityChange,
   onDateRangeChange,
+  emptyStateTitle = "Belum ada data volume Gas Pipa",
+  emptyStateDescription = "Data volume Gas Pipa belum tersedia untuk filter dan periode yang dipilih.",
 }: RealtimeChartProps = {}) {
   const chartRef = useRef<HTMLDivElement>(null);
 
@@ -931,43 +934,36 @@ export default function RealtimeChart({
     year: "numeric",
   }).format(today);
 
+  const { actualStartStr, actualEndStr } = useMemo(() => {
+    let startStr = startDate || chartFlowData?.period?.start || new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+    let endStr = endDate || chartFlowData?.period?.end || new Date().toISOString().split("T")[0];
+
+    const hasExplicitDateFilter = !!startDate || !!endDate;
+
+    if (!hasExplicitDateFilter && (chartFlowData?.granularity === "day" || chartFlowData?.granularity === "month")) {
+      const today = new Date();
+      const tzOffset = today.getTimezoneOffset() * 60000;
+      const todayStr = new Date(today.getTime() - tzOffset).toISOString().split("T")[0];
+
+      if (endStr >= todayStr) {
+        const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+        endStr = new Date(yesterday.getTime() - tzOffset).toISOString().split("T")[0];
+      }
+      if (startStr > endStr) {
+        startStr = endStr;
+      }
+    }
+
+    return { actualStartStr: startStr, actualEndStr: endStr };
+  }, [startDate, endDate, chartFlowData?.period?.start, chartFlowData?.period?.end, chartFlowData?.granularity]);
+
   useEffect(() => {
     if (startDate && endDate) {
       onDateRangeChange?.(startDate, endDate);
     }
+  }, [startDate, endDate, onDateRangeChange]);
 
-    let actualStartStr =
-      startDate ||
-      chartFlowData?.period?.start ||
-      new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-        .toISOString()
-        .split("T")[0];
-    let actualEndStr =
-      endDate ||
-      chartFlowData?.period?.end ||
-      new Date().toISOString().split("T")[0];
-
-    if (
-      chartFlowData?.granularity === "day" ||
-      chartFlowData?.granularity === "month"
-    ) {
-      const today = new Date();
-      const tzOffset = today.getTimezoneOffset() * 60000;
-      const todayStr = new Date(today.getTime() - tzOffset)
-        .toISOString()
-        .split("T")[0];
-
-      if (actualEndStr >= todayStr) {
-        const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
-        actualEndStr = new Date(yesterday.getTime() - tzOffset)
-          .toISOString()
-          .split("T")[0];
-      }
-      if (actualStartStr > actualEndStr) {
-        actualStartStr = actualEndStr;
-      }
-    }
-
+  useEffect(() => {
     const dateStart = new Date(actualStartStr);
     const dateEnd = new Date(actualEndStr);
 
@@ -985,14 +981,7 @@ export default function RealtimeChart({
 
     setFormattedStartDate(formattedStartDate);
     setFormattedEndDate(formattedEndDate);
-  }, [
-    startDate,
-    endDate,
-    chartFlowData?.period?.start,
-    chartFlowData?.period?.end,
-    chartFlowData?.granularity,
-    onDateRangeChange,
-  ]);
+  }, [actualStartStr, actualEndStr]);
 
   const regionOptions = useMemo(
     () => [
@@ -1081,11 +1070,35 @@ export default function RealtimeChart({
       return d.toLocaleDateString("id-ID", { month: "short" });
     };
 
+    // Helper to format timestamp to standard format based on granularity
+    const normalizeTimestamp = (ts: string): string => {
+      if (chartFlowData.granularity === "day") {
+        if (ts.includes("T")) {
+          const d = new Date(ts);
+          const tzOffset = d.getTimezoneOffset() * 60000;
+          return new Date(d.getTime() - tzOffset).toISOString().split("T")[0];
+        }
+        return ts.slice(0, 10);
+      }
+      if (chartFlowData.granularity === "month") {
+        if (ts.includes("T")) {
+          const d = new Date(ts);
+          const tzOffset = d.getTimezoneOffset() * 60000;
+          return new Date(d.getTime() - tzOffset).toISOString().slice(0, 7);
+        }
+        return ts.slice(0, 7);
+      }
+      if (chartFlowData.granularity === "year") {
+        return ts.slice(0, 4);
+      }
+      return ts;
+    };
+
     // Collect ALL unique timestamps from ALL series
     const timestampSet = new Set<string>();
     chartFlowData.series.forEach((series) => {
       series.dataPoints.forEach((dp) => {
-        timestampSet.add(dp.timestamp);
+        timestampSet.add(normalizeTimestamp(dp.timestamp));
       });
     });
 
@@ -1098,7 +1111,7 @@ export default function RealtimeChart({
     const seriesLookups = chartFlowData.series.map((series) => {
       const lookup = new Map<string, { value: number; flowrate: number }>();
       series.dataPoints.forEach((dp) => {
-        lookup.set(dp.timestamp, {
+        lookup.set(normalizeTimestamp(dp.timestamp), {
           value: dp.value,
           flowrate: dp.flowrate || 0,
         });
@@ -1133,13 +1146,54 @@ export default function RealtimeChart({
     let finalTimestamps = sortedTimestamps;
     if (chartFlowData.granularity === "hour") {
       finalTimestamps = sortedTimestamps.slice(0, lastValidIndex + 1);
-    } else if (chartFlowData.granularity === "day") {
-      const today = new Date();
-      const tzOffset = today.getTimezoneOffset() * 60000;
-      const todayStr = new Date(today.getTime() - tzOffset)
-        .toISOString()
-        .split("T")[0];
-      finalTimestamps = sortedTimestamps.filter((ts) => ts < todayStr);
+    } else {
+      let startCmp = actualStartStr;
+      let endCmp = actualEndStr;
+
+      if (chartFlowData.granularity === "day") {
+        const generated: string[] = [];
+        const current = new Date(startCmp);
+        const end = new Date(endCmp);
+        let safeguard = 0;
+        while (current <= end && safeguard < 1000) {
+          const tzOffset = current.getTimezoneOffset() * 60000;
+          const iso = new Date(current.getTime() - tzOffset).toISOString().split("T")[0];
+          generated.push(iso);
+          current.setDate(current.getDate() + 1);
+          safeguard++;
+        }
+        finalTimestamps = generated;
+      } else if (chartFlowData.granularity === "month") {
+        startCmp = actualStartStr.slice(0, 7);
+        endCmp = actualEndStr.slice(0, 7);
+        const generated: string[] = [];
+        const current = new Date(startCmp + "-01");
+        const end = new Date(endCmp + "-01");
+        let safeguard = 0;
+        while (current <= end && safeguard < 120) {
+          const tzOffset = current.getTimezoneOffset() * 60000;
+          const iso = new Date(current.getTime() - tzOffset).toISOString().slice(0, 7);
+          generated.push(iso);
+          current.setMonth(current.getMonth() + 1);
+          safeguard++;
+        }
+        finalTimestamps = generated;
+      } else if (chartFlowData.granularity === "year") {
+        startCmp = actualStartStr.slice(0, 4);
+        endCmp = actualEndStr.slice(0, 4);
+        const generated: string[] = [];
+        let currentYear = parseInt(startCmp);
+        const endYear = parseInt(endCmp);
+        let safeguard = 0;
+        while (currentYear <= endYear && safeguard < 100) {
+          generated.push(currentYear.toString());
+          currentYear++;
+          safeguard++;
+        }
+        finalTimestamps = generated;
+      } else {
+        finalTimestamps = sortedTimestamps.filter((ts) => ts >= startCmp && ts <= endCmp);
+      }
     }
 
     return finalTimestamps.map((rawTs, index) => {
@@ -1180,7 +1234,7 @@ export default function RealtimeChart({
         yearStr,
       };
     });
-  }, [chartFlowData]);
+  }, [chartFlowData, actualStartStr, actualEndStr]);
 
   // Calculate mean values from API data
   const apiMeanValues: Record<string, number | null> = useMemo(() => {
@@ -1324,7 +1378,7 @@ export default function RealtimeChart({
     return value.toLocaleString("id-ID", { maximumFractionDigits: 2 });
   }, []);
 
-  const submitNote = () => {};
+  const submitNote = () => { };
 
   if (topLineActive === null) return null;
 
@@ -1405,21 +1459,19 @@ export default function RealtimeChart({
                 <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
                   <button
                     onClick={() => setChartMode("non-transportir")}
-                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
-                      chartMode === "non-transportir"
-                        ? "bg-white text-gray-900 shadow-sm"
-                        : "text-gray-500 hover:text-gray-700"
-                    }`}
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${chartMode === "non-transportir"
+                      ? "bg-white text-gray-900 shadow-sm"
+                      : "text-gray-500 hover:text-gray-700"
+                      }`}
                   >
                     Non-Transportir
                   </button>
                   <button
                     onClick={() => setChartMode("transportir")}
-                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
-                      chartMode === "transportir"
-                        ? "bg-white text-gray-900 shadow-sm"
-                        : "text-gray-500 hover:text-gray-700"
-                    }`}
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${chartMode === "transportir"
+                      ? "bg-white text-gray-900 shadow-sm"
+                      : "text-gray-500 hover:text-gray-700"
+                      }`}
                   >
                     Transportir
                   </button>
@@ -1434,11 +1486,17 @@ export default function RealtimeChart({
                   </div>
                 ) : transportirKeys.huluKeys.length === 0 &&
                   transportirKeys.hilirKeys.length === 0 ? (
-                  <ChartEmptyState
-                    title="Belum ada data transportir gas"
-                    description="Data transportir gas belum tersedia untuk pemasok, pembangkit, dan periode yang dipilih."
-                    className="h-[500px]"
-                  />
+                  <div className="flex-1 min-h-[500px] flex flex-col items-center justify-center text-center px-6 py-12">
+                    <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+                      <FileText className="w-6 h-6 text-gray-400" />
+                    </div>
+                    <p className="text-sm font-semibold text-gray-700">
+                      {emptyStateTitle}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1 max-w-[260px]">
+                      {emptyStateDescription}
+                    </p>
+                  </div>
                 ) : (
                   <>
                     <ResponsiveContainer width="100%" height={500}>
@@ -1563,7 +1621,7 @@ export default function RealtimeChart({
                       left: 5,
                       bottom:
                         period === "1M" ||
-                        (period === "3Y" && intervalMode === "Hari")
+                          (period === "3Y" && intervalMode === "Hari")
                           ? 50
                           : 10,
                     }}
@@ -1585,7 +1643,7 @@ export default function RealtimeChart({
                       }
                       height={
                         period === "1M" ||
-                        (period === "3Y" && intervalMode === "Hari")
+                          (period === "3Y" && intervalMode === "Hari")
                           ? 60
                           : period === "3Y" && intervalMode === "Bulan"
                             ? 50
@@ -1715,11 +1773,10 @@ export default function RealtimeChart({
                 {seriesKeys.length > 0 && (
                   <div className="mt-3">
                     <div
-                      className={`flex flex-wrap justify-center gap-x-5 gap-y-2 px-3 py-2.5 rounded-lg bg-gray-50/80 border border-gray-100 ${
-                        seriesKeys.length > 10
-                          ? "max-h-[80px] overflow-y-auto"
-                          : ""
-                      }`}
+                      className={`flex flex-wrap justify-center gap-x-5 gap-y-2 px-3 py-2.5 rounded-lg bg-gray-50/80 border border-gray-100 ${seriesKeys.length > 10
+                        ? "max-h-[80px] overflow-y-auto"
+                        : ""
+                        }`}
                     >
                       {seriesKeys.map((key) => (
                         <div
@@ -1751,11 +1808,17 @@ export default function RealtimeChart({
                 )}
               </>
             ) : (
-              <ChartEmptyState
-                title="Belum ada data Grafik Gas"
-                description="Data penyaluran gas belum tersedia untuk pemasok, pembangkit, filter, dan periode yang dipilih."
-                className="h-[300px]"
-              />
+              <div className="flex-1 min-h-[300px] flex flex-col items-center justify-center text-center px-6 py-12">
+                <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+                  <FileText className="w-6 h-6 text-gray-400" />
+                </div>
+                <p className="text-sm font-semibold text-gray-700">
+                  {emptyStateTitle}
+                </p>
+                <p className="text-xs text-gray-500 mt-1 max-w-[260px]">
+                  {emptyStateDescription}
+                </p>
+              </div>
             )}
             {/* <p className="text-xs text-gray-500 mt-4 pt-4 border-t border-gray-200">
             Visualisasi data realtime perbandingan pemasok dan pembangkit harian
@@ -1953,23 +2016,23 @@ export default function RealtimeChart({
             {(chartMode === "transportir" ||
               filterType == "Pembangkit" ||
               pemasok) && (
-              <FilterAutocomplete
-                label="Pembangkit"
-                options={pembangkitOptions}
-                value={pembangkit}
-                onChange={(val) => {
-                  setPembangkit(val);
-                  if (onPembangkitChange) {
-                    const found = filtersData?.pembangkit?.find(
-                      (p: FilterOption) => p.name === val,
-                    );
-                    setSelectedPembangkitId(found?.id ?? undefined);
-                    onPembangkitChange(found?.id ?? null);
-                  }
-                }}
-                placeholder="Pilih Pembangkit"
-              />
-            )}
+                <FilterAutocomplete
+                  label="Pembangkit"
+                  options={pembangkitOptions}
+                  value={pembangkit}
+                  onChange={(val) => {
+                    setPembangkit(val);
+                    if (onPembangkitChange) {
+                      const found = filtersData?.pembangkit?.find(
+                        (p: FilterOption) => p.name === val,
+                      );
+                      setSelectedPembangkitId(found?.id ?? undefined);
+                      onPembangkitChange(found?.id ?? null);
+                    }
+                  }}
+                  placeholder="Pilih Pembangkit"
+                />
+              )}
             {chartMode !== "transportir" &&
               pembangkit &&
               (!pemasok ||
@@ -2065,11 +2128,10 @@ export default function RealtimeChart({
                       ].map((item) => (
                         <button
                           key={item.label}
-                          className={`px-3 py-2 text-sm font-medium rounded-md transition-colors text-center ${
-                            period === item.val
-                              ? "bg-primary text-white shadow-sm"
-                              : "bg-gray-50 text-gray-600 hover:bg-gray-100"
-                          }`}
+                          className={`px-3 py-2 text-sm font-medium rounded-md transition-colors text-center ${period === item.val
+                            ? "bg-primary text-white shadow-sm"
+                            : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+                            }`}
                           onClick={() => {
                             setPeriod(item.val);
                             // Sensible default interval based on period
@@ -2134,11 +2196,10 @@ export default function RealtimeChart({
                           return (
                             <button
                               key={mode}
-                              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                                intervalMode === mode
-                                  ? "text-white shadow-sm"
-                                  : "bg-gray-50 text-gray-600 hover:bg-gray-100"
-                              }`}
+                              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${intervalMode === mode
+                                ? "text-white shadow-sm"
+                                : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+                                }`}
                               style={
                                 intervalMode === mode
                                   ? { backgroundColor: "var(--theme-primary)" }
@@ -2205,9 +2266,9 @@ export default function RealtimeChart({
                             color: "var(--theme-primary)",
                           },
                           "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
-                            {
-                              backgroundColor: "var(--theme-primary)",
-                            },
+                          {
+                            backgroundColor: "var(--theme-primary)",
+                          },
                         }}
                       />
                     </div>
@@ -2223,9 +2284,9 @@ export default function RealtimeChart({
                             color: "var(--theme-primary)",
                           },
                           "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
-                            {
-                              backgroundColor: "var(--theme-primary)",
-                            },
+                          {
+                            backgroundColor: "var(--theme-primary)",
+                          },
                         }}
                       />
                     </div>
@@ -2241,9 +2302,9 @@ export default function RealtimeChart({
                             color: "var(--theme-primary)",
                           },
                           "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
-                            {
-                              backgroundColor: "var(--theme-primary)",
-                            },
+                          {
+                            backgroundColor: "var(--theme-primary)",
+                          },
                         }}
                       />
                     </div>
