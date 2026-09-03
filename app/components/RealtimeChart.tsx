@@ -78,6 +78,8 @@ export interface RealtimeChartProps {
     startDate: string | null,
     endDate: string | null,
   ) => void;
+  emptyStateTitle?: string;
+  emptyStateDescription?: string;
 }
 
 type ChartItem = {
@@ -711,6 +713,8 @@ export default function RealtimeChart({
   onRegionChange,
   onCommodityChange,
   onDateRangeChange,
+  emptyStateTitle = "Belum ada data volume Gas Pipa",
+  emptyStateDescription = "Data volume Gas Pipa belum tersedia untuk filter dan periode yang dipilih.",
 }: RealtimeChartProps = {}) {
   const chartRef = useRef<HTMLDivElement>(null);
 
@@ -1066,11 +1070,35 @@ export default function RealtimeChart({
       return d.toLocaleDateString("id-ID", { month: "short" });
     };
 
+    // Helper to format timestamp to standard format based on granularity
+    const normalizeTimestamp = (ts: string): string => {
+      if (chartFlowData.granularity === "day") {
+        if (ts.includes("T")) {
+          const d = new Date(ts);
+          const tzOffset = d.getTimezoneOffset() * 60000;
+          return new Date(d.getTime() - tzOffset).toISOString().split("T")[0];
+        }
+        return ts.slice(0, 10);
+      }
+      if (chartFlowData.granularity === "month") {
+        if (ts.includes("T")) {
+          const d = new Date(ts);
+          const tzOffset = d.getTimezoneOffset() * 60000;
+          return new Date(d.getTime() - tzOffset).toISOString().slice(0, 7);
+        }
+        return ts.slice(0, 7);
+      }
+      if (chartFlowData.granularity === "year") {
+        return ts.slice(0, 4);
+      }
+      return ts;
+    };
+
     // Collect ALL unique timestamps from ALL series
     const timestampSet = new Set<string>();
     chartFlowData.series.forEach((series) => {
       series.dataPoints.forEach((dp) => {
-        timestampSet.add(dp.timestamp);
+        timestampSet.add(normalizeTimestamp(dp.timestamp));
       });
     });
 
@@ -1083,7 +1111,7 @@ export default function RealtimeChart({
     const seriesLookups = chartFlowData.series.map((series) => {
       const lookup = new Map<string, { value: number; flowrate: number }>();
       series.dataPoints.forEach((dp) => {
-        lookup.set(dp.timestamp, {
+        lookup.set(normalizeTimestamp(dp.timestamp), {
           value: dp.value,
           flowrate: dp.flowrate || 0,
         });
@@ -1122,15 +1150,50 @@ export default function RealtimeChart({
       let startCmp = actualStartStr;
       let endCmp = actualEndStr;
 
-      if (chartFlowData.granularity === "month") {
+      if (chartFlowData.granularity === "day") {
+        const generated: string[] = [];
+        const current = new Date(startCmp);
+        const end = new Date(endCmp);
+        let safeguard = 0;
+        while (current <= end && safeguard < 1000) {
+          const tzOffset = current.getTimezoneOffset() * 60000;
+          const iso = new Date(current.getTime() - tzOffset).toISOString().split("T")[0];
+          generated.push(iso);
+          current.setDate(current.getDate() + 1);
+          safeguard++;
+        }
+        finalTimestamps = generated;
+      } else if (chartFlowData.granularity === "month") {
         startCmp = actualStartStr.slice(0, 7);
         endCmp = actualEndStr.slice(0, 7);
+        const generated: string[] = [];
+        const current = new Date(startCmp + "-01");
+        const end = new Date(endCmp + "-01");
+        let safeguard = 0;
+        while (current <= end && safeguard < 120) {
+          const tzOffset = current.getTimezoneOffset() * 60000;
+          const iso = new Date(current.getTime() - tzOffset).toISOString().slice(0, 7);
+          generated.push(iso);
+          current.setMonth(current.getMonth() + 1);
+          safeguard++;
+        }
+        finalTimestamps = generated;
       } else if (chartFlowData.granularity === "year") {
         startCmp = actualStartStr.slice(0, 4);
         endCmp = actualEndStr.slice(0, 4);
+        const generated: string[] = [];
+        let currentYear = parseInt(startCmp);
+        const endYear = parseInt(endCmp);
+        let safeguard = 0;
+        while (currentYear <= endYear && safeguard < 100) {
+          generated.push(currentYear.toString());
+          currentYear++;
+          safeguard++;
+        }
+        finalTimestamps = generated;
+      } else {
+        finalTimestamps = sortedTimestamps.filter((ts) => ts >= startCmp && ts <= endCmp);
       }
-
-      finalTimestamps = sortedTimestamps.filter((ts) => ts >= startCmp && ts <= endCmp);
     }
 
     return finalTimestamps.map((rawTs, index) => {
@@ -1171,7 +1234,7 @@ export default function RealtimeChart({
         yearStr,
       };
     });
-  }, [chartFlowData]);
+  }, [chartFlowData, actualStartStr, actualEndStr]);
 
   // Calculate mean values from API data
   const apiMeanValues: Record<string, number | null> = useMemo(() => {
@@ -1423,8 +1486,16 @@ export default function RealtimeChart({
                   </div>
                 ) : transportirKeys.huluKeys.length === 0 &&
                   transportirKeys.hilirKeys.length === 0 ? (
-                  <div className="flex justify-center items-center w-full h-[500px] text-gray-500 text-xl font-semibold">
-                    Data untuk periode ini tidak tersedia
+                  <div className="flex-1 min-h-[500px] flex flex-col items-center justify-center text-center px-6 py-12">
+                    <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+                      <FileText className="w-6 h-6 text-gray-400" />
+                    </div>
+                    <p className="text-sm font-semibold text-gray-700">
+                      {emptyStateTitle}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1 max-w-[260px]">
+                      {emptyStateDescription}
+                    </p>
                   </div>
                 ) : (
                   <>
@@ -1737,8 +1808,16 @@ export default function RealtimeChart({
                 )}
               </>
             ) : (
-              <div className="flex justify-center items-center w-full h-[300px] text-gray-500 text-xl font-semibold">
-                Data chart belum tersedia
+              <div className="flex-1 min-h-[300px] flex flex-col items-center justify-center text-center px-6 py-12">
+                <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+                  <FileText className="w-6 h-6 text-gray-400" />
+                </div>
+                <p className="text-sm font-semibold text-gray-700">
+                  {emptyStateTitle}
+                </p>
+                <p className="text-xs text-gray-500 mt-1 max-w-[260px]">
+                  {emptyStateDescription}
+                </p>
               </div>
             )}
             {/* <p className="text-xs text-gray-500 mt-4 pt-4 border-t border-gray-200">
