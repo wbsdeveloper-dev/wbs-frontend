@@ -84,9 +84,9 @@ export default function LoginPage() {
             <Image
               src={isDark ? "/logos/danantara-putih.png" : "/logos/danantara.png"}
               alt="Danantara logo"
-              width={150}
-              height={45}
-              className="theme-logo-surface object-contain h-[28px] md:h-[35px] lg:h-[45px] w-auto"
+              width={120}
+              height={36}
+              className="theme-logo-surface object-contain h-[20px] md:h-[26px] lg:h-[34px] w-auto"
             />
             <Image
               src={isDark ? "/logos/sucofindo-putih.png" : "/logos/SucofindoIdSurvey.png"}

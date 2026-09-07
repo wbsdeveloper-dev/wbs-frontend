@@ -1054,9 +1054,11 @@ export function RelasiOperasionalTable({
                 <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   Komoditas
                 </th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Moda Angkutan
-                </th>
+                {commodity?.includes("BBM") && (
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Moda Angkutan
+                  </th>
+                )}
                 <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   Status
                 </th>
@@ -1071,7 +1073,7 @@ export function RelasiOperasionalTable({
               {isLoading ? (
                 <tr>
                   <td
-                    colSpan={7}
+                    colSpan={commodity?.includes("BBM") ? 7 : 6}
                     className="px-4 py-8 text-center text-gray-500"
                   >
                     Memuat data...
@@ -1080,7 +1082,7 @@ export function RelasiOperasionalTable({
               ) : paginatedRelations.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={7}
+                    colSpan={commodity?.includes("BBM") ? 7 : 6}
                     className="px-4 py-8 text-center text-gray-500"
                   >
                     {debouncedSearch
@@ -1106,9 +1108,11 @@ export function RelasiOperasionalTable({
                     <td className="px-4 py-3 text-center text-gray-700">
                       {relation.commodity}
                     </td>
-                    <td className="px-4 py-3 text-center text-gray-700">
-                      {relation.transport_mode || "-"}
-                    </td>
+                    {commodity?.includes("BBM") && (
+                      <td className="px-4 py-3 text-center text-gray-700">
+                        {relation.transport_mode || "-"}
+                      </td>
+                    )}
                     <td className="px-4 py-3 text-center">
                       <StatusBadge
                         status={relation.relation_type}

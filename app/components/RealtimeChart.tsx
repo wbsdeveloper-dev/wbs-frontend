@@ -1019,7 +1019,7 @@ export default function RealtimeChart({
           }
           return comp === "LNG" || comp === "GAS PIPA";
         })
-        .map((p: FilterOption) => p.name);
+        .map((p: FilterOption) => p.commodity?.toUpperCase() === "LNG" ? `${p.name} (LNG)` : p.name);
     }
     return ["Semua Pemasok", ...opts];
   }, [filtersData, commodity]);
@@ -1034,7 +1034,7 @@ export default function RealtimeChart({
           }
           return comp === "LNG" || comp === "GAS PIPA";
         })
-        .map((p: FilterOption) => p.name);
+        .map((p: FilterOption) => p.commodity?.toUpperCase() === "LNG" ? `${p.name} (LNG)` : p.name);
     return ["Pembangkit 1", "Pembangkit 2"];
   }, [filtersData, commodity]);
 
@@ -1998,7 +1998,10 @@ export default function RealtimeChart({
                       const ids = selectedArr
                         .map((name) => {
                           const found = filtersData?.pemasok?.find(
-                            (p: FilterOption) => p.name === name,
+                            (p: FilterOption) => {
+                              const pName = p.commodity?.toUpperCase() === "LNG" ? `${p.name} (LNG)` : p.name;
+                              return pName === name;
+                            }
                           );
                           return found?.id;
                         })
@@ -2024,7 +2027,10 @@ export default function RealtimeChart({
                     setPembangkit(val);
                     if (onPembangkitChange) {
                       const found = filtersData?.pembangkit?.find(
-                        (p: FilterOption) => p.name === val,
+                        (p: FilterOption) => {
+                          const pName = p.commodity?.toUpperCase() === "LNG" ? `${p.name} (LNG)` : p.name;
+                          return pName === val;
+                        }
                       );
                       setSelectedPembangkitId(found?.id ?? undefined);
                       onPembangkitChange(found?.id ?? null);
@@ -2071,7 +2077,10 @@ export default function RealtimeChart({
                         const ids = selectedArr
                           .map((name) => {
                             const found = filtersData?.pemasok?.find(
-                              (p: FilterOption) => p.name === name,
+                              (p: FilterOption) => {
+                                const pName = p.commodity?.toUpperCase() === "LNG" ? `${p.name} (LNG)` : p.name;
+                                return pName === name;
+                              }
                             );
                             return found?.id;
                           })
