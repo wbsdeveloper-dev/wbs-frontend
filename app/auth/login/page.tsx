@@ -59,7 +59,14 @@ export default function LoginPage() {
     }
 
     try {
-      await login(email, password);
+      // Get the redirect URL from query params if available
+      let redirectUrl: string | undefined = undefined;
+      if (typeof window !== "undefined") {
+        const searchParams = new URLSearchParams(window.location.search);
+        redirectUrl = searchParams.get("redirect") || undefined;
+      }
+
+      await login(email, password, redirectUrl);
       // Navigation is handled by the auth context
     } catch (err) {
       setError(
