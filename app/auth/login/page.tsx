@@ -59,7 +59,14 @@ export default function LoginPage() {
     }
 
     try {
-      await login(email, password);
+      // Get the redirect URL from query params if available
+      let redirectUrl: string | undefined = undefined;
+      if (typeof window !== "undefined") {
+        const searchParams = new URLSearchParams(window.location.search);
+        redirectUrl = searchParams.get("redirect") || undefined;
+      }
+
+      await login(email, password, redirectUrl);
       // Navigation is handled by the auth context
     } catch (err) {
       setError(
@@ -84,9 +91,9 @@ export default function LoginPage() {
             <Image
               src={isDark ? "/logos/danantara-putih.png" : "/logos/danantara.png"}
               alt="Danantara logo"
-              width={150}
-              height={45}
-              className="theme-logo-surface object-contain h-[28px] md:h-[35px] lg:h-[45px] w-auto"
+              width={120}
+              height={36}
+              className="theme-logo-surface object-contain h-[20px] md:h-[26px] lg:h-[34px] w-auto"
             />
             <Image
               src={isDark ? "/logos/sucofindo-putih.png" : "/logos/SucofindoIdSurvey.png"}

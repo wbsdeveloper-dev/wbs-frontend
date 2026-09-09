@@ -10,7 +10,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   user: UserProfile | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, redirectUrl?: string) => Promise<void>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
 }
@@ -95,7 +95,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           clearTokens();
           setUser(null);
           setIsAuth(false);
-          router.push("/auth/login");
+          
+          if (typeof window !== 'undefined') {
+            const currentPath = window.location.pathname + window.location.search;
+            if (currentPath && currentPath !== '/' && !currentPath.startsWith('/auth/login') && !currentPath.startsWith('/landingpage')) {
+              router.push(`/auth/login?redirect=${encodeURIComponent(currentPath)}`);
+            } else {
+              router.push("/auth/login");
+            }
+          } else {
+            router.push("/auth/login");
+          }
         }
       }
     };
@@ -110,7 +120,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, [isAuth, router]);
 
-  const login = useCallback(async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string, redirectUrl?: string) => {
     try {
       const data = await loginApi(email, password);
       setTokens(data.accessToken, data.refreshToken, data.expiresIn);
@@ -120,7 +130,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const userProfile = await getCurrentUser();
       setUser(userProfile);
 
-      router.push("/landingpage");
+      router.push(redirectUrl || "/landingpage");
     } catch (error) {
       console.error("Login failed:", error);
       throw error;

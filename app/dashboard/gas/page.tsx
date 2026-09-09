@@ -557,29 +557,24 @@ export default function GasDashboard() {
 
             {/* Cards Grid */}
             <div className="flex overflow-x-auto gap-4 mb-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-              {isDistLoading ? (
-                <div className="bg-white rounded-xl p-6 flex items-center justify-center w-[360px] min-w-[360px] md:w-[420px] md:min-w-[420px] flex-shrink-0">
-                  <Loader2 className="animate-spin text-secondary" size={32} />
-                </div>
-              ) : (
-                <div className="w-[360px] min-w-[360px] md:w-[420px] md:min-w-[420px] flex-shrink-0">
-                  <FuelTypeDonutChart
-                    openModalFunction={open}
-                    data={dataPieChart}
-                    changeFilterType={setFilterType}
-                    filterType={filterType}
-                    startDate={distributionStartDate}
-                    endDate={distributionEndDate}
-                    onStartDateChange={setDistributionStartDate}
-                    onEndDateChange={setDistributionEndDate}
-                    commodity={distributionCommodity}
-                    onCommodityChange={setDistributionCommodity}
-                    commodityOptions={["GAS PIPA", "LNG"]}
-                    emptyStateTitle={`Belum ada data volume ${distributionCommodity === "LNG" ? "LNG" : "Gas Pipa"}`}
-                    emptyStateDescription={`Data volume ${distributionCommodity === "LNG" ? "LNG" : "Gas Pipa"} belum tersedia untuk filter dan periode yang dipilih.`}
-                  />
-                </div>
-              )}
+              <div className="w-[360px] min-w-[360px] md:w-[420px] md:min-w-[420px] flex-shrink-0">
+                <FuelTypeDonutChart
+                  openModalFunction={open}
+                  data={dataPieChart}
+                  changeFilterType={setFilterType}
+                  filterType={filterType}
+                  startDate={distributionStartDate}
+                  endDate={distributionEndDate}
+                  onStartDateChange={setDistributionStartDate}
+                  onEndDateChange={setDistributionEndDate}
+                  commodity={distributionCommodity}
+                  onCommodityChange={setDistributionCommodity}
+                  commodityOptions={["GAS PIPA", "LNG"]}
+                  emptyStateTitle={`Belum ada data volume ${distributionCommodity === "LNG" ? "LNG" : "Gas Pipa"}`}
+                  emptyStateDescription={`Data volume ${distributionCommodity === "LNG" ? "LNG" : "Gas Pipa"} belum tersedia untuk filter dan periode yang dipilih.`}
+                  isLoading={isDistLoading}
+                />
+              </div>
               {isSuppliersLoading ? (
                 <div className="bg-white rounded-xl p-6 flex items-center justify-center w-[360px] min-w-[360px] md:w-[420px] md:min-w-[420px] flex-shrink-0">
                   <Loader2 className="animate-spin text-secondary" size={32} />
