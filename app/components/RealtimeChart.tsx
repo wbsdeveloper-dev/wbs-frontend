@@ -83,14 +83,14 @@ export interface RealtimeChartProps {
 
 type ChartItem = {
   label: string;
-  values: Record<string, number>;
-  flowrates?: Record<string, number>;
+  values: Record<string, number | null>;
+  flowrates?: Record<string, number | null>;
   rawTimestamp?: string;
 };
 
 interface TooltipPayload {
   name: string;
-  value: number;
+  value: number | null;
   color?: string;
   dataKey?: string;
   payload?: ChartItem;
@@ -605,11 +605,14 @@ const CustomTooltip = ({
 }) => {
   if (!active || !payload || payload.length === 0) return null;
 
-  const totalVolume = payload.reduce(
-    (sum, item) => sum + Number(item.value || 0),
+  const visiblePayload = payload.filter((item) => item.value !== null);
+  if (visiblePayload.length === 0) return null;
+
+  const totalVolume = visiblePayload.reduce(
+    (sum, item) => sum + Number(item.value),
     0,
   );
-  const totalFlowrate = payload.reduce((sum, item) => {
+  const totalFlowrate = visiblePayload.reduce((sum, item) => {
     const originalKey = item.dataKey?.replace("values.", "") || item.name;
     const flowrate = item.payload?.flowrates?.[originalKey] || 0;
     return sum + Number(flowrate);
@@ -624,10 +627,10 @@ const CustomTooltip = ({
       <ul
         className={`
       grid gap-3 items-start
-      ${payload.length > 4 ? "grid-cols-2" : "grid-cols-1"}
+      ${visiblePayload.length > 4 ? "grid-cols-2" : "grid-cols-1"}
     `}
       >
-        {payload.map((item, index) => {
+        {visiblePayload.map((item, index) => {
           const originalKey = item.dataKey?.replace("values.", "") || item.name;
           const flowrate = item.payload?.flowrates?.[originalKey] || 0;
 
@@ -668,7 +671,7 @@ const CustomTooltip = ({
         })}
       </ul>
 
-      {payload.length > 1 && (
+      {visiblePayload.length > 1 && (
         <div className="border-t border-gray-100 pt-3 mt-3">
           <div className="font-medium text-gray-800 mb-2">
             Total Keseluruhan
@@ -1094,19 +1097,24 @@ export default function RealtimeChart({
       (a, b) => new Date(a).getTime() - new Date(b).getTime(),
     );
 
-    // Build a lookup map for each series: timestamp -> { value, flowrate }
+    // Build a lookup map for each series. Null means that the API has no
+    // record for the timestamp; an actual zero remains a valid chart value.
     const seriesLookups = chartFlowData.series.map((series) => {
-      const lookup = new Map<string, { value: number; flowrate: number }>();
+      const lookup = new Map<
+        string,
+        { value: number | null; flowrate: number | null }
+      >();
       series.dataPoints.forEach((dp) => {
         lookup.set(dp.timestamp, {
           value: dp.value,
-          flowrate: dp.flowrate || 0,
+          flowrate: dp.flowrate ?? null,
         });
       });
       return { name: series.name, lookup };
     });
 
-    // For hourly data, find the index of the latest update hour (last hour with volume > 0)
+    // For hourly data, find the latest hour containing an actual record.
+    // Zero is data; only null represents a missing point.
     let lastValidIndex = sortedTimestamps.length - 1;
     if (chartFlowData.granularity === "hour") {
       let foundData = false;
@@ -1115,7 +1123,7 @@ export default function RealtimeChart({
         let hasData = false;
         seriesLookups.forEach(({ lookup }) => {
           const data = lookup.get(ts);
-          if (data && data.value > 0) {
+          if (data && data.value !== null) {
             hasData = true;
           }
         });
@@ -1164,9 +1172,11 @@ export default function RealtimeChart({
       if (chartFlowData.granularity !== "hour" || index <= lastValidIndex) {
         seriesLookups.forEach(({ name, lookup }) => {
           const data = lookup.get(rawTs);
-          if (data !== undefined) {
+          if (data?.value !== null && data?.value !== undefined) {
             values[name] = data.value;
-            flowrates[name] = data.flowrate;
+            if (data.flowrate !== null) {
+              flowrates[name] = data.flowrate;
+            }
           }
         });
       }
@@ -1187,8 +1197,13 @@ export default function RealtimeChart({
     if (!chartFlowData?.series?.length) return {};
     const means: Record<string, number | null> = {};
     chartFlowData.series.forEach((series) => {
-      const total = series.dataPoints.reduce((sum, dp) => sum + dp.value, 0);
-      means[series.name] = total / (series.dataPoints.length || 1);
+      const values = series.dataPoints
+        .map((dp) => dp.value)
+        .filter((value): value is number => value !== null);
+      means[series.name] =
+        values.length > 0
+          ? values.reduce((sum, value) => sum + value, 0) / values.length
+          : null;
     });
     // Use mean from referenceLines if available
     if (
@@ -1612,8 +1627,12 @@ export default function RealtimeChart({
                           name={key.toUpperCase()}
                           stroke={seriesColors[key] || COLORS[key] || "#999"}
                           strokeWidth={2}
+                          connectNulls={false}
                           dot={(props: any) => {
                             const { cx, cy, payload, value, index } = props;
+                            if (value === null || value === undefined) {
+                              return <g key={`empty-dot-${key}-${index}`} />;
+                            }
                             const rawTs = payload.rawTimestamp;
                             let hasNote = false;
 
