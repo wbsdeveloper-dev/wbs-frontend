@@ -162,7 +162,13 @@ export default function InputBAValidasiModal({
     }
   }, []);
 
-  const { data: filtersData } = useFilters();
+  // This modal belongs to Gas Pipa data input, so only request Gas Pipa sites.
+  const { data: filtersData } = useFilters(
+    undefined,
+    undefined,
+    undefined,
+    "GAS PIPA",
+  );
 
   // Dynamically update prompt for Multi Pembangkit when configurations change
   useEffect(() => {
@@ -728,10 +734,13 @@ export default function InputBAValidasiModal({
                       <Autocomplete
                         options={(filtersData?.pemasok || []).filter(
                           (p) =>
-                            p.commodity?.toUpperCase() === "LNG" ||
-                            p.commodity?.toUpperCase() === "GAS PIPA",
+                            p.commodity?.trim().toUpperCase() === "GAS PIPA",
                         )}
                         getOptionLabel={(option) => option.name}
+                        getOptionKey={(option) => option.id}
+                        isOptionEqualToValue={(option, value) =>
+                          option.id === value.id
+                        }
                         value={
                           filtersData?.pemasok?.find(
                             (p) => p.id === formData.supplierId,
@@ -769,10 +778,13 @@ export default function InputBAValidasiModal({
                         <Autocomplete
                           options={(filtersData?.pembangkit || []).filter(
                             (p) =>
-                              p.commodity?.toUpperCase() === "LNG" ||
-                              p.commodity?.toUpperCase() === "GAS PIPA",
+                              p.commodity?.trim().toUpperCase() === "GAS PIPA",
                           )}
                           getOptionLabel={(option) => option.name}
+                          getOptionKey={(option) => option.id}
+                          isOptionEqualToValue={(option, value) =>
+                            option.id === value.id
+                          }
                           value={
                             filtersData?.pembangkit?.find(
                               (p) => p.id === formData.siteId,
@@ -882,10 +894,14 @@ export default function InputBAValidasiModal({
                             <Autocomplete
                               options={(filtersData?.pembangkit || []).filter(
                                 (p) =>
-                                  p.commodity?.toUpperCase() === "LNG" ||
-                                  p.commodity?.toUpperCase() === "GAS PIPA",
+                                  p.commodity?.trim().toUpperCase() ===
+                                  "GAS PIPA",
                               )}
                               getOptionLabel={(option) => option.name}
+                              getOptionKey={(option) => option.id}
+                              isOptionEqualToValue={(option, value) =>
+                                option.id === value.id
+                              }
                               value={
                                 filtersData?.pembangkit?.find(
                                   (p) => p.id === formData.siteIds[index],
@@ -1284,13 +1300,14 @@ export default function InputBAValidasiModal({
                               value={new Intl.NumberFormat("id-ID", {
                                 minimumFractionDigits: 4,
                                 maximumFractionDigits: 4,
-                              }).format(extractedRecords
-                                .reduce(
+                              }).format(
+                                extractedRecords.reduce(
                                   (sum, r) =>
                                     sum +
                                     (parseFloat(r.stream1Flowrate || "0") || 0),
                                   0,
-                                ))}
+                                ),
+                              )}
                               className="w-full px-2 py-2 bg-gray-50 border border-gray-300 rounded-lg font-bold text-gray-900 text-right text-xs"
                             />
                             <input
@@ -1299,13 +1316,14 @@ export default function InputBAValidasiModal({
                               value={new Intl.NumberFormat("id-ID", {
                                 minimumFractionDigits: 4,
                                 maximumFractionDigits: 4,
-                              }).format(extractedRecords
-                                .reduce(
+                              }).format(
+                                extractedRecords.reduce(
                                   (sum, r) =>
                                     sum +
                                     (parseFloat(r.stream1Volume || "0") || 0),
                                   0,
-                                ))}
+                                ),
+                              )}
                               className="w-full px-2 py-2 bg-gray-50 border border-gray-300 rounded-lg font-bold text-gray-900 text-right text-xs"
                             />
                             <input
@@ -1314,13 +1332,14 @@ export default function InputBAValidasiModal({
                               value={new Intl.NumberFormat("id-ID", {
                                 minimumFractionDigits: 4,
                                 maximumFractionDigits: 4,
-                              }).format(extractedRecords
-                                .reduce(
+                              }).format(
+                                extractedRecords.reduce(
                                   (sum, r) =>
                                     sum +
                                     (parseFloat(r.stream2Flowrate || "0") || 0),
                                   0,
-                                ))}
+                                ),
+                              )}
                               className="w-full px-2 py-2 bg-gray-50 border border-gray-300 rounded-lg font-bold text-gray-900 text-right text-xs"
                             />
                             <input
@@ -1329,13 +1348,14 @@ export default function InputBAValidasiModal({
                               value={new Intl.NumberFormat("id-ID", {
                                 minimumFractionDigits: 4,
                                 maximumFractionDigits: 4,
-                              }).format(extractedRecords
-                                .reduce(
+                              }).format(
+                                extractedRecords.reduce(
                                   (sum, r) =>
                                     sum +
                                     (parseFloat(r.stream2Volume || "0") || 0),
                                   0,
-                                ))}
+                                ),
+                              )}
                               className="w-full px-2 py-2 bg-gray-50 border border-gray-300 rounded-lg font-bold text-gray-900 text-right text-xs"
                             />
                           </>
@@ -1346,16 +1366,18 @@ export default function InputBAValidasiModal({
                           value={new Intl.NumberFormat("id-ID", {
                             minimumFractionDigits: 4,
                             maximumFractionDigits: 4,
-                          }).format(extractedRecords
-                            .filter(
-                              (r) =>
-                                formData.jenisBa !== "Multi Pembangkit" ||
-                                r.siteId === activeTabId,
-                            )
-                            .reduce(
-                              (sum, r) => sum + (parseFloat(r.flowrate) || 0),
-                              0,
-                            ))}
+                          }).format(
+                            extractedRecords
+                              .filter(
+                                (r) =>
+                                  formData.jenisBa !== "Multi Pembangkit" ||
+                                  r.siteId === activeTabId,
+                              )
+                              .reduce(
+                                (sum, r) => sum + (parseFloat(r.flowrate) || 0),
+                                0,
+                              ),
+                          )}
                           className={`w-full px-2 py-2 bg-gray-50 border border-gray-300 rounded-lg font-bold text-gray-900 text-right ${formData.jenisBa === "Multi Stream" ? "text-xs" : "text-sm"}`}
                         />
                         <input
@@ -1364,16 +1386,18 @@ export default function InputBAValidasiModal({
                           value={new Intl.NumberFormat("id-ID", {
                             minimumFractionDigits: 4,
                             maximumFractionDigits: 4,
-                          }).format(extractedRecords
-                            .filter(
-                              (r) =>
-                                formData.jenisBa !== "Multi Pembangkit" ||
-                                r.siteId === activeTabId,
-                            )
-                            .reduce(
-                              (sum, r) => sum + (parseFloat(r.volume) || 0),
-                              0,
-                            ))}
+                          }).format(
+                            extractedRecords
+                              .filter(
+                                (r) =>
+                                  formData.jenisBa !== "Multi Pembangkit" ||
+                                  r.siteId === activeTabId,
+                              )
+                              .reduce(
+                                (sum, r) => sum + (parseFloat(r.volume) || 0),
+                                0,
+                              ),
+                          )}
                           className={`w-full px-2 py-2 bg-gray-50 border border-gray-300 rounded-lg font-bold text-gray-900 text-right ${formData.jenisBa === "Multi Stream" ? "text-xs" : "text-sm"}`}
                         />
                       </div>
