@@ -117,13 +117,14 @@ export default function GasDashboard() {
     string | undefined
   >(undefined);
 
-  // Fetch distribution data based on filter type
+  // The consumption card has its own filters. The chart's region filter must not
+  // affect this distribution request.
   const distributionBy = filterType === "Pemasok" ? "supplier" : "plant";
   const { data: distributionData, isLoading: isDistLoading } = useDistribution(
     distributionStartDate,
     distributionEndDate,
     distributionBy as "supplier" | "plant",
-    selectedRegion,
+    undefined,
     distributionCommodity || undefined,
   );
 
