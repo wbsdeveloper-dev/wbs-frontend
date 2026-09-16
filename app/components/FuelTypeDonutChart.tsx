@@ -16,6 +16,7 @@ import {
   ChevronUp,
   Image as ImageIcon,
   FileText,
+  Loader2,
 } from "lucide-react";
 import * as htmlToImage from "html-to-image";
 import jsPDF from "jspdf";
@@ -53,6 +54,8 @@ type Props = {
   /** Contextual copy shown when the filtered chart has no volume. */
   emptyStateTitle?: string;
   emptyStateDescription?: string;
+  /** When true, a loading skeleton is rendered in place of the chart. */
+  isLoading?: boolean;
 };
 
 export default function FuelTypeDonutChart({
@@ -77,6 +80,7 @@ export default function FuelTypeDonutChart({
   commodityOptions,
   emptyStateTitle = "Belum ada data volume BBM",
   emptyStateDescription = "Data volume BBM belum tersedia untuk filter dan periode yang dipilih.",
+  isLoading = false,
 }: Props) {
   const [showDateFilter, setShowDateFilter] = useState(false);
   const [tempStartDate, setTempStartDate] = useState(startDate);
@@ -454,7 +458,45 @@ export default function FuelTypeDonutChart({
       </div>
 
       {/* Chart */}
-      {total > 0 ? (
+      {isLoading ? (
+        <div className="flex-1 min-h-[250px] flex flex-col items-center justify-center gap-4 py-6">
+          {/* Pulsing donut skeleton */}
+          <div className="relative w-[180px] h-[180px]">
+            <svg
+              viewBox="0 0 180 180"
+              className="w-full h-full animate-pulse"
+            >
+              <circle
+                cx="90"
+                cy="90"
+                r="75"
+                fill="none"
+                stroke="#e5e7eb"
+                strokeWidth="30"
+              />
+            </svg>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+            </div>
+          </div>
+          {/* Legend skeleton bars */}
+          <div className="flex flex-wrap justify-center gap-3 px-4">
+            {[100, 80, 60].map((w, i) => (
+              <div
+                key={i}
+                className="flex items-center gap-1.5 animate-pulse"
+              >
+                <span className="w-2.5 h-2.5 rounded-full bg-gray-200" />
+                <span
+                  className="h-3 rounded bg-gray-200"
+                  style={{ width: w }}
+                />
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-gray-400 mt-1">Memuat data…</p>
+        </div>
+      ) : total > 0 ? (
         <div className="flex-1 w-full min-h-[250px] flex flex-col items-center justify-center">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>

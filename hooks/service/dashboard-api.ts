@@ -138,8 +138,9 @@ export interface TopResponse {
 /** GET /dashboard/chart/flow */
 export interface ChartFlowDataPoint {
   timestamp: string;
-  value: number;
-  flowrate?: number;
+  /** Null means no record exists for this timestamp; zero is an actual value. */
+  value: number | null;
+  flowrate?: number | null;
 }
 
 export interface ChartFlowSeries {
@@ -684,7 +685,13 @@ export function useDistribution(
   options?: Partial<UseQueryOptions<DistributionResponse>>,
 ) {
   return useQuery({
-    queryKey: dashboardKeys.distribution(startDate, endDate, by, region, commodity),
+    queryKey: dashboardKeys.distribution(
+      startDate,
+      endDate,
+      by,
+      region,
+      commodity,
+    ),
     queryFn: () => getDistribution(startDate, endDate, by, region, commodity),
     ...options,
   });

@@ -1334,6 +1334,7 @@ export default function Home() {
                 onModaChange={setDistributionModa}
                 modaOptions={filterModaOptions}
                 unit="KL"
+                isLoading={isBbmMonthlyLoading}
               />
             </div>
 
