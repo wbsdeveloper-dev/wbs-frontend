@@ -18,11 +18,11 @@ import {
   useChartFlow,
   useFilters,
   useEvents,
-  useMapLocations,
+  type DistributionItem,
 } from "@/hooks/service/dashboard-api";
 import { useContracts } from "@/hooks/service/contract-api";
 import { useSites } from "@/hooks/service/site-api";
-import type { Granularity, Periode } from "@/app/components/RealtimeChart";
+import type { Granularity } from "@/app/components/RealtimeChart";
 
 // Components
 import FuelTypeDonutChart from "@/app/components/FuelTypeDonutChart";
@@ -31,6 +31,11 @@ import RealtimeChart from "@/app/components/RealtimeChart";
 import PieChartDetailModal from "@/app/components/PieChartDetailModal";
 
 const Map = dynamic(() => import("@/app/components/Map"), { ssr: false });
+
+type CommodityDistributionItem = DistributionItem & {
+  siteId?: string;
+  commodity?: string | null;
+};
 
 // Helper to get current month date range
 function getCurrentMonthRange() {
@@ -65,6 +70,14 @@ function getDaysDifference(start: string, end: string) {
   } catch {
     return 1;
   }
+}
+
+function normalizeCommodity(value?: string | null) {
+  return value?.trim().replace(/\s+/g, " ").toUpperCase() ?? "";
+}
+
+function normalizeSiteName(value: string) {
+  return value.trim().replace(/\s+/g, " ").toLocaleLowerCase("id-ID");
 }
 
 export default function GasDashboard() {
@@ -117,13 +130,14 @@ export default function GasDashboard() {
     string | undefined
   >(undefined);
 
-  // Fetch distribution data based on filter type
+  // The consumption card has its own filters. The chart's region filter must not
+  // affect this distribution request.
   const distributionBy = filterType === "Pemasok" ? "supplier" : "plant";
   const { data: distributionData, isLoading: isDistLoading } = useDistribution(
     distributionStartDate,
     distributionEndDate,
     distributionBy as "supplier" | "plant",
-    selectedRegion,
+    undefined,
     distributionCommodity || undefined,
   );
 
@@ -274,7 +288,7 @@ export default function GasDashboard() {
   const { data: chartFlowData, isLoading: isChartLoading } = useChartFlow(
     startDateFilter || "",
     endDateFilter || "",
-    granularity as any,
+    granularity,
     chartBy,
     selectedPemasokId,
     selectedPembangkitId,
@@ -292,7 +306,9 @@ export default function GasDashboard() {
   );
 
   // Fetch all sites to help with frontend region filtering (includes sites without coordinates)
-  const { data: allSites } = useSites({ commodity: "LNG,GAS PIPA" });
+  const { data: allSites, isLoading: areSitesLoading } = useSites({
+    commodity: "LNG,GAS PIPA",
+  });
 
   // Filter filtersData locally if a region is selected
   const filteredFiltersData = useMemo(() => {
@@ -344,11 +360,7 @@ export default function GasDashboard() {
   );
 
   // Fetch events — always fetch
-  const { data: eventsData, isLoading: isEventsLoading } = useEvents(
-    startDate,
-    endDate,
-    10,
-  );
+  useEvents(startDate, endDate, 10);
 
   // Chart flow callbacks
   const handlePeriodChange = useCallback(
@@ -444,29 +456,60 @@ export default function GasDashboard() {
   // Transform distribution data for pie chart component
   const dataPieChart = useMemo(() => {
     if (!distributionData) return [];
-    let items = Array.isArray(distributionData)
+    let items: CommodityDistributionItem[] = Array.isArray(distributionData)
       ? distributionData
       : distributionData.items;
     if (!Array.isArray(items)) return [];
 
-    // Local filtering by commodity since backend /dashboard/distribution might not support commodity param
-    if (allSites && distributionCommodity) {
-      const targetCommodity = distributionCommodity.toUpperCase();
-      const commoditySites = new Set(
-        allSites
+    // Keep the card isolated by commodity even when the distribution endpoint
+    // returns mixed data. Pembangkit names are not guaranteed to be unique
+    // across Gas Pipa and LNG, so identity/metadata must take precedence over
+    // the legacy name-based fallback.
+    if (distributionCommodity) {
+      const targetCommodity = normalizeCommodity(distributionCommodity);
+      const targetSiteIds = new Set(
+        (allSites ?? [])
           .filter(
-            (s) =>
-              s.commodity?.toUpperCase() === targetCommodity ||
-              s.commodity?.toUpperCase().includes(targetCommodity),
+            (site) =>
+              normalizeCommodity(site.commodity) === targetCommodity,
           )
-          .map((s) => s.name.toLowerCase()),
+          .map((site) => site.id),
       );
-      items = items.filter((item: { name: string; value: number }) =>
-        commoditySites.has(item.name.toLowerCase()),
-      );
+      const commoditiesBySiteName = new globalThis.Map<string, Set<string>>();
+
+      (allSites ?? []).forEach((site) => {
+        const siteName = normalizeSiteName(site.name);
+        const siteCommodity = normalizeCommodity(site.commodity);
+        if (!siteCommodity) return;
+
+        const commodities =
+          commoditiesBySiteName.get(siteName) ?? new Set<string>();
+        commodities.add(siteCommodity);
+        commoditiesBySiteName.set(siteName, commodities);
+      });
+
+      items = items.filter((item) => {
+        if (item.commodity) {
+          return normalizeCommodity(item.commodity) === targetCommodity;
+        }
+
+        if (item.siteId) {
+          return targetSiteIds.has(item.siteId);
+        }
+
+        // Older responses expose only a name. Use it only when that name maps
+        // to exactly one commodity; otherwise including it could mix LNG and
+        // Gas Pipa volumes for the same pembangkit name.
+        const commodities = commoditiesBySiteName.get(
+          normalizeSiteName(item.name),
+        );
+        return (
+          commodities?.size === 1 && commodities.has(targetCommodity)
+        );
+      });
     }
 
-    return items.map((item: { name: string; value: number }) => ({
+    return items.map((item) => ({
       name: item.name,
       value: item.value,
     }));
@@ -572,7 +615,7 @@ export default function GasDashboard() {
                   commodityOptions={["GAS PIPA", "LNG"]}
                   emptyStateTitle={`Belum ada data volume ${distributionCommodity === "LNG" ? "LNG" : "Gas Pipa"}`}
                   emptyStateDescription={`Data volume ${distributionCommodity === "LNG" ? "LNG" : "Gas Pipa"} belum tersedia untuk filter dan periode yang dipilih.`}
-                  isLoading={isDistLoading}
+                  isLoading={isDistLoading || areSitesLoading}
                 />
               </div>
               {isSuppliersLoading ? (
