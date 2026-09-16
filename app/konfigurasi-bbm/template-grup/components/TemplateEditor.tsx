@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import {
   Save,
   Rocket,
-  Copy,
   ChevronDown,
   Plus,
   GripVertical,
@@ -128,9 +127,10 @@ export default function TemplateEditor({
   const canUpdate = hasPrivilege("template_group", "UPDATE");
   const canDelete = hasPrivilege("template_group", "DELETE");
 
-  // Normalize WA_REGEX_RECORDS fields when loading from API
-  const normalizedTemplate = {
+  // BBM WhatsApp templates only support text input.
+  const normalizedTemplate: Template = {
     ...template,
+    waInputType: "TEXT",
     fields: (template.fields ?? []).map((field) => {
       if (field.sourceKind === "WA_REGEX_RECORDS") {
         try {
@@ -256,7 +256,7 @@ export default function TemplateEditor({
       try {
         const parsed = JSON.parse(fieldForm.sourceRef);
         normalizedSourceRef = JSON.stringify(parsed);
-      } catch (error) {
+      } catch {
         // Attempt to auto-fix common regex backslash issues (e.g. \s -> \\s)
         try {
           // Replace backslashes that are NOT followed by valid JSON escape chars
@@ -584,6 +584,7 @@ export default function TemplateEditor({
                   setFormData({
                     ...formData,
                     scope: e.target.value as Template["scope"],
+                    waInputType: "TEXT",
                   })
                 }
                 className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white cursor-pointer pr-10"
@@ -621,7 +622,7 @@ export default function TemplateEditor({
                     parserMode: e.target.value as Template["parserMode"],
                   })
                 }
-                className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white cursor-pointer pr-10"
+                className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white cursor-pointer pr-10 disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed"
               >
                 <option value="RULE_BASED">
                   Berdasarkan Aturan (Rule Based)

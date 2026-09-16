@@ -144,6 +144,7 @@ export interface Template {
   scope: "WA_GROUP" | "SPREADSHEET_SOURCE" | "EMAIL_INGEST";
   status: "DRAFT" | "ACTIVE" | "DEPRECATED";
   parserMode: "RULE_BASED" | "AI_ASSISTED";
+  waInputType: "TEXT" | "IMAGE";
   emailExtractionTarget?:
     | "BODY_TEXT"
     | "ATTACHMENT_SINGLE"
@@ -174,6 +175,7 @@ export interface CreateTemplatePayload {
   name: string;
   scope: "WA_GROUP" | "SPREADSHEET_SOURCE" | "EMAIL_INGEST";
   parserMode?: "RULE_BASED" | "AI_ASSISTED";
+  waInputType?: "TEXT" | "IMAGE";
   emailExtractionTarget?:
     | "BODY_TEXT"
     | "ATTACHMENT_SINGLE"
@@ -207,6 +209,7 @@ export interface UpdateTemplatePayload {
   name?: string;
   scope?: "WA_GROUP" | "SPREADSHEET_SOURCE" | "EMAIL_INGEST";
   parserMode?: "RULE_BASED" | "AI_ASSISTED";
+  waInputType?: "TEXT" | "IMAGE";
   emailExtractionTarget?:
     | "BODY_TEXT"
     | "ATTACHMENT_SINGLE"
@@ -247,12 +250,14 @@ export interface TemplateListFilters {
 export interface RoutingTestPayload {
   groupId: string;
   textContent: string;
+  waInputType?: "TEXT" | "IMAGE";
 }
 
 export interface RoutingTestTemplatePreview {
   id: string;
   name: string;
   parserMode: string;
+  waInputType?: "TEXT" | "IMAGE";
   waKeywordHint?: string | null;
   commodity?: string | null;
   matchedKeyword?: string | null;

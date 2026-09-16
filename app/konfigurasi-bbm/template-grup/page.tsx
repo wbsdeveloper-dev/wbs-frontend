@@ -138,7 +138,6 @@ export default function TemplateGrupPage() {
   const [newTemplateDecimal, setNewTemplateDecimal] = useState<string>(",");
   const [newTemplateCommodity, setNewTemplateCommodity] =
     useState<string>("BBM");
-
   const [isTestModalOpen, setIsTestModalOpen] = useState(false);
   const [testGroupId, setTestGroupId] = useState("");
   const [testMessage, setTestMessage] = useState("");
@@ -217,6 +216,7 @@ export default function TemplateGrupPage() {
           name: updatedTemplate.name,
           scope: updatedTemplate.scope,
           parserMode: updatedTemplate.parserMode,
+          waInputType: "TEXT",
           isDefault: updatedTemplate.isDefault,
           sourceLinks: updatedTemplate.sourceLinks,
           waKeywordHint: updatedTemplate.waKeywordHint,
@@ -334,6 +334,8 @@ export default function TemplateGrupPage() {
       {
         name: newTemplateName,
         scope: newTemplateScope,
+        parserMode: "RULE_BASED",
+        waInputType: "TEXT",
         decimalSeparator: newTemplateDecimal,
         commodity: newTemplateCommodity,
       },
@@ -380,7 +382,11 @@ export default function TemplateGrupPage() {
     }
 
     testRoutingMutation.mutate(
-      { groupId: testGroupId, textContent: testMessage },
+      {
+        groupId: testGroupId,
+        textContent: testMessage,
+        waInputType: "TEXT",
+      },
       {
         onSuccess: (data) => {
           setTestResult(data);
