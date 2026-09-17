@@ -77,7 +77,9 @@ export default function TemplateList({
 
   const getHintPreview = (template: Template) => {
     if (template.scope === "WA_GROUP") {
-      return template.waKeywordHint || template.waSenderHint || "Tidak ada petunjuk";
+      return (
+        template.waKeywordHint || template.waSenderHint || "Tidak ada petunjuk"
+      );
     }
     return template.sheetTabHint || "Tidak ada petunjuk";
   };
@@ -109,7 +111,7 @@ export default function TemplateList({
           <div onClick={() => onSelect(template)}>
             {/* Header */}
             <div className="flex items-start justify-between gap-2 mb-2">
-              <h4 
+              <h4
                 className="text-sm font-semibold text-gray-900 line-clamp-1"
                 title={template.name}
               >
