@@ -12,6 +12,8 @@ import {
   Search,
   Loader2,
   Upload,
+  Maximize2,
+  Minimize2,
 } from "lucide-react";
 import Link from "next/link";
 import BulkUploadKertasKerjaModal from "@/app/components/BulkUploadKertasKerjaModal";
@@ -19,6 +21,7 @@ import {
   useKertasKerjaMaster,
   useKertasKerjaTemplates,
   useKertasKerjaRecords,
+  type MasterGeneric,
 } from "@/hooks/service/kertas-kerja-api";
 import { usePrivilege } from "@/hooks/usePrivilege";
 import { useAuth } from "@/components/providers/auth-provider";
@@ -36,6 +39,8 @@ export default function KertasKerjaPage() {
   const { data: upks = [] } = useKertasKerjaMaster("master_unit_pelaksana");
 
   const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const fullscreenRef = useRef<HTMLDivElement>(null);
   const { data: templates = [] } = useKertasKerjaTemplates();
   const { refetch: refetchRecords } = useKertasKerjaRecords();
 
@@ -59,6 +64,29 @@ export default function KertasKerjaPage() {
   const upkRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(document.fullscreenElement === fullscreenRef.current);
+    };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () =>
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+  }, []);
+
+  const toggleFullscreen = async () => {
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+        return;
+      }
+
+      await fullscreenRef.current?.requestFullscreen();
+    } catch (error) {
+      console.error("Gagal mengubah mode fullscreen:", error);
+    }
+  };
+
+  useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
         regionRef.current &&
@@ -77,15 +105,15 @@ export default function KertasKerjaPage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const filteredRegions = regions.filter((r: any) =>
+  const filteredRegions = regions.filter((r: MasterGeneric) =>
     r.name.toLowerCase().includes(regionSearch.toLowerCase()),
   );
 
-  const filteredUnits = units.filter((u: any) =>
+  const filteredUnits = units.filter((u: MasterGeneric) =>
     u.name.toLowerCase().includes(unitSearch.toLowerCase()),
   );
 
-  const filteredUpks = upks.filter((u: any) =>
+  const filteredUpks = upks.filter((u: MasterGeneric) =>
     u.name.toLowerCase().includes(upkSearch.toLowerCase()),
   );
 
@@ -105,7 +133,10 @@ export default function KertasKerjaPage() {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
+    <div
+      ref={fullscreenRef}
+      className="flex h-screen bg-gray-50 overflow-hidden"
+    >
       <main className="flex-1 flex flex-col h-full overflow-hidden">
         <div className="p-4 md:p-6 lg:p-8 flex flex-col h-full overflow-hidden">
           <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shrink-0">
@@ -135,7 +166,25 @@ export default function KertasKerjaPage() {
               </div>
             </div>
 
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={toggleFullscreen}
+                aria-label={
+                  isFullscreen ? "Keluar dari layar penuh" : "Buka layar penuh"
+                }
+                title={
+                  isFullscreen ? "Keluar dari layar penuh" : "Buka layar penuh"
+                }
+                className="px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg flex items-center gap-2 text-sm font-medium hover:bg-gray-100 transition-colors cursor-pointer shadow-sm"
+              >
+                {isFullscreen ? (
+                  <Minimize2 size={16} aria-hidden="true" />
+                ) : (
+                  <Maximize2 size={16} aria-hidden="true" />
+                )}
+                {isFullscreen ? "Keluar Full Screen" : "Full Screen"}
+              </button>
               {canUpdate && (
                 <button
                   onClick={() => setIsUploadOpen(true)}
@@ -241,7 +290,7 @@ export default function KertasKerjaPage() {
                               Region tidak ditemukan
                             </div>
                           ) : (
-                            filteredRegions.map((r: any) => (
+                            filteredRegions.map((r: MasterGeneric) => (
                               <button
                                 key={r.id}
                                 onClick={() => {
@@ -322,7 +371,7 @@ export default function KertasKerjaPage() {
                               Unit tidak ditemukan
                             </div>
                           ) : (
-                            filteredUnits.map((u: any) => (
+                            filteredUnits.map((u: MasterGeneric) => (
                               <button
                                 key={u.id}
                                 onClick={() => {
@@ -403,7 +452,7 @@ export default function KertasKerjaPage() {
                               Unit pelaksana tidak ditemukan
                             </div>
                           ) : (
-                            filteredUpks.map((u: any) => (
+                            filteredUpks.map((u: MasterGeneric) => (
                               <button
                                 key={u.id}
                                 onClick={() => {

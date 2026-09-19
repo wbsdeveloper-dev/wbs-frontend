@@ -16,13 +16,18 @@ import {
 import { AddSiteModal } from "./components/AddSiteModal";
 import { AddRelationModal } from "./components/AddRelationModal";
 import { useQueryClient } from "@tanstack/react-query";
-import { siteKeys, downloadSiteTemplate } from "@/hooks/service/site-api";
+import {
+  siteKeys,
+  downloadBbmRelationTemplate,
+  downloadSiteTemplate,
+} from "@/hooks/service/site-api";
 import { usePrivilege } from "@/hooks/usePrivilege";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import BulkUploadSiteModal from "@/app/components/BulkUploadSiteModal";
 import BulkUpdateBbmCoordinateModal from "@/app/components/BulkUpdateBbmCoordinateModal";
+import BulkUpdateBbmRelationModal from "@/app/components/BulkUpdateBbmRelationModal";
 
 const tabs = [
   { label: "Daftar TBBM & Pembangkit", icon: MapPin },
@@ -35,6 +40,7 @@ export default function SitePage() {
   const [addRelationModalOpen, setAddRelationModalOpen] = useState(false);
   const [bulkUploadOpen, setBulkUploadOpen] = useState(false);
   const [coordinateUploadOpen, setCoordinateUploadOpen] = useState(false);
+  const [relationUploadOpen, setRelationUploadOpen] = useState(false);
 
   const handleDownloadTemplate = async () => {
     try {
@@ -42,6 +48,18 @@ export default function SitePage() {
     } catch (error: unknown) {
       alert(
         error instanceof Error ? error.message : "Gagal mengunduh template",
+      );
+    }
+  };
+
+  const handleDownloadRelationTemplate = async () => {
+    try {
+      await downloadBbmRelationTemplate();
+    } catch (error: unknown) {
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Gagal mengunduh template relasi",
       );
     }
   };
@@ -179,6 +197,24 @@ export default function SitePage() {
               </button>
             </>
           )}
+          {activeTab === 1 && canRead && (
+            <button
+              onClick={handleDownloadRelationTemplate}
+              className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-all duration-200 hover:shadow-md active:scale-95 whitespace-nowrap"
+            >
+              <FileSpreadsheet size={16} className="text-green-600" />
+              Download Template Relasi
+            </button>
+          )}
+          {activeTab === 1 && canUpdate && (
+            <button
+              onClick={() => setRelationUploadOpen(true)}
+              className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-all duration-200 hover:shadow-md active:scale-95 whitespace-nowrap"
+            >
+              <Upload size={16} className="text-primary" />
+              Update Multi Relasi
+            </button>
+          )}
           {canCreate && (
             <button
               onClick={handleAddButtonClick}
@@ -242,6 +278,13 @@ export default function SitePage() {
         <BulkUpdateBbmCoordinateModal
           setOpenModal={setCoordinateUploadOpen}
           onSuccess={handleAddSiteSuccess}
+        />
+      )}
+
+      {relationUploadOpen && (
+        <BulkUpdateBbmRelationModal
+          setOpenModal={setRelationUploadOpen}
+          onSuccess={handleAddRelationSuccess}
         />
       )}
 
