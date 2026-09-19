@@ -3,15 +3,16 @@
 import { useState, useEffect, useCallback } from "react";
 import { X, MapPin, Plus, Trash2, ChevronDown, ChevronUp } from "lucide-react";
 import {
-  useDropdowns,
   useSites,
   useCreateSite,
   useUpdateSite,
   useSiteHistory,
   type CreateSitePayload,
-  type Site,
 } from "@/hooks/service/site-api";
-import { useKertasKerjaMaster } from "@/hooks/service/kertas-kerja-api";
+import {
+  useKertasKerjaMaster,
+  type MasterGeneric,
+} from "@/hooks/service/kertas-kerja-api";
 import { Autocomplete, TextField, Collapse } from "@mui/material";
 
 interface AddSiteModalProps {
@@ -21,13 +22,25 @@ interface AddSiteModalProps {
   editingId?: string | null;
 }
 
+type SiteVersion = {
+  id?: string;
+  capacity?: number;
+  capacity_mw?: number;
+  owner?: string;
+  lat?: string;
+  long?: string;
+  valid_from?: string;
+  valid_to?: string;
+  notes?: string;
+  isExpanded: boolean;
+};
+
 export function AddSiteModal({
   open,
   onClose,
   onSuccess,
   editingId,
 }: AddSiteModalProps) {
-  const { data: dropdowns } = useDropdowns({ enabled: open });
   const { data: jenisKits = [] } = useKertasKerjaMaster(
     "master_jenis_kit",
     undefined,
@@ -58,6 +71,8 @@ export function AddSiteModal({
     kit_id: string;
     upk_id: string;
     unit_id: string;
+    lat: string;
+    long: string;
   }>({
     name: "",
     site_type: "PEMBANGKIT",
@@ -66,22 +81,13 @@ export function AddSiteModal({
     kit_id: "",
     upk_id: "",
     unit_id: "",
+    lat: "",
+    long: "",
   });
 
-  const [versions, setVersions] = useState<
-    Array<{
-      id?: string;
-      capacity?: number;
-      capacity_mw?: number;
-      owner?: string;
-      lat?: string;
-      long?: string;
-      valid_from?: string;
-      valid_to?: string;
-      notes?: string;
-      isExpanded: boolean;
-    }>
-  >([{ isExpanded: true }]);
+  const [versions, setVersions] = useState<SiteVersion[]>([
+    { isExpanded: true },
+  ]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -106,6 +112,8 @@ export function AddSiteModal({
       kit_id: "",
       upk_id: "",
       unit_id: "",
+      lat: "",
+      long: "",
     });
     setVersions([{ isExpanded: true }]);
     setErrors({});
@@ -117,6 +125,8 @@ export function AddSiteModal({
   useEffect(() => {
     if (open) {
       if (editingId && editingSite) {
+        // Query data initializes an intentionally editable local form snapshot.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setFormData({
           name: editingSite.name,
           site_type: editingSite.site_type,
@@ -125,6 +135,8 @@ export function AddSiteModal({
           kit_id: editingSite.kit_id ?? "",
           upk_id: editingSite.upk_id ?? "",
           unit_id: editingSite.unit_id ?? "",
+          lat: editingSite.lat ?? "",
+          long: editingSite.long ?? "",
         });
         if (editingSite.site_type === "TRANSPORTIR") {
           setVersions([
@@ -162,12 +174,16 @@ export function AddSiteModal({
         notes: h.notes || "",
         isExpanded: idx === 0,
       }));
+      // History query data initializes editable version snapshots.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setVersions(formattedVersions);
     }
   }, [historyData, formData.site_type]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
+    const latitude = formData.lat.trim().replace(",", ".");
+    const longitude = formData.long.trim().replace(",", ".");
 
     if (!formData.name.trim()) {
       newErrors.name = "Nama site wajib diisi";
@@ -175,6 +191,30 @@ export function AddSiteModal({
 
     if (!formData.region.trim() && formData.site_type !== "TRANSPORTIR") {
       newErrors.region = "Region wajib diisi";
+    }
+
+    if ((latitude && !longitude) || (!latitude && longitude)) {
+      const message = "Latitude dan longitude harus diisi bersamaan";
+      newErrors.lat = message;
+      newErrors.long = message;
+    } else if (latitude && longitude) {
+      const latitudeNumber = Number(latitude);
+      const longitudeNumber = Number(longitude);
+
+      if (
+        !Number.isFinite(latitudeNumber) ||
+        latitudeNumber < -90 ||
+        latitudeNumber > 90
+      ) {
+        newErrors.lat = "Latitude harus berupa angka antara -90 dan 90";
+      }
+      if (
+        !Number.isFinite(longitudeNumber) ||
+        longitudeNumber < -180 ||
+        longitudeNumber > 180
+      ) {
+        newErrors.long = "Longitude harus berupa angka antara -180 dan 180";
+      }
     }
 
     setErrors(newErrors);
@@ -188,9 +228,11 @@ export function AddSiteModal({
       return;
     }
 
-    // Take the first version's fields to use as top-level payload
-    // (for backward compatibility and TRANSPORTIR).
+    // Version-specific capacity and ownership remain backward-compatible, while
+    // coordinates are managed as general site information.
     const topVersion = versions[0];
+    const latitude = formData.lat.trim().replace(",", ".") || null;
+    const longitude = formData.long.trim().replace(",", ".") || null;
 
     const payload: CreateSitePayload = {
       name: formData.name,
@@ -203,8 +245,8 @@ export function AddSiteModal({
       capacity: topVersion?.capacity ?? null,
       capacity_mw: topVersion?.capacity_mw ?? null,
       owner: topVersion?.owner || undefined,
-      lat: topVersion?.lat ?? null,
-      long: topVersion?.long ?? null,
+      lat: latitude,
+      long: longitude,
     };
 
     if (formData.site_type !== "TRANSPORTIR") {
@@ -243,7 +285,11 @@ export function AddSiteModal({
     setErrors({});
   };
 
-  const updateVersion = (index: number, field: string, value: any) => {
+  const updateVersion = <K extends keyof SiteVersion>(
+    index: number,
+    field: K,
+    value: SiteVersion[K],
+  ) => {
     const newVersions = [...versions];
     newVersions[index] = { ...newVersions[index], [field]: value };
     setVersions(newVersions);
@@ -354,7 +400,9 @@ export function AddSiteModal({
                     Region
                   </label>
                   <Autocomplete
-                    options={regions.map((r: any) => r.name)}
+                    options={regions.map(
+                      (region: MasterGeneric) => region.name,
+                    )}
                     value={formData.region}
                     onChange={(_event, newValue: string | null) =>
                       setFormData({ ...formData, region: newValue || "" })
@@ -385,12 +433,12 @@ export function AddSiteModal({
                     </label>
                     <Autocomplete
                       options={jenisKits}
-                      getOptionLabel={(option: any) => option.name}
+                      getOptionLabel={(option: MasterGeneric) => option.name}
                       value={
-                        jenisKits.find((j: any) => j.id === formData.kit_id) ||
+                        jenisKits.find((kit) => kit.id === formData.kit_id) ||
                         null
                       }
-                      onChange={(_event, newValue: any) =>
+                      onChange={(_event, newValue: MasterGeneric | null) =>
                         setFormData({
                           ...formData,
                           kit_id: newValue ? newValue.id : "",
@@ -420,6 +468,47 @@ export function AddSiteModal({
               </div>
             )}
 
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Latitude
+                </label>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={formData.lat}
+                  onChange={(e) =>
+                    setFormData({ ...formData, lat: e.target.value })
+                  }
+                  placeholder="-6.123456"
+                  aria-invalid={!!errors.lat}
+                  className={`w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200 ${errors.lat ? "border-red-300 focus:ring-red-500" : "border-gray-300"}`}
+                />
+                {errors.lat && (
+                  <p className="text-xs text-red-600 mt-1">{errors.lat}</p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Longitude
+                </label>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={formData.long}
+                  onChange={(e) =>
+                    setFormData({ ...formData, long: e.target.value })
+                  }
+                  placeholder="106.123456"
+                  aria-invalid={!!errors.long}
+                  className={`w-full px-4 py-2.5 border rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200 ${errors.long ? "border-red-300 focus:ring-red-500" : "border-gray-300"}`}
+                />
+                {errors.long && (
+                  <p className="text-xs text-red-600 mt-1">{errors.long}</p>
+                )}
+              </div>
+            </div>
+
             {formData.site_type === "PEMBANGKIT" && (
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -428,11 +517,11 @@ export function AddSiteModal({
                   </label>
                   <Autocomplete
                     options={upks}
-                    getOptionLabel={(option: any) => option.name}
+                    getOptionLabel={(option: MasterGeneric) => option.name}
                     value={
-                      upks.find((j: any) => j.id === formData.upk_id) || null
+                      upks.find((upk) => upk.id === formData.upk_id) || null
                     }
-                    onChange={(_event, newValue: any) =>
+                    onChange={(_event, newValue: MasterGeneric | null) =>
                       setFormData({
                         ...formData,
                         upk_id: newValue ? newValue.id : "",
@@ -464,11 +553,11 @@ export function AddSiteModal({
                   </label>
                   <Autocomplete
                     options={units}
-                    getOptionLabel={(option: any) => option.name}
+                    getOptionLabel={(option: MasterGeneric) => option.name}
                     value={
-                      units.find((j: any) => j.id === formData.unit_id) || null
+                      units.find((unit) => unit.id === formData.unit_id) || null
                     }
-                    onChange={(_event, newValue: any) =>
+                    onChange={(_event, newValue: MasterGeneric | null) =>
                       setFormData({
                         ...formData,
                         unit_id: newValue ? newValue.id : "",
@@ -644,45 +733,6 @@ export function AddSiteModal({
                           />
                         </div>
                       )}
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Latitude
-                        </label>
-                        <input
-                          type="text"
-                          value={version.lat ?? ""}
-                          onChange={(e) =>
-                            updateVersion(
-                              idx,
-                              "lat",
-                              e.target.value || undefined,
-                            )
-                          }
-                          placeholder="-6.123456"
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Longitude
-                        </label>
-                        <input
-                          type="text"
-                          value={version.long ?? ""}
-                          onChange={(e) =>
-                            updateVersion(
-                              idx,
-                              "long",
-                              e.target.value || undefined,
-                            )
-                          }
-                          placeholder="106.123456"
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
-                        />
-                      </div>
                     </div>
 
                     {/* Masa Berlaku */}

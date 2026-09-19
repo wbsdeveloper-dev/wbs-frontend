@@ -304,6 +304,45 @@ export interface BbmSiteCommitResult {
   sitesUnchanged: number;
 }
 
+export interface BbmCoordinateCommitPayload {
+  fileName: string;
+  sheetName: string;
+  rows: Array<{
+    rowNumber: number;
+    sourceName: string;
+    latitude: number;
+    longitude: number;
+    overriddenRowNumbers: number[];
+  }>;
+}
+
+export interface BbmCoordinateCommitDetail {
+  rowNumber: number;
+  sourceName: string;
+  latitude: number;
+  longitude: number;
+  overriddenRowNumbers: number[];
+  status: "CREATED" | "UPDATED" | "UNCHANGED" | "AMBIGUOUS";
+  reason: string;
+  siteId: string | null;
+  siteName: string | null;
+  siteType: "PEMBANGKIT" | "PEMASOK" | null;
+  previousLatitude: string | null;
+  previousLongitude: string | null;
+  candidateNames: string[];
+}
+
+export interface BbmCoordinateCommitResult {
+  importId: string;
+  rows: number;
+  created: number;
+  updated: number;
+  unchanged: number;
+  ambiguous: number;
+  skipped: number;
+  details: BbmCoordinateCommitDetail[];
+}
+
 export interface DeleteRelationResponse {
   deleted: boolean;
   warned_sites?: string[];
@@ -917,6 +956,39 @@ export function useCommitBbmSites(
       options?.onSuccess?.(...args);
     },
     ...options,
+  });
+}
+
+export function commitBbmCoordinates(payload: BbmCoordinateCommitPayload) {
+  return siteFetch<BbmCoordinateCommitResult>(
+    "/sites/bbm-coordinate-import/commit",
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export function useCommitBbmCoordinates(
+  options?: Partial<
+    UseMutationOptions<
+      BbmCoordinateCommitResult,
+      Error,
+      BbmCoordinateCommitPayload
+    >
+  >,
+) {
+  const qc = useQueryClient();
+  const { onSuccess: externalOnSuccess, ...restOptions } = options || {};
+  return useMutation({
+    mutationFn: commitBbmCoordinates,
+    onSuccess: (...args) => {
+      qc.invalidateQueries({ queryKey: siteKeys.all });
+      qc.invalidateQueries({ queryKey: ["dashboard", "map-locations"] });
+      qc.invalidateQueries({ queryKey: ["bbm", "sites-summary"] });
+      externalOnSuccess?.(...args);
+    },
+    ...restOptions,
   });
 }
 

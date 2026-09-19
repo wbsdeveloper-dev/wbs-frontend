@@ -6,6 +6,7 @@ import {
   MapPin,
   ArrowRightLeft,
   FileSpreadsheet,
+  MapPinned,
   Upload,
 } from "lucide-react";
 import {
@@ -21,6 +22,7 @@ import { useAuth } from "@/components/providers/auth-provider";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import BulkUploadSiteModal from "@/app/components/BulkUploadSiteModal";
+import BulkUpdateBbmCoordinateModal from "@/app/components/BulkUpdateBbmCoordinateModal";
 
 const tabs = [
   { label: "Daftar TBBM & Pembangkit", icon: MapPin },
@@ -32,12 +34,15 @@ export default function SitePage() {
   const [addSiteModalOpen, setAddSiteModalOpen] = useState(false);
   const [addRelationModalOpen, setAddRelationModalOpen] = useState(false);
   const [bulkUploadOpen, setBulkUploadOpen] = useState(false);
+  const [coordinateUploadOpen, setCoordinateUploadOpen] = useState(false);
 
   const handleDownloadTemplate = async () => {
     try {
       await downloadSiteTemplate();
-    } catch (err: any) {
-      alert(err.message || "Gagal mengunduh template");
+    } catch (error: unknown) {
+      alert(
+        error instanceof Error ? error.message : "Gagal mengunduh template",
+      );
     }
   };
 
@@ -157,13 +162,22 @@ export default function SitePage() {
             </button>
           )}
           {activeTab === 0 && canUpdate && (
-            <button
-              onClick={() => setBulkUploadOpen(true)}
-              className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-all duration-200 hover:shadow-md active:scale-95 whitespace-nowrap"
-            >
-              <Upload size={16} className="text-primary" />
-              Update Multi Data
-            </button>
+            <>
+              <button
+                onClick={() => setCoordinateUploadOpen(true)}
+                className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-all duration-200 hover:shadow-md active:scale-95 whitespace-nowrap"
+              >
+                <MapPinned size={16} className="text-primary" />
+                Update Koordinat
+              </button>
+              <button
+                onClick={() => setBulkUploadOpen(true)}
+                className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-all duration-200 hover:shadow-md active:scale-95 whitespace-nowrap"
+              >
+                <Upload size={16} className="text-primary" />
+                Update Multi Data
+              </button>
+            </>
           )}
           {canCreate && (
             <button
@@ -171,9 +185,7 @@ export default function SitePage() {
               className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white text-sm font-medium rounded-lg hover:brightness-90 transition-all duration-200 hover:shadow-md active:scale-95 whitespace-nowrap"
             >
               <Plus size={18} />
-              {activeTab === 0
-                ? "Tambah"
-                : "Tambah Relasi"}
+              {activeTab === 0 ? "Tambah" : "Tambah Relasi"}
             </button>
           )}
         </div>
@@ -222,6 +234,13 @@ export default function SitePage() {
       {bulkUploadOpen && (
         <BulkUploadSiteModal
           setOpenModal={setBulkUploadOpen}
+          onSuccess={handleAddSiteSuccess}
+        />
+      )}
+
+      {coordinateUploadOpen && (
+        <BulkUpdateBbmCoordinateModal
+          setOpenModal={setCoordinateUploadOpen}
           onSuccess={handleAddSiteSuccess}
         />
       )}
