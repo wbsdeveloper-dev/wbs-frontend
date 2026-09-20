@@ -41,7 +41,11 @@ export default function KertasKerjaPage() {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const fullscreenRef = useRef<HTMLDivElement>(null);
-  const { data: templates = [] } = useKertasKerjaTemplates();
+  const {
+    data: templates = [],
+    isLoading: templatesLoading,
+    isError: templatesError,
+  } = useKertasKerjaTemplates();
   const { refetch: refetchRecords } = useKertasKerjaRecords();
 
   const router = useRouter();
@@ -188,9 +192,26 @@ export default function KertasKerjaPage() {
               {canUpdate && (
                 <button
                   onClick={() => setIsUploadOpen(true)}
-                  className="px-4 py-2 bg-primary text-white rounded-lg flex items-center gap-2 text-sm font-medium hover:brightness-90 transition-colors cursor-pointer shadow-sm"
+                  disabled={templatesLoading || templatesError}
+                  title={
+                    templatesLoading
+                      ? "Menunggu Master Kertas Kerja selesai dimuat"
+                      : templatesError
+                        ? "Master Kertas Kerja gagal dimuat. Muat ulang halaman."
+                        : undefined
+                  }
+                  className="px-4 py-2 bg-primary text-white rounded-lg flex items-center gap-2 text-sm font-medium hover:brightness-90 transition-colors cursor-pointer shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  <Upload size={16} /> Upload Kertas Kerja Rakor BBM
+                  {templatesLoading ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <Upload size={16} />
+                  )}
+                  {templatesLoading
+                    ? "Memuat Master Kertas Kerja..."
+                    : templatesError
+                      ? "Master Kertas Kerja Gagal Dimuat"
+                      : "Upload Kertas Kerja Rakor BBM"}
                 </button>
               )}
             </div>
