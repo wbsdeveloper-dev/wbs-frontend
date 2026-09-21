@@ -245,6 +245,9 @@ export interface SiteRelation {
   transport_mode?: string | null;
   capacity_value?: number | null;
   capacity_unit?: string | null;
+  valid_from?: string | null;
+  valid_to?: string | null;
+  notes?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -266,6 +269,41 @@ export interface UpdateRelationPayload {
   priority?: number;
   status?: "ACTIVE" | "INACTIVE";
   transport_mode?: string | null;
+}
+
+export interface BbmRelationCommitPayload {
+  fileName: string;
+  sheetName: string;
+  rows: Array<{
+    rowNumber: number;
+    relationId?: string;
+    sourceSiteId?: string;
+    sourceName: string;
+    targetSiteId?: string;
+    targetName: string;
+    transportMode?: string;
+    status: "ACTIVE" | "INACTIVE";
+    notes?: string;
+  }>;
+}
+
+export interface BbmRelationCommitDetail {
+  rowNumber: number;
+  relationId: string;
+  sourceName: string;
+  targetName: string;
+  action: "CREATED" | "UPDATED" | "REACTIVATED" | "DEACTIVATED" | "UNCHANGED";
+}
+
+export interface BbmRelationCommitResult {
+  importId: string;
+  rows: number;
+  created: number;
+  updated: number;
+  reactivated: number;
+  deactivated: number;
+  unchanged: number;
+  details: BbmRelationCommitDetail[];
 }
 
 export interface BbmSiteCommitPayload {
@@ -302,6 +340,45 @@ export interface BbmSiteCommitResult {
   sitesCreated: number;
   sitesUpdated: number;
   sitesUnchanged: number;
+}
+
+export interface BbmCoordinateCommitPayload {
+  fileName: string;
+  sheetName: string;
+  rows: Array<{
+    rowNumber: number;
+    sourceName: string;
+    latitude: number;
+    longitude: number;
+    overriddenRowNumbers: number[];
+  }>;
+}
+
+export interface BbmCoordinateCommitDetail {
+  rowNumber: number;
+  sourceName: string;
+  latitude: number;
+  longitude: number;
+  overriddenRowNumbers: number[];
+  status: "CREATED" | "UPDATED" | "UNCHANGED" | "AMBIGUOUS";
+  reason: string;
+  siteId: string | null;
+  siteName: string | null;
+  siteType: "PEMBANGKIT" | "PEMASOK" | null;
+  previousLatitude: string | null;
+  previousLongitude: string | null;
+  candidateNames: string[];
+}
+
+export interface BbmCoordinateCommitResult {
+  importId: string;
+  rows: number;
+  created: number;
+  updated: number;
+  unchanged: number;
+  ambiguous: number;
+  skipped: number;
+  details: BbmCoordinateCommitDetail[];
 }
 
 export interface DeleteRelationResponse {
@@ -498,9 +575,19 @@ export function updateRelation(id: string, payload: UpdateRelationPayload) {
 export async function deleteRelation(
   id: string,
 ): Promise<DeleteRelationResponse> {
-  return siteFetch<DeleteRelationResponse>(`/dim/site-relations/${id}`, {
+  return siteFetch<DeleteRelationResponse>(`/site-relations/${id}`, {
     method: "DELETE",
   });
+}
+
+export function commitBbmRelations(payload: BbmRelationCommitPayload) {
+  return siteFetch<BbmRelationCommitResult>(
+    "/site-relations/bbm-import/commit",
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -742,6 +829,23 @@ export function useUpdateRelation(
   });
 }
 
+export function useCommitBbmRelations(
+  options?: Partial<
+    UseMutationOptions<BbmRelationCommitResult, Error, BbmRelationCommitPayload>
+  >,
+) {
+  const qc = useQueryClient();
+  const { onSuccess: externalOnSuccess, ...restOptions } = options || {};
+  return useMutation({
+    mutationFn: commitBbmRelations,
+    onSuccess: (...args) => {
+      qc.invalidateQueries({ queryKey: [...siteKeys.all, "relations"] });
+      externalOnSuccess?.(...args);
+    },
+    ...restOptions,
+  });
+}
+
 export function useDeleteRelation(
   options?: Partial<UseMutationOptions<DeleteRelationResponse, Error, string>>,
 ) {
@@ -918,6 +1022,75 @@ export function useCommitBbmSites(
     },
     ...options,
   });
+}
+
+export function commitBbmCoordinates(payload: BbmCoordinateCommitPayload) {
+  return siteFetch<BbmCoordinateCommitResult>(
+    "/sites/bbm-coordinate-import/commit",
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export function useCommitBbmCoordinates(
+  options?: Partial<
+    UseMutationOptions<
+      BbmCoordinateCommitResult,
+      Error,
+      BbmCoordinateCommitPayload
+    >
+  >,
+) {
+  const qc = useQueryClient();
+  const { onSuccess: externalOnSuccess, ...restOptions } = options || {};
+  return useMutation({
+    mutationFn: commitBbmCoordinates,
+    onSuccess: (...args) => {
+      qc.invalidateQueries({ queryKey: siteKeys.all });
+      qc.invalidateQueries({ queryKey: ["dashboard", "map-locations"] });
+      qc.invalidateQueries({ queryKey: ["bbm", "sites-summary"] });
+      externalOnSuccess?.(...args);
+    },
+    ...restOptions,
+  });
+}
+
+async function downloadAuthenticatedFile(path: string, fileName: string) {
+  const url = `${SITE_API_HOST}${path}`;
+  const accessToken = getAccessToken();
+  const res = await fetch(url, {
+    headers: {
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
+  });
+  if (!res.ok) {
+    let message = res.statusText;
+    try {
+      const body = await res.json();
+      message = body?.error?.message || body?.message || message;
+    } catch {
+      // Keep HTTP status text for non-JSON download failures.
+    }
+    throw new Error(message || "Gagal mengunduh template");
+  }
+  const blob = await res.blob();
+  const downloadUrl = window.URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = downloadUrl;
+  anchor.download = fileName;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  window.URL.revokeObjectURL(downloadUrl);
+}
+
+export async function downloadBbmRelationTemplate(): Promise<void> {
+  return downloadAuthenticatedFile(
+    "/site-relations/bbm-import/template",
+    "Template_Relasi_TBBM_Pembangkit_BBM.xlsx",
+  );
 }
 
 export async function downloadSiteTemplate(): Promise<void> {
