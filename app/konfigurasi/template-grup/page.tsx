@@ -138,10 +138,16 @@ export default function TemplateGrupPage() {
   const [newTemplateDecimal, setNewTemplateDecimal] = useState<string>(",");
   const [newTemplateCommodity, setNewTemplateCommodity] =
     useState<string>("GAS PIPA");
+  const [newTemplateWaInputType, setNewTemplateWaInputType] = useState<
+    "TEXT" | "IMAGE"
+  >("TEXT");
 
   const [isTestModalOpen, setIsTestModalOpen] = useState(false);
   const [testGroupId, setTestGroupId] = useState("");
   const [testMessage, setTestMessage] = useState("");
+  const [testWaInputType, setTestWaInputType] = useState<"TEXT" | "IMAGE">(
+    "TEXT",
+  );
   const [testResult, setTestResult] = useState<{
     allowed: boolean;
     groupConfigId: string | null;
@@ -222,6 +228,11 @@ export default function TemplateGrupPage() {
           name: updatedTemplate.name,
           scope: updatedTemplate.scope,
           parserMode: updatedTemplate.parserMode,
+          waInputType:
+            updatedTemplate.scope === "WA_GROUP" &&
+            updatedTemplate.commodity === "GAS PIPA"
+              ? updatedTemplate.waInputType
+              : "TEXT",
           isDefault: updatedTemplate.isDefault,
           sourceLinks: updatedTemplate.sourceLinks,
           waKeywordHint: updatedTemplate.waKeywordHint,
@@ -339,6 +350,16 @@ export default function TemplateGrupPage() {
       {
         name: newTemplateName,
         scope: newTemplateScope,
+        parserMode:
+          newTemplateScope === "WA_GROUP" &&
+          newTemplateCommodity === "GAS PIPA" &&
+          newTemplateWaInputType === "IMAGE"
+            ? "AI_ASSISTED"
+            : "RULE_BASED",
+        waInputType:
+          newTemplateScope === "WA_GROUP" && newTemplateCommodity === "GAS PIPA"
+            ? newTemplateWaInputType
+            : "TEXT",
         decimalSeparator: newTemplateDecimal,
         commodity: newTemplateCommodity,
       },
@@ -349,6 +370,7 @@ export default function TemplateGrupPage() {
           setNewTemplateName("");
           setNewTemplateDecimal(",");
           setNewTemplateCommodity("GAS PIPA");
+          setNewTemplateWaInputType("TEXT");
           showNotification(
             "success",
             `Template "${newTemplateName}" berhasil dibuat`,
@@ -385,7 +407,11 @@ export default function TemplateGrupPage() {
     }
 
     testRoutingMutation.mutate(
-      { groupId: testGroupId, textContent: testMessage },
+      {
+        groupId: testGroupId,
+        textContent: testMessage,
+        waInputType: testWaInputType,
+      },
       {
         onSuccess: (data) => {
           setTestResult(data);
@@ -672,6 +698,7 @@ export default function TemplateGrupPage() {
           setNewTemplateName("");
           setNewTemplateDecimal(",");
           setNewTemplateCommodity("GAS PIPA");
+          setNewTemplateWaInputType("TEXT");
         }}
         title="Buat Template Baru"
         maxWidth="max-w-md"
@@ -696,14 +723,14 @@ export default function TemplateGrupPage() {
             <div className="relative">
               <select
                 value={newTemplateScope}
-                onChange={(e) =>
-                  setNewTemplateScope(
-                    e.target.value as
-                      | "WA_GROUP"
-                      | "SPREADSHEET_SOURCE"
-                      | "EMAIL_INGEST",
-                  )
-                }
+                onChange={(e) => {
+                  const scope = e.target.value as
+                    | "WA_GROUP"
+                    | "SPREADSHEET_SOURCE"
+                    | "EMAIL_INGEST";
+                  setNewTemplateScope(scope);
+                  if (scope !== "WA_GROUP") setNewTemplateWaInputType("TEXT");
+                }}
                 className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white cursor-pointer pr-10"
               >
                 <option value="WA_GROUP">WhatsApp Grup</option>
@@ -713,6 +740,35 @@ export default function TemplateGrupPage() {
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             </div>
           </div>
+          {newTemplateScope === "WA_GROUP" &&
+            newTemplateCommodity === "GAS PIPA" && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Jenis Data
+                </label>
+                <div className="relative">
+                  <select
+                    value={newTemplateWaInputType}
+                    onChange={(e) =>
+                      setNewTemplateWaInputType(
+                        e.target.value as "TEXT" | "IMAGE",
+                      )
+                    }
+                    className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white cursor-pointer pr-10"
+                  >
+                    <option value="TEXT">Teks</option>
+                    <option value="IMAGE">Gambar</option>
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                </div>
+                {newTemplateWaInputType === "IMAGE" && (
+                  <p className="text-xs text-indigo-600 mt-1">
+                    Gambar Gas Pipa diproses otomatis menggunakan OCR dan AI
+                    Assisted.
+                  </p>
+                )}
+              </div>
+            )}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
               Pemisah Desimal
@@ -736,7 +792,13 @@ export default function TemplateGrupPage() {
             <div className="relative">
               <select
                 value={newTemplateCommodity}
-                onChange={(e) => setNewTemplateCommodity(e.target.value)}
+                onChange={(e) => {
+                  const commodity = e.target.value;
+                  setNewTemplateCommodity(commodity);
+                  if (commodity !== "GAS PIPA") {
+                    setNewTemplateWaInputType("TEXT");
+                  }
+                }}
                 className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white cursor-pointer pr-10"
               >
                 <option value="GAS PIPA">GAS PIPA</option>
@@ -753,6 +815,7 @@ export default function TemplateGrupPage() {
                 setNewTemplateName("");
                 setNewTemplateDecimal(",");
                 setNewTemplateCommodity("GAS PIPA");
+                setNewTemplateWaInputType("TEXT");
               }}
               className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200"
             >
@@ -782,6 +845,7 @@ export default function TemplateGrupPage() {
         onClose={() => {
           setIsTestModalOpen(false);
           setTestResult(null);
+          setTestWaInputType("TEXT");
         }}
         title="Uji Jalur Pesan (Test Routing)"
         maxWidth="max-w-md"
@@ -818,13 +882,39 @@ export default function TemplateGrupPage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Isi Pesan (Message Content)
+              Jenis Data Gas Pipa
+            </label>
+            <div className="relative">
+              <select
+                value={testWaInputType}
+                onChange={(e) => {
+                  setTestWaInputType(e.target.value as "TEXT" | "IMAGE");
+                  setTestResult(null);
+                }}
+                className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white cursor-pointer pr-10"
+              >
+                <option value="TEXT">Teks</option>
+                <option value="IMAGE">Gambar / Caption / Hasil OCR</option>
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              {testWaInputType === "IMAGE"
+                ? "Caption atau Teks Hasil OCR"
+                : "Isi Pesan (Message Content)"}
             </label>
             <textarea
               value={testMessage}
               onChange={(e) => setTestMessage(e.target.value)}
               className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent min-h-[100px] resize-y"
-              placeholder="Ketik isi pesan WhatsApp di sini..."
+              placeholder={
+                testWaInputType === "IMAGE"
+                  ? "Masukkan caption atau simulasi teks hasil OCR Gas Pipa..."
+                  : "Ketik isi pesan WhatsApp di sini..."
+              }
             />
           </div>
 
@@ -885,6 +975,7 @@ export default function TemplateGrupPage() {
                         )}
                       </div>
                       <p className="text-xs text-gray-600">
+                        Jenis: {template.waInputType || testWaInputType} •
                         Parser: {template.parserMode}
                         {template.matchedKeyword
                           ? ` • Keyword: “${template.matchedKeyword}”`

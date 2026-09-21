@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import {
   Save,
   Rocket,
-  Copy,
   ChevronDown,
   Plus,
   GripVertical,
@@ -128,9 +127,16 @@ export default function TemplateEditor({
   const canUpdate = hasPrivilege("template_group", "UPDATE");
   const canDelete = hasPrivilege("template_group", "DELETE");
 
-  // Normalize WA_REGEX_RECORDS fields when loading from API
-  const normalizedTemplate = {
+  // Normalize older cached templates and enforce IMAGE support for GAS PIPA WA only.
+  const isGasPipeImageTemplate =
+    template.scope === "WA_GROUP" &&
+    template.commodity === "GAS PIPA" &&
+    template.waInputType === "IMAGE";
+  const normalizedTemplate: Template = {
     ...template,
+    waInputType: isGasPipeImageTemplate ? "IMAGE" : "TEXT",
+    parserMode: isGasPipeImageTemplate ? "AI_ASSISTED" : template.parserMode,
+    requiresOcr: isGasPipeImageTemplate ? true : template.requiresOcr,
     fields: (template.fields ?? []).map((field) => {
       if (field.sourceKind === "WA_REGEX_RECORDS") {
         try {
@@ -257,7 +263,7 @@ export default function TemplateEditor({
       try {
         const parsed = JSON.parse(fieldForm.sourceRef);
         normalizedSourceRef = JSON.stringify(parsed);
-      } catch (error) {
+      } catch {
         // Attempt to auto-fix common regex backslash issues (e.g. \s -> \\s)
         try {
           // Replace backslashes that are NOT followed by valid JSON escape chars
@@ -588,12 +594,26 @@ export default function TemplateEditor({
               <div className="relative">
                 <select
                   value={formData.scope}
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    const scope = e.target.value as Template["scope"];
+                    const supportsImage =
+                      scope === "WA_GROUP" && formData.commodity === "GAS PIPA";
                     setFormData({
                       ...formData,
-                      scope: e.target.value as Template["scope"],
-                    })
-                  }
+                      scope,
+                      waInputType: supportsImage
+                        ? formData.waInputType || "TEXT"
+                        : "TEXT",
+                      parserMode:
+                        supportsImage && formData.waInputType === "IMAGE"
+                          ? "AI_ASSISTED"
+                          : formData.parserMode,
+                      requiresOcr:
+                        supportsImage && formData.waInputType === "IMAGE"
+                          ? true
+                          : formData.requiresOcr,
+                    });
+                  }}
                   className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white cursor-pointer pr-10"
                 >
                   <option value="WA_GROUP">WhatsApp Grup</option>
@@ -603,6 +623,55 @@ export default function TemplateEditor({
                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
               </div>
             </div>
+
+            {formData.scope === "WA_GROUP" &&
+              formData.commodity === "GAS PIPA" && (
+                <div>
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Jenis Data
+                    </label>
+                    <Tooltip
+                      title="Template teks memproses isi pesan. Template gambar menerima foto atau dokumen image/*, menjalankan OCR, lalu mengekstrak data dengan AI."
+                      arrow
+                      placement="top"
+                    >
+                      <Info className="w-4 h-4 text-gray-400 cursor-help" />
+                    </Tooltip>
+                  </div>
+                  <div className="relative">
+                    <select
+                      value={formData.waInputType || "TEXT"}
+                      onChange={(e) => {
+                        const waInputType = e.target.value as "TEXT" | "IMAGE";
+                        setFormData({
+                          ...formData,
+                          waInputType,
+                          parserMode:
+                            waInputType === "IMAGE"
+                              ? "AI_ASSISTED"
+                              : formData.parserMode,
+                          requiresOcr:
+                            waInputType === "IMAGE"
+                              ? true
+                              : formData.requiresOcr,
+                        });
+                      }}
+                      className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white cursor-pointer pr-10"
+                    >
+                      <option value="TEXT">Teks</option>
+                      <option value="IMAGE">Gambar</option>
+                    </select>
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                  </div>
+                  {formData.waInputType === "IMAGE" && (
+                    <p className="text-xs text-indigo-600 mt-1">
+                      Foto dan dokumen image/* diproses melalui OCR lalu AI. PDF
+                      tidak termasuk.
+                    </p>
+                  )}
+                </div>
+              )}
 
             {/* Parser Mode */}
             <div>
@@ -621,6 +690,11 @@ export default function TemplateEditor({
               <div className="relative">
                 <select
                   value={formData.parserMode}
+                  disabled={
+                    formData.scope === "WA_GROUP" &&
+                    formData.commodity === "GAS PIPA" &&
+                    formData.waInputType === "IMAGE"
+                  }
                   onChange={(e) =>
                     setFormData({
                       ...formData,
@@ -636,6 +710,13 @@ export default function TemplateEditor({
                 </select>
                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
               </div>
+              {formData.scope === "WA_GROUP" &&
+                formData.commodity === "GAS PIPA" &&
+                formData.waInputType === "IMAGE" && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Mode AI Assisted wajib untuk template gambar Gas Pipa.
+                  </p>
+                )}
             </div>
 
             {/* Decimal Separator */}
@@ -687,12 +768,26 @@ export default function TemplateEditor({
               <div className="relative">
                 <select
                   value={formData.commodity || "GAS PIPA"}
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    const commodity = e.target.value;
+                    const supportsImage =
+                      commodity === "GAS PIPA" && formData.scope === "WA_GROUP";
                     setFormData({
                       ...formData,
-                      commodity: e.target.value,
-                    })
-                  }
+                      commodity,
+                      waInputType: supportsImage
+                        ? formData.waInputType || "TEXT"
+                        : "TEXT",
+                      parserMode:
+                        supportsImage && formData.waInputType === "IMAGE"
+                          ? "AI_ASSISTED"
+                          : formData.parserMode,
+                      requiresOcr:
+                        supportsImage && formData.waInputType === "IMAGE"
+                          ? true
+                          : formData.requiresOcr,
+                    });
+                  }}
                   className="w-full appearance-none px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-white cursor-pointer pr-10"
                 >
                   <option value="GAS PIPA">GAS PIPA</option>

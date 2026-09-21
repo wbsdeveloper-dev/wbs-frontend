@@ -6,6 +6,8 @@ import {
   Archive,
   Mail,
   MessageSquare,
+  ImageIcon,
+  Type,
   FileSpreadsheet,
   CheckCircle,
   Clock,
@@ -86,7 +88,9 @@ export default function TemplateList({
 
   const getHintPreview = (template: Template) => {
     if (template.scope === "WA_GROUP") {
-      return template.waKeywordHint || template.waSenderHint || "Tidak ada petunjuk";
+      return (
+        template.waKeywordHint || template.waSenderHint || "Tidak ada petunjuk"
+      );
     }
     return template.sheetTabHint || "Tidak ada petunjuk";
   };
@@ -118,7 +122,7 @@ export default function TemplateList({
           <div onClick={() => onSelect(template)}>
             {/* Header */}
             <div className="flex items-start justify-between gap-2 mb-2">
-              <h4 
+              <h4
                 className="text-sm font-semibold text-gray-900 line-clamp-1"
                 title={template.name}
               >
@@ -132,6 +136,19 @@ export default function TemplateList({
             {/* Badges */}
             <div className="flex flex-wrap items-center gap-2 mb-2">
               {getScopeBadge(template.scope)}
+              {template.scope === "WA_GROUP" &&
+                template.commodity === "GAS PIPA" &&
+                (template.waInputType === "IMAGE" ? (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-indigo-100 text-indigo-700 rounded-full">
+                    <ImageIcon size={10} />
+                    Gambar
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-slate-100 text-slate-700 rounded-full">
+                    <Type size={10} />
+                    Teks
+                  </span>
+                ))}
               {getStatusBadge(template.status)}
               {template.isDefault && (
                 <span className="px-2 py-0.5 text-xs font-medium bg-primary/10 text-primary rounded-full">
