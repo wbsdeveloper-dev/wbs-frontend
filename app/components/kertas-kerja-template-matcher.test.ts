@@ -3,6 +3,8 @@ import test from "node:test";
 import {
   buildKertasKerjaUnmatchedKey,
   canonicalKertasKerjaModaName,
+  defaultKertasKerjaModaName,
+  isEmptyKertasKerjaIdentity,
   matchKertasKerjaTemplate,
   normalizeKertasKerjaModa,
   normalizeKertasKerjaProduct,
@@ -27,11 +29,25 @@ test("normalizes formatting without changing the site identity", () => {
   );
 });
 
+test("detects placeholder Pembangkit names that must be skipped", () => {
+  assert.equal(isEmptyKertasKerjaIdentity("-"), true);
+  assert.equal(isEmptyKertasKerjaIdentity("  "), true);
+  assert.equal(isEmptyKertasKerjaIdentity("N/A"), true);
+  assert.equal(isEmptyKertasKerjaIdentity("null"), true);
+  assert.equal(isEmptyKertasKerjaIdentity("Tanjung Batu"), false);
+});
+
 test("maps controlled Biosolar aliases to B40", () => {
   assert.equal(normalizeKertasKerjaProduct("Biosolar"), "b40");
   assert.equal(normalizeKertasKerjaProduct("Bio Solar"), "b40");
   assert.equal(normalizeKertasKerjaProduct("B-40"), "b40");
   assert.equal(normalizeKertasKerjaProduct("MFO"), "mfo");
+});
+
+test("defaults an empty transport mode to Truck", () => {
+  assert.equal(defaultKertasKerjaModaName(undefined), "Truck");
+  assert.equal(defaultKertasKerjaModaName("   "), "Truck");
+  assert.equal(defaultKertasKerjaModaName("Shipping"), "Shipping");
 });
 
 test("maps controlled transport aliases to canonical master names", () => {

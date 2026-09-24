@@ -27,6 +27,57 @@ interface ResolveReferenceOptions {
   minimumLength?: number;
 }
 
+export interface KertasKerjaOrganizationSource {
+  siteId: string;
+  siteName: string;
+  unitName: string;
+  upkName: string;
+  sheetName: string;
+  rowNumber: number;
+}
+
+export interface KertasKerjaOrganizationAssignment {
+  siteId: string;
+  siteName: string;
+  unitName?: string;
+  upkName?: string;
+  sheetName: string;
+  rowNumber: number;
+}
+
+export interface KertasKerjaTemplateReference {
+  id: string;
+  site_id: string;
+  supplier_id: string;
+  product_id: string;
+  moda_id: string;
+}
+
+export function mergeSavedKertasKerjaTemplates<
+  T extends KertasKerjaTemplateReference,
+>(savedTemplates: T[], loadedTemplates: T[]): T[] {
+  const savedIds = new Set(savedTemplates.map((template) => template.id));
+  return [
+    ...savedTemplates,
+    ...loadedTemplates.filter((template) => !savedIds.has(template.id)),
+  ];
+}
+
+export function findKertasKerjaTemplateByReferences<
+  T extends KertasKerjaTemplateReference,
+>(
+  templates: T[],
+  reference: Omit<KertasKerjaTemplateReference, "id">,
+): T | undefined {
+  return templates.find(
+    (template) =>
+      template.site_id === reference.site_id &&
+      template.supplier_id === reference.supplier_id &&
+      template.product_id === reference.product_id &&
+      template.moda_id === reference.moda_id,
+  );
+}
+
 function levenshteinDistance(left: string, right: string): number {
   if (left === right) return 0;
   if (!left) return right.length;
@@ -123,4 +174,70 @@ export function resolveNamedReference<T extends NamedReference>(
     strategy: "fuzzy",
     score: best.score,
   };
+}
+
+export function canonicalKertasKerjaUnitName(sheetName: string): string {
+  return String(sheetName ?? "")
+    .normalize("NFKC")
+    .trim()
+    .replace(/^\d+\s*[.)_-]?\s*/, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export function canonicalKertasKerjaUpkName(value: unknown): string {
+  return String(value ?? "")
+    .normalize("NFKC")
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
+function normalizeOrganizationName(value: string): string {
+  return value.toLocaleLowerCase("id-ID").replace(/\s+/g, " ").trim();
+}
+
+export function buildKertasKerjaOrganizationAssignments(
+  sources: KertasKerjaOrganizationSource[],
+): KertasKerjaOrganizationAssignment[] {
+  const assignments = new Map<string, KertasKerjaOrganizationAssignment>();
+
+  for (const source of sources) {
+    if (!source.siteId || !source.siteName) continue;
+    const unitName = canonicalKertasKerjaUnitName(source.unitName);
+    const upkName = canonicalKertasKerjaUpkName(source.upkName);
+    if (!unitName && !upkName) continue;
+
+    const existing = assignments.get(source.siteId);
+    if (existing) {
+      const unitChanged =
+        Boolean(unitName) &&
+        normalizeOrganizationName(existing.unitName ?? "") !==
+          normalizeOrganizationName(unitName);
+      const upkChanged =
+        Boolean(upkName) &&
+        normalizeOrganizationName(existing.upkName ?? "") !==
+          normalizeOrganizationName(upkName);
+
+      // The bottom-most occurrence in workbook order is treated as the newest
+      // organization mapping. Blank cells never erase a previous value.
+      if (unitName) existing.unitName = unitName;
+      if (upkName) existing.upkName = upkName;
+      if (unitChanged || upkChanged) {
+        existing.sheetName = source.sheetName;
+        existing.rowNumber = source.rowNumber;
+      }
+      continue;
+    }
+
+    assignments.set(source.siteId, {
+      siteId: source.siteId,
+      siteName: source.siteName,
+      unitName: unitName || undefined,
+      upkName: upkName || undefined,
+      sheetName: source.sheetName,
+      rowNumber: source.rowNumber,
+    });
+  }
+
+  return Array.from(assignments.values());
 }

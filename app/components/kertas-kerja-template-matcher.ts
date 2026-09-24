@@ -73,6 +73,18 @@ export function normalizeKertasKerjaSite(value: unknown): string {
   return normalizeIdentityText(value);
 }
 
+export function isEmptyKertasKerjaIdentity(value: unknown): boolean {
+  const normalized = normalizeIdentityText(value);
+  return (
+    normalized === "" ||
+    normalized === "-" ||
+    normalized === "n a" ||
+    normalized === "na" ||
+    normalized === "null" ||
+    normalized === "undefined"
+  );
+}
+
 const MODA_ALIASES: Record<string, string> = {
   truck: "truck",
   trucking: "truck",
@@ -89,6 +101,13 @@ const MODA_ALIASES: Record<string, string> = {
 export function normalizeKertasKerjaModa(value: unknown): string {
   const normalized = normalizeIdentityText(value);
   return MODA_ALIASES[normalized] ?? normalized;
+}
+
+export function defaultKertasKerjaModaName(value: unknown): string {
+  const source = String(value ?? "")
+    .normalize("NFKC")
+    .trim();
+  return source || "Truck";
 }
 
 export function canonicalKertasKerjaModaName(value: unknown): string {
