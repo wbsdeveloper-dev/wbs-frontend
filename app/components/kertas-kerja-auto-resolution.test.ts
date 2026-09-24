@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  buildKertasKerjaOrganizationAssignments,
   calculateNameSimilarity,
+  canonicalKertasKerjaUnitName,
+  canonicalKertasKerjaUpkName,
+  findKertasKerjaTemplateByReferences,
+  mergeSavedKertasKerjaTemplates,
   resolveNamedReference,
   type NamedReference,
 } from "./kertas-kerja-auto-resolution";
@@ -15,6 +20,44 @@ const sites: NamedReference[] = [
   { id: "sintang", name: "PLTD Sintang" },
   { id: "sanggau", name: "PLTD Sanggau" },
 ];
+
+test("keeps a saved template when the reload response does not contain it yet", () => {
+  const savedTemplate = {
+    id: "template-new",
+    site_id: "site-1",
+    supplier_id: "supplier-1",
+    product_id: "product-1",
+    moda_id: "moda-1",
+  };
+  const merged = mergeSavedKertasKerjaTemplates([savedTemplate], []);
+
+  assert.equal(merged.length, 1);
+  assert.equal(
+    findKertasKerjaTemplateByReferences(merged, {
+      site_id: "site-1",
+      supplier_id: "supplier-1",
+      product_id: "product-1",
+      moda_id: "moda-1",
+    })?.id,
+    "template-new",
+  );
+});
+
+test("prefers the bulk save result over a duplicate loaded template", () => {
+  const references = {
+    site_id: "site-1",
+    supplier_id: "supplier-1",
+    product_id: "product-1",
+    moda_id: "moda-1",
+  };
+  const merged = mergeSavedKertasKerjaTemplates(
+    [{ id: "template-1", ...references, is_active: true }],
+    [{ id: "template-1", ...references, is_active: false }],
+  );
+
+  assert.equal(merged.length, 1);
+  assert.equal(merged[0].is_active, true);
+});
 
 test("calculates normalized Levenshtein similarity", () => {
   assert.equal(calculateNameSimilarity("truck", "truck"), 1);
@@ -99,6 +142,104 @@ test("does not select arbitrarily when normalized names are duplicated", () => {
     result.candidates.map((candidate) => candidate.id),
     ["truck-1", "truck-2"],
   );
+});
+
+test("derives a canonical Unit name from a numbered worksheet name", () => {
+  assert.equal(canonicalKertasKerjaUnitName("01. KALTIMRA"), "KALTIMRA");
+  assert.equal(canonicalKertasKerjaUnitName("12 - UID JAYA"), "UID JAYA");
+  assert.equal(canonicalKertasKerjaUnitName("TELUK MELANO"), "TELUK MELANO");
+});
+
+test("normalizes Unit Pelaksana whitespace without changing its label", () => {
+  assert.equal(canonicalKertasKerjaUpkName("  UPK   MAHAKAM  "), "UPK MAHAKAM");
+});
+
+test("deduplicates organization assignments for the same Pembangkit", () => {
+  const assignments = buildKertasKerjaOrganizationAssignments([
+    {
+      siteId: "site-1",
+      siteName: "PLTD Melak",
+      unitName: "01. KALTIMRA",
+      upkName: "UPK Mahakam",
+      sheetName: "01. KALTIMRA",
+      rowNumber: 7,
+    },
+    {
+      siteId: "site-1",
+      siteName: "PLTD Melak",
+      unitName: "KALTIMRA",
+      upkName: "  UPK Mahakam ",
+      sheetName: "01. KALTIMRA",
+      rowNumber: 8,
+    },
+  ]);
+
+  assert.deepEqual(assignments, [
+    {
+      siteId: "site-1",
+      siteName: "PLTD Melak",
+      unitName: "KALTIMRA",
+      upkName: "UPK Mahakam",
+      sheetName: "01. KALTIMRA",
+      rowNumber: 7,
+    },
+  ]);
+});
+
+test("uses the last Excel organization mapping for one Pembangkit", () => {
+  const assignments = buildKertasKerjaOrganizationAssignments([
+    {
+      siteId: "site-1",
+      siteName: "Tanjung Batu",
+      unitName: "PIP",
+      upkName: "UPK PIP",
+      sheetName: "02. PIP",
+      rowNumber: 13,
+    },
+    {
+      siteId: "site-1",
+      siteName: "Tanjung Batu",
+      unitName: "UID Kaltimra",
+      upkName: "UPK Kaltimra",
+      sheetName: "04. UID Kaltimra",
+      rowNumber: 32,
+    },
+  ]);
+
+  assert.deepEqual(assignments, [
+    {
+      siteId: "site-1",
+      siteName: "Tanjung Batu",
+      unitName: "UID Kaltimra",
+      upkName: "UPK Kaltimra",
+      sheetName: "04. UID Kaltimra",
+      rowNumber: 32,
+    },
+  ]);
+});
+
+test("blank organization cells do not erase the previous Excel mapping", () => {
+  const assignments = buildKertasKerjaOrganizationAssignments([
+    {
+      siteId: "site-1",
+      siteName: "Tanjung Batu",
+      unitName: "UID Kaltimra",
+      upkName: "UPK Kaltimra",
+      sheetName: "04. UID Kaltimra",
+      rowNumber: 32,
+    },
+    {
+      siteId: "site-1",
+      siteName: "Tanjung Batu",
+      unitName: "",
+      upkName: "",
+      sheetName: "04. UID Kaltimra",
+      rowNumber: 33,
+    },
+  ]);
+
+  assert.equal(assignments[0].unitName, "UID Kaltimra");
+  assert.equal(assignments[0].upkName, "UPK Kaltimra");
 });
 
 test("does not fuzzy-match names shorter than the configured minimum", () => {

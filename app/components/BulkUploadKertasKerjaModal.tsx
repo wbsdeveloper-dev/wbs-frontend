@@ -25,7 +25,10 @@ import {
   type RecordKertasKerja,
 } from "@/hooks/service/kertas-kerja-api";
 import {
+  getDropdowns,
+  useCommitBbmSites,
   useDropdowns,
+  type BbmSiteCommitPayload,
   type Plant,
   type Supplier,
 } from "@/hooks/service/site-api";
@@ -34,13 +37,22 @@ import {
   buildKertasKerjaUnmatchedKey,
   canonicalKertasKerjaModaName,
   canonicalKertasKerjaProductName,
+  defaultKertasKerjaModaName,
+  isEmptyKertasKerjaIdentity,
   matchKertasKerjaTemplate,
   normalizeKertasKerjaModa,
   normalizeKertasKerjaProduct,
   normalizeKertasKerjaSite,
   normalizeKertasKerjaSupplier,
 } from "./kertas-kerja-template-matcher";
-import { resolveNamedReference } from "./kertas-kerja-auto-resolution";
+import {
+  buildKertasKerjaOrganizationAssignments,
+  canonicalKertasKerjaUnitName,
+  canonicalKertasKerjaUpkName,
+  findKertasKerjaTemplateByReferences,
+  mergeSavedKertasKerjaTemplates,
+  resolveNamedReference,
+} from "./kertas-kerja-auto-resolution";
 
 type Props = {
   templates: TemplateKertasKerja[];
@@ -50,6 +62,13 @@ type Props = {
 
 type UnmatchedResolutionAction = "skip" | "create";
 
+interface OrganizationSource {
+  sheetName: string;
+  rowNumber: number;
+  unitName: string;
+  upkName: string;
+}
+
 interface UnmatchedCombination {
   key: string;
   locations: string[];
@@ -57,6 +76,7 @@ interface UnmatchedCombination {
   productName: string;
   supplierName: string;
   modaName: string;
+  organizationSources: OrganizationSource[];
   reason: "unmatched" | "ambiguous";
 }
 
@@ -72,6 +92,8 @@ interface UnmatchedResolution {
   modaId: string;
   modaMatch: string;
   modaNameToCreate: string;
+  siteNameToCreate: string;
+  supplierNameToCreate: string;
   reason?: string;
 }
 
@@ -79,6 +101,32 @@ interface ParseOptions {
   candidateTemplates?: TemplateKertasKerja[];
   templateMappings?: Record<string, string>;
   allowResolution?: boolean;
+}
+
+type ConfirmedSiteReference =
+  BbmSiteCommitPayload["confirmedReferences"][number];
+
+function buildOrganizationReferenceConfirmations(
+  assignments: Array<{ unitName?: string; upkName?: string }>,
+): ConfirmedSiteReference[] {
+  const references = new Map<string, ConfirmedSiteReference>();
+  for (const assignment of assignments) {
+    if (assignment.unitName) {
+      references.set(`UNIT:${assignment.unitName.toLocaleLowerCase("id-ID")}`, {
+        type: "UNIT",
+        name: assignment.unitName,
+        confirmed: true,
+      });
+    }
+    if (assignment.upkName) {
+      references.set(`UPK:${assignment.upkName.toLocaleLowerCase("id-ID")}`, {
+        type: "UPK",
+        name: assignment.upkName,
+        confirmed: true,
+      });
+    }
+  }
+  return Array.from(references.values());
 }
 
 function formatAutoMatch(
@@ -132,19 +180,30 @@ function buildInitialResolution(
     issue.productName,
   );
   const modaNameToCreate = canonicalKertasKerjaModaName(issue.modaName);
+  const siteNameToCreate = issue.siteName.trim();
+  const supplierNameToCreate = issue.supplierName.trim();
+  const siteResolvable =
+    siteMatched || (site.status === "missing" && siteNameToCreate.length > 0);
+  const supplierResolvable =
+    supplierMatched ||
+    (supplier.status === "missing" && supplierNameToCreate.length > 0);
   const productResolvable =
     productMatched ||
     (product.status === "missing" && productNameToCreate.length > 0);
   const modaResolvable =
     modaMatched || (moda.status === "missing" && modaNameToCreate.length > 0);
   const exceptions: string[] = [];
-  if (!siteMatched)
+  if (!siteResolvable)
     exceptions.push(
-      `Pembangkit "${issue.siteName || "-"}" tidak dapat dikenali dengan aman`,
+      site.status === "ambiguous"
+        ? `Pembangkit "${issue.siteName || "-"}" cocok dengan lebih dari satu master`
+        : `Nama Pembangkit kosong sehingga master tidak dapat dibuat`,
     );
-  if (!supplierMatched)
+  if (!supplierResolvable)
     exceptions.push(
-      `TBBM "${issue.supplierName || "-"}" tidak dapat dikenali dengan aman`,
+      supplier.status === "ambiguous"
+        ? `TBBM "${issue.supplierName || "-"}" cocok dengan lebih dari satu master`
+        : `Nama TBBM kosong sehingga master tidak dapat dibuat`,
     );
   if (!productResolvable)
     exceptions.push(
@@ -161,7 +220,10 @@ function buildInitialResolution(
 
   return {
     action:
-      siteMatched && supplierMatched && productResolvable && modaResolvable
+      siteResolvable &&
+      supplierResolvable &&
+      productResolvable &&
+      modaResolvable
         ? "create"
         : "skip",
     siteId: siteMatched ? site.reference.id : "",
@@ -172,7 +234,9 @@ function buildInitialResolution(
           site.strategy,
           site.score,
         )
-      : issue.siteName || "-",
+      : site.status === "missing" && siteNameToCreate
+        ? `${issue.siteName} → akan dibuat sebagai ${siteNameToCreate}`
+        : issue.siteName || "-",
     supplierId: supplierMatched ? supplier.reference.id : "",
     supplierMatch: supplierMatched
       ? formatAutoMatch(
@@ -181,7 +245,9 @@ function buildInitialResolution(
           supplier.strategy,
           supplier.score,
         )
-      : issue.supplierName || "-",
+      : supplier.status === "missing" && supplierNameToCreate
+        ? `${issue.supplierName} → akan dibuat sebagai ${supplierNameToCreate}`
+        : issue.supplierName || "-",
     productId: productMatched ? product.reference.id : "",
     productMatch: productMatched
       ? formatAutoMatch(
@@ -207,6 +273,9 @@ function buildInitialResolution(
         ? `${issue.modaName || "-"} → akan dibuat sebagai ${modaNameToCreate}`
         : issue.modaName || "-",
     modaNameToCreate: moda.status === "missing" ? modaNameToCreate : "",
+    siteNameToCreate: site.status === "missing" ? siteNameToCreate : "",
+    supplierNameToCreate:
+      supplier.status === "missing" ? supplierNameToCreate : "",
     reason: exceptions.join("; ") || undefined,
   };
 }
@@ -227,9 +296,13 @@ interface ParsedKertasKerjaRow {
   rencana_pesan: number | null;
   rencana_hop: number | null;
   keterangan: string | null;
-  // UI Display info
+  // UI Display and organization info
   sheetName: string;
+  rowNumber: number;
+  siteId: string;
   siteName: string;
+  unitName: string;
+  upkName: string;
   productName: string;
   supplierName: string;
   modaName: string;
@@ -261,10 +334,12 @@ export default function BulkUploadKertasKerjaModal({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const bulkSave = useBulkUpsertKertasKerjaRecords();
   const bulkTemplateSave = useBulkUpsertKertasKerjaTemplates();
+  const commitSites = useCommitBbmSites();
   const createProduct = useCreateKertasKerjaMaster("master_product");
   const createModa = useCreateKertasKerjaMaster("master_moda");
   const { hasPrivilege } = usePrivilege();
   const canCreateMaster = hasPrivilege("system_config", "CREATE");
+  const canUpdateSite = hasPrivilege("site_management", "UPDATE");
   const { data: dropdowns } = useDropdowns();
   const { data: products = [] } = useKertasKerjaMaster("master_product", "BBM");
   const { data: modas = [] } = useKertasKerjaMaster("master_moda");
@@ -458,7 +533,10 @@ export default function BulkUploadKertasKerjaModal({
           const errorMessages: string[] = [];
           const identityIssues = new Map<string, UnmatchedCombination>();
 
-          for (const sheetName of selectedSheets) {
+          const orderedSelectedSheets = workbook.SheetNames.filter(
+            (sheetName) => selectedSheets.includes(sheetName),
+          );
+          for (const sheetName of orderedSelectedSheets) {
             const worksheet = workbook.Sheets[sheetName];
             if (!worksheet) continue;
 
@@ -541,8 +619,9 @@ export default function BulkUploadKertasKerjaModal({
               continue;
             }
 
-            // Dynamically find identifier column indices
-            let colSite = 3,
+            // Dynamically find identifier and organization column indices.
+            let colUpk = 1,
+              colSite = 3,
               colProduct = 4,
               colModa = 5,
               colSupplier = 6;
@@ -551,13 +630,16 @@ export default function BulkUploadKertasKerjaModal({
                 .toUpperCase()
                 .replace(/\s+/g, " ")
                 .trim();
-              if (h.includes("PEMBANGKIT") && !h.includes("JENIS")) colSite = i;
+              if (h.includes("UNIT PELAKSANA") || h === "UPK") colUpk = i;
+              else if (h.includes("PEMBANGKIT") && !h.includes("JENIS"))
+                colSite = i;
               else if (h.includes("JENIS BBM") || h.includes("PRODUK"))
                 colProduct = i;
               else if (h.includes("MODA")) colModa = i;
               else if (h.includes("TBBM") || h.includes("SUPPLIER"))
                 colSupplier = i;
             }
+            const unitName = canonicalKertasKerjaUnitName(sheetName);
 
             // Build Row 3 Map for dynamic column matching
             const row3 = jsonData[headerRowIndex];
@@ -722,9 +804,23 @@ export default function BulkUploadKertasKerjaModal({
               }
 
               const siteName = String(row[colSite] || "").trim();
+              const upkName = canonicalKertasKerjaUpkName(row[colUpk]);
               const productName = String(row[colProduct] || "").trim();
-              const modaName = String(row[colModa] || "").trim();
+              const modaName = defaultKertasKerjaModaName(row[colModa]);
               const supplierName = String(row[colSupplier] || "").trim();
+              if (
+                isEmptyKertasKerjaIdentity(siteName) ||
+                isEmptyKertasKerjaIdentity(supplierName)
+              ) {
+                continue;
+              }
+
+              const organizationSource: OrganizationSource = {
+                sheetName,
+                rowNumber: rIdx + 1,
+                unitName,
+                upkName,
+              };
 
               const hasPotentialMonthlyData = row
                 .slice(firstMonthColIndex)
@@ -766,6 +862,7 @@ export default function BulkUploadKertasKerjaModal({
                 const location = `${sheetName} baris ${rIdx + 1}`;
                 if (existingIssue) {
                   existingIssue.locations.push(location);
+                  existingIssue.organizationSources.push(organizationSource);
                 } else {
                   identityIssues.set(identityKey, {
                     key: identityKey,
@@ -774,6 +871,7 @@ export default function BulkUploadKertasKerjaModal({
                     productName,
                     supplierName,
                     modaName,
+                    organizationSources: [organizationSource],
                     reason: templateMatch.status,
                   });
                 }
@@ -870,9 +968,13 @@ export default function BulkUploadKertasKerjaModal({
                   rencana_pesan: rencanaPesan,
                   rencana_hop: rencanaHop,
                   keterangan,
-                  // display
+                  // display and organization data
                   sheetName,
-                  siteName,
+                  rowNumber: rIdx + 1,
+                  siteId: template.site_id,
+                  siteName: template.site_name || siteName,
+                  unitName,
+                  upkName,
                   productName,
                   supplierName,
                   modaName,
@@ -967,15 +1069,53 @@ export default function BulkUploadKertasKerjaModal({
     const createIssues = unmatchedCombinations.filter(
       (issue) => resolutions[issue.key]?.action === "create",
     );
-    if (createIssues.length > 0 && !canCreateMaster) {
+    const needsMasterCreate = createIssues.some((issue) => {
+      const resolution = resolutions[issue.key];
+      return Boolean(
+        resolution.productNameToCreate || resolution.modaNameToCreate,
+      );
+    });
+    if (needsMasterCreate && !canCreateMaster) {
       setError(
-        "Akun ini tidak memiliki hak CREATE pada Konfigurasi Sistem. Kombinasi baru tidak dapat dibuat otomatis.",
+        "Akun ini tidak memiliki hak CREATE pada Konfigurasi Sistem. Produk, moda, atau kombinasi baru tidak dapat dibuat otomatis.",
+      );
+      return;
+    }
+    const needsSiteMutation = createIssues.some((issue) => {
+      const resolution = resolutions[issue.key];
+      return Boolean(
+        resolution.siteNameToCreate ||
+        resolution.supplierNameToCreate ||
+        issue.organizationSources.some(
+          (source) => source.unitName || source.upkName,
+        ),
+      );
+    });
+    if (needsSiteMutation && !canUpdateSite) {
+      setError(
+        "Akun ini tidak memiliki hak UPDATE pada Site Management. Unit, Unit Pelaksana, Pembangkit, atau TBBM tidak dapat disinkronkan otomatis.",
       );
       return;
     }
 
     setIsResolving(true);
     try {
+      const siteIds = new Map<string, string>([
+        ...plants.map(
+          (plant) =>
+            [
+              `PEMBANGKIT|${normalizeKertasKerjaSite(plant.name)}`,
+              plant.id,
+            ] as const,
+        ),
+        ...suppliers.map(
+          (supplier) =>
+            [
+              `PEMASOK|${normalizeKertasKerjaSite(supplier.name)}`,
+              supplier.id,
+            ] as const,
+        ),
+      ]);
       const productIds = new Map(
         products.map((product) => [
           normalizeKertasKerjaProduct(product.name),
@@ -985,6 +1125,84 @@ export default function BulkUploadKertasKerjaModal({
       const modaIds = new Map(
         modas.map((moda) => [normalizeKertasKerjaModa(moda.name), moda.id]),
       );
+      const organizationSources = createIssues.flatMap((issue) => {
+        const resolution = resolutions[issue.key];
+        const existingPlant = resolution.siteId
+          ? plants.find((plant) => plant.id === resolution.siteId)
+          : undefined;
+        const siteName =
+          existingPlant?.name || resolution.siteNameToCreate || issue.siteName;
+        const siteKey =
+          resolution.siteId || `create:${normalizeKertasKerjaSite(siteName)}`;
+        return issue.organizationSources.map((source) => ({
+          siteId: siteKey,
+          siteName,
+          unitName: source.unitName,
+          upkName: source.upkName,
+          sheetName: source.sheetName,
+          rowNumber: source.rowNumber,
+        }));
+      });
+      const organizationAssignments =
+        buildKertasKerjaOrganizationAssignments(organizationSources);
+      const siteRows: BbmSiteCommitPayload["rows"] =
+        organizationAssignments.map((assignment) => {
+          const isCreate = assignment.siteId.startsWith("create:");
+          return {
+            sheetName: assignment.sheetName,
+            rowNumber: assignment.rowNumber,
+            mode: isCreate ? "create" : "existing",
+            siteId: isCreate ? undefined : assignment.siteId,
+            name: assignment.siteName,
+            siteType: "PEMBANGKIT",
+            unitName: assignment.unitName,
+            upkName: assignment.upkName,
+            ...(isCreate ? { isEnabled: true } : {}),
+          };
+        });
+
+      const supplierRowsByName = new Map<
+        string,
+        BbmSiteCommitPayload["rows"][number]
+      >();
+      for (const issue of createIssues) {
+        const name = resolutions[issue.key].supplierNameToCreate;
+        if (!name) continue;
+        supplierRowsByName.set(normalizeKertasKerjaSupplier(name), {
+          sheetName: issue.organizationSources[0]?.sheetName,
+          rowNumber: issue.organizationSources[0]?.rowNumber ?? 2,
+          mode: "create",
+          name,
+          siteType: "PEMASOK",
+          isEnabled: true,
+        });
+      }
+      const supplierRows = Array.from(supplierRowsByName.values());
+      const rowsToCommit = [...siteRows, ...supplierRows];
+      if (rowsToCommit.length > 0) {
+        const confirmedReferences = buildOrganizationReferenceConfirmations(
+          organizationAssignments,
+        );
+        await commitSites.mutateAsync({
+          fileName: file?.name || "kertas-kerja.xlsx",
+          confirmedReferences,
+          rows: rowsToCommit,
+        });
+
+        const refreshedDropdowns = await getDropdowns();
+        for (const plant of refreshedDropdowns.plants) {
+          siteIds.set(
+            `PEMBANGKIT|${normalizeKertasKerjaSite(plant.name)}`,
+            plant.id,
+          );
+        }
+        for (const supplier of refreshedDropdowns.suppliers) {
+          siteIds.set(
+            `PEMASOK|${normalizeKertasKerjaSite(supplier.name)}`,
+            supplier.id,
+          );
+        }
+      }
 
       const productNamesToCreate = Array.from(
         new Set(
@@ -1019,6 +1237,16 @@ export default function BulkUploadKertasKerjaModal({
 
       const templatePayloads = createIssues.map((issue) => {
         const resolution = resolutions[issue.key];
+        const siteId =
+          resolution.siteId ||
+          siteIds.get(
+            `PEMBANGKIT|${normalizeKertasKerjaSite(resolution.siteNameToCreate)}`,
+          );
+        const supplierId =
+          resolution.supplierId ||
+          siteIds.get(
+            `PEMASOK|${normalizeKertasKerjaSite(resolution.supplierNameToCreate)}`,
+          );
         const productId =
           resolution.productId ||
           productIds.get(
@@ -1027,20 +1255,15 @@ export default function BulkUploadKertasKerjaModal({
         const modaId =
           resolution.modaId ||
           modaIds.get(normalizeKertasKerjaModa(resolution.modaNameToCreate));
-        if (
-          !resolution.siteId ||
-          !resolution.supplierId ||
-          !productId ||
-          !modaId
-        ) {
+        if (!siteId || !supplierId || !productId || !modaId) {
           throw new Error(
             `Referensi untuk ${issue.siteName} / ${issue.productName} belum lengkap.`,
           );
         }
         return {
           issueKey: issue.key,
-          site_id: resolution.siteId,
-          supplier_id: resolution.supplierId,
+          site_id: siteId,
+          supplier_id: supplierId,
           product_id: productId,
           moda_id: modaId,
           hop_minimum: null,
@@ -1052,36 +1275,48 @@ export default function BulkUploadKertasKerjaModal({
         };
       });
 
-      if (templatePayloads.length > 0) {
-        await bulkTemplateSave.mutateAsync({
-          templates: templatePayloads.map((payload) => ({
-            site_id: payload.site_id,
-            supplier_id: payload.supplier_id,
-            product_id: payload.product_id,
-            moda_id: payload.moda_id,
-            hop_minimum: payload.hop_minimum,
-            distance: payload.distance,
-            estimated_delivery_time: payload.estimated_delivery_time,
-            average_usage: payload.average_usage,
-            freight_costs: payload.freight_costs,
-            is_active: payload.is_active,
-          })),
-        });
-      }
+      const savedTemplates =
+        templatePayloads.length > 0
+          ? await bulkTemplateSave.mutateAsync({
+              templates: templatePayloads.map((payload) => ({
+                site_id: payload.site_id,
+                supplier_id: payload.supplier_id,
+                product_id: payload.product_id,
+                moda_id: payload.moda_id,
+                hop_minimum: payload.hop_minimum,
+                distance: payload.distance,
+                estimated_delivery_time: payload.estimated_delivery_time,
+                average_usage: payload.average_usage,
+                freight_costs: payload.freight_costs,
+                is_active: payload.is_active,
+              })),
+            })
+          : [];
 
-      const refreshedTemplates = await getTemplates();
+      const loadedTemplates = await getTemplates();
+      const refreshedTemplates = mergeSavedKertasKerjaTemplates(
+        savedTemplates,
+        loadedTemplates,
+      );
       const templateMappings: Record<string, string> = {};
-      for (const payload of templatePayloads) {
-        const createdTemplate = refreshedTemplates.find(
-          (template) =>
-            template.site_id === payload.site_id &&
-            template.supplier_id === payload.supplier_id &&
-            template.product_id === payload.product_id &&
-            template.moda_id === payload.moda_id,
-        );
-        if (!createdTemplate) {
+      for (const [index, payload] of templatePayloads.entries()) {
+        const savedTemplate = savedTemplates[index];
+        const createdTemplate =
+          savedTemplate &&
+          savedTemplate.site_id === payload.site_id &&
+          savedTemplate.supplier_id === payload.supplier_id &&
+          savedTemplate.product_id === payload.product_id &&
+          savedTemplate.moda_id === payload.moda_id
+            ? savedTemplate
+            : findKertasKerjaTemplateByReferences(refreshedTemplates, {
+                site_id: payload.site_id,
+                supplier_id: payload.supplier_id,
+                product_id: payload.product_id,
+                moda_id: payload.moda_id,
+              });
+        if (!createdTemplate?.id) {
           throw new Error(
-            "Template sudah disimpan tetapi belum dapat dimuat ulang.",
+            "Template tidak mengembalikan ID setelah proses penyimpanan.",
           );
         }
         templateMappings[payload.issueKey] = createdTemplate.id;
@@ -1112,10 +1347,48 @@ export default function BulkUploadKertasKerjaModal({
     }
   };
 
+  const syncParsedRowOrganizations = async () => {
+    const assignments = buildKertasKerjaOrganizationAssignments(
+      parsedRows.map((row) => ({
+        siteId: row.siteId,
+        siteName: row.siteName,
+        unitName: row.unitName,
+        upkName: row.upkName,
+        sheetName: row.sheetName,
+        rowNumber: row.rowNumber,
+      })),
+    );
+    if (assignments.length === 0) return;
+    if (!canUpdateSite) {
+      throw new Error(
+        "Akun ini tidak memiliki hak UPDATE pada Site Management untuk menyinkronkan Unit dan Unit Pelaksana.",
+      );
+    }
+
+    const confirmedReferences =
+      buildOrganizationReferenceConfirmations(assignments);
+    await commitSites.mutateAsync({
+      fileName: file?.name || "kertas-kerja.xlsx",
+      confirmedReferences,
+      rows: assignments.map((assignment) => ({
+        sheetName: assignment.sheetName,
+        rowNumber: assignment.rowNumber,
+        mode: "existing",
+        siteId: assignment.siteId,
+        name: assignment.siteName,
+        siteType: "PEMBANGKIT",
+        unitName: assignment.unitName,
+        upkName: assignment.upkName,
+      })),
+    });
+  };
+
   const handleSaveToDatabase = async () => {
     setIsSaving(true);
     setError(null);
     try {
+      await syncParsedRowOrganizations();
+
       // Map to API payload format
       const payload: RecordKertasKerja[] = parsedRows.map((row) => ({
         template_kertas_kerja_id: row.template_kertas_kerja_id,
@@ -1328,8 +1601,9 @@ export default function BulkUploadKertasKerjaModal({
                 </h3>
                 <p className="mt-1 text-sm text-blue-800">
                   Sistem telah mencocokkan nama yang mirip secara konservatif.
-                  Produk atau moda yang belum ada akan dibuat otomatis bersama
-                  kombinasi Master Kertas Kerja dalam satu proses.
+                  Pembangkit, TBBM, produk, atau moda yang belum ada akan dibuat
+                  otomatis bersama kombinasi Master Kertas Kerja dalam satu
+                  proses.
                 </p>
                 <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold">
                   <span className="rounded-full bg-green-100 px-3 py-1 text-green-800">
@@ -1349,10 +1623,12 @@ export default function BulkUploadKertasKerjaModal({
                     pengecualian
                   </span>
                 </div>
-                {!canCreateMaster && (
+                {(!canCreateMaster || !canUpdateSite) && (
                   <p className="mt-3 text-xs font-medium text-red-700">
-                    Akun Anda tidak memiliki hak CREATE pada Konfigurasi Sistem,
-                    sehingga kombinasi baru tidak dapat dibuat otomatis.
+                    {!canCreateMaster &&
+                      "Akun Anda tidak memiliki hak CREATE pada Konfigurasi Sistem, sehingga produk atau moda baru tidak dapat dibuat otomatis. "}
+                    {!canUpdateSite &&
+                      "Akun Anda tidak memiliki hak UPDATE pada Site Management, sehingga Unit, Unit Pelaksana, Pembangkit, atau TBBM tidak dapat disinkronkan otomatis."}
                   </p>
                 )}
               </div>
@@ -1407,6 +1683,26 @@ export default function BulkUploadKertasKerjaModal({
                             <span>
                               <strong>Moda:</strong>{" "}
                               {resolution?.modaMatch || issue.modaName || "-"}
+                            </span>
+                            <span>
+                              <strong>Unit:</strong>{" "}
+                              {Array.from(
+                                new Set(
+                                  issue.organizationSources
+                                    .map((source) => source.unitName)
+                                    .filter(Boolean),
+                                ),
+                              ).join(", ") || "-"}
+                            </span>
+                            <span>
+                              <strong>Unit Pelaksana:</strong>{" "}
+                              {Array.from(
+                                new Set(
+                                  issue.organizationSources
+                                    .map((source) => source.upkName)
+                                    .filter(Boolean),
+                                ),
+                              ).join(", ") || "-"}
                             </span>
                             <span className="sm:col-span-2">
                               <strong>Lokasi Excel:</strong>{" "}
@@ -1500,7 +1796,10 @@ export default function BulkUploadKertasKerjaModal({
                           className="hover:bg-blue-50/30 transition-colors"
                         >
                           <td className="px-4 py-2.5 font-medium text-gray-900">
-                            {row.sheetName}
+                            {row.unitName || row.sheetName}
+                            <div className="text-xs font-normal text-gray-500">
+                              {row.upkName || "Unit Pelaksana belum diisi"}
+                            </div>
                           </td>
                           <td className="px-4 py-2.5 text-gray-700">
                             {row.siteName}

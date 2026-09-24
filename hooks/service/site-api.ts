@@ -1016,6 +1016,7 @@ export function useCommitBbmSites(
     onSuccess: (...args) => {
       qc.invalidateQueries({ queryKey: siteKeys.all });
       qc.invalidateQueries({ queryKey: kertasKerjaKeys.masters() });
+      qc.invalidateQueries({ queryKey: kertasKerjaKeys.templates() });
       qc.invalidateQueries({ queryKey: ["dashboard", "map-locations"] });
       qc.invalidateQueries({ queryKey: ["bbm", "sites-summary"] });
       options?.onSuccess?.(...args);

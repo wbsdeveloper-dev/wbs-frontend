@@ -63,7 +63,7 @@ async function apiFetch<T>(
   let body: ApiResponse<T>;
   try {
     body = JSON.parse(text) as ApiResponse<T>;
-  } catch (e) {
+  } catch {
     throw new ApiError(res.status, "Invalid JSON response");
   }
 
@@ -123,6 +123,19 @@ export interface TemplateKertasKerja {
   site_region?: string;
 }
 
+export interface TemplateKertasKerjaPayload {
+  site_id?: string | null;
+  supplier_id?: string | null;
+  product_id?: string | null;
+  moda_id?: string | null;
+  hop_minimum?: number | null;
+  average_usage?: number | null;
+  freight_costs?: number | null;
+  distance?: number | null;
+  estimated_delivery_time?: number | null;
+  is_active?: boolean;
+}
+
 export interface RecordKertasKerja {
   id?: string;
   template_kertas_kerja_id: string;
@@ -153,8 +166,10 @@ export interface RecordKertasKerja {
 export const kertasKerjaKeys = {
   all: ["kertasKerja"] as const,
   masters: () => [...kertasKerjaKeys.all, "master"] as const,
-  masterTable: (table: string) => [...kertasKerjaKeys.masters(), table] as const,
-  master: (table: string, comodityFilter?: string) => [...kertasKerjaKeys.masterTable(table), comodityFilter] as const,
+  masterTable: (table: string) =>
+    [...kertasKerjaKeys.masters(), table] as const,
+  master: (table: string, comodityFilter?: string) =>
+    [...kertasKerjaKeys.masterTable(table), comodityFilter] as const,
   templates: () => [...kertasKerjaKeys.all, "templates"] as const,
   records: () => [...kertasKerjaKeys.all, "records"] as const,
 };
@@ -164,18 +179,29 @@ export const kertasKerjaKeys = {
 // ---------------------------------------------------------------------------
 
 export function getMasterData(table: string, comodityFilter?: string) {
-  const queryParam = comodityFilter ? `?comodity=${encodeURIComponent(comodityFilter)}` : "";
-  return apiFetchData<MasterGeneric[]>(`/kertas-kerja/master/${table}${queryParam}`);
+  const queryParam = comodityFilter
+    ? `?comodity=${encodeURIComponent(comodityFilter)}`
+    : "";
+  return apiFetchData<MasterGeneric[]>(
+    `/kertas-kerja/master/${table}${queryParam}`,
+  );
 }
 
-export function createMasterData(table: string, payload: { name: string; comodity?: string }) {
+export function createMasterData(
+  table: string,
+  payload: { name: string; comodity?: string },
+) {
   return apiFetchData<MasterGeneric>(`/kertas-kerja/master/${table}`, {
     method: "POST",
     body: JSON.stringify(payload),
   });
 }
 
-export function updateMasterData(table: string, id: string, payload: { name: string; comodity?: string }) {
+export function updateMasterData(
+  table: string,
+  id: string,
+  payload: { name: string; comodity?: string },
+) {
   return apiFetchData<MasterGeneric>(`/kertas-kerja/master/${table}/${id}`, {
     method: "PUT",
     body: JSON.stringify(payload),
@@ -183,23 +209,31 @@ export function updateMasterData(table: string, id: string, payload: { name: str
 }
 
 export function deleteMasterData(table: string, id: string) {
-  return apiFetchData<{ success: boolean; message: string }>(`/kertas-kerja/master/${table}/${id}`, {
-    method: "DELETE",
-  });
+  return apiFetchData<{ success: boolean; message: string }>(
+    `/kertas-kerja/master/${table}/${id}`,
+    {
+      method: "DELETE",
+    },
+  );
 }
 
 export function getTemplates() {
-  return apiFetchData<TemplateKertasKerja[]>("/kertas-kerja/templates");
+  return apiFetchData<TemplateKertasKerja[]>("/kertas-kerja/templates", {
+    cache: "no-store",
+  });
 }
 
-export function createTemplate(payload: any) {
+export function createTemplate(payload: TemplateKertasKerjaPayload) {
   return apiFetchData<TemplateKertasKerja>("/kertas-kerja/templates", {
     method: "POST",
     body: JSON.stringify(payload),
   });
 }
 
-export function updateTemplate(id: string, payload: any) {
+export function updateTemplate(
+  id: string,
+  payload: TemplateKertasKerjaPayload,
+) {
   return apiFetchData<TemplateKertasKerja>(`/kertas-kerja/templates/${id}`, {
     method: "PUT",
     body: JSON.stringify(payload),
@@ -207,9 +241,12 @@ export function updateTemplate(id: string, payload: any) {
 }
 
 export function deleteTemplate(id: string) {
-  return apiFetchData<{ success: boolean; message: string }>(`/kertas-kerja/templates/${id}`, {
-    method: "DELETE",
-  });
+  return apiFetchData<{ success: boolean; message: string }>(
+    `/kertas-kerja/templates/${id}`,
+    {
+      method: "DELETE",
+    },
+  );
 }
 
 export function getRecords() {
@@ -227,7 +264,11 @@ export function bulkUpsertRecords(payload: { records: RecordKertasKerja[] }) {
 // React Query Hooks
 // ---------------------------------------------------------------------------
 
-export function useKertasKerjaMaster(table: string, comodityFilter?: string, options?: Partial<UseQueryOptions<MasterGeneric[]>>) {
+export function useKertasKerjaMaster(
+  table: string,
+  comodityFilter?: string,
+  options?: Partial<UseQueryOptions<MasterGeneric[]>>,
+) {
   return useQuery({
     queryKey: kertasKerjaKeys.master(table, comodityFilter),
     queryFn: () => getMasterData(table, comodityFilter),
@@ -237,7 +278,13 @@ export function useKertasKerjaMaster(table: string, comodityFilter?: string, opt
 
 export function useCreateKertasKerjaMaster(
   table: string,
-  options?: Partial<UseMutationOptions<MasterGeneric, Error, { name: string; comodity?: string }>>,
+  options?: Partial<
+    UseMutationOptions<
+      MasterGeneric,
+      Error,
+      { name: string; comodity?: string }
+    >
+  >,
 ) {
   const qc = useQueryClient();
   return useMutation({
@@ -252,7 +299,13 @@ export function useCreateKertasKerjaMaster(
 
 export function useUpdateKertasKerjaMaster(
   table: string,
-  options?: Partial<UseMutationOptions<MasterGeneric, Error, { id: string; payload: { name: string; comodity?: string } }>>,
+  options?: Partial<
+    UseMutationOptions<
+      MasterGeneric,
+      Error,
+      { id: string; payload: { name: string; comodity?: string } }
+    >
+  >,
 ) {
   const qc = useQueryClient();
   return useMutation({
@@ -267,7 +320,9 @@ export function useUpdateKertasKerjaMaster(
 
 export function useDeleteKertasKerjaMaster(
   table: string,
-  options?: Partial<UseMutationOptions<{ success: boolean; message: string }, Error, string>>,
+  options?: Partial<
+    UseMutationOptions<{ success: boolean; message: string }, Error, string>
+  >,
 ) {
   const qc = useQueryClient();
   return useMutation({
@@ -280,7 +335,9 @@ export function useDeleteKertasKerjaMaster(
   });
 }
 
-export function useKertasKerjaTemplates(options?: Partial<UseQueryOptions<TemplateKertasKerja[]>>) {
+export function useKertasKerjaTemplates(
+  options?: Partial<UseQueryOptions<TemplateKertasKerja[]>>,
+) {
   return useQuery({
     queryKey: kertasKerjaKeys.templates(),
     queryFn: () => getTemplates(),
@@ -289,7 +346,9 @@ export function useKertasKerjaTemplates(options?: Partial<UseQueryOptions<Templa
 }
 
 export function useCreateKertasKerjaTemplate(
-  options?: Partial<UseMutationOptions<TemplateKertasKerja, Error, any>>,
+  options?: Partial<
+    UseMutationOptions<TemplateKertasKerja, Error, TemplateKertasKerjaPayload>
+  >,
 ) {
   const qc = useQueryClient();
   return useMutation({
@@ -303,7 +362,13 @@ export function useCreateKertasKerjaTemplate(
 }
 
 export function useUpdateKertasKerjaTemplate(
-  options?: Partial<UseMutationOptions<TemplateKertasKerja, Error, { id: string; payload: any }>>,
+  options?: Partial<
+    UseMutationOptions<
+      TemplateKertasKerja,
+      Error,
+      { id: string; payload: TemplateKertasKerjaPayload }
+    >
+  >,
 ) {
   const qc = useQueryClient();
   return useMutation({
@@ -317,7 +382,9 @@ export function useUpdateKertasKerjaTemplate(
 }
 
 export function useDeleteKertasKerjaTemplate(
-  options?: Partial<UseMutationOptions<{ success: boolean; message: string }, Error, string>>,
+  options?: Partial<
+    UseMutationOptions<{ success: boolean; message: string }, Error, string>
+  >,
 ) {
   const qc = useQueryClient();
   return useMutation({
@@ -330,7 +397,9 @@ export function useDeleteKertasKerjaTemplate(
   });
 }
 
-export function useKertasKerjaRecords(options?: Partial<UseQueryOptions<RecordKertasKerja[]>>) {
+export function useKertasKerjaRecords(
+  options?: Partial<UseQueryOptions<RecordKertasKerja[]>>,
+) {
   return useQuery({
     queryKey: kertasKerjaKeys.records(),
     queryFn: () => getRecords(),
@@ -339,7 +408,13 @@ export function useKertasKerjaRecords(options?: Partial<UseQueryOptions<RecordKe
 }
 
 export function useBulkUpsertKertasKerjaRecords(
-  options?: Partial<UseMutationOptions<RecordKertasKerja[], Error, { records: RecordKertasKerja[] }>>,
+  options?: Partial<
+    UseMutationOptions<
+      RecordKertasKerja[],
+      Error,
+      { records: RecordKertasKerja[] }
+    >
+  >,
 ) {
   const qc = useQueryClient();
   return useMutation({
@@ -352,15 +427,23 @@ export function useBulkUpsertKertasKerjaRecords(
   });
 }
 
-export function bulkUpsertTemplates(payload: { templates: any[] }) {
-  return apiFetchData<any[]>("/kertas-kerja/templates/bulk", {
+export function bulkUpsertTemplates(payload: {
+  templates: TemplateKertasKerjaPayload[];
+}) {
+  return apiFetchData<TemplateKertasKerja[]>("/kertas-kerja/templates/bulk", {
     method: "POST",
     body: JSON.stringify(payload),
   });
 }
 
 export function useBulkUpsertKertasKerjaTemplates(
-  options?: Partial<UseMutationOptions<any[], Error, { templates: any[] }>>,
+  options?: Partial<
+    UseMutationOptions<
+      TemplateKertasKerja[],
+      Error,
+      { templates: TemplateKertasKerjaPayload[] }
+    >
+  >,
 ) {
   const qc = useQueryClient();
   return useMutation({
@@ -376,7 +459,7 @@ export function useBulkUpsertKertasKerjaTemplates(
 export async function downloadTemplateKertasKerja(): Promise<void> {
   const url = `${API_HOST}/kertas-kerja/templates/download-template`;
   const accessToken = getAccessToken();
-  
+
   const res = await fetch(url, {
     headers: {
       ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
