@@ -5,6 +5,7 @@ import {
   calculateNameSimilarity,
   canonicalKertasKerjaUnitName,
   canonicalKertasKerjaUpkName,
+  filterBbmReferences,
   findKertasKerjaTemplateByReferences,
   mergeSavedKertasKerjaTemplates,
   resolveNamedReference,
@@ -20,6 +21,21 @@ const sites: NamedReference[] = [
   { id: "sintang", name: "PLTD Sintang" },
   { id: "sanggau", name: "PLTD Sanggau" },
 ];
+
+test("keeps only BBM references for Kertas Kerja upload", () => {
+  const references = filterBbmReferences([
+    { id: "bbm", name: "PLTG Tarahan", commodity: "BBM" },
+    { id: "bbm-spaced", name: "TBBM Panjang", commodity: " bbm " },
+    { id: "gas", name: "Pemasok Gas", commodity: "GAS PIPA" },
+    { id: "lng", name: "Pemasok LNG", commodity: "LNG" },
+    { id: "empty", name: "Tanpa Komoditas", commodity: null },
+  ]);
+
+  assert.deepEqual(
+    references.map((reference) => reference.id),
+    ["bbm", "bbm-spaced"],
+  );
+});
 
 test("keeps a saved template when the reload response does not contain it yet", () => {
   const savedTemplate = {
@@ -123,6 +139,26 @@ test("does not fuzzy-match unrelated locations", () => {
   );
 
   assert.equal(result.status, "missing");
+});
+
+test("returns every exact duplicate so the user can choose the PLTG Tarahan master", () => {
+  const result = resolveNamedReference(
+    [
+      { id: "bbm-site", name: "PLTG Tarahan" },
+      { id: "other-site", name: "  PLTG   TARAHAN " },
+      { id: "combined-site", name: "PLTG TARAHAN, PLTD TARAHAN" },
+    ],
+    "PLTG Tarahan",
+    normalizeKertasKerjaSite,
+    { threshold: 0.9, margin: 0.08 },
+  );
+
+  assert.equal(result.status, "ambiguous");
+  if (result.status !== "ambiguous") return;
+  assert.deepEqual(
+    result.candidates.map((candidate) => candidate.id),
+    ["bbm-site", "other-site"],
+  );
 });
 
 test("does not select arbitrarily when normalized names are duplicated", () => {

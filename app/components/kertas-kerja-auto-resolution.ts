@@ -21,6 +21,14 @@ export type AutoReferenceResolution<T extends NamedReference> =
       score: number;
     };
 
+export function filterBbmReferences<T extends { commodity?: string | null }>(
+  references: T[],
+): T[] {
+  return references.filter(
+    (reference) => reference.commodity?.trim().toUpperCase() === "BBM",
+  );
+}
+
 interface ResolveReferenceOptions {
   threshold: number;
   margin: number;
