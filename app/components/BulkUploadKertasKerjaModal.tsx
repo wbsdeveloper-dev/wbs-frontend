@@ -49,6 +49,7 @@ import {
   buildKertasKerjaOrganizationAssignments,
   canonicalKertasKerjaUnitName,
   canonicalKertasKerjaUpkName,
+  filterBbmReferences,
   findKertasKerjaTemplateByReferences,
   mergeSavedKertasKerjaTemplates,
   resolveNamedReference,
@@ -60,7 +61,7 @@ type Props = {
   onSuccess?: () => void;
 };
 
-type UnmatchedResolutionAction = "skip" | "create";
+type UnmatchedResolutionAction = "pending" | "skip" | "create";
 
 interface OrganizationSource {
   sheetName: string;
@@ -84,17 +85,56 @@ interface UnmatchedResolution {
   action: UnmatchedResolutionAction;
   siteId: string;
   siteMatch: string;
+  siteCandidates: Plant[];
   supplierId: string;
   supplierMatch: string;
+  supplierCandidates: Supplier[];
   productId: string;
   productMatch: string;
+  productCandidates: MasterGeneric[];
   productNameToCreate: string;
   modaId: string;
   modaMatch: string;
+  modaCandidates: MasterGeneric[];
   modaNameToCreate: string;
   siteNameToCreate: string;
   supplierNameToCreate: string;
-  reason?: string;
+  blockingReasons: string[];
+}
+
+type AmbiguousReferenceField = "site" | "supplier" | "product" | "moda";
+
+const REFERENCE_LABELS: Record<AmbiguousReferenceField, string> = {
+  site: "Pembangkit",
+  supplier: "TBBM",
+  product: "Produk",
+  moda: "Moda",
+};
+
+function isResolutionReady(resolution: UnmatchedResolution): boolean {
+  return Boolean(
+    (resolution.siteId || resolution.siteNameToCreate) &&
+    (resolution.supplierId || resolution.supplierNameToCreate) &&
+    (resolution.productId || resolution.productNameToCreate) &&
+    (resolution.modaId || resolution.modaNameToCreate),
+  );
+}
+
+function getPendingReferenceLabels(resolution: UnmatchedResolution): string[] {
+  const pending: string[] = [];
+  if (resolution.siteCandidates.length > 0 && !resolution.siteId) {
+    pending.push(REFERENCE_LABELS.site);
+  }
+  if (resolution.supplierCandidates.length > 0 && !resolution.supplierId) {
+    pending.push(REFERENCE_LABELS.supplier);
+  }
+  if (resolution.productCandidates.length > 0 && !resolution.productId) {
+    pending.push(REFERENCE_LABELS.product);
+  }
+  if (resolution.modaCandidates.length > 0 && !resolution.modaId) {
+    pending.push(REFERENCE_LABELS.moda);
+  }
+  return pending;
 }
 
 interface ParseOptions {
@@ -182,50 +222,43 @@ function buildInitialResolution(
   const modaNameToCreate = canonicalKertasKerjaModaName(issue.modaName);
   const siteNameToCreate = issue.siteName.trim();
   const supplierNameToCreate = issue.supplierName.trim();
-  const siteResolvable =
-    siteMatched || (site.status === "missing" && siteNameToCreate.length > 0);
-  const supplierResolvable =
-    supplierMatched ||
-    (supplier.status === "missing" && supplierNameToCreate.length > 0);
-  const productResolvable =
-    productMatched ||
-    (product.status === "missing" && productNameToCreate.length > 0);
-  const modaResolvable =
-    modaMatched || (moda.status === "missing" && modaNameToCreate.length > 0);
-  const exceptions: string[] = [];
-  if (!siteResolvable)
-    exceptions.push(
-      site.status === "ambiguous"
-        ? `Pembangkit "${issue.siteName || "-"}" cocok dengan lebih dari satu master`
-        : `Nama Pembangkit kosong sehingga master tidak dapat dibuat`,
+  const siteCandidates = site.status === "ambiguous" ? site.candidates : [];
+  const supplierCandidates =
+    supplier.status === "ambiguous" ? supplier.candidates : [];
+  const productCandidates =
+    product.status === "ambiguous" ? product.candidates : [];
+  const modaCandidates = moda.status === "ambiguous" ? moda.candidates : [];
+  const hasAmbiguousReference = Boolean(
+    siteCandidates.length ||
+    supplierCandidates.length ||
+    productCandidates.length ||
+    modaCandidates.length,
+  );
+  const blockingReasons: string[] = [];
+  if (site.status === "missing" && !siteNameToCreate) {
+    blockingReasons.push(
+      "Nama Pembangkit kosong sehingga master tidak dapat dibuat",
     );
-  if (!supplierResolvable)
-    exceptions.push(
-      supplier.status === "ambiguous"
-        ? `TBBM "${issue.supplierName || "-"}" cocok dengan lebih dari satu master`
-        : `Nama TBBM kosong sehingga master tidak dapat dibuat`,
+  }
+  if (supplier.status === "missing" && !supplierNameToCreate) {
+    blockingReasons.push("Nama TBBM kosong sehingga master tidak dapat dibuat");
+  }
+  if (product.status === "missing" && !productNameToCreate) {
+    blockingReasons.push(
+      "Nama produk kosong sehingga master tidak dapat dibuat",
     );
-  if (!productResolvable)
-    exceptions.push(
-      product.status === "ambiguous"
-        ? `Produk "${issue.productName || "-"}" cocok dengan lebih dari satu master`
-        : "Nama produk kosong sehingga master tidak dapat dibuat",
-    );
-  if (!modaResolvable)
-    exceptions.push(
-      moda.status === "ambiguous"
-        ? `Moda "${issue.modaName || "-"}" cocok dengan lebih dari satu master`
-        : "Nama moda kosong sehingga master tidak dapat dibuat",
-    );
+  }
+  if (moda.status === "missing" && !modaNameToCreate) {
+    blockingReasons.push("Nama moda kosong sehingga master tidak dapat dibuat");
+  }
 
   return {
     action:
-      siteResolvable &&
-      supplierResolvable &&
-      productResolvable &&
-      modaResolvable
-        ? "create"
-        : "skip",
+      blockingReasons.length > 0
+        ? "skip"
+        : hasAmbiguousReference
+          ? "pending"
+          : "create",
     siteId: siteMatched ? site.reference.id : "",
     siteMatch: siteMatched
       ? formatAutoMatch(
@@ -237,6 +270,7 @@ function buildInitialResolution(
       : site.status === "missing" && siteNameToCreate
         ? `${issue.siteName} → akan dibuat sebagai ${siteNameToCreate}`
         : issue.siteName || "-",
+    siteCandidates,
     supplierId: supplierMatched ? supplier.reference.id : "",
     supplierMatch: supplierMatched
       ? formatAutoMatch(
@@ -248,6 +282,7 @@ function buildInitialResolution(
       : supplier.status === "missing" && supplierNameToCreate
         ? `${issue.supplierName} → akan dibuat sebagai ${supplierNameToCreate}`
         : issue.supplierName || "-",
+    supplierCandidates,
     productId: productMatched ? product.reference.id : "",
     productMatch: productMatched
       ? formatAutoMatch(
@@ -259,6 +294,7 @@ function buildInitialResolution(
       : product.status === "missing" && productNameToCreate
         ? `${issue.productName || "-"} → akan dibuat sebagai ${productNameToCreate}`
         : issue.productName || "-",
+    productCandidates,
     productNameToCreate:
       product.status === "missing" ? productNameToCreate : "",
     modaId: modaMatched ? moda.reference.id : "",
@@ -272,11 +308,12 @@ function buildInitialResolution(
       : moda.status === "missing" && modaNameToCreate
         ? `${issue.modaName || "-"} → akan dibuat sebagai ${modaNameToCreate}`
         : issue.modaName || "-",
+    modaCandidates,
     modaNameToCreate: moda.status === "missing" ? modaNameToCreate : "",
     siteNameToCreate: site.status === "missing" ? siteNameToCreate : "",
     supplierNameToCreate:
       supplier.status === "missing" ? supplierNameToCreate : "",
-    reason: exceptions.join("; ") || undefined,
+    blockingReasons,
   };
 }
 
@@ -318,6 +355,8 @@ export default function BulkUploadKertasKerjaModal({
   const [selectedSheets, setSelectedSheets] = useState<string[]>([]);
   const [parsedRows, setParsedRows] = useState<ParsedKertasKerjaRow[]>([]);
   const [step, setStep] = useState<"upload" | "resolve" | "preview">("upload");
+  const [resolutionFilter, setResolutionFilter] =
+    useState<UnmatchedResolutionAction | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
   const [unmatchedCombinations, setUnmatchedCombinations] = useState<
@@ -340,11 +379,106 @@ export default function BulkUploadKertasKerjaModal({
   const { hasPrivilege } = usePrivilege();
   const canCreateMaster = hasPrivilege("system_config", "CREATE");
   const canUpdateSite = hasPrivilege("site_management", "UPDATE");
-  const { data: dropdowns } = useDropdowns();
+  const { data: dropdowns } = useDropdowns(undefined, "BBM");
   const { data: products = [] } = useKertasKerjaMaster("master_product", "BBM");
   const { data: modas = [] } = useKertasKerjaMaster("master_moda");
-  const plants = dropdowns?.plants ?? [];
-  const suppliers = dropdowns?.suppliers ?? [];
+  const plants = filterBbmReferences(dropdowns?.plants ?? []);
+  const suppliers = filterBbmReferences(dropdowns?.suppliers ?? []);
+  const resolutionCounts: Record<UnmatchedResolutionAction, number> = {
+    create: 0,
+    pending: 0,
+    skip: 0,
+  };
+  for (const issue of unmatchedCombinations) {
+    const action = resolutions[issue.key]?.action;
+    if (action) resolutionCounts[action] += 1;
+  }
+  const visibleUnmatchedCombinations = resolutionFilter
+    ? unmatchedCombinations.filter(
+        (issue) => resolutions[issue.key]?.action === resolutionFilter,
+      )
+    : unmatchedCombinations;
+  const hasPendingResolutions = resolutionCounts.pending > 0;
+
+  const toggleResolutionFilter = (filter: UnmatchedResolutionAction) => {
+    setResolutionFilter((current) => (current === filter ? null : filter));
+  };
+
+  const handleReferenceSelection = (
+    issue: UnmatchedCombination,
+    field: AmbiguousReferenceField,
+    selectedId: string,
+  ) => {
+    setResolutions((current) => {
+      const resolution = current[issue.key];
+      if (!resolution) return current;
+
+      const configuration = {
+        site: {
+          idField: "siteId" as const,
+          matchField: "siteMatch" as const,
+          candidates: resolution.siteCandidates,
+          sourceName: issue.siteName,
+        },
+        supplier: {
+          idField: "supplierId" as const,
+          matchField: "supplierMatch" as const,
+          candidates: resolution.supplierCandidates,
+          sourceName: issue.supplierName,
+        },
+        product: {
+          idField: "productId" as const,
+          matchField: "productMatch" as const,
+          candidates: resolution.productCandidates,
+          sourceName: issue.productName,
+        },
+        moda: {
+          idField: "modaId" as const,
+          matchField: "modaMatch" as const,
+          candidates: resolution.modaCandidates,
+          sourceName: issue.modaName,
+        },
+      }[field];
+      const selected = configuration.candidates.find(
+        (candidate) => candidate.id === selectedId,
+      );
+      const updated: UnmatchedResolution = {
+        ...resolution,
+        [configuration.idField]: selectedId,
+        [configuration.matchField]: selected
+          ? `${configuration.sourceName || "-"} → ${selected.name} (dipilih manual)`
+          : configuration.sourceName || "-",
+      };
+      updated.action =
+        updated.blockingReasons.length > 0
+          ? "skip"
+          : isResolutionReady(updated)
+            ? "create"
+            : "pending";
+
+      return { ...current, [issue.key]: updated };
+    });
+  };
+
+  const handleResolutionAction = (
+    issueKey: string,
+    action: "skip" | "process",
+  ) => {
+    setResolutions((current) => {
+      const resolution = current[issueKey];
+      if (!resolution) return current;
+      const nextAction: UnmatchedResolutionAction =
+        action === "skip" || resolution.blockingReasons.length > 0
+          ? "skip"
+          : isResolutionReady(resolution)
+            ? "create"
+            : "pending";
+      return {
+        ...current,
+        [issueKey]: { ...resolution, action: nextAction },
+      };
+    });
+  };
 
   // Parse Excel to extract sheet names when a file is selected
   useEffect(() => {
@@ -380,6 +514,7 @@ export default function BulkUploadKertasKerjaModal({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       setFile(e.target.files[0]);
+      setResolutionFilter(null);
       setError(null);
       setWarning(null);
     }
@@ -393,6 +528,7 @@ export default function BulkUploadKertasKerjaModal({
     e.preventDefault();
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       setFile(e.dataTransfer.files[0]);
+      setResolutionFilter(null);
       setError(null);
       setWarning(null);
     }
@@ -1000,6 +1136,7 @@ export default function BulkUploadKertasKerjaModal({
             setParsedRows(results);
             setUnmatchedCombinations(issueList);
             setResolutions(initialResolutions);
+            setResolutionFilter(null);
             setStep("resolve");
             return;
           }
@@ -1065,6 +1202,16 @@ export default function BulkUploadKertasKerjaModal({
   const handleResolveCombinations = async () => {
     setError(null);
     setWarning(null);
+
+    const pendingIssues = unmatchedCombinations.filter(
+      (issue) => resolutions[issue.key]?.action === "pending",
+    );
+    if (pendingIssues.length > 0) {
+      setError(
+        `${pendingIssues.length} kombinasi masih memiliki master ambigu. Pilih semua komponen yang diminta atau pilih "Lewati kombinasi".`,
+      );
+      return;
+    }
 
     const createIssues = unmatchedCombinations.filter(
       (issue) => resolutions[issue.key]?.action === "create",
@@ -1189,14 +1336,16 @@ export default function BulkUploadKertasKerjaModal({
           rows: rowsToCommit,
         });
 
-        const refreshedDropdowns = await getDropdowns();
-        for (const plant of refreshedDropdowns.plants) {
+        const refreshedDropdowns = await getDropdowns("BBM");
+        for (const plant of filterBbmReferences(refreshedDropdowns.plants)) {
           siteIds.set(
             `PEMBANGKIT|${normalizeKertasKerjaSite(plant.name)}`,
             plant.id,
           );
         }
-        for (const supplier of refreshedDropdowns.suppliers) {
+        for (const supplier of filterBbmReferences(
+          refreshedDropdowns.suppliers,
+        )) {
           siteIds.set(
             `PEMASOK|${normalizeKertasKerjaSite(supplier.name)}`,
             supplier.id,
@@ -1322,12 +1471,14 @@ export default function BulkUploadKertasKerjaModal({
         templateMappings[payload.issueKey] = createdTemplate.id;
       }
 
-      const skippedCount = unmatchedCombinations.length - createIssues.length;
+      const skippedCount = unmatchedCombinations.filter(
+        (issue) => resolutions[issue.key]?.action === "skip",
+      ).length;
       setUnmatchedCombinations([]);
       setResolutions({});
       if (skippedCount > 0) {
         setWarning(
-          `${skippedCount} kombinasi dilewati karena Pembangkit atau TBBM tidak dapat dikenali dengan aman.`,
+          `${skippedCount} kombinasi dilewati sesuai resolusi pengguna atau karena referensinya tidak dapat diproses dengan aman.`,
         );
       }
       parseSelectedWorkbook({
@@ -1433,6 +1584,7 @@ export default function BulkUploadKertasKerjaModal({
     setParsedRows([]);
     setUnmatchedCombinations([]);
     setResolutions({});
+    setResolutionFilter(null);
     setError(null);
     setWarning(null);
     if (fileInputRef.current) {
@@ -1445,6 +1597,7 @@ export default function BulkUploadKertasKerjaModal({
     setParsedRows([]);
     setUnmatchedCombinations([]);
     setResolutions({});
+    setResolutionFilter(null);
     setError(null);
     setWarning(null);
   };
@@ -1597,31 +1750,65 @@ export default function BulkUploadKertasKerjaModal({
             <div className="space-y-5 animate-fadeIn">
               <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
                 <h3 className="font-bold text-blue-900">
-                  Rencana Penyelesaian Otomatis
+                  Penyelesaian Master Kertas Kerja
                 </h3>
                 <p className="mt-1 text-sm text-blue-800">
-                  Sistem telah mencocokkan nama yang mirip secara konservatif.
-                  Pembangkit, TBBM, produk, atau moda yang belum ada akan dibuat
-                  otomatis bersama kombinasi Master Kertas Kerja dalam satu
-                  proses.
+                  Sistem mencocokkan referensi secara konservatif. Pilih master
+                  secara manual jika ditemukan lebih dari satu kandidat, atau
+                  lewati kombinasi tersebut secara eksplisit.
                 </p>
-                <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold">
-                  <span className="rounded-full bg-green-100 px-3 py-1 text-green-800">
-                    {
-                      unmatchedCombinations.filter(
-                        (issue) => resolutions[issue.key]?.action === "create",
-                      ).length
-                    }{" "}
-                    kombinasi siap diproses
-                  </span>
-                  <span className="rounded-full bg-red-100 px-3 py-1 text-red-800">
-                    {
-                      unmatchedCombinations.filter(
-                        (issue) => resolutions[issue.key]?.action === "skip",
-                      ).length
-                    }{" "}
-                    pengecualian
-                  </span>
+                <div
+                  className="mt-3 flex flex-wrap gap-2 text-xs font-semibold"
+                  aria-label="Filter status resolusi"
+                >
+                  <button
+                    type="button"
+                    aria-pressed={resolutionFilter === null}
+                    onClick={() => setResolutionFilter(null)}
+                    className={`rounded-full border px-3 py-1 transition-all ${
+                      resolutionFilter === null
+                        ? "border-blue-500 bg-blue-600 text-white shadow-sm ring-2 ring-blue-200"
+                        : "border-blue-200 bg-white text-blue-800 hover:bg-blue-100"
+                    }`}
+                  >
+                    {unmatchedCombinations.length} semua
+                  </button>
+                  <button
+                    type="button"
+                    aria-pressed={resolutionFilter === "create"}
+                    onClick={() => toggleResolutionFilter("create")}
+                    className={`rounded-full border px-3 py-1 transition-all ${
+                      resolutionFilter === "create"
+                        ? "border-green-600 bg-green-600 text-white shadow-sm ring-2 ring-green-200"
+                        : "border-green-200 bg-green-100 text-green-800 hover:bg-green-200"
+                    }`}
+                  >
+                    {resolutionCounts.create} siap diproses
+                  </button>
+                  <button
+                    type="button"
+                    aria-pressed={resolutionFilter === "pending"}
+                    onClick={() => toggleResolutionFilter("pending")}
+                    className={`rounded-full border px-3 py-1 transition-all ${
+                      resolutionFilter === "pending"
+                        ? "border-amber-600 bg-amber-600 text-white shadow-sm ring-2 ring-amber-200"
+                        : "border-amber-200 bg-amber-100 text-amber-800 hover:bg-amber-200"
+                    }`}
+                  >
+                    {resolutionCounts.pending} perlu dipilih
+                  </button>
+                  <button
+                    type="button"
+                    aria-pressed={resolutionFilter === "skip"}
+                    onClick={() => toggleResolutionFilter("skip")}
+                    className={`rounded-full border px-3 py-1 transition-all ${
+                      resolutionFilter === "skip"
+                        ? "border-red-600 bg-red-600 text-white shadow-sm ring-2 ring-red-200"
+                        : "border-red-200 bg-red-100 text-red-800 hover:bg-red-200"
+                    }`}
+                  >
+                    {resolutionCounts.skip} dilewati
+                  </button>
                 </div>
                 {(!canCreateMaster || !canUpdateSite) && (
                   <p className="mt-3 text-xs font-medium text-red-700">
@@ -1634,27 +1821,85 @@ export default function BulkUploadKertasKerjaModal({
               </div>
 
               <div className="space-y-3">
-                {unmatchedCombinations.map((issue, index) => {
+                {visibleUnmatchedCombinations.length === 0 && (
+                  <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 px-6 py-10 text-center">
+                    <p className="text-sm font-semibold text-gray-700">
+                      Tidak ada kombinasi untuk filter ini.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setResolutionFilter(null)}
+                      className="mt-3 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-100"
+                    >
+                      Tampilkan semua
+                    </button>
+                  </div>
+                )}
+                {visibleUnmatchedCombinations.map((issue) => {
+                  const index = unmatchedCombinations.findIndex(
+                    (candidate) => candidate.key === issue.key,
+                  );
                   const resolution = resolutions[issue.key];
-                  const isException = resolution?.action === "skip";
+                  if (!resolution) return null;
+                  const isSkipped = resolution.action === "skip";
+                  const isPending = resolution.action === "pending";
+                  const pendingLabels = getPendingReferenceLabels(resolution);
+                  const allAmbiguousFields: Array<{
+                    field: AmbiguousReferenceField;
+                    value: string;
+                    candidates: Array<Plant | Supplier | MasterGeneric>;
+                  }> = [
+                    {
+                      field: "site",
+                      value: resolution.siteId,
+                      candidates: resolution.siteCandidates,
+                    },
+                    {
+                      field: "supplier",
+                      value: resolution.supplierId,
+                      candidates: resolution.supplierCandidates,
+                    },
+                    {
+                      field: "product",
+                      value: resolution.productId,
+                      candidates: resolution.productCandidates,
+                    },
+                    {
+                      field: "moda",
+                      value: resolution.modaId,
+                      candidates: resolution.modaCandidates,
+                    },
+                  ];
+                  const ambiguousFields = allAmbiguousFields.filter(
+                    (item) => item.candidates.length > 0,
+                  );
+
+                  const statusClasses = isSkipped
+                    ? "border-red-200 bg-red-50"
+                    : isPending
+                      ? "border-amber-200 bg-amber-50"
+                      : "border-green-200 bg-green-50";
+                  const badgeClasses = isSkipped
+                    ? "bg-red-100 text-red-800"
+                    : isPending
+                      ? "bg-amber-100 text-amber-800"
+                      : "bg-green-100 text-green-800";
+                  const statusLabel = isSkipped
+                    ? "Dilewati"
+                    : isPending
+                      ? "Perlu dipilih"
+                      : "Siap diproses";
+
                   return (
                     <div
                       key={issue.key}
-                      className={`rounded-xl border p-4 shadow-sm ${
-                        isException
-                          ? "border-red-200 bg-red-50"
-                          : "border-green-200 bg-green-50"
-                      }`}
+                      className={`rounded-xl border p-4 shadow-sm ${statusClasses}`}
                     >
                       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
                             <span
-                              className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
-                                isException
-                                  ? "bg-red-100 text-red-800"
-                                  : "bg-green-100 text-green-800"
-                              }`}
+                              className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${badgeClasses}`}
                             >
                               {index + 1}
                             </span>
@@ -1666,23 +1911,23 @@ export default function BulkUploadKertasKerjaModal({
                           <div className="mt-3 grid gap-2 text-xs text-gray-700 sm:grid-cols-2">
                             <span>
                               <strong>Pembangkit:</strong>{" "}
-                              {resolution?.siteMatch || issue.siteName || "-"}
+                              {resolution.siteMatch || issue.siteName || "-"}
                             </span>
                             <span>
                               <strong>TBBM:</strong>{" "}
-                              {resolution?.supplierMatch ||
+                              {resolution.supplierMatch ||
                                 issue.supplierName ||
                                 "-"}
                             </span>
                             <span>
                               <strong>Produk:</strong>{" "}
-                              {resolution?.productMatch ||
+                              {resolution.productMatch ||
                                 issue.productName ||
                                 "-"}
                             </span>
                             <span>
                               <strong>Moda:</strong>{" "}
-                              {resolution?.modaMatch || issue.modaName || "-"}
+                              {resolution.modaMatch || issue.modaName || "-"}
                             </span>
                             <span>
                               <strong>Unit:</strong>{" "}
@@ -1709,22 +1954,104 @@ export default function BulkUploadKertasKerjaModal({
                               {issue.locations.join(", ")}
                             </span>
                           </div>
-                          {resolution?.reason && (
-                            <p className="mt-3 rounded-lg bg-white/70 px-3 py-2 text-xs font-medium text-red-700">
-                              {resolution.reason}
+
+                          {ambiguousFields.length > 0 && (
+                            <div className="mt-4 grid gap-3 rounded-lg border border-amber-200 bg-white/80 p-3 sm:grid-cols-2">
+                              {ambiguousFields.map((item) => (
+                                <label
+                                  key={item.field}
+                                  className="flex flex-col gap-1.5 text-xs font-semibold text-gray-700"
+                                >
+                                  Pilih master {REFERENCE_LABELS[item.field]}
+                                  <select
+                                    value={item.value}
+                                    disabled={isSkipped}
+                                    onChange={(event) =>
+                                      handleReferenceSelection(
+                                        issue,
+                                        item.field,
+                                        event.target.value,
+                                      )
+                                    }
+                                    className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-normal text-gray-900 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:bg-gray-100"
+                                  >
+                                    <option value="">
+                                      Pilih {REFERENCE_LABELS[item.field]}
+                                    </option>
+                                    {item.candidates.map((candidate) => {
+                                      const candidateRegion =
+                                        "region" in candidate
+                                          ? candidate.region
+                                          : undefined;
+                                      const candidateCommodity =
+                                        "commodity" in candidate
+                                          ? candidate.commodity
+                                          : "comodity" in candidate
+                                            ? candidate.comodity
+                                            : undefined;
+                                      const details = [
+                                        candidateRegion,
+                                        candidateCommodity,
+                                        `ID ${candidate.id.slice(0, 8)}`,
+                                      ].filter(Boolean);
+                                      return (
+                                        <option
+                                          key={candidate.id}
+                                          value={candidate.id}
+                                        >
+                                          {candidate.name} —{" "}
+                                          {details.join(" — ")}
+                                        </option>
+                                      );
+                                    })}
+                                  </select>
+                                </label>
+                              ))}
+                            </div>
+                          )}
+
+                          {pendingLabels.length > 0 && !isSkipped && (
+                            <p className="mt-3 rounded-lg bg-white/70 px-3 py-2 text-xs font-medium text-amber-800">
+                              Pilihan wajib diselesaikan:{" "}
+                              {pendingLabels.join(", ")}.
                             </p>
                           )}
+                          {resolution.blockingReasons.length > 0 && (
+                            <p className="mt-3 rounded-lg bg-white/70 px-3 py-2 text-xs font-medium text-red-700">
+                              {resolution.blockingReasons.join("; ")}
+                            </p>
+                          )}
+
+                          <div className="mt-4 flex flex-wrap gap-2">
+                            {isSkipped ? (
+                              resolution.blockingReasons.length === 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleResolutionAction(issue.key, "process")
+                                  }
+                                  className="rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-semibold text-amber-800 hover:bg-amber-50"
+                                >
+                                  Ubah resolusi
+                                </button>
+                              )
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleResolutionAction(issue.key, "skip")
+                                }
+                                className="rounded-lg border border-red-300 bg-white px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50"
+                              >
+                                Lewati kombinasi
+                              </button>
+                            )}
+                          </div>
                         </div>
                         <span
-                          className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${
-                            isException
-                              ? "bg-red-100 text-red-800"
-                              : "bg-green-100 text-green-800"
-                          }`}
+                          className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${badgeClasses}`}
                         >
-                          {isException
-                            ? "Dilewati dengan aman"
-                            : "Auto-match / auto-create"}
+                          {statusLabel}
                         </span>
                       </div>
                     </div>
@@ -1894,7 +2221,7 @@ export default function BulkUploadKertasKerjaModal({
               <button
                 type="button"
                 onClick={handleResolveCombinations}
-                disabled={isResolving}
+                disabled={isResolving || hasPendingResolutions}
                 className="flex items-center justify-center min-w-[210px] px-5 py-2.5 text-sm font-medium text-white bg-primary rounded-lg hover:brightness-90 disabled:opacity-50"
               >
                 {isResolving ? (
@@ -1902,8 +2229,10 @@ export default function BulkUploadKertasKerjaModal({
                     <Loader2 size={18} className="mr-2 animate-spin" />
                     Menyelesaikan...
                   </>
+                ) : hasPendingResolutions ? (
+                  "Selesaikan Pilihan Master"
                 ) : (
-                  "Proses Otomatis & Preview"
+                  "Proses Resolusi & Preview"
                 )}
               </button>
             </>
