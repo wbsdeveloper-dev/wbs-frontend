@@ -11,6 +11,7 @@ import {
   Popup,
   TileLayer,
   Tooltip,
+  useMap,
 } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
@@ -173,6 +174,37 @@ const buildIcons = (legend: MapLegend): Record<string, L.DivIcon> => {
   });
   return icons;
 };
+
+const INDONESIA_BOUNDS = L.latLngBounds([-11.5, 94.5], [6.5, 141.5]);
+
+function MapViewport({ positions }: { positions: L.LatLngTuple[] }) {
+  const map = useMap();
+
+  useEffect(() => {
+    const updateViewport = () => {
+      map.invalidateSize();
+
+      if (positions.length === 1) {
+        map.setView(positions[0], 8, { animate: true });
+        return;
+      }
+
+      const bounds =
+        positions.length > 1 ? L.latLngBounds(positions) : INDONESIA_BOUNDS;
+
+      map.fitBounds(bounds, {
+        animate: true,
+        maxZoom: 8,
+        padding: [36, 36],
+      });
+    };
+
+    const frameId = window.requestAnimationFrame(updateViewport);
+    return () => window.cancelAnimationFrame(frameId);
+  }, [map, positions]);
+
+  return null;
+}
 
 // ---------------------------------------------------------------------------
 // Component
@@ -609,6 +641,14 @@ export default function Map() {
     bbmSitesSummary,
   ]);
 
+  const filteredSitePositions = useMemo(
+    () =>
+      filteredSites
+        .map((site) => getValidMapPosition(site))
+        .filter((position): position is L.LatLngTuple => position !== null),
+    [filteredSites],
+  );
+
   // Filtered pipes – show only if both source and target are visible
   const filteredPipes = useMemo(() => {
     if (!data?.pipes || !showPipes) return [];
@@ -706,16 +746,21 @@ export default function Map() {
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6 mt-4 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:divide-x divide-gray-200">
       {/* Map Section */}
-      <div className="lg:col-span-9 lg:pr-6">
+      <div className="lg:col-span-9 lg:pr-6 min-w-0">
         <div ref={mapRef} className="bg-white pb-2">
-          <div className="flex justify-between items-center mb-4">
-            <div className="flex flex-wrap items-center gap-2">
-              <h3 className="text-base md:text-lg font-semibold text-gray-900">
-                Titik Lokasi TBBM dan Pembangkit
-              </h3>
-              <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full border border-gray-200">
-                {selectedMonthYearLabel}
-              </span>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="text-base md:text-lg font-semibold text-gray-900">
+                  Titik Lokasi TBBM dan Pembangkit
+                </h3>
+                <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full border border-gray-200">
+                  {selectedMonthYearLabel}
+                </span>
+              </div>
+              <p className="mt-1 text-xs text-gray-500">
+                Sebaran lokasi dan jalur distribusi BBM di Indonesia
+              </p>
             </div>
             <div className="export-buttons-container flex items-center gap-2 bg-gray-100 rounded-lg p-0.5">
               <button
@@ -737,16 +782,20 @@ export default function Map() {
             </div>
           </div>
 
-          <div className="relative h-[250px] sm:h-[300px] md:h-[350px] lg:h-[400px] w-full">
+          <div className="relative h-[340px] sm:h-[460px] lg:h-[650px] w-full overflow-hidden rounded-xl border border-gray-200 bg-slate-100 shadow-inner">
             <MapContainer
               center={[-2.5, 118]}
               zoom={5}
+              minZoom={3}
+              maxZoom={18}
               scrollWheelZoom={true}
-              className="h-full w-full rounded-lg z-0"
+              className="h-full w-full z-0"
             >
+              <MapViewport positions={filteredSitePositions} />
               <TileLayer
                 attribution="&copy; OpenStreetMap contributors"
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                maxZoom={19}
               />
 
               {/* PIPES */}
@@ -989,6 +1038,29 @@ export default function Map() {
               })}
             </MapContainer>
 
+            <div className="pointer-events-none absolute left-3 top-3 z-[500] flex items-center gap-2 rounded-full border border-white/80 bg-white/90 px-3 py-1.5 text-xs font-medium text-gray-700 shadow-md backdrop-blur">
+              <span
+                className={`h-2 w-2 rounded-full ${
+                  filteredSites.length > 0 ? "bg-emerald-500" : "bg-gray-400"
+                }`}
+              />
+              {filteredSites.length} lokasi aktif
+            </div>
+
+            {filteredSites.length === 0 && (
+              <div className="pointer-events-none absolute inset-0 z-[450] flex items-center justify-center bg-slate-50/35 p-4 backdrop-blur-[1px]">
+                <div className="max-w-xs rounded-xl border border-white bg-white/95 px-5 py-4 text-center shadow-lg">
+                  <p className="text-sm font-semibold text-gray-800">
+                    Tidak ada lokasi untuk ditampilkan
+                  </p>
+                  <p className="mt-1 text-xs leading-5 text-gray-500">
+                    Coba ubah periode atau longgarkan pilihan filter untuk
+                    melihat lokasi lainnya.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* INTERACTIVE LEGEND - Collapsible */}
             <div className="absolute bottom-2 left-2 sm:bottom-4 sm:left-4 z-1000">
               {!legendExpanded ? (
@@ -1111,7 +1183,7 @@ export default function Map() {
         bg-white lg:bg-transparent
         transform transition-transform duration-300 ease-in-out
         ${filterOpen ? "translate-x-0" : "translate-x-full lg:translate-x-0"}
-        lg:block overflow-y-auto
+        lg:block overflow-y-auto lg:max-h-[710px]
       `}
       >
         {/* Mobile Filter Header */}
@@ -1126,9 +1198,33 @@ export default function Map() {
         </div>
 
         <div className="p-4 lg:p-0">
-          <p className="hidden lg:block text-lg font-semibold text-gray-900 mb-6">
-            Filter Map
-          </p>
+          <div className="hidden lg:flex items-center justify-between gap-3 mb-5 pr-4">
+            <div>
+              <p className="text-lg font-semibold text-gray-900">Filter Map</p>
+              <p className="mt-0.5 text-xs text-gray-500">
+                Sesuaikan data yang ditampilkan
+              </p>
+            </div>
+            {(selectedRegion ||
+              selectedPemasok ||
+              selectedPembangkit ||
+              selectedModes.length > 0 ||
+              selectedProducts.length > 0) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedRegion(null);
+                  setSelectedPemasok(null);
+                  setSelectedPembangkit(null);
+                  setSelectedModes([]);
+                  setSelectedProducts([]);
+                }}
+                className="shrink-0 text-xs font-semibold text-primary hover:text-secondary"
+              >
+                Reset
+              </button>
+            )}
+          </div>
           <div className="flex flex-col gap-3 pr-4">
             <div>
               <label
@@ -1172,85 +1268,122 @@ export default function Map() {
               placeholder="Pilih Pembangkit"
             />
 
-            {/* Produk (Mode Type & Product Type buttons) */}
-            <div className="border-t border-gray-100 pt-2">
-              <p className="text-sm font-semibold text-gray-800 mb-2">
-                Moda Transportasi
-              </p>
-              {/* Mode Type Button Group */}
-              <div className="mb-3">
-                <div className="flex flex-wrap gap-1.5">
+            {/* Moda transportasi dan produk dibatasi agar panel tidak memanjang saat opsi banyak. */}
+            <div className="border-t border-gray-100 pt-3">
+              <div className="mb-4">
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <p className="text-sm font-semibold text-gray-800">
+                    Moda Transportasi
+                  </p>
+                  <span className="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-500">
+                    {selectedModes.length > 0
+                      ? `${selectedModes.length} dipilih`
+                      : `${filterModaOptions.length || 3} opsi`}
+                  </span>
+                </div>
+                <div className="rounded-lg border border-gray-200 bg-gray-50/50 p-2">
                   <button
+                    type="button"
                     onClick={() => setSelectedModes([])}
-                    className={`px-3 py-1 text-xs font-medium rounded-md transition-all duration-200 cursor-pointer ${
+                    className={`mb-2 px-3 py-1 text-xs font-medium rounded-md transition-all duration-200 cursor-pointer ${
                       selectedModes.length === 0
-                        ? "bg-primary text-white"
-                        : "text-gray-600 hover:text-secondary hover:bg-gray-50"
+                        ? "bg-primary text-white shadow-sm"
+                        : "bg-white text-gray-600 hover:text-secondary hover:bg-gray-50"
                     }`}
                   >
-                    All
+                    Semua
                   </button>
-                  {(filterModaOptions.length > 0
-                    ? filterModaOptions
-                    : ["Truck", "Vessel", "Pipeline"]
-                  ).map((mode) => (
-                    <button
-                      key={mode}
-                      onClick={() => {
-                        setSelectedModes((prev) =>
-                          prev.includes(mode)
-                            ? prev.filter((m) => m !== mode)
-                            : [...prev, mode],
-                        );
-                      }}
-                      className={`px-3 py-1 text-xs font-medium rounded-md transition-all duration-200 cursor-pointer ${
-                        selectedModes.includes(mode)
-                          ? "bg-primary text-white"
-                          : "text-gray-600 hover:text-secondary hover:bg-gray-50"
-                      }`}
-                    >
-                      {mode}
-                    </button>
-                  ))}
+                  <div className="max-h-28 overflow-y-auto overscroll-contain pr-1">
+                    <div className="flex flex-wrap gap-1.5">
+                      {(filterModaOptions.length > 0
+                        ? filterModaOptions
+                        : ["Truck", "Vessel", "Pipeline"]
+                      ).map((mode) => (
+                        <button
+                          type="button"
+                          key={mode}
+                          title={mode}
+                          onClick={() => {
+                            setSelectedModes((prev) =>
+                              prev.includes(mode)
+                                ? prev.filter((m) => m !== mode)
+                                : [...prev, mode],
+                            );
+                          }}
+                          className={`max-w-full break-words px-2.5 py-1 text-left text-xs font-medium leading-4 rounded-md transition-all duration-200 cursor-pointer ${
+                            selectedModes.includes(mode)
+                              ? "bg-primary text-white shadow-sm"
+                              : "bg-white text-gray-600 ring-1 ring-inset ring-gray-200 hover:text-secondary hover:ring-secondary/30"
+                          }`}
+                        >
+                          {mode}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
+                {(filterModaOptions.length || 3) > 8 && (
+                  <p className="mt-1 text-[10px] text-gray-400">
+                    Scroll untuk melihat moda lainnya
+                  </p>
+                )}
               </div>
-              <p className="text-sm font-semibold text-gray-800 mb-2">Produk</p>
-              {/* Product Type Button Group */}
+
               <div className="mb-3">
-                <div className="flex flex-wrap gap-1.5">
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <p className="text-sm font-semibold text-gray-800">Produk</p>
+                  <span className="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-500">
+                    {selectedProducts.length > 0
+                      ? `${selectedProducts.length} dipilih`
+                      : `${filterProductOptions.length || 7} opsi`}
+                  </span>
+                </div>
+                <div className="rounded-lg border border-gray-200 bg-gray-50/50 p-2">
                   <button
+                    type="button"
                     onClick={() => setSelectedProducts([])}
-                    className={`px-3 py-1 text-xs font-medium rounded-md transition-all duration-200 cursor-pointer ${
+                    className={`mb-2 px-3 py-1 text-xs font-medium rounded-md transition-all duration-200 cursor-pointer ${
                       selectedProducts.length === 0
-                        ? "bg-primary text-white"
-                        : "text-gray-600 hover:text-secondary hover:bg-gray-50"
+                        ? "bg-primary text-white shadow-sm"
+                        : "bg-white text-gray-600 hover:text-secondary hover:bg-gray-50"
                     }`}
                   >
-                    All
+                    Semua
                   </button>
-                  {(filterProductOptions.length > 0
-                    ? filterProductOptions
-                    : ["B30", "B35", "B40", "HSFO", "HSD", "LSFO", "IDO"]
-                  ).map((prod) => (
-                    <button
-                      key={prod}
-                      onClick={() => {
-                        setSelectedProducts((prev) =>
-                          prev.includes(prod)
-                            ? prev.filter((p) => p !== prod)
-                            : [...prev, prod],
-                        );
-                      }}
-                      className={`px-3 py-1 text-xs font-medium rounded-md transition-all duration-200 cursor-pointer ${
-                        selectedProducts.includes(prod)
-                          ? "bg-primary text-white"
-                          : "text-gray-600 hover:text-secondary hover:bg-gray-50"
-                      }`}
-                    >
-                      {prod}
-                    </button>
-                  ))}
+                  <div className="max-h-24 overflow-y-auto overscroll-contain pr-1">
+                    <div className="flex flex-wrap gap-1.5">
+                      {(filterProductOptions.length > 0
+                        ? filterProductOptions
+                        : ["B30", "B35", "B40", "HSFO", "HSD", "LSFO", "IDO"]
+                      ).map((prod) => (
+                        <button
+                          type="button"
+                          key={prod}
+                          title={prod}
+                          onClick={() => {
+                            setSelectedProducts((prev) =>
+                              prev.includes(prod)
+                                ? prev.filter((p) => p !== prod)
+                                : [...prev, prod],
+                            );
+                          }}
+                          className={`max-w-full break-words px-2.5 py-1 text-left text-xs font-medium leading-4 rounded-md transition-all duration-200 cursor-pointer ${
+                            selectedProducts.includes(prod)
+                              ? "bg-primary text-white shadow-sm"
+                              : "bg-white text-gray-600 ring-1 ring-inset ring-gray-200 hover:text-secondary hover:ring-secondary/30"
+                          }`}
+                        >
+                          {prod}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
+                {(filterProductOptions.length || 7) > 8 && (
+                  <p className="mt-1 text-[10px] text-gray-400">
+                    Scroll untuk melihat produk lainnya
+                  </p>
+                )}
               </div>
             </div>
           </div>
