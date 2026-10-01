@@ -215,31 +215,19 @@ function findHeaderIndex(
   return index >= 0 ? index : undefined;
 }
 
-function findExactReference(
-  value: string,
+function indexReferences(
   references: MasterReference[],
-): MasterReference | undefined {
-  const normalized = normalizeImportText(value);
-  if (!normalized) return undefined;
-  return references.find(
-    (reference) => normalizeImportText(reference.name) === normalized,
-  );
+): Map<string, MasterReference> {
+  const index = new Map<string, MasterReference>();
+  for (const reference of references) {
+    const key = normalizeImportText(reference.name);
+    if (key && !index.has(key)) index.set(key, reference);
+  }
+  return index;
 }
 
-function findExactSite(
-  id: string,
-  name: string,
-  siteType: BbmImportSiteType | undefined,
-  sites: Site[],
-): Site | undefined {
-  if (id) return sites.find((site) => site.id === id);
-  if (!siteType) return undefined;
-  const normalizedName = normalizeImportText(name);
-  return sites.find(
-    (site) =>
-      site.site_type === siteType &&
-      normalizeImportText(site.name) === normalizedName,
-  );
+function siteNameKey(siteType: BbmImportSiteType, name: string): string {
+  return `${siteType}:${normalizeImportText(name)}`;
 }
 
 export interface ParseBbmSiteOptions {
@@ -287,6 +275,23 @@ export function parseBbmSiteMatrix(
     columns[key] === undefined ? "" : row[columns[key] as number];
   const read = (row: unknown[], key: HeaderKey) => displayText(value(row, key));
 
+  // Build lookup indexes once. Large imports previously scanned every site and
+  // reference list for every spreadsheet row, producing avoidable O(rows × data)
+  // work before the preview could be displayed.
+  const sitesById = new Map<string, Site>();
+  const sitesByTypeAndName = new Map<string, Site>();
+  for (const site of options.sites) {
+    sitesById.set(site.id, site);
+    if (site.site_type === "PEMBANGKIT" || site.site_type === "PEMASOK") {
+      const key = siteNameKey(site.site_type, site.name);
+      if (!sitesByTypeAndName.has(key)) sitesByTypeAndName.set(key, site);
+    }
+  }
+  const regionsByName = indexReferences(options.regions ?? []);
+  const kitsByName = indexReferences(options.kits);
+  const upksByName = indexReferences(options.upks);
+  const unitsByName = indexReferences(options.units);
+
   const parsed: ParsedBbmSiteRow[] = [];
   for (let index = headerRowIndex + 1; index < matrix.length; index += 1) {
     const source = matrix[index] ?? [];
@@ -306,11 +311,15 @@ export function parseBbmSiteMatrix(
     if (!raw.id && !raw.name && !raw.siteType) continue;
 
     const siteType = parseBbmSiteType(raw.siteType);
-    const existing = findExactSite(raw.id, raw.name, siteType, options.sites);
-    const region = findExactReference(raw.region, options.regions ?? []);
-    const kit = findExactReference(raw.kit, options.kits);
-    const upk = findExactReference(raw.upk, options.upks);
-    const unit = findExactReference(raw.unit, options.units);
+    const existing = raw.id
+      ? sitesById.get(raw.id)
+      : siteType
+        ? sitesByTypeAndName.get(siteNameKey(siteType, raw.name))
+        : undefined;
+    const region = regionsByName.get(normalizeImportText(raw.region));
+    const kit = kitsByName.get(normalizeImportText(raw.kit));
+    const upk = upksByName.get(normalizeImportText(raw.upk));
+    const unit = unitsByName.get(normalizeImportText(raw.unit));
     const capacity = parseSpreadsheetNumber(value(source, "capacity"));
     const capacityMw = parseCapacityMw(value(source, "capacityMw"));
     const isEnabled = parseOptionalStatus(raw.status);
@@ -403,7 +412,9 @@ export function getBbmSiteImportConflicts(
 
   for (const row of rows) {
     const key = resolutionKey(row);
-    groups.set(key, [...(groups.get(key) ?? []), row]);
+    const group = groups.get(key);
+    if (group) group.push(row);
+    else groups.set(key, [row]);
   }
   for (const group of groups.values()) {
     const names = new Set(
@@ -439,7 +450,9 @@ export function mergeBbmSiteImportRows(
   const groups = new Map<string, ParsedBbmSiteRow[]>();
   for (const row of rows) {
     const key = resolutionKey(row);
-    groups.set(key, [...(groups.get(key) ?? []), row]);
+    const group = groups.get(key);
+    if (group) group.push(row);
+    else groups.set(key, [row]);
   }
   return rows.map((row) => {
     const group = groups.get(resolutionKey(row)) ?? [row];

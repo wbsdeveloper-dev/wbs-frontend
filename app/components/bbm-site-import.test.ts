@@ -238,6 +238,30 @@ test("distinct supplied values for the same site conflict", () => {
   assert.equal(getBbmSiteImportConflicts(rows).size, 2);
 });
 
+test("matches a large import against indexed sites without changing results", () => {
+  const siteCount = 2500;
+  const sites: Site[] = Array.from({ length: siteCount }, (_, index) => ({
+    ...plant,
+    id: `00000000-0000-4000-8000-${String(index).padStart(12, "0")}`,
+    name: `PLTD Import ${index}`,
+  }));
+  const matrix: unknown[][] = [
+    ["ID", "Nama Site", "Tipe Site", "Status"],
+    ...sites.map((site) => [site.id, site.name, "Pembangkit", "Aktif"]),
+  ];
+
+  const rows = parseBbmSiteMatrix(matrix, { ...options, sites });
+
+  assert.equal(rows.length, siteCount);
+  assert.equal(rows[0].mode, "existing");
+  assert.equal(rows[0].siteId, sites[0].id);
+  assert.equal(rows[siteCount - 1].siteId, sites[siteCount - 1].id);
+  assert.equal(
+    rows.every((row) => row.errors.length === 0),
+    true,
+  );
+});
+
 test("commit rows contain sites only and no relation properties", () => {
   const rows = parseBbmSiteMatrix(
     [
