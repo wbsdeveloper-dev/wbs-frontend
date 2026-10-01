@@ -36,6 +36,7 @@ type Props = {
 
 type Step = "upload" | "match" | "confirm";
 const CREATE_VALUE = "__create__";
+const ROWS_PER_PAGE = 50;
 
 function numberOrUndefined(value: string): number | undefined {
   if (!value.trim()) return undefined;
@@ -62,6 +63,11 @@ export default function BulkUploadSiteModal({
   const [error, setError] = useState<string | null>(null);
   const [isParsing, setIsParsing] = useState(false);
   const [result, setResult] = useState<BbmSiteCommitResult | null>(null);
+  const [matchPage, setMatchPage] = useState(1);
+  const [confirmPage, setConfirmPage] = useState(1);
+  const [editingSiteRowKey, setEditingSiteRowKey] = useState<string | null>(
+    null,
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: sites = [], isLoading: sitesLoading } = useSites({
@@ -77,6 +83,23 @@ export default function BulkUploadSiteModal({
   const { data: units = [] } = useKertasKerjaMaster("master_unit");
   const commitMutation = useCommitBbmSites();
 
+  const sitesById = useMemo(
+    () => new Map(sites.map((site) => [site.id, site])),
+    [sites],
+  );
+  const sitesByType = useMemo(() => {
+    const grouped: Record<"PEMBANGKIT" | "PEMASOK", Site[]> = {
+      PEMBANGKIT: [],
+      PEMASOK: [],
+    };
+    for (const site of sites) {
+      if (site.site_type === "PEMBANGKIT" || site.site_type === "PEMASOK") {
+        grouped[site.site_type].push(site);
+      }
+    }
+    return grouped;
+  }, [sites]);
+
   const updateRow = (key: string, patch: Partial<ParsedBbmSiteRow>) => {
     setRows((current) =>
       current.map((row) => (row.key === key ? { ...row, ...patch } : row)),
@@ -84,7 +107,7 @@ export default function BulkUploadSiteModal({
   };
 
   const getSite = (row: ParsedBbmSiteRow): Site | undefined =>
-    sites.find((site) => site.id === row.siteId);
+    sitesById.get(row.siteId);
 
   const permanentErrors = (row: ParsedBbmSiteRow) =>
     row.errors.filter(
@@ -147,6 +170,19 @@ export default function BulkUploadSiteModal({
     (row) => validationErrors(row).length > 0 || conflicts.has(row.key),
   ).length;
   const canContinue = rows.length > 0 && invalidCount === 0;
+  const matchPageCount = Math.max(1, Math.ceil(rows.length / ROWS_PER_PAGE));
+  const confirmPageCount = Math.max(
+    1,
+    Math.ceil(previewRows.length / ROWS_PER_PAGE),
+  );
+  const visibleMatchRows = rows.slice(
+    (matchPage - 1) * ROWS_PER_PAGE,
+    matchPage * ROWS_PER_PAGE,
+  );
+  const visiblePreviewRows = previewRows.slice(
+    (confirmPage - 1) * ROWS_PER_PAGE,
+    confirmPage * ROWS_PER_PAGE,
+  );
 
   const actionFor = (row: ParsedBbmSiteRow) => {
     const createsReference = Boolean(
@@ -176,6 +212,9 @@ export default function BulkUploadSiteModal({
     setSelectedSheet("");
     setRows([]);
     setConfirmedReferenceKeys([]);
+    setMatchPage(1);
+    setConfirmPage(1);
+    setEditingSiteRowKey(null);
     setError(null);
   };
 
@@ -245,6 +284,9 @@ export default function BulkUploadSiteModal({
       if (!parsed.length)
         throw new Error("Tidak ada baris site yang dapat diproses.");
       setRows(parsed);
+      setMatchPage(1);
+      setConfirmPage(1);
+      setEditingSiteRowKey(null);
       setStep("match");
     } catch (caught) {
       setError(
@@ -484,14 +526,16 @@ export default function BulkUploadSiteModal({
                     </tr>
                   </thead>
                   <tbody className="divide-y">
-                    {rows.map((row) => {
+                    {visibleMatchRows.map((row) => {
                       const messages = [
                         ...validationErrors(row),
                         ...(conflicts.get(row.key) ?? []),
                       ];
-                      const eligibleSites = sites.filter(
-                        (site) => site.site_type === row.siteType,
-                      );
+                      const eligibleSites = row.siteType
+                        ? sitesByType[row.siteType]
+                        : [];
+                      const selectedSite = getSite(row);
+                      const isEditingSite = editingSiteRowKey === row.key;
                       return (
                         <tr
                           key={row.key}
@@ -526,40 +570,74 @@ export default function BulkUploadSiteModal({
                                 : row.raw.siteType || "-"}
                           </td>
                           <td className="px-3 py-3">
-                            <select
-                              className={selectClass}
-                              value={
-                                row.mode === "create"
-                                  ? CREATE_VALUE
-                                  : row.siteId
-                              }
-                              onChange={(event) => {
-                                if (event.target.value === CREATE_VALUE) {
-                                  updateRow(row.key, {
-                                    mode: "create",
-                                    siteId: "",
-                                    createConfirmed: false,
-                                  });
-                                } else {
-                                  updateRow(row.key, {
-                                    mode: "existing",
-                                    siteId: event.target.value,
-                                    createConfirmed: false,
-                                  });
-                                }
-                              }}
-                            >
-                              <option value="">Pilih site</option>
-                              {eligibleSites.map((site) => (
-                                <option key={site.id} value={site.id}>
-                                  {site.name}
-                                  {!site.is_enabled ? " (nonaktif)" : ""}
-                                </option>
-                              ))}
-                              <option value={CREATE_VALUE}>
-                                + Buat Site Baru
-                              </option>
-                            </select>
+                            {isEditingSite ? (
+                              <div className="min-w-[220px] space-y-2">
+                                <select
+                                  autoFocus
+                                  className={selectClass}
+                                  value={
+                                    row.mode === "create"
+                                      ? CREATE_VALUE
+                                      : row.siteId
+                                  }
+                                  onChange={(event) => {
+                                    if (event.target.value === CREATE_VALUE) {
+                                      updateRow(row.key, {
+                                        mode: "create",
+                                        siteId: "",
+                                        createConfirmed: false,
+                                      });
+                                    } else {
+                                      updateRow(row.key, {
+                                        mode: "existing",
+                                        siteId: event.target.value,
+                                        createConfirmed: false,
+                                      });
+                                    }
+                                    setEditingSiteRowKey(null);
+                                  }}
+                                >
+                                  <option value="">Pilih site</option>
+                                  {eligibleSites.map((site) => (
+                                    <option key={site.id} value={site.id}>
+                                      {site.name}
+                                      {!site.is_enabled ? " (nonaktif)" : ""}
+                                    </option>
+                                  ))}
+                                  <option value={CREATE_VALUE}>
+                                    + Buat Site Baru
+                                  </option>
+                                </select>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingSiteRowKey(null)}
+                                  className="text-[11px] font-semibold text-gray-500 hover:text-gray-800"
+                                >
+                                  Batal
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="min-w-[180px]">
+                                <p className="font-semibold text-gray-800">
+                                  {row.mode === "create"
+                                    ? "Site baru"
+                                    : (selectedSite?.name ??
+                                      "Site belum dipilih")}
+                                </p>
+                                {selectedSite && !selectedSite.is_enabled && (
+                                  <p className="text-[11px] text-amber-700">
+                                    Site nonaktif
+                                  </p>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingSiteRowKey(row.key)}
+                                  className="mt-1 text-[11px] font-semibold text-primary hover:underline"
+                                >
+                                  Ubah pencocokan
+                                </button>
+                              </div>
+                            )}
                             {row.mode === "create" && (
                               <label className="mt-2 flex gap-2 text-[11px]">
                                 <input
@@ -718,6 +796,15 @@ export default function BulkUploadSiteModal({
                   </tbody>
                 </table>
               </div>
+              <Pagination
+                page={matchPage}
+                pageCount={matchPageCount}
+                totalRows={rows.length}
+                onChange={(page) => {
+                  setMatchPage(page);
+                  setEditingSiteRowKey(null);
+                }}
+              />
               <div className="flex justify-between">
                 <button
                   onClick={() => setStep("upload")}
@@ -755,7 +842,7 @@ export default function BulkUploadSiteModal({
                     </tr>
                   </thead>
                   <tbody className="divide-y">
-                    {previewRows.map((row) => (
+                    {visiblePreviewRows.map((row) => (
                       <tr key={row.key} className="align-top">
                         <td className="px-3 py-3 font-bold">
                           {row.sheetName ? `${row.sheetName} · ` : ""}#
@@ -797,6 +884,12 @@ export default function BulkUploadSiteModal({
                   </tbody>
                 </table>
               </div>
+              <Pagination
+                page={confirmPage}
+                pageCount={confirmPageCount}
+                totalRows={previewRows.length}
+                onChange={setConfirmPage}
+              />
               <div className="flex justify-between">
                 <button
                   onClick={() => setStep("match")}
@@ -820,6 +913,49 @@ export default function BulkUploadSiteModal({
             </div>
           )}
         </main>
+      </div>
+    </div>
+  );
+}
+
+function Pagination({
+  page,
+  pageCount,
+  totalRows,
+  onChange,
+}: {
+  page: number;
+  pageCount: number;
+  totalRows: number;
+  onChange: (page: number) => void;
+}) {
+  const firstRow = totalRows === 0 ? 0 : (page - 1) * ROWS_PER_PAGE + 1;
+  const lastRow = Math.min(page * ROWS_PER_PAGE, totalRows);
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-600">
+      <span>
+        Menampilkan {firstRow}–{lastRow} dari {totalRows} baris
+      </span>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          disabled={page <= 1}
+          onClick={() => onChange(page - 1)}
+          className="rounded border bg-white px-3 py-1.5 font-semibold disabled:opacity-40"
+        >
+          Sebelumnya
+        </button>
+        <span className="font-semibold text-gray-800">
+          Halaman {page} / {pageCount}
+        </span>
+        <button
+          type="button"
+          disabled={page >= pageCount}
+          onClick={() => onChange(page + 1)}
+          className="rounded border bg-white px-3 py-1.5 font-semibold disabled:opacity-40"
+        >
+          Berikutnya
+        </button>
       </div>
     </div>
   );
