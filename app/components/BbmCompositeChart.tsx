@@ -11,7 +11,6 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  ReferenceLine,
 } from "recharts";
 import { Loader2 } from "lucide-react";
 import ChartEmptyState from "./ChartEmptyState";
@@ -79,6 +78,10 @@ function CustomTooltip({
   const bars = payload.filter(
     (p) => p.dataKey !== "cumulative" && p.dataKey !== "nomination",
   );
+  const totalVolume = bars.reduce((total, entry) => {
+    const value = Number(entry.value);
+    return Number.isFinite(value) ? total + value : total;
+  }, 0);
   const cumulativeEntry = payload.find((p) => p.dataKey === "cumulative");
   const nominationEntry = payload.find((p) => p.dataKey === "nomination");
 
@@ -105,6 +108,17 @@ function CustomTooltip({
             </span>
           </div>
         ))}
+        {bars.length > 0 && (
+          <div className="flex items-center justify-between gap-6 pt-1.5 mt-1 border-t border-gray-100">
+            <span className="text-gray-700 font-semibold">Total Volume</span>
+            <span className="font-bold text-gray-900">
+              {totalVolume.toLocaleString("id-ID", {
+                maximumFractionDigits: 2,
+              })}{" "}
+              KL
+            </span>
+          </div>
+        )}
         {cumulativeEntry && (
           <div className="flex items-center justify-between gap-6 pt-1.5 border-t border-gray-100">
             <div className="flex items-center gap-2">
@@ -208,7 +222,6 @@ export default function BbmCompositeChart({
   }, [data, intervalMode]);
 
   const modaKeys = data?.modas || data?.modaKeys || [];
-  const nomination = data?.nomination || 0;
 
   // Determine if we are rendering time-series or categorical data
   const isTimeSeries = data?.chartData?.[0]?.reportDate !== undefined;
@@ -383,8 +396,32 @@ export default function BbmCompositeChart({
 // Helpers
 // ---------------------------------------------------------------------------
 
-const CustomXAxisTick = (props: any) => {
-  const { x, y, payload, index, chartData, period, intervalMode } = props;
+interface CustomXAxisTickProps {
+  x?: number;
+  y?: number;
+  payload?: {
+    value: string;
+    index?: number;
+  };
+  index?: number;
+  chartData: Array<{
+    monthStr?: string;
+    yearStr?: string;
+  }>;
+  period: string;
+  intervalMode: string;
+}
+
+const CustomXAxisTick = (props: CustomXAxisTickProps) => {
+  const {
+    x = 0,
+    y = 0,
+    payload = { value: "" },
+    index = 0,
+    chartData,
+    period,
+    intervalMode,
+  } = props;
   const originalIndex = payload.index !== undefined ? payload.index : index;
   const item = chartData && chartData[originalIndex];
 

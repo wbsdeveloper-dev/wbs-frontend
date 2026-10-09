@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import KertasKerjaTable from "@/app/components/KertasKerjaTable";
 import RingkasanTable from "@/app/components/RingkasanTable";
 import {
@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import BulkUploadKertasKerjaModal from "@/app/components/BulkUploadKertasKerjaModal";
+import { getActiveKertasKerjaRegions } from "@/app/components/kertas-kerja-filter-options";
 import {
   useKertasKerjaMaster,
   useKertasKerjaTemplates,
@@ -109,9 +110,19 @@ export default function KertasKerjaPage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const filteredRegions = regions.filter((r: MasterGeneric) =>
+  const activeRegions = useMemo(
+    () => getActiveKertasKerjaRegions(regions, templates),
+    [regions, templates],
+  );
+  const filteredRegions = activeRegions.filter((r: MasterGeneric) =>
     r.name.toLowerCase().includes(regionSearch.toLowerCase()),
   );
+
+  const effectiveSelectedRegion = activeRegions.some(
+    (region) => region.name === selectedRegion,
+  )
+    ? selectedRegion
+    : "";
 
   const filteredUnits = units.filter((u: MasterGeneric) =>
     u.name.toLowerCase().includes(unitSearch.toLowerCase()),
@@ -265,10 +276,12 @@ export default function KertasKerjaPage() {
                     >
                       <span
                         className={
-                          selectedRegion ? "text-gray-900" : "text-gray-500"
+                          effectiveSelectedRegion
+                            ? "text-gray-900"
+                            : "text-gray-500"
                         }
                       >
-                        {selectedRegion || "Semua Region"}
+                        {effectiveSelectedRegion || "Semua Region"}
                       </span>
                       <ChevronDown
                         size={16}
@@ -301,10 +314,10 @@ export default function KertasKerjaPage() {
                               setIsRegionDropdownOpen(false);
                               setRegionSearch("");
                             }}
-                            className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-md transition-colors ${!selectedRegion ? "bg-primary/10 text-primary font-medium" : "text-gray-700 hover:bg-gray-100"}`}
+                            className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-md transition-colors ${!effectiveSelectedRegion ? "bg-primary/10 text-primary font-medium" : "text-gray-700 hover:bg-gray-100"}`}
                           >
                             Semua Region
-                            {!selectedRegion && <Check size={14} />}
+                            {!effectiveSelectedRegion && <Check size={14} />}
                           </button>
                           {filteredRegions.length === 0 ? (
                             <div className="px-3 py-4 text-center text-sm text-gray-500">
@@ -319,10 +332,10 @@ export default function KertasKerjaPage() {
                                   setIsRegionDropdownOpen(false);
                                   setRegionSearch("");
                                 }}
-                                className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-md transition-colors ${selectedRegion === r.name ? "bg-primary/10 text-primary font-medium" : "text-gray-700 hover:bg-gray-100"}`}
+                                className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-md transition-colors ${effectiveSelectedRegion === r.name ? "bg-primary/10 text-primary font-medium" : "text-gray-700 hover:bg-gray-100"}`}
                               >
                                 {r.name}
-                                {selectedRegion === r.name && (
+                                {effectiveSelectedRegion === r.name && (
                                   <Check size={14} />
                                 )}
                               </button>
@@ -526,7 +539,7 @@ export default function KertasKerjaPage() {
 
             {activeTab === "kertas-kerja" && (
               <KertasKerjaTable
-                selectedRegion={selectedRegion}
+                selectedRegion={effectiveSelectedRegion}
                 selectedUnit={selectedUnit}
                 selectedUnitPelaksana={selectedUnitPelaksana}
                 selectedYear={selectedYear}
@@ -535,7 +548,7 @@ export default function KertasKerjaPage() {
             )}
             {activeTab === "ringkasan" && (
               <RingkasanTable
-                selectedRegion={selectedRegion}
+                selectedRegion={effectiveSelectedRegion}
                 selectedUnit={selectedUnit}
                 selectedUnitPelaksana={selectedUnitPelaksana}
                 selectedYear={selectedYear}

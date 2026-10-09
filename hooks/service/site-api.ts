@@ -112,6 +112,7 @@ export interface Plant {
   name: string;
   jenis: string;
   region: string;
+  commodity?: string | null;
   lat: string;
   long: string;
   is_enabled: boolean;
@@ -123,6 +124,7 @@ export interface Supplier {
   id: string;
   name: string;
   jenis: string;
+  commodity?: string | null;
   lat: string;
   long: string;
   is_enabled: boolean;
@@ -466,7 +468,8 @@ function buildQuery(
 
 export const siteKeys = {
   all: ["sites"] as const,
-  dropdowns: () => [...siteKeys.all, "dropdowns"] as const,
+  dropdowns: (commodity?: string) =>
+    [...siteKeys.all, "dropdowns", commodity] as const,
   sites: (filters?: {
     type?: string;
     region?: string;
@@ -487,8 +490,9 @@ export const siteKeys = {
 // API functions — Dropdowns
 // ---------------------------------------------------------------------------
 
-export function getDropdowns() {
-  return siteFetch<DropdownData>("/dim/dropdowns");
+export function getDropdowns(commodity?: string) {
+  const query = buildQuery({ commodity });
+  return siteFetch<DropdownData>(`/dim/dropdowns${query}`);
 }
 
 // ---------------------------------------------------------------------------
@@ -670,10 +674,13 @@ export function createMapping(payload: CreateMappingPayload) {
 // React Query hooks — Dropdowns
 // ---------------------------------------------------------------------------
 
-export function useDropdowns(options?: Partial<UseQueryOptions<DropdownData>>) {
+export function useDropdowns(
+  options?: Partial<UseQueryOptions<DropdownData>>,
+  commodity?: string,
+) {
   return useQuery({
-    queryKey: siteKeys.dropdowns(),
-    queryFn: () => getDropdowns(),
+    queryKey: siteKeys.dropdowns(commodity),
+    queryFn: () => getDropdowns(commodity),
     ...options,
   });
 }
@@ -1016,6 +1023,7 @@ export function useCommitBbmSites(
     onSuccess: (...args) => {
       qc.invalidateQueries({ queryKey: siteKeys.all });
       qc.invalidateQueries({ queryKey: kertasKerjaKeys.masters() });
+      qc.invalidateQueries({ queryKey: kertasKerjaKeys.templates() });
       qc.invalidateQueries({ queryKey: ["dashboard", "map-locations"] });
       qc.invalidateQueries({ queryKey: ["bbm", "sites-summary"] });
       options?.onSuccess?.(...args);
