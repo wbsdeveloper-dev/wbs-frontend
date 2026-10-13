@@ -11,6 +11,12 @@ import { useNotifications } from "@/hooks/service/notification-api";
 import type { NotificationParams } from "@/hooks/service/notification-api";
 import type { MonitoringParams } from "@/hooks/service/monitoring-api";
 
+const getJakartaYesterdayDate = () => {
+  const jakartaDate = new Date(Date.now() + 7 * 60 * 60 * 1000);
+  jakartaDate.setUTCDate(jakartaDate.getUTCDate() - 1);
+  return jakartaDate.toISOString().slice(0, 10);
+};
+
 export default function NotificationPage() {
   const router = useRouter();
   const { isLoading: isAuthLoading } = useAuth();
@@ -20,8 +26,13 @@ export default function NotificationPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [filters, setFilters] = useState<MonitoringParams>({});
+  const latestAllowedDate = getJakartaYesterdayDate();
+  const effectiveEndDate =
+    filters.endDate && filters.endDate < latestAllowedDate
+      ? filters.endDate
+      : latestAllowedDate;
 
-  // Build query params for the notification API
+  // Build query params for the notification API. The newest record is capped at H-1.
   const queryParams: NotificationParams = {
     page,
     limit: pageSize,
@@ -29,7 +40,7 @@ export default function NotificationPage() {
     ...(filters.supplierName ? { supplierName: filters.supplierName } : {}),
     ...(filters.siteName ? { siteName: filters.siteName } : {}),
     ...(filters.startDate ? { startDate: filters.startDate } : {}),
-    ...(filters.endDate ? { endDate: filters.endDate } : {}),
+    endDate: effectiveEndDate,
   };
 
   const { data, isLoading } = useNotifications(queryParams);
