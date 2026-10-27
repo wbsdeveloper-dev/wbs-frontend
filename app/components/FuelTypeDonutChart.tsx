@@ -1,14 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
-import {
-  PieChart,
-  Pie,
-  Cell,
-  ResponsiveContainer,
-  Legend,
-  Tooltip,
-} from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import {
   Expand,
   Calendar,
@@ -288,7 +281,10 @@ export default function FuelTypeDonutChart({
       });
     }
 
-    return grouped;
+    // Recharts follows the pie data order when rendering the legend. Sort the
+    // final groups (including the aggregated "Lain-lain" slice) so the legend
+    // is consistently displayed from the highest to the lowest percentage.
+    return grouped.sort((a, b) => b.value - a.value);
   }, [data, total]);
 
   return (
@@ -344,11 +340,10 @@ export default function FuelTypeDonutChart({
             {/* Date filter toggle */}
             <button
               onClick={() => setShowDateFilter(!showDateFilter)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer ${
-                showDateFilter
-                  ? "bg-secondary/10 text-primary border border-secondary/30"
-                  : "text-gray-500 hover:bg-gray-100 border border-transparent"
-              }`}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer ${showDateFilter
+                ? "bg-secondary/10 text-primary border border-secondary/30"
+                : "text-gray-500 hover:bg-gray-100 border border-transparent"
+                }`}
             >
               <Calendar className="w-4 h-4" />
               <span className="hidden sm:inline">
@@ -444,11 +439,10 @@ export default function FuelTypeDonutChart({
           {tabs.map((type) => (
             <button
               key={type}
-              className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer ${
-                filterType === type
-                  ? "bg-primary text-white shadow-sm"
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
+              className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer ${filterType === type
+                ? "bg-primary text-white shadow-sm"
+                : "text-gray-600 hover:text-gray-900"
+                }`}
               onClick={() => changeFilterType(type)}
             >
               {type}
@@ -498,65 +492,79 @@ export default function FuelTypeDonutChart({
         </div>
       ) : total > 0 ? (
         <div className="flex-1 w-full min-h-[250px] flex flex-col items-center justify-center">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={chartData}
-                cx="50%"
-                cy="50%"
-                innerRadius={60}
-                outerRadius={90}
-                paddingAngle={2}
-                dataKey="value"
-              >
-                {chartData.map((entry, index) => (
-                  <Cell
-                    key={`cell-${index}`}
-                    fill={
-                      entry.originalIndex !== -1
-                        ? CHART_COLORS[
-                            entry.originalIndex % CHART_COLORS.length
+          <div className="w-full h-[210px] flex-shrink-0">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={chartData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={90}
+                  paddingAngle={2}
+                  dataKey="value"
+                >
+                  {chartData.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={
+                        entry.originalIndex !== -1
+                          ? CHART_COLORS[
+                          entry.originalIndex % CHART_COLORS.length
                           ]
-                        : "#cbd5e1" // gray for Lain-lain
+                          : "#cbd5e1" // gray for Lain-lain
+                      }
+                    />
+                  ))}
+                </Pie>
+                <Tooltip
+                  content={({ active, payload }) => {
+                    if (active && payload && payload.length) {
+                      const item = payload[0];
+                      const pct = (((item.value as number) / total) * 100)
+                        .toFixed(2)
+                        .replace(".", ",");
+                      return (
+                        <div className="bg-white px-3 py-2 rounded-lg shadow-lg border border-gray-200 text-sm">
+                          <p className="font-medium text-gray-900">{item.name}</p>
+                          <p className="text-gray-600">{pct}%</p>
+                        </div>
+                      );
                     }
+                    return null;
+                  }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Keep one legend item per row so the visual order is unambiguous. */}
+          <div className="w-full max-h-[80px] overflow-y-auto px-4 space-y-1">
+            {chartData.map((item, index) => {
+              const pct = ((item.value / total) * 100)
+                .toFixed(2)
+                .replace(".", ",");
+              const color =
+                item.originalIndex !== -1
+                  ? CHART_COLORS[item.originalIndex % CHART_COLORS.length]
+                  : "#cbd5e1";
+
+              return (
+                <div
+                  key={`${item.name}-${index}`}
+                  className="flex items-center gap-2 text-sm leading-5"
+                >
+                  <span
+                    className="w-3 h-3 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: color }}
                   />
-                ))}
-              </Pie>
-              <Tooltip
-                content={({ active, payload }) => {
-                  if (active && payload && payload.length) {
-                    const item = payload[0];
-                    const pct = (((item.value as number) / total) * 100)
-                      .toFixed(2)
-                      .replace(".", ",");
-                    return (
-                      <div className="bg-white px-3 py-2 rounded-lg shadow-lg border border-gray-200 text-sm">
-                        <p className="font-medium text-gray-900">{item.name}</p>
-                        <p className="text-gray-600">{pct}%</p>
-                      </div>
-                    );
-                  }
-                  return null;
-                }}
-              />
-              <Legend
-                verticalAlign="bottom"
-                height={50}
-                iconType="circle"
-                wrapperStyle={{
-                  maxHeight: 80,
-                  overflowY: "auto",
-                }}
-                formatter={(value: string, entry: any) => {
-                  const val = entry?.payload?.value || 0;
-                  const pct = ((val / total) * 100)
-                    .toFixed(2)
-                    .replace(".", ",");
-                  return `${value} (${pct}%)`;
-                }}
-              />
-            </PieChart>
-          </ResponsiveContainer>
+                  <span className="text-gray-700">
+                    {item.name} ({pct}%)
+                  </span>
+                </div>
+              );
+            })}
+          </div>
         </div>
       ) : (
         <div className="flex-1 min-h-[250px] flex flex-col items-center justify-center text-center px-6 py-12">
