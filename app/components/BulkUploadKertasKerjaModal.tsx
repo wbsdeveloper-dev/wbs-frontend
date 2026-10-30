@@ -351,6 +351,7 @@ export default function BulkUploadKertasKerjaModal({
   onSuccess,
 }: Props) {
   const [file, setFile] = useState<File | null>(null);
+  const [selectedRegionId, setSelectedRegionId] = useState("");
   const [sheetNames, setSheetNames] = useState<string[]>([]);
   const [selectedSheets, setSelectedSheets] = useState<string[]>([]);
   const [parsedRows, setParsedRows] = useState<ParsedKertasKerjaRow[]>([]);
@@ -380,6 +381,8 @@ export default function BulkUploadKertasKerjaModal({
   const canCreateMaster = hasPrivilege("system_config", "CREATE");
   const canUpdateSite = hasPrivilege("site_management", "UPDATE");
   const { data: dropdowns } = useDropdowns(undefined, "BBM");
+  const { data: availableRegions = [], isLoading: isRegionsLoading } =
+    useKertasKerjaMaster("master_region", "BBM");
   const { data: products = [] } = useKertasKerjaMaster("master_product", "BBM");
   const { data: modas = [] } = useKertasKerjaMaster("master_moda");
   const plants = filterBbmReferences(dropdowns?.plants ?? []);
@@ -647,6 +650,10 @@ export default function BulkUploadKertasKerjaModal({
   };
 
   const parseSelectedWorkbook = (options: ParseOptions = {}) => {
+    if (!selectedRegionId) {
+      setError("Pilih region untuk data Kertas Kerja yang akan diunggah");
+      return;
+    }
     if (!file || selectedSheets.length === 0) {
       setError("Pilih file dan minimal satu sheet untuk diunggah");
       return;
@@ -1535,6 +1542,11 @@ export default function BulkUploadKertasKerjaModal({
   };
 
   const handleSaveToDatabase = async () => {
+    if (!selectedRegionId) {
+      setError("Pilih region untuk data Kertas Kerja yang akan diunggah");
+      return;
+    }
+
     setIsSaving(true);
     setError(null);
     try {
@@ -1560,7 +1572,10 @@ export default function BulkUploadKertasKerjaModal({
         keterangan: row.keterangan ?? undefined,
       }));
 
-      await bulkSave.mutateAsync({ records: payload });
+      await bulkSave.mutateAsync({
+        records: payload,
+        regionId: selectedRegionId,
+      });
       setShowSuccess(true);
       if (onSuccess) onSuccess();
 
@@ -1612,8 +1627,8 @@ export default function BulkUploadKertasKerjaModal({
               Bulk Upload Kertas Kerja
             </h2>
             <p className="text-sm text-gray-500 mt-1">
-              Upload file Excel Kertas Kerja yang telah diisi untuk mengupdate
-              data.
+              Upload file Excel Kertas Kerja dan tetapkan region untuk semua
+              data yang diunggah.
             </p>
           </div>
           <button
@@ -1651,6 +1666,38 @@ export default function BulkUploadKertasKerjaModal({
 
           {step === "upload" ? (
             <div className="space-y-6">
+              <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                <label
+                  htmlFor="kertas-kerja-upload-region"
+                  className="mb-2 block text-sm font-semibold text-gray-900"
+                >
+                  Region <span className="text-red-600">*</span>
+                </label>
+                <select
+                  id="kertas-kerja-upload-region"
+                  value={selectedRegionId}
+                  onChange={(event) => {
+                    setSelectedRegionId(event.target.value);
+                    setError(null);
+                  }}
+                  disabled={isRegionsLoading}
+                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:bg-gray-100"
+                >
+                  <option value="">
+                    {isRegionsLoading ? "Memuat region..." : "Pilih region"}
+                  </option>
+                  {availableRegions.map((region) => (
+                    <option key={region.id} value={region.id}>
+                      {region.name}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-2 text-xs text-gray-500">
+                  Region ini akan diterapkan ke semua pembangkit pada data
+                  Kertas Kerja yang diunggah.
+                </p>
+              </div>
+
               {/* Upload Area */}
               <div
                 className={`
@@ -2196,7 +2243,12 @@ export default function BulkUploadKertasKerjaModal({
             <button
               type="button"
               onClick={handleParseData}
-              disabled={!file || selectedSheets.length === 0 || isParsing}
+              disabled={
+                !selectedRegionId ||
+                !file ||
+                selectedSheets.length === 0 ||
+                isParsing
+              }
               className="flex items-center justify-center min-w-[140px] px-5 py-2.5 text-sm font-medium text-white bg-primary rounded-lg hover:bg-[#0d4a5c] focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all shadow-md active:scale-95 disabled:opacity-50 disabled:active:scale-100"
             >
               {isParsing ? (
@@ -2240,7 +2292,9 @@ export default function BulkUploadKertasKerjaModal({
             <button
               type="button"
               onClick={handleSaveToDatabase}
-              disabled={isSaving || parsedRows.length === 0}
+              disabled={
+                isSaving || parsedRows.length === 0 || !selectedRegionId
+              }
               className="flex items-center justify-center min-w-[160px] px-5 py-2.5 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all shadow-md active:scale-95 disabled:opacity-50 disabled:active:scale-100"
             >
               {isSaving ? (

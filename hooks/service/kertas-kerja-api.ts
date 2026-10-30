@@ -253,7 +253,14 @@ export function getRecords() {
   return apiFetchData<RecordKertasKerja[]>("/kertas-kerja/records");
 }
 
-export function bulkUpsertRecords(payload: { records: RecordKertasKerja[] }) {
+export interface BulkUpsertKertasKerjaRecordsPayload {
+  records: RecordKertasKerja[];
+  regionId?: string;
+}
+
+export function bulkUpsertRecords(
+  payload: BulkUpsertKertasKerjaRecordsPayload,
+) {
   return apiFetchData<RecordKertasKerja[]>("/kertas-kerja/records/bulk", {
     method: "POST",
     body: JSON.stringify(payload),
@@ -412,7 +419,7 @@ export function useBulkUpsertKertasKerjaRecords(
     UseMutationOptions<
       RecordKertasKerja[],
       Error,
-      { records: RecordKertasKerja[] }
+      BulkUpsertKertasKerjaRecordsPayload
     >
   >,
 ) {
@@ -421,6 +428,7 @@ export function useBulkUpsertKertasKerjaRecords(
     mutationFn: (payload) => bulkUpsertRecords(payload),
     onSuccess: (...args) => {
       qc.invalidateQueries({ queryKey: kertasKerjaKeys.records() });
+      qc.invalidateQueries({ queryKey: kertasKerjaKeys.templates() });
       options?.onSuccess?.(...args);
     },
     ...options,
