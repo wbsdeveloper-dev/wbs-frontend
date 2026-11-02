@@ -35,7 +35,7 @@ export default function KertasKerjaPage() {
   const [selectedUnitPelaksana, setSelectedUnitPelaksana] = useState("");
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
-  const { data: regions = [] } = useKertasKerjaMaster("master_region");
+  const { data: regions = [] } = useKertasKerjaMaster("master_region", "BBM");
   const { data: units = [] } = useKertasKerjaMaster("master_unit");
   const { data: upks = [] } = useKertasKerjaMaster("master_unit_pelaksana");
 
@@ -114,6 +114,7 @@ export default function KertasKerjaPage() {
     () => getActiveKertasKerjaRegions(regions, templates),
     [regions, templates],
   );
+
   const filteredRegions = activeRegions.filter((r: MasterGeneric) =>
     r.name.toLowerCase().includes(regionSearch.toLowerCase()),
   );

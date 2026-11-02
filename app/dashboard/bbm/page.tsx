@@ -171,8 +171,9 @@ const getProductColor = (product: string) => {
     B35: "#10b981", // emerald
     B30: "#84cc16", // lime
     B40: "#22c55e", // green
+    MFO: "#f97316", // orange, matching Grafik Penyaluran
     LSFO: "#f59e0b", // amber
-    HSFO: "#f97316", // orange
+    HSFO: "#db2777", // pink
     IDO: "#8b5cf6", // purple
   };
   return colors[product.toUpperCase()] || "#6b7280";
@@ -190,16 +191,28 @@ function AccumulationTooltip({
   active,
   payload,
   label,
-  graphicJenisData = [],
 }: {
   active?: boolean;
   payload?: AccumulationTooltipPayloadEntry[];
   label?: string;
-  graphicJenisData?: string[];
 }) {
   if (!active || !payload || payload.length === 0) return null;
 
-  const data = payload[0].payload;
+  const activeEntry = payload[0];
+  const data = activeEntry.payload;
+  const metric = activeEntry.dataKey.split("_").pop();
+  const activeDataType =
+    metric === "nominasi"
+      ? "Nominasi"
+      : metric === "realisasi"
+        ? "Penyaluran"
+        : metric === "penerimaan"
+          ? "Penerimaan"
+          : metric === "renominasi"
+            ? "Renominasi"
+            : metric === "pemakaian"
+              ? "Pemakaian"
+              : null;
 
   return (
     <div className="bg-white/95 backdrop-blur rounded-lg shadow-lg border border-gray-200 px-4 py-3 text-sm min-w-[300px]">
@@ -209,8 +222,7 @@ function AccumulationTooltip({
 
       <div className="grid grid-cols-2 gap-4">
         {/* Nominasi */}
-        {(graphicJenisData.length === 0 ||
-          graphicJenisData.includes("Nominasi")) && (
+        {activeDataType === "Nominasi" && (
           <div>
             <p className="text-xs font-bold text-gray-500 mb-1">Nominasi</p>
             <div className="space-y-1">
@@ -252,8 +264,7 @@ function AccumulationTooltip({
         )}
 
         {/* Penyaluran */}
-        {(graphicJenisData.length === 0 ||
-          graphicJenisData.includes("Penyaluran")) && (
+        {activeDataType === "Penyaluran" && (
           <div>
             <p className="text-xs font-bold text-gray-500 mb-1">Penyaluran</p>
             <div className="space-y-1">
@@ -295,8 +306,7 @@ function AccumulationTooltip({
         )}
 
         {/* Penerimaan */}
-        {(graphicJenisData.length === 0 ||
-          graphicJenisData.includes("Penerimaan")) && (
+        {activeDataType === "Penerimaan" && (
           <div>
             <p className="text-xs font-bold text-gray-500 mb-1">Penerimaan</p>
             <div className="space-y-1">
@@ -338,8 +348,7 @@ function AccumulationTooltip({
         )}
 
         {/* Renominasi */}
-        {(graphicJenisData.length === 0 ||
-          graphicJenisData.includes("Renominasi")) && (
+        {activeDataType === "Renominasi" && (
           <div>
             <p className="text-xs font-bold text-gray-500 mb-1">Renominasi</p>
             <div className="space-y-1">
@@ -381,8 +390,7 @@ function AccumulationTooltip({
         )}
 
         {/* Pemakaian */}
-        {(graphicJenisData.length === 0 ||
-          graphicJenisData.includes("Pemakaian")) && (
+        {activeDataType === "Pemakaian" && (
           <div>
             <p className="text-xs font-bold text-gray-500 mb-1">Pemakaian</p>
             <div className="space-y-1">
@@ -825,20 +833,20 @@ export default function Home() {
     const selectedUnitIds =
       graphicUnit.length > 0
         ? masterUnitData
-            ?.filter((u) => graphicUnit.includes(u.name))
-            .map((u) => u.id) || []
+          ?.filter((u) => graphicUnit.includes(u.name))
+          .map((u) => u.id) || []
         : [];
     const selectedUpkIds =
       graphicUpk.length > 0
         ? masterUpkData
-            ?.filter((u) => graphicUpk.includes(u.name))
-            .map((u) => u.id) || []
+          ?.filter((u) => graphicUpk.includes(u.name))
+          .map((u) => u.id) || []
         : [];
     const selectedKitIds =
       graphicKit.length > 0
         ? masterKitData
-            ?.filter((k) => graphicKit.includes(k.name))
-            .map((k) => k.id) || []
+          ?.filter((k) => graphicKit.includes(k.name))
+          .map((k) => k.id) || []
         : [];
 
     if (selectedUnitIds.length > 0)
@@ -898,20 +906,20 @@ export default function Home() {
     const selectedUnitIds =
       graphicUnit.length > 0
         ? masterUnitData
-            ?.filter((u) => graphicUnit.includes(u.name))
-            .map((u) => u.id) || []
+          ?.filter((u) => graphicUnit.includes(u.name))
+          .map((u) => u.id) || []
         : [];
     const selectedUpkIds =
       graphicUpk.length > 0
         ? masterUpkData
-            ?.filter((u) => graphicUpk.includes(u.name))
-            .map((u) => u.id) || []
+          ?.filter((u) => graphicUpk.includes(u.name))
+          .map((u) => u.id) || []
         : [];
     const selectedKitIds =
       graphicKit.length > 0
         ? masterKitData
-            ?.filter((k) => graphicKit.includes(k.name))
-            .map((k) => k.id) || []
+          ?.filter((k) => graphicKit.includes(k.name))
+          .map((k) => k.id) || []
         : [];
 
     const filtered = bbmMonthlyData.filter((record) => {
@@ -1196,9 +1204,9 @@ export default function Home() {
           graphicPlant.length > 0
             ? graphicPlant.join(",")
             : graphicRegion.length > 0 ||
-                graphicUnit.length > 0 ||
-                graphicUpk.length > 0 ||
-                graphicKit.length > 0
+              graphicUnit.length > 0 ||
+              graphicUpk.length > 0 ||
+              graphicKit.length > 0
               ? filterPlantOptions.join(",")
               : undefined,
         interval:
@@ -1435,21 +1443,19 @@ export default function Home() {
                             setChartMode("akumulasi");
                           }
                         }}
-                        className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
-                          chartMode === "akumulasi" || chartMode === "nasional"
-                            ? "bg-white text-gray-900 shadow-sm"
-                            : "text-gray-500 hover:text-gray-700"
-                        }`}
+                        className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${chartMode === "akumulasi" || chartMode === "nasional"
+                          ? "bg-white text-gray-900 shadow-sm"
+                          : "text-gray-500 hover:text-gray-700"
+                          }`}
                       >
                         Grafik Akumulasi
                       </button>
                       <button
                         onClick={() => setChartMode("realisasi-moda")}
-                        className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
-                          chartMode === "realisasi-moda"
-                            ? "bg-white text-gray-900 shadow-sm"
-                            : "text-gray-500 hover:text-gray-700"
-                        }`}
+                        className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${chartMode === "realisasi-moda"
+                          ? "bg-white text-gray-900 shadow-sm"
+                          : "text-gray-500 hover:text-gray-700"
+                          }`}
                       >
                         Grafik Penyaluran
                       </button>
@@ -1475,55 +1481,55 @@ export default function Home() {
                   graphicSupplier.length > 0 ||
                   graphicProduct.length > 0 ||
                   graphicModa.length > 0) && (
-                  <div className="flex flex-wrap gap-1.5 mb-6 max-w-xl">
-                    {graphicStart && graphicEnd && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-700 border border-blue-100">
-                        Periode: {formatDisplayDate(graphicStart)} s/d{" "}
-                        {formatDisplayDate(graphicEnd)}
-                      </span>
-                    )}
-                    {graphicRegion.length > 0 && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
-                        Region: {graphicRegion.join(", ")}
-                      </span>
-                    )}
-                    {graphicUnit.length > 0 && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
-                        Instansi/Unit: {graphicUnit.join(", ")}
-                      </span>
-                    )}
-                    {graphicUpk.length > 0 && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
-                        Unit Pelaksana: {graphicUpk.join(", ")}
-                      </span>
-                    )}
-                    {graphicKit.length > 0 && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
-                        Jenis Kit: {graphicKit.join(", ")}
-                      </span>
-                    )}
-                    {graphicSupplier.length > 0 && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-100">
-                        Pemasok: {graphicSupplier.join(", ")}
-                      </span>
-                    )}
-                    {graphicPlant.length > 0 && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-orange-50 text-orange-700 border border-orange-100">
-                        Pembangkit: {graphicPlant.join(", ")}
-                      </span>
-                    )}
-                    {graphicProduct.length > 0 && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-purple-50 text-purple-700 border border-purple-100">
-                        Produk: {graphicProduct.join(", ")}
-                      </span>
-                    )}
-                    {graphicModa.length > 0 && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-pink-50 text-pink-700 border border-pink-100">
-                        Moda: {graphicModa.join(", ")}
-                      </span>
-                    )}
-                  </div>
-                )}
+                    <div className="flex flex-wrap gap-1.5 mb-6 max-w-xl">
+                      {graphicStart && graphicEnd && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-700 border border-blue-100">
+                          Periode: {formatDisplayDate(graphicStart)} s/d{" "}
+                          {formatDisplayDate(graphicEnd)}
+                        </span>
+                      )}
+                      {graphicRegion.length > 0 && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
+                          Region: {graphicRegion.join(", ")}
+                        </span>
+                      )}
+                      {graphicUnit.length > 0 && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
+                          Instansi/Unit: {graphicUnit.join(", ")}
+                        </span>
+                      )}
+                      {graphicUpk.length > 0 && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
+                          Unit Pelaksana: {graphicUpk.join(", ")}
+                        </span>
+                      )}
+                      {graphicKit.length > 0 && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
+                          Jenis Kit: {graphicKit.join(", ")}
+                        </span>
+                      )}
+                      {graphicSupplier.length > 0 && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-100">
+                          Pemasok: {graphicSupplier.join(", ")}
+                        </span>
+                      )}
+                      {graphicPlant.length > 0 && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-orange-50 text-orange-700 border border-orange-100">
+                          Pembangkit: {graphicPlant.join(", ")}
+                        </span>
+                      )}
+                      {graphicProduct.length > 0 && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-purple-50 text-purple-700 border border-purple-100">
+                          Produk: {graphicProduct.join(", ")}
+                        </span>
+                      )}
+                      {graphicModa.length > 0 && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-pink-50 text-pink-700 border border-pink-100">
+                          Moda: {graphicModa.join(", ")}
+                        </span>
+                      )}
+                    </div>
+                  )}
               </div>
 
               {/* Secondary Toggle (Grafik Akumulasi vs Grafik Tren) */}
@@ -1604,11 +1610,8 @@ export default function Home() {
                           }}
                         />
                         <Tooltip
-                          content={
-                            <AccumulationTooltip
-                              graphicJenisData={graphicJenisData}
-                            />
-                          }
+                          shared={false}
+                          content={<AccumulationTooltip />}
                         />
                         <Legend
                           verticalAlign="top"
@@ -1804,15 +1807,15 @@ export default function Home() {
                     chartMode === "nasional"
                       ? ["Waktu"]
                       : [
-                          "Waktu",
-                          "Pembangkit",
-                          "Pemasok",
-                          "Jenis KIT",
-                          "Instansi/Unit",
-                          "UPK",
-                          "Region",
-                          "Moda Transportasi",
-                        ]
+                        "Waktu",
+                        "Pembangkit",
+                        "Pemasok",
+                        "Jenis KIT",
+                        "Instansi/Unit",
+                        "UPK",
+                        "Region",
+                        "Moda Transportasi",
+                      ]
                   }
                   value={graphicXAxisMode}
                   onChange={(val) => {
@@ -1948,11 +1951,10 @@ export default function Home() {
                     ].map((item) => (
                       <button
                         key={item.label}
-                        className={`px-3 py-2 text-sm font-medium rounded-md transition-colors text-center ${
-                          graphicPeriod === item.val
-                            ? "bg-primary text-white shadow-sm"
-                            : "bg-gray-50 text-gray-600 hover:bg-gray-100"
-                        }`}
+                        className={`px-3 py-2 text-sm font-medium rounded-md transition-colors text-center ${graphicPeriod === item.val
+                          ? "bg-primary text-white shadow-sm"
+                          : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+                          }`}
                         onClick={() => {
                           setGraphicPeriod(item.val as Periode);
                           setGraphicIntervalMode(item.interval as any);
@@ -2016,11 +2018,10 @@ export default function Home() {
                           return (
                             <button
                               key={mode}
-                              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                                graphicIntervalMode === mode
-                                  ? "bg-primary text-white shadow-sm"
-                                  : "bg-gray-50 text-gray-600 hover:bg-gray-100"
-                              }`}
+                              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${graphicIntervalMode === mode
+                                ? "bg-primary text-white shadow-sm"
+                                : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+                                }`}
                               onClick={() => setGraphicIntervalMode(mode)}
                             >
                               {mode}
