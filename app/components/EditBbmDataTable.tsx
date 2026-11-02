@@ -9,8 +9,6 @@ import {
   ArrowUp,
   ArrowDown,
   Loader2,
-  CheckCircle2,
-  AlertCircle,
   Search,
   ChevronLeft,
   ChevronRight,
@@ -20,7 +18,6 @@ import {
   FileSpreadsheet,
   FileText,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { BbmRecord } from "@/hooks/service/bbm-api";
 import { usePrivilege } from "@/hooks/usePrivilege";
@@ -28,12 +25,28 @@ import { useDeleteBbmMonthly } from "@/hooks/service/bbm-api";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import FilterMultiSelect from "./FilterMultiSelect";
 
 interface EditBbmDataTableProps {
   records: BbmRecord[];
   isLoading: boolean;
   hideActions?: boolean;
 }
+
+const DATA_TYPE_OPTIONS = [
+  "Nominasi",
+  "Penyaluran",
+  "Penerimaan",
+  "Renominasi",
+  "Pemakaian",
+] as const;
+
+type DataTypeOption = (typeof DATA_TYPE_OPTIONS)[number];
+
+const getCurrentMonth = () => {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+};
 
 const ActionButtons = ({
   id,
@@ -93,7 +106,6 @@ export default function EditBbmDataTable({
   isLoading,
   hideActions = false,
 }: EditBbmDataTableProps) {
-  const router = useRouter();
   const { hasPrivilege } = usePrivilege();
   const canUpdate = hasPrivilege("data_management", "UPDATE");
   const canDelete = hasPrivilege("data_management", "DELETE");
@@ -122,29 +134,44 @@ export default function EditBbmDataTable({
 
   // Filter state
   const [showFilters, setShowFilters] = useState(false);
+  const [currentMonth] = useState(getCurrentMonth);
   const [filters, setFilters] = useState<{
     tbbm?: string;
     pembangkit?: string;
     product?: string;
     moda?: string;
-    startDate?: string;
-    endDate?: string;
-  }>({});
+    startMonth?: string;
+    endMonth?: string;
+  }>({
+    startMonth: currentMonth,
+    endMonth: currentMonth,
+  });
 
   const [localTbbm, setLocalTbbm] = useState("");
   const [localPembangkit, setLocalPembangkit] = useState("");
   const [localProduct, setLocalProduct] = useState("");
   const [localModa, setLocalModa] = useState("");
-  const [localStartDate, setLocalStartDate] = useState("");
-  const [localEndDate, setLocalEndDate] = useState("");
+  const [localStartMonth, setLocalStartMonth] = useState(currentMonth);
+  const [localEndMonth, setLocalEndMonth] = useState(currentMonth);
+  const [selectedDataTypes, setSelectedDataTypes] = useState<DataTypeOption[]>(
+    [...DATA_TYPE_OPTIONS],
+  );
+  const [localSelectedDataTypes, setLocalSelectedDataTypes] = useState<
+    DataTypeOption[]
+  >([...DATA_TYPE_OPTIONS]);
 
+  const isDataTypeFilterActive =
+    selectedDataTypes.length !== DATA_TYPE_OPTIONS.length;
   const activeFilterCount = [
     filters.tbbm,
     filters.pembangkit,
     filters.product,
     filters.moda,
-    filters.startDate || filters.endDate,
+    filters.startMonth || filters.endMonth,
+    isDataTypeFilterActive,
   ].filter(Boolean).length;
+  const visibleColumnCount =
+    6 + selectedDataTypes.length + (hasAction ? 1 : 0);
 
   const handleApplyFilters = () => {
     setFilters({
@@ -152,9 +179,10 @@ export default function EditBbmDataTable({
       ...(localPembangkit ? { pembangkit: localPembangkit } : {}),
       ...(localProduct ? { product: localProduct } : {}),
       ...(localModa ? { moda: localModa } : {}),
-      ...(localStartDate ? { startDate: localStartDate } : {}),
-      ...(localEndDate ? { endDate: localEndDate } : {}),
+      ...(localStartMonth ? { startMonth: localStartMonth } : {}),
+      ...(localEndMonth ? { endMonth: localEndMonth } : {}),
     });
+    setSelectedDataTypes(localSelectedDataTypes);
     setShowFilters(false);
     setPage(1);
   };
@@ -164,9 +192,11 @@ export default function EditBbmDataTable({
     setLocalPembangkit("");
     setLocalProduct("");
     setLocalModa("");
-    setLocalStartDate("");
-    setLocalEndDate("");
-    setFilters({});
+    setLocalStartMonth(currentMonth);
+    setLocalEndMonth(currentMonth);
+    setLocalSelectedDataTypes([...DATA_TYPE_OPTIONS]);
+    setSelectedDataTypes([...DATA_TYPE_OPTIONS]);
+    setFilters({ startMonth: currentMonth, endMonth: currentMonth });
     setPage(1);
   };
 
@@ -197,16 +227,10 @@ export default function EditBbmDataTable({
       )
         return false;
 
-      // Date Range (reportDate is YYYY-MM)
+      // Month range (reportDate starts with YYYY-MM)
       const recordMonth = r.reportDate ? r.reportDate.substring(0, 7) : "";
-      if (filters.startDate) {
-        const startMonth = filters.startDate.substring(0, 7);
-        if (recordMonth < startMonth) return false;
-      }
-      if (filters.endDate) {
-        const endMonth = filters.endDate.substring(0, 7);
-        if (recordMonth > endMonth) return false;
-      }
+      if (filters.startMonth && recordMonth < filters.startMonth) return false;
+      if (filters.endMonth && recordMonth > filters.endMonth) return false;
 
       return true;
     });
@@ -329,7 +353,7 @@ export default function EditBbmDataTable({
 
   // Reset page to 1 when search term changes
 
-  const SortIcon = ({ field }: { field: SortField }) => {
+  const renderSortIcon = (field: SortField) => {
     if (sortField !== field)
       return <ChevronsUpDown size={12} className="ml-1 opacity-40" />;
     return sortDir === "asc" ? (
@@ -339,25 +363,21 @@ export default function EditBbmDataTable({
     );
   };
 
-  const Th = ({
-    label,
-    field,
-    align = "center",
-  }: {
-    label: string;
-    field?: SortField;
-    align?: "left" | "center" | "right";
-  }) => (
+  const renderTableHeader = (
+    label: string,
+    field?: SortField,
+    align: "left" | "center" | "right" = "center",
+  ) => (
     <th
       className={`px-4 py-3 text-${align} text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap ${field
-          ? "cursor-pointer select-none hover:bg-gray-100 transition-colors"
-          : ""
+        ? "cursor-pointer select-none hover:bg-gray-100 transition-colors"
+        : ""
         }`}
       onClick={field ? () => handleSort(field) : undefined}
     >
       <span className="inline-flex items-center justify-center">
         {label}
-        {field && <SortIcon field={field} />}
+        {field && renderSortIcon(field)}
       </span>
     </th>
   );
@@ -372,8 +392,10 @@ export default function EditBbmDataTable({
       try {
         await deleteMutation.mutateAsync(id);
         alert("Data berhasil dihapus");
-      } catch (e: any) {
-        alert("Gagal menghapus data: " + (e?.message || "Unknown error"));
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error ? error.message : "Unknown error";
+        alert("Gagal menghapus data: " + message);
       }
     }
   };
@@ -387,11 +409,21 @@ export default function EditBbmDataTable({
       Pembangkit: r.pembangkit || "-",
       Produk: r.product || "-",
       Moda: r.moda || "-",
-      Nominasi: r.nomination ?? "-",
-      Penyaluran: r.realization ?? "-",
-      Penerimaan: r.receipt ?? "-",
-      Renominasi: r.renomination ?? "-",
-      Pemakaian: r.usage ?? "-",
+      ...(selectedDataTypes.includes("Nominasi")
+        ? { Nominasi: r.nomination ?? "-" }
+        : {}),
+      ...(selectedDataTypes.includes("Penyaluran")
+        ? { Penyaluran: r.realization ?? "-" }
+        : {}),
+      ...(selectedDataTypes.includes("Penerimaan")
+        ? { Penerimaan: r.receipt ?? "-" }
+        : {}),
+      ...(selectedDataTypes.includes("Renominasi")
+        ? { Renominasi: r.renomination ?? "-" }
+        : {}),
+      ...(selectedDataTypes.includes("Pemakaian")
+        ? { Pemakaian: r.usage ?? "-" }
+        : {}),
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
@@ -408,20 +440,34 @@ export default function EditBbmDataTable({
     doc.setFontSize(10);
     doc.text(`Dicetak pada: ${new Date().toLocaleString("id-ID")}`, 14, 22);
 
-    const tableColumn = ["No", "Bulan", "TBBM", "Pembangkit", "Produk", "Moda", "Nominasi", "Penyaluran", "Penerimaan", "Renominasi", "Pemakaian"];
-    const tableRows = sortedRecords.map((r, i) => [
-      i + 1,
-      r.reportDate || "-",
-      r.tbbm || "-",
-      r.pembangkit || "-",
-      r.product || "-",
-      r.moda || "-",
-      r.nomination ?? "-",
-      r.realization ?? "-",
-      r.receipt ?? "-",
-      r.renomination ?? "-",
-      r.usage ?? "-",
-    ]);
+    const tableColumn = [
+      "No",
+      "Bulan",
+      "TBBM",
+      "Pembangkit",
+      "Produk",
+      "Moda",
+      ...selectedDataTypes,
+    ];
+    const tableRows = sortedRecords.map((r, i) => {
+      const dataTypeValues: Record<DataTypeOption, number | string> = {
+        Nominasi: r.nomination ?? "-",
+        Penyaluran: r.realization ?? "-",
+        Penerimaan: r.receipt ?? "-",
+        Renominasi: r.renomination ?? "-",
+        Pemakaian: r.usage ?? "-",
+      };
+
+      return [
+        i + 1,
+        r.reportDate || "-",
+        r.tbbm || "-",
+        r.pembangkit || "-",
+        r.product || "-",
+        r.moda || "-",
+        ...selectedDataTypes.map((dataType) => dataTypeValues[dataType]),
+      ];
+    });
 
     autoTable(doc, {
       head: [tableColumn],
@@ -467,8 +513,8 @@ export default function EditBbmDataTable({
           <button
             onClick={() => setShowFilters((v) => !v)}
             className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-all duration-200 ${showFilters || activeFilterCount > 0
-                ? "bg-primary text-white border-primary"
-                : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+              ? "bg-primary text-white border-primary"
+              : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
               }`}
           >
             <Filter size={16} />
@@ -556,25 +602,41 @@ export default function EditBbmDataTable({
 
             <div>
               <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
-                Tanggal Mulai
+                Bulan Mulai
               </label>
               <input
-                type="date"
-                value={localStartDate}
-                onChange={(e) => setLocalStartDate(e.target.value)}
+                type="month"
+                value={localStartMonth}
+                max={localEndMonth || undefined}
+                onChange={(e) => setLocalStartMonth(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary transition-all"
               />
             </div>
 
             <div>
               <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
-                Tanggal Akhir
+                Bulan Akhir
               </label>
               <input
-                type="date"
-                value={localEndDate}
-                onChange={(e) => setLocalEndDate(e.target.value)}
+                type="month"
+                value={localEndMonth}
+                min={localStartMonth || undefined}
+                onChange={(e) => setLocalEndMonth(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary transition-all"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
+                Jenis Data Ditampilkan
+              </label>
+              <FilterMultiSelect
+                options={[...DATA_TYPE_OPTIONS]}
+                value={localSelectedDataTypes}
+                onChange={(value) =>
+                  setLocalSelectedDataTypes(value as DataTypeOption[])
+                }
+                placeholder="Pilih jenis data"
               />
             </div>
           </div>
@@ -640,17 +702,26 @@ export default function EditBbmDataTable({
               }}
             />
           )}
-          {(filters.startDate || filters.endDate) && (
+          {(filters.startMonth || filters.endMonth) && (
             <FilterTag
-              label={`Tanggal: ${filters.startDate || "..."} - ${filters.endDate || "..."}`}
+              label={`Bulan: ${filters.startMonth || "..."} - ${filters.endMonth || "..."}`}
               onRemove={() => {
-                setLocalStartDate("");
-                setLocalEndDate("");
+                setLocalStartMonth("");
+                setLocalEndMonth("");
                 setFilters((f) => ({
                   ...f,
-                  startDate: undefined,
-                  endDate: undefined,
+                  startMonth: undefined,
+                  endMonth: undefined,
                 }));
+              }}
+            />
+          )}
+          {isDataTypeFilterActive && (
+            <FilterTag
+              label={`Jenis data: ${selectedDataTypes.length > 0 ? selectedDataTypes.join(", ") : "Tidak ada"}`}
+              onRemove={() => {
+                setLocalSelectedDataTypes([...DATA_TYPE_OPTIONS]);
+                setSelectedDataTypes([...DATA_TYPE_OPTIONS]);
               }}
             />
           )}
@@ -667,25 +738,30 @@ export default function EditBbmDataTable({
         <table className="w-full text-sm">
           <thead className="bg-gray-50">
             <tr>
-              <Th label="No" />
-              <Th label="Bulan" field="reportDate" />
-              <Th label="TBBM" field="tbbm" align="left" />
-              <Th label="Pembangkit" field="pembangkit" align="left" />
-              <Th label="Produk" field="product" />
-              <Th label="Moda" field="moda" />
-              <Th label="Nominasi" field="nomination" />
-              <Th label="Penyaluran" field="realization" />
-              <Th label="Penerimaan" field="receipt" />
-              <Th label="Renominasi" field="renomination" />
-              <Th label="Pemakaian" field="usage" />
-              {hasAction && <Th label="Aksi" />}
+              {renderTableHeader("No")}
+              {renderTableHeader("Bulan", "reportDate")}
+              {renderTableHeader("TBBM", "tbbm", "left")}
+              {renderTableHeader("Pembangkit", "pembangkit", "left")}
+              {renderTableHeader("Produk", "product")}
+              {renderTableHeader("Moda", "moda")}
+              {selectedDataTypes.includes("Nominasi") &&
+                renderTableHeader("Nominasi", "nomination")}
+              {selectedDataTypes.includes("Penyaluran") &&
+                renderTableHeader("Penyaluran", "realization")}
+              {selectedDataTypes.includes("Penerimaan") &&
+                renderTableHeader("Penerimaan", "receipt")}
+              {selectedDataTypes.includes("Renominasi") &&
+                renderTableHeader("Renominasi", "renomination")}
+              {selectedDataTypes.includes("Pemakaian") &&
+                renderTableHeader("Pemakaian", "usage")}
+              {hasAction && renderTableHeader("Aksi")}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {isLoading ? (
               <tr>
                 <td
-                  colSpan={hasAction ? 9 : 8}
+                  colSpan={visibleColumnCount}
                   className="px-4 py-8 text-center text-gray-500"
                 >
                   <div className="flex items-center justify-center gap-2">
@@ -700,10 +776,10 @@ export default function EditBbmDataTable({
             ) : paginatedRecords.length === 0 ? (
               <tr>
                 <td
-                  colSpan={hasAction ? 9 : 8}
+                  colSpan={visibleColumnCount}
                   className="px-4 py-8 text-center text-gray-500"
                 >
-                  "Tidak ada data BBM yang sesuai dengan filter"
+                  Tidak ada data BBM yang sesuai dengan filter
                 </td>
               </tr>
             ) : (
@@ -736,41 +812,47 @@ export default function EditBbmDataTable({
                     <td className="px-4 py-3 text-center text-gray-700">
                       {record.moda}
                     </td>
-                    {rowSpans[index]?.showNomination && (
-                      <td
-                        rowSpan={rowSpans[index]?.nominationSpan}
-                        className="px-4 py-3 text-center text-gray-700 font-mono align-middle"
-                      >
-                        {fmt(rowSpans[index]?.nominationValue)}
+                    {selectedDataTypes.includes("Nominasi") &&
+                      rowSpans[index]?.showNomination && (
+                        <td
+                          rowSpan={rowSpans[index]?.nominationSpan}
+                          className="px-4 py-3 text-center text-gray-700 font-mono align-middle"
+                        >
+                          {fmt(rowSpans[index]?.nominationValue)}
+                        </td>
+                      )}
+                    {selectedDataTypes.includes("Penyaluran") && (
+                      <td className="px-4 py-3 text-center text-gray-700 font-mono font-medium">
+                        {fmt(record.realization)}
                       </td>
                     )}
-                    <td className="px-4 py-3 text-center text-gray-700 font-mono font-medium">
-                      {fmt(record.realization)}
-                    </td>
-                    {rowSpans[index]?.showReceipt && (
-                      <td
-                        rowSpan={rowSpans[index]?.receiptSpan}
-                        className="px-4 py-3 text-center text-gray-700 font-mono align-middle"
-                      >
-                        {fmt(rowSpans[index]?.receiptValue)}
-                      </td>
-                    )}
-                    {rowSpans[index]?.showRenomination && (
-                      <td
-                        rowSpan={rowSpans[index]?.renominationSpan}
-                        className="px-4 py-3 text-center text-gray-700 font-mono align-middle"
-                      >
-                        {fmt(rowSpans[index]?.renominationValue)}
-                      </td>
-                    )}
-                    {rowSpans[index]?.showUsage && (
-                      <td
-                        rowSpan={rowSpans[index]?.usageSpan}
-                        className="px-4 py-3 text-center text-gray-700 font-mono align-middle"
-                      >
-                        {fmt(rowSpans[index]?.usageValue)}
-                      </td>
-                    )}
+                    {selectedDataTypes.includes("Penerimaan") &&
+                      rowSpans[index]?.showReceipt && (
+                        <td
+                          rowSpan={rowSpans[index]?.receiptSpan}
+                          className="px-4 py-3 text-center text-gray-700 font-mono align-middle"
+                        >
+                          {fmt(rowSpans[index]?.receiptValue)}
+                        </td>
+                      )}
+                    {selectedDataTypes.includes("Renominasi") &&
+                      rowSpans[index]?.showRenomination && (
+                        <td
+                          rowSpan={rowSpans[index]?.renominationSpan}
+                          className="px-4 py-3 text-center text-gray-700 font-mono align-middle"
+                        >
+                          {fmt(rowSpans[index]?.renominationValue)}
+                        </td>
+                      )}
+                    {selectedDataTypes.includes("Pemakaian") &&
+                      rowSpans[index]?.showUsage && (
+                        <td
+                          rowSpan={rowSpans[index]?.usageSpan}
+                          className="px-4 py-3 text-center text-gray-700 font-mono align-middle"
+                        >
+                          {fmt(rowSpans[index]?.usageValue)}
+                        </td>
+                      )}
                     {hasAction && (
                       <td className="px-4 py-3 text-center">
                         <ActionButtons
