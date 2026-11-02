@@ -27,7 +27,7 @@ export interface MonitoringRecord {
   metricType?: string;
   periodType: string;
   periodValue: string;
-  
+
   waValue?: number | null;
   plnValue?: number | null;
   sheetValue?: number | null;
@@ -153,7 +153,7 @@ export async function getMonitoringRecords(
   // so we do a manual fetch here.
   const url = `${DASHBOARD_API_HOST}/monitoring/records${query}`;
   const accessToken = getAccessToken();
-  
+
   const res = await fetch(url, {
     headers: {
       "Content-Type": "application/json",
@@ -186,7 +186,7 @@ export async function getMonitoringRecord(
 ): Promise<MonitoringRecord> {
   const url = `${DASHBOARD_API_HOST}/monitoring/records/${id}`;
   const accessToken = getAccessToken();
-  
+
   const res = await fetch(url, {
     headers: {
       "Content-Type": "application/json",
@@ -217,7 +217,7 @@ export async function updateMonitoringRecord(
 ): Promise<MonitoringRecord> {
   const url = `${DASHBOARD_API_HOST}/monitoring/records/${id}`;
   const accessToken = getAccessToken();
-  
+
   const res = await fetch(url, {
     method: "PATCH",
     headers: {
@@ -302,7 +302,7 @@ export async function deleteMonitoringRecord(
 ): Promise<{ deleted: boolean }> {
   const url = `${DASHBOARD_API_HOST}/monitoring/records/${id}`;
   const accessToken = getAccessToken();
-  
+
   const res = await fetch(url, {
     method: "DELETE",
     headers: {
@@ -364,7 +364,7 @@ export async function createReconciliationRecord(
 ): Promise<MonitoringRecord> {
   const url = `${DASHBOARD_API_HOST}/reconciliation-input`;
   const accessToken = getAccessToken();
-  
+
   const res = await fetch(url, {
     method: "POST",
     headers: {
@@ -416,7 +416,7 @@ export async function bulkUploadReconciliationRecords(
 ): Promise<{ message: string; insertedCount: number }> {
   const url = `${DASHBOARD_API_HOST}/reconciliation-input/bulk`;
   const accessToken = getAccessToken();
-  
+
   const formData = new FormData();
   formData.append("file", file);
 
@@ -443,11 +443,7 @@ export async function bulkUploadReconciliationRecords(
 
 export function useBulkUploadReconciliationRecords(
   options?: Partial<
-    UseMutationOptions<
-      { message: string; insertedCount: number },
-      Error,
-      File
-    >
+    UseMutationOptions<{ message: string; insertedCount: number }, Error, File>
   >,
 ) {
   const qc = useQueryClient();
@@ -467,7 +463,7 @@ export function useBulkUploadReconciliationRecords(
 export async function downloadReconciliationTemplate(): Promise<void> {
   const url = `${DASHBOARD_API_HOST}/reconciliation-input/template`;
   const accessToken = getAccessToken();
-  
+
   const res = await fetch(url, {
     headers: {
       ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
@@ -490,15 +486,33 @@ export async function downloadReconciliationTemplate(): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
+// BA validation upload helpers
+// ---------------------------------------------------------------------------
+
+async function getUploadErrorMessage(
+  res: Response,
+  fallbackPrefix: string,
+): Promise<string> {
+  try {
+    const body = await res.json();
+    return (
+      body?.error?.message ||
+      body?.message ||
+      `${fallbackPrefix}: ${res.statusText}`
+    );
+  } catch {
+    return `${fallbackPrefix}: ${res.statusText}`;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // API function — OCR Extract Page (POST)
 // ---------------------------------------------------------------------------
 
-export async function extractOcrPage(
-  formData: FormData,
-): Promise<any> {
+export async function extractOcrPage(formData: FormData): Promise<any> {
   const url = `${DASHBOARD_API_HOST}/ocr/extract-page`;
   const accessToken = getAccessToken();
-  
+
   const res = await fetch(url, {
     method: "POST",
     headers: {
@@ -508,7 +522,7 @@ export async function extractOcrPage(
   });
 
   if (!res.ok) {
-    throw new Error(`OCR API error: ${res.statusText}`);
+    throw new Error(await getUploadErrorMessage(res, "OCR API error"));
   }
 
   const body = await res.json();
@@ -521,13 +535,7 @@ export async function extractOcrPage(
 }
 
 export function useExtractOcrPage(
-  options?: Partial<
-    UseMutationOptions<
-      any,
-      Error,
-      FormData
-    >
-  >,
+  options?: Partial<UseMutationOptions<any, Error, FormData>>,
 ) {
   return useMutation({
     mutationFn: (formData: FormData) => extractOcrPage(formData),
@@ -539,12 +547,10 @@ export function useExtractOcrPage(
 // API function — OCR Extract Multi Page (POST)
 // ---------------------------------------------------------------------------
 
-export async function extractOcrMultiPage(
-  formData: FormData,
-): Promise<any> {
+export async function extractOcrMultiPage(formData: FormData): Promise<any> {
   const url = `${DASHBOARD_API_HOST}/ocr/extract-multi-page`;
   const accessToken = getAccessToken();
-  
+
   const res = await fetch(url, {
     method: "POST",
     headers: {
@@ -554,7 +560,7 @@ export async function extractOcrMultiPage(
   });
 
   if (!res.ok) {
-    throw new Error(`OCR API error: ${res.statusText}`);
+    throw new Error(await getUploadErrorMessage(res, "OCR API error"));
   }
 
   const body = await res.json();
@@ -567,13 +573,7 @@ export async function extractOcrMultiPage(
 }
 
 export function useExtractOcrMultiPage(
-  options?: Partial<
-    UseMutationOptions<
-      any,
-      Error,
-      FormData
-    >
-  >,
+  options?: Partial<UseMutationOptions<any, Error, FormData>>,
 ) {
   return useMutation({
     mutationFn: (formData: FormData) => extractOcrMultiPage(formData),
@@ -590,7 +590,7 @@ export async function batchCreateOcrReconciliationRecords(
 ): Promise<any> {
   const url = `${DASHBOARD_API_HOST}/reconciliation-input/ocr-batch`;
   const accessToken = getAccessToken();
-  
+
   const res = await fetch(url, {
     method: "POST",
     headers: {
@@ -600,7 +600,7 @@ export async function batchCreateOcrReconciliationRecords(
   });
 
   if (!res.ok) {
-    throw new Error(`Batch create API error: ${res.statusText}`);
+    throw new Error(await getUploadErrorMessage(res, "Batch create API error"));
   }
 
   const body = await res.json();
@@ -613,16 +613,11 @@ export async function batchCreateOcrReconciliationRecords(
 }
 
 export function useBatchCreateOcrReconciliationRecords(
-  options?: Partial<
-    UseMutationOptions<
-      any,
-      Error,
-      FormData
-    >
-  >,
+  options?: Partial<UseMutationOptions<any, Error, FormData>>,
 ) {
   return useMutation({
-    mutationFn: (formData: FormData) => batchCreateOcrReconciliationRecords(formData),
+    mutationFn: (formData: FormData) =>
+      batchCreateOcrReconciliationRecords(formData),
     ...options,
   });
 }
@@ -654,8 +649,10 @@ export async function fetchBaFiles(params?: {
 }): Promise<BaFileRow[]> {
   const queryParams = new URLSearchParams();
   if (params?.site_id) queryParams.append("site_id", params.site_id);
-  if (params?.supplier_id) queryParams.append("supplier_id", params.supplier_id);
-  if (params?.report_month) queryParams.append("report_month", params.report_month);
+  if (params?.supplier_id)
+    queryParams.append("supplier_id", params.supplier_id);
+  if (params?.report_month)
+    queryParams.append("report_month", params.report_month);
 
   const url = `${DASHBOARD_API_HOST}/reconciliation-input/ba-files?${queryParams.toString()}`;
   const accessToken = getAccessToken();
@@ -686,4 +683,3 @@ export function useBaFiles(params?: {
     queryFn: () => fetchBaFiles(params),
   });
 }
-

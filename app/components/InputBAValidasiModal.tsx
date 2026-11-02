@@ -25,6 +25,9 @@ interface ExtractedRecord {
   siteName?: string;
 }
 
+const MAX_BA_FILE_SIZE_MB = 150;
+const MAX_BA_FILE_SIZE_BYTES = MAX_BA_FILE_SIZE_MB * 1024 * 1024;
+
 const DEFAULT_PROMPT_SINGLE = `Ekstrak data dari teks dokumen berikut.
 Kembalikan data dalam format JSON array of objects.
 Setiap object mewakili baris data dan harus memiliki key:
@@ -204,25 +207,32 @@ export default function InputBAValidasiModal({
     e: React.ChangeEvent<HTMLInputElement>,
     index: number = 0,
   ) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const selectedFile = e.target.files[0];
-      if (selectedFile.type !== "application/pdf") {
-        setError("File harus berupa PDF");
-        return;
-      }
+    const selectedFile = e.target.files?.[0];
+    e.target.value = "";
 
-      const newFiles = [...files];
-      newFiles[index] = selectedFile;
-      setFiles(newFiles);
+    if (!selectedFile) return;
 
-      setError(null);
-      // Create object URL for preview
-      const url = URL.createObjectURL(selectedFile);
-      const newUrls = [...previewUrls];
-      newUrls[index] = url;
-      setPreviewUrls(newUrls);
-      setActiveFileIndex(index);
+    if (selectedFile.type !== "application/pdf") {
+      setError("File harus berupa PDF");
+      return;
     }
+
+    if (selectedFile.size > MAX_BA_FILE_SIZE_BYTES) {
+      setError(`Ukuran file maksimal ${MAX_BA_FILE_SIZE_MB} MB per PDF`);
+      return;
+    }
+
+    const newFiles = [...files];
+    newFiles[index] = selectedFile;
+    setFiles(newFiles);
+
+    setError(null);
+    const url = URL.createObjectURL(selectedFile);
+    const newUrls = [...previewUrls];
+    if (newUrls[index]) URL.revokeObjectURL(newUrls[index]!);
+    newUrls[index] = url;
+    setPreviewUrls(newUrls);
+    setActiveFileIndex(index);
   };
 
   const handleProcess = async () => {
@@ -573,7 +583,8 @@ export default function InputBAValidasiModal({
                               `Stream ${index + 1}`}
                           </button>
                           <p className="mt-3 text-sm text-gray-500">
-                            Klik untuk memilih file PDF
+                            Klik untuk memilih file PDF (maksimal{" "}
+                            {MAX_BA_FILE_SIZE_MB} MB per file)
                           </p>
                         </div>
                       </div>
