@@ -37,10 +37,11 @@ import {
   type MapLegend,
 } from "@/hooks/service/dashboard-api";
 import { useBbmSitesSummary } from "@/hooks/service/bbm-api";
-import { useRelations, useSites } from "@/hooks/service/site-api";
-import { useBbmMonthly } from "@/hooks/service/bbm-api";
-import { useKertasKerjaMaster } from "@/hooks/service/kertas-kerja-api";
-import { usePrivilege } from "@/hooks/usePrivilege";
+import {
+  useKertasKerjaMapSites,
+  useKertasKerjaMaster,
+} from "@/hooks/service/kertas-kerja-api";
+import { getBbmMasterRegionOptions } from "@/app/dashboard/bbm/bbm-chart-filter-options";
 import { getValidMapPosition } from "@/lib/map-coordinate";
 
 interface LeafletIconPrototype {
@@ -259,28 +260,26 @@ export default function Map() {
         15,
       );
 
-      const exportPipes = data?.pipes
-        ? data.pipes.filter((pipe) => {
-            const visibleIds = new Set(filteredSites.map((s) => s.id));
-            if (
-              !visibleIds.has(pipe.sourceSiteId) ||
-              !visibleIds.has(pipe.targetSiteId)
-            )
-              return false;
+      const exportPipes = mapRelations.filter((pipe) => {
+        const visibleIds = new Set(filteredSites.map((s) => s.id));
+        if (
+          !visibleIds.has(pipe.sourceSiteId) ||
+          !visibleIds.has(pipe.targetSiteId)
+        )
+          return false;
 
-            if (selectedModes.length > 0) {
-              const modeMatch = selectedModes.some((mode) => {
-                return (
-                  pipe.relationType?.toLowerCase() === mode.toLowerCase() ||
-                  pipe.relationType?.toLowerCase()?.includes(mode.toLowerCase())
-                );
-              });
-              if (!modeMatch) return false;
-            }
+        if (selectedModes.length > 0) {
+          const modeMatch = selectedModes.some((mode) => {
+            return (
+              pipe.relationType?.toLowerCase() === mode.toLowerCase() ||
+              pipe.relationType?.toLowerCase()?.includes(mode.toLowerCase())
+            );
+          });
+          if (!modeMatch) return false;
+        }
 
-            return true;
-          })
-        : [];
+        return true;
+      });
 
       const relationships = exportPipes.reduce(
         (acc, pipe) => {
@@ -348,13 +347,14 @@ export default function Map() {
 
   // ---- API data -----------------------------------------------------------
   const { data, isLoading: isMapLoading, isError, error } = useMapLocations();
-  const { data: bbmSites } = useSites({ commodity: "BBM" });
-
-  const { hasPrivilege } = usePrivilege();
-  const canReadSites = hasPrivilege("site_management", "READ");
-  const { data: relations } = useRelations(true, {
-    enabled: canReadSites,
-  }); // fetch active relations only if permitted
+  const {
+    data: kertasKerjaMapData,
+    isLoading: isKertasKerjaMapLoading,
+    isError: isKertasKerjaMapError,
+    error: kertasKerjaMapError,
+  } = useKertasKerjaMapSites();
+  const mapSites = kertasKerjaMapData?.sites ?? [];
+  const mapRelations = kertasKerjaMapData?.relations ?? [];
 
   // ---- UI state -----------------------------------------------------------
   const [legendExpanded, setLegendExpanded] = useState(false);
@@ -411,20 +411,23 @@ export default function Map() {
     };
   }, [selectedPeriod]);
 
-  const { data: bbmSitesSummary, isLoading: isSummaryLoading } =
-    useBbmSitesSummary({
-      moda: selectedModes.length > 0 ? selectedModes.join(",") : undefined,
-      product:
-        selectedProducts.length > 0 ? selectedProducts.join(",") : undefined,
-      startDate: startDateStr,
-      endDate: endDateStr,
-    });
+  const { data: bbmSitesSummary } = useBbmSitesSummary({
+    moda: selectedModes.length > 0 ? selectedModes.join(",") : undefined,
+    product:
+      selectedProducts.length > 0 ? selectedProducts.join(",") : undefined,
+    startDate: startDateStr,
+    endDate: endDateStr,
+  });
 
+  const { data: masterRegionData } = useKertasKerjaMaster(
+    "master_region",
+    "BBM",
+  );
   const { data: masterProductData } = useKertasKerjaMaster(
     "master_product",
     "BBM",
   );
-  const { data: bbmMonthlyData } = useBbmMonthly();
+  const { data: masterModaData } = useKertasKerjaMaster("master_moda");
 
   const selectedMonthYearLabel = useMemo(() => {
     const [year, month] = selectedPeriod.split("-").map(Number);
@@ -451,19 +454,13 @@ export default function Map() {
   }, [masterProductData]);
 
   const filterModaOptions = useMemo(() => {
-    if (!bbmMonthlyData) return [];
+    if (!masterModaData) return [];
     return Array.from(
-      new Set(bbmMonthlyData.map((r) => r.moda).filter(Boolean) as string[]),
-    ).sort();
-  }, [bbmMonthlyData]);
+      new Set(masterModaData.map((moda) => moda.name).filter(Boolean)),
+    ).sort((a, b) => a.localeCompare(b, "id-ID"));
+  }, [masterModaData]);
 
-  const isLoading = isMapLoading || isSummaryLoading;
-
-  const bbmSiteIds = useMemo(
-    () => new Set(bbmSites?.map((s) => s.id) || []),
-    [bbmSites],
-  );
-
+  const isLoading = isMapLoading || isKertasKerjaMapLoading;
   // ---- Derived data -------------------------------------------------------
   const customLegend = useMemo(() => {
     if (!data?.legend) return undefined;
@@ -485,21 +482,24 @@ export default function Map() {
   // ---- Relational Filtering Helpers ---------------------------------------
   const getConnectedSet = useCallback(
     (siteName: string, siteType: string) => {
-      if (!data?.sites || !relations) return null;
-      const site = data.sites.find(
-        (s) => s.siteType === siteType && s.name === siteName,
+      const site = mapSites.find(
+        (candidate) =>
+          candidate.siteType === siteType && candidate.name === siteName,
       );
       if (!site) return null;
 
-      const connected = new Set<string>();
-      connected.add(site.id);
-      relations.forEach((rel) => {
-        if (rel.source_site_id === site.id) connected.add(rel.target_site_id);
-        if (rel.target_site_id === site.id) connected.add(rel.source_site_id);
+      const connected = new Set<string>([site.id]);
+      mapRelations.forEach((relation) => {
+        if (relation.sourceSiteId === site.id) {
+          connected.add(relation.targetSiteId);
+        }
+        if (relation.targetSiteId === site.id) {
+          connected.add(relation.sourceSiteId);
+        }
       });
       return connected;
     },
-    [data?.sites, relations],
+    [mapSites, mapRelations],
   );
 
   const intersect = useCallback((sets: (Set<string> | null)[]) => {
@@ -526,57 +526,49 @@ export default function Map() {
   );
 
   const regionSet = useMemo(() => {
-    if (!selectedRegion || !data?.sites) return null;
-    const regionSites = data.sites.filter((s) => s.region === selectedRegion);
-    const rSet = new Set<string>();
-    regionSites.forEach((s) => {
-      rSet.add(s.id);
-      if (relations) {
-        relations.forEach((rel) => {
-          if (rel.source_site_id === s.id) rSet.add(rel.target_site_id);
-          if (rel.target_site_id === s.id) rSet.add(rel.source_site_id);
-        });
-      }
+    if (!selectedRegion) return null;
+    const regionSites = mapSites.filter(
+      (site) => site.region === selectedRegion,
+    );
+    const result = new Set<string>();
+    regionSites.forEach((site) => {
+      result.add(site.id);
+      mapRelations.forEach((relation) => {
+        if (relation.sourceSiteId === site.id) {
+          result.add(relation.targetSiteId);
+        }
+        if (relation.targetSiteId === site.id) {
+          result.add(relation.sourceSiteId);
+        }
+      });
     });
-    return rSet;
-  }, [selectedRegion, data?.sites, relations]);
+    return result;
+  }, [selectedRegion, mapSites, mapRelations]);
 
-  // Unique region list for filter dropdown
-  const regionOptions = useMemo(() => {
-    if (!data?.sites) return [];
-    const validIds = intersect([pemasokSet, pembangkitSet]);
-
-    let validSites = data.sites;
-    if (validIds) {
-      validSites = validSites.filter((s) => validIds.has(s.id));
-    }
-    return Array.from(new Set(validSites.map((s) => s.region)))
-      .filter(Boolean)
-      .sort();
-  }, [data?.sites, pemasokSet, pembangkitSet, intersect]);
+  // Region options must come only from Data Master > Master Region BBM.
+  const regionOptions = useMemo(
+    () => getBbmMasterRegionOptions(masterRegionData),
+    [masterRegionData],
+  );
 
   // Names for autocomplete filters
   const pemasokNames = useMemo(() => {
-    if (!data?.sites) return [];
     const validIds = intersect([regionSet, pembangkitSet]);
-
-    let validSites = data.sites.filter((s) => s.siteType === "PEMASOK");
+    let validSites = mapSites.filter((site) => site.siteType === "PEMASOK");
     if (validIds) {
-      validSites = validSites.filter((s) => validIds.has(s.id));
+      validSites = validSites.filter((site) => validIds.has(site.id));
     }
-    return validSites.map((s) => s.name).sort();
-  }, [data?.sites, regionSet, pembangkitSet, intersect]);
+    return validSites.map((site) => site.name).sort();
+  }, [mapSites, regionSet, pembangkitSet, intersect]);
 
   const pembangkitNames = useMemo(() => {
-    if (!data?.sites) return [];
     const validIds = intersect([regionSet, pemasokSet]);
-
-    let validSites = data.sites.filter((s) => s.siteType === "PEMBANGKIT");
+    let validSites = mapSites.filter((site) => site.siteType === "PEMBANGKIT");
     if (validIds) {
-      validSites = validSites.filter((s) => validIds.has(s.id));
+      validSites = validSites.filter((site) => validIds.has(site.id));
     }
-    return validSites.map((s) => s.name).sort();
-  }, [data?.sites, regionSet, pemasokSet, intersect]);
+    return validSites.map((site) => site.name).sort();
+  }, [mapSites, regionSet, pemasokSet, intersect]);
 
   // Reset pembangkit when current selection is no longer valid
   useEffect(() => {
@@ -597,48 +589,24 @@ export default function Map() {
     }
   }, [pembangkitNames, selectedPembangkit]);
 
-  // Filtered sites
+  // Point visibility follows active Kertas Rakor templates, not CTMS values.
   const filteredSites = useMemo(() => {
-    if (!data?.sites || !bbmSites) return [];
     const validIds = intersect([regionSet, pemasokSet, pembangkitSet]);
 
-    return data.sites.filter((site) => {
-      // Only show sites that belong to BBM commodity
-      if (!bbmSiteIds.has(site.id)) return false;
-
+    return mapSites.filter((site) => {
       if (!visibleSiteTypes[site.siteType]) return false;
-
       if (validIds && !validIds.has(site.id)) return false;
 
       // Leaflet throws when either coordinate is NaN, infinite, or out of range.
-      if (!getValidMapPosition(site)) return false;
-
-      if (bbmSitesSummary) {
-        const summary = bbmSitesSummary.find((s) => s.id === site.id);
-        if (summary) {
-          const totalNom = summary.totalNominasi || 0;
-          const totalReal = summary.totalRealisasi || 0;
-          const totalPem = summary.totalPemakaian || 0;
-          if (totalNom === 0 && totalReal === 0 && totalPem === 0) {
-            return false;
-          }
-        } else {
-          return false;
-        }
-      }
-
-      return true;
+      return Boolean(getValidMapPosition(site));
     });
   }, [
-    data?.sites,
-    bbmSites,
-    bbmSiteIds,
+    mapSites,
     visibleSiteTypes,
     regionSet,
     pemasokSet,
     pembangkitSet,
     intersect,
-    bbmSitesSummary,
   ]);
 
   const filteredSitePositions = useMemo(
@@ -649,11 +617,11 @@ export default function Map() {
     [filteredSites],
   );
 
-  // Filtered pipes – show only if both source and target are visible
+  // Template relations – show only if both source and target are visible.
   const filteredPipes = useMemo(() => {
-    if (!data?.pipes || !showPipes) return [];
-    const visibleIds = new Set(filteredSites.map((s) => s.id));
-    return data.pipes.filter((pipe) => {
+    if (!showPipes) return [];
+    const visibleIds = new Set(filteredSites.map((site) => site.id));
+    return mapRelations.filter((pipe) => {
       if (
         !visibleIds.has(pipe.sourceSiteId) ||
         !visibleIds.has(pipe.targetSiteId)
@@ -673,7 +641,7 @@ export default function Map() {
 
       return true;
     });
-  }, [data?.pipes, filteredSites, showPipes, selectedModes]);
+  }, [mapRelations, filteredSites, showPipes, selectedModes]);
 
   // ---- helpers ------------------------------------------------------------
   const getSiteTypeLabel = (type: string) => {
@@ -691,18 +659,20 @@ export default function Map() {
     "#38BDF8";
 
   const getSiteById = (id: string): MapSite | undefined =>
-    data?.sites.find((s) => s.id === id);
+    mapSites.find((site) => site.id === id);
 
   const getConnectedSites = (siteId: string): MapSite[] => {
-    if (!data?.pipes || !data?.sites) return [];
-    const connectedIds = data.pipes
+    const connectedIds = mapRelations
       .filter(
-        (pipe) => pipe.sourceSiteId === siteId || pipe.targetSiteId === siteId,
+        (relation) =>
+          relation.sourceSiteId === siteId || relation.targetSiteId === siteId,
       )
-      .map((pipe) =>
-        pipe.sourceSiteId === siteId ? pipe.targetSiteId : pipe.sourceSiteId,
+      .map((relation) =>
+        relation.sourceSiteId === siteId
+          ? relation.targetSiteId
+          : relation.sourceSiteId,
       );
-    return data.sites.filter((s) => connectedIds.includes(s.id));
+    return mapSites.filter((site) => connectedIds.includes(site.id));
   };
 
   // Toggle a specific site type visibility
@@ -726,7 +696,7 @@ export default function Map() {
   }
 
   // ---- Error state --------------------------------------------------------
-  if (isError || !data) {
+  if (isError || isKertasKerjaMapError || !data) {
     return (
       <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6 mt-4 flex items-center justify-center h-[400px]">
         <div className="text-center">
@@ -735,7 +705,11 @@ export default function Map() {
             Gagal Memuat Data Peta
           </p>
           <p className="text-gray-500 text-xs">
-            {error instanceof Error ? error.message : "Terjadi kesalahan"}
+            {kertasKerjaMapError instanceof Error
+              ? kertasKerjaMapError.message
+              : error instanceof Error
+                ? error.message
+                : "Terjadi kesalahan"}
           </p>
         </div>
       </div>
@@ -1278,7 +1252,7 @@ export default function Map() {
                   <span className="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-500">
                     {selectedModes.length > 0
                       ? `${selectedModes.length} dipilih`
-                      : `${filterModaOptions.length || 3} opsi`}
+                      : `${filterModaOptions.length} opsi`}
                   </span>
                 </div>
                 <div className="rounded-lg border border-gray-200 bg-gray-50/50 p-2">
@@ -1295,10 +1269,7 @@ export default function Map() {
                   </button>
                   <div className="max-h-28 overflow-y-auto overscroll-contain pr-1">
                     <div className="flex flex-wrap gap-1.5">
-                      {(filterModaOptions.length > 0
-                        ? filterModaOptions
-                        : ["Truck", "Vessel", "Pipeline"]
-                      ).map((mode) => (
+                      {filterModaOptions.map((mode) => (
                         <button
                           type="button"
                           key={mode}
@@ -1322,7 +1293,7 @@ export default function Map() {
                     </div>
                   </div>
                 </div>
-                {(filterModaOptions.length || 3) > 8 && (
+                {filterModaOptions.length > 8 && (
                   <p className="mt-1 text-[10px] text-gray-400">
                     Scroll untuk melihat moda lainnya
                   </p>
@@ -1433,10 +1404,7 @@ export default function Map() {
                 filterProductOptions.length > 0
                   ? filterProductOptions
                   : ["HSD", "B35", "LSFO", "B30", "B40", "HSFO", "IDO"];
-              const MODES =
-                filterModaOptions.length > 0
-                  ? filterModaOptions
-                  : ["Kapal", "Truck", "Pipa", "Lainnya"];
+              const MODES = filterModaOptions;
 
               const handleSiteRedirect = (targetId: string) => {
                 const targetSummary = bbmSitesSummary?.find(

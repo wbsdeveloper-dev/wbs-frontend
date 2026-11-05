@@ -51,6 +51,7 @@ import {
 } from "@/hooks/service/bbm-api";
 import { useSites, type Site } from "@/hooks/service/site-api";
 import { useKertasKerjaMaster } from "@/hooks/service/kertas-kerja-api";
+import { getBbmMasterRegionOptions } from "./bbm-chart-filter-options";
 import { NationalTrendChart } from "./components/NationalTrendChart";
 
 // Dynamic map import
@@ -779,6 +780,10 @@ export default function Home() {
     commodity: "BBM",
   });
 
+  const { data: masterRegionData } = useKertasKerjaMaster(
+    "master_region",
+    "BBM",
+  );
   const { data: masterUnitData } = useKertasKerjaMaster("master_unit");
   const { data: masterUpkData } = useKertasKerjaMaster("master_unit_pelaksana");
   const { data: masterKitData } = useKertasKerjaMaster("master_jenis_kit");
@@ -787,42 +792,11 @@ export default function Home() {
     "BBM",
   );
 
-  const filterRegionOptions = useMemo(() => {
-    const regions = new Set<string>();
-    if (pembangkitData)
-      pembangkitData.forEach((p) => {
-        if (p.region) regions.add(p.region);
-      });
-    if (tbbmData)
-      tbbmData.forEach((t) => {
-        if (t.region) regions.add(t.region);
-      });
-    return Array.from(regions).sort();
-  }, [pembangkitData, tbbmData]);
-
-  const filterSupplierOptions = useMemo(() => {
-    if (!tbbmData || !bbmMonthlyData) return [];
-
-    let validTbbms = new Set<string>();
-
-    if (graphicPlant.length > 0) {
-      bbmMonthlyData.forEach((record) => {
-        if (graphicPlant.includes(record.pembangkit) && record.tbbm) {
-          validTbbms.add(record.tbbm);
-        }
-      });
-    } else if (graphicRegion.length > 0) {
-      tbbmData.forEach((t) => {
-        if (graphicRegion.includes(t.region)) {
-          validTbbms.add(t.name);
-        }
-      });
-    } else {
-      tbbmData.forEach((t) => validTbbms.add(t.name));
-    }
-
-    return Array.from(validTbbms).sort();
-  }, [tbbmData, bbmMonthlyData, graphicPlant, graphicRegion]);
+  // Region options must come only from Data Master > Master Region BBM.
+  const filterRegionOptions = useMemo(
+    () => getBbmMasterRegionOptions(masterRegionData),
+    [masterRegionData],
+  );
 
   const filterPlantOptions = useMemo(() => {
     if (!pembangkitData) return [];
@@ -833,20 +807,20 @@ export default function Home() {
     const selectedUnitIds =
       graphicUnit.length > 0
         ? masterUnitData
-          ?.filter((u) => graphicUnit.includes(u.name))
-          .map((u) => u.id) || []
+            ?.filter((u) => graphicUnit.includes(u.name))
+            .map((u) => u.id) || []
         : [];
     const selectedUpkIds =
       graphicUpk.length > 0
         ? masterUpkData
-          ?.filter((u) => graphicUpk.includes(u.name))
-          .map((u) => u.id) || []
+            ?.filter((u) => graphicUpk.includes(u.name))
+            .map((u) => u.id) || []
         : [];
     const selectedKitIds =
       graphicKit.length > 0
         ? masterKitData
-          ?.filter((k) => graphicKit.includes(k.name))
-          .map((k) => k.id) || []
+            ?.filter((k) => graphicKit.includes(k.name))
+            .map((k) => k.id) || []
         : [];
 
     if (selectedUnitIds.length > 0)
@@ -868,6 +842,45 @@ export default function Home() {
     masterKitData,
   ]);
 
+  const filterSupplierOptions = useMemo(() => {
+    if (!tbbmData || !bbmMonthlyData) return [];
+
+    const hasPlantFilters =
+      graphicRegion.length > 0 ||
+      graphicUnit.length > 0 ||
+      graphicUpk.length > 0 ||
+      graphicKit.length > 0 ||
+      graphicPlant.length > 0;
+
+    if (!hasPlantFilters) {
+      return Array.from(
+        new Set(tbbmData.map((supplier) => supplier.name)),
+      ).sort();
+    }
+
+    const selectedPlants =
+      graphicPlant.length > 0 ? graphicPlant : filterPlantOptions;
+    const selectedPlantSet = new Set(selectedPlants);
+    const validSuppliers = new Set<string>();
+
+    bbmMonthlyData.forEach((record) => {
+      if (selectedPlantSet.has(record.pembangkit) && record.tbbm) {
+        validSuppliers.add(record.tbbm);
+      }
+    });
+
+    return Array.from(validSuppliers).sort();
+  }, [
+    tbbmData,
+    bbmMonthlyData,
+    graphicRegion,
+    graphicUnit,
+    graphicUpk,
+    graphicKit,
+    graphicPlant,
+    filterPlantOptions,
+  ]);
+
   const filterProductOptions = useMemo(() => {
     if (!masterProductData) return [];
     return masterProductData.map((p) => p.name).sort();
@@ -881,19 +894,37 @@ export default function Home() {
   }, [bbmMonthlyData]);
 
   const filterUnitOptions = useMemo(() => {
-    if (!masterUnitData) return [];
-    return masterUnitData.map((u) => u.name).sort();
-  }, [masterUnitData]);
+    if (!masterUnitData || !pembangkitData) return [];
+    const plantUnitIds = new Set(
+      pembangkitData.map((plant) => plant.unit_id).filter(Boolean),
+    );
+    return masterUnitData
+      .filter((unit) => plantUnitIds.has(unit.id))
+      .map((unit) => unit.name)
+      .sort();
+  }, [masterUnitData, pembangkitData]);
 
   const filterUpkOptions = useMemo(() => {
-    if (!masterUpkData) return [];
-    return masterUpkData.map((u) => u.name).sort();
-  }, [masterUpkData]);
+    if (!masterUpkData || !pembangkitData) return [];
+    const plantUpkIds = new Set(
+      pembangkitData.map((plant) => plant.upk_id).filter(Boolean),
+    );
+    return masterUpkData
+      .filter((upk) => plantUpkIds.has(upk.id))
+      .map((upk) => upk.name)
+      .sort();
+  }, [masterUpkData, pembangkitData]);
 
   const filterKitOptions = useMemo(() => {
-    if (!masterKitData) return [];
-    return masterKitData.map((k) => k.name).sort();
-  }, [masterKitData]);
+    if (!masterKitData || !pembangkitData) return [];
+    const plantKitIds = new Set(
+      pembangkitData.map((plant) => plant.kit_id).filter(Boolean),
+    );
+    return masterKitData
+      .filter((kit) => plantKitIds.has(kit.id))
+      .map((kit) => kit.name)
+      .sort();
+  }, [masterKitData, pembangkitData]);
 
   // 4. Grafik BBM Bar Chart (Real Data)
   const barChartData = useMemo(() => {
@@ -906,28 +937,28 @@ export default function Home() {
     const selectedUnitIds =
       graphicUnit.length > 0
         ? masterUnitData
-          ?.filter((u) => graphicUnit.includes(u.name))
-          .map((u) => u.id) || []
+            ?.filter((u) => graphicUnit.includes(u.name))
+            .map((u) => u.id) || []
         : [];
     const selectedUpkIds =
       graphicUpk.length > 0
         ? masterUpkData
-          ?.filter((u) => graphicUpk.includes(u.name))
-          .map((u) => u.id) || []
+            ?.filter((u) => graphicUpk.includes(u.name))
+            .map((u) => u.id) || []
         : [];
     const selectedKitIds =
       graphicKit.length > 0
         ? masterKitData
-          ?.filter((k) => graphicKit.includes(k.name))
-          .map((k) => k.id) || []
+            ?.filter((k) => graphicKit.includes(k.name))
+            .map((k) => k.id) || []
         : [];
 
     const filtered = bbmMonthlyData.filter((record) => {
-      if (graphicRegion.length > 0) {
-        const isSupplierInRegion = filterSupplierOptions.includes(record.tbbm);
-        const isPlantInRegion = filterPlantOptions.includes(record.pembangkit);
-        if (!isSupplierInRegion && !isPlantInRegion) return false;
-      }
+      if (
+        graphicRegion.length > 0 &&
+        !filterPlantOptions.includes(record.pembangkit)
+      )
+        return false;
       if (
         selectedUnitIds.length > 0 ||
         selectedUpkIds.length > 0 ||
@@ -1181,7 +1212,6 @@ export default function Home() {
     masterUpkData,
     masterKitData,
     pembangkitData,
-    filterSupplierOptions,
     filterPlantOptions,
   ]);
 
@@ -1195,18 +1225,14 @@ export default function Home() {
           graphicProduct.length > 0 ? graphicProduct.join(",") : undefined,
         moda: graphicModa.length > 0 ? graphicModa.join(",") : undefined,
         tbbm:
-          graphicSupplier.length > 0
-            ? graphicSupplier.join(",")
-            : graphicRegion.length > 0
-              ? filterSupplierOptions.join(",")
-              : undefined,
+          graphicSupplier.length > 0 ? graphicSupplier.join(",") : undefined,
         pembangkit:
           graphicPlant.length > 0
             ? graphicPlant.join(",")
             : graphicRegion.length > 0 ||
-              graphicUnit.length > 0 ||
-              graphicUpk.length > 0 ||
-              graphicKit.length > 0
+                graphicUnit.length > 0 ||
+                graphicUpk.length > 0 ||
+                graphicKit.length > 0
               ? filterPlantOptions.join(",")
               : undefined,
         interval:
@@ -1443,19 +1469,21 @@ export default function Home() {
                             setChartMode("akumulasi");
                           }
                         }}
-                        className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${chartMode === "akumulasi" || chartMode === "nasional"
-                          ? "bg-white text-gray-900 shadow-sm"
-                          : "text-gray-500 hover:text-gray-700"
-                          }`}
+                        className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
+                          chartMode === "akumulasi" || chartMode === "nasional"
+                            ? "bg-white text-gray-900 shadow-sm"
+                            : "text-gray-500 hover:text-gray-700"
+                        }`}
                       >
                         Grafik Akumulasi
                       </button>
                       <button
                         onClick={() => setChartMode("realisasi-moda")}
-                        className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${chartMode === "realisasi-moda"
-                          ? "bg-white text-gray-900 shadow-sm"
-                          : "text-gray-500 hover:text-gray-700"
-                          }`}
+                        className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
+                          chartMode === "realisasi-moda"
+                            ? "bg-white text-gray-900 shadow-sm"
+                            : "text-gray-500 hover:text-gray-700"
+                        }`}
                       >
                         Grafik Penyaluran
                       </button>
@@ -1481,55 +1509,55 @@ export default function Home() {
                   graphicSupplier.length > 0 ||
                   graphicProduct.length > 0 ||
                   graphicModa.length > 0) && (
-                    <div className="flex flex-wrap gap-1.5 mb-6 max-w-xl">
-                      {graphicStart && graphicEnd && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-700 border border-blue-100">
-                          Periode: {formatDisplayDate(graphicStart)} s/d{" "}
-                          {formatDisplayDate(graphicEnd)}
-                        </span>
-                      )}
-                      {graphicRegion.length > 0 && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
-                          Region: {graphicRegion.join(", ")}
-                        </span>
-                      )}
-                      {graphicUnit.length > 0 && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
-                          Instansi/Unit: {graphicUnit.join(", ")}
-                        </span>
-                      )}
-                      {graphicUpk.length > 0 && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
-                          Unit Pelaksana: {graphicUpk.join(", ")}
-                        </span>
-                      )}
-                      {graphicKit.length > 0 && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
-                          Jenis Kit: {graphicKit.join(", ")}
-                        </span>
-                      )}
-                      {graphicSupplier.length > 0 && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-100">
-                          Pemasok: {graphicSupplier.join(", ")}
-                        </span>
-                      )}
-                      {graphicPlant.length > 0 && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-orange-50 text-orange-700 border border-orange-100">
-                          Pembangkit: {graphicPlant.join(", ")}
-                        </span>
-                      )}
-                      {graphicProduct.length > 0 && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-purple-50 text-purple-700 border border-purple-100">
-                          Produk: {graphicProduct.join(", ")}
-                        </span>
-                      )}
-                      {graphicModa.length > 0 && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-pink-50 text-pink-700 border border-pink-100">
-                          Moda: {graphicModa.join(", ")}
-                        </span>
-                      )}
-                    </div>
-                  )}
+                  <div className="flex flex-wrap gap-1.5 mb-6 max-w-xl">
+                    {graphicStart && graphicEnd && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-700 border border-blue-100">
+                        Periode: {formatDisplayDate(graphicStart)} s/d{" "}
+                        {formatDisplayDate(graphicEnd)}
+                      </span>
+                    )}
+                    {graphicRegion.length > 0 && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
+                        Region: {graphicRegion.join(", ")}
+                      </span>
+                    )}
+                    {graphicUnit.length > 0 && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
+                        Instansi/Unit: {graphicUnit.join(", ")}
+                      </span>
+                    )}
+                    {graphicUpk.length > 0 && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
+                        Unit Pelaksana: {graphicUpk.join(", ")}
+                      </span>
+                    )}
+                    {graphicKit.length > 0 && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
+                        Jenis Kit: {graphicKit.join(", ")}
+                      </span>
+                    )}
+                    {graphicSupplier.length > 0 && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-100">
+                        Pemasok: {graphicSupplier.join(", ")}
+                      </span>
+                    )}
+                    {graphicPlant.length > 0 && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-orange-50 text-orange-700 border border-orange-100">
+                        Pembangkit: {graphicPlant.join(", ")}
+                      </span>
+                    )}
+                    {graphicProduct.length > 0 && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-purple-50 text-purple-700 border border-purple-100">
+                        Produk: {graphicProduct.join(", ")}
+                      </span>
+                    )}
+                    {graphicModa.length > 0 && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-pink-50 text-pink-700 border border-pink-100">
+                        Moda: {graphicModa.join(", ")}
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Secondary Toggle (Grafik Akumulasi vs Grafik Tren) */}
@@ -1807,15 +1835,15 @@ export default function Home() {
                     chartMode === "nasional"
                       ? ["Waktu"]
                       : [
-                        "Waktu",
-                        "Pembangkit",
-                        "Pemasok",
-                        "Jenis KIT",
-                        "Instansi/Unit",
-                        "UPK",
-                        "Region",
-                        "Moda Transportasi",
-                      ]
+                          "Waktu",
+                          "Pembangkit",
+                          "Pemasok",
+                          "Jenis KIT",
+                          "Instansi/Unit",
+                          "UPK",
+                          "Region",
+                          "Moda Transportasi",
+                        ]
                   }
                   value={graphicXAxisMode}
                   onChange={(val) => {
@@ -1951,10 +1979,11 @@ export default function Home() {
                     ].map((item) => (
                       <button
                         key={item.label}
-                        className={`px-3 py-2 text-sm font-medium rounded-md transition-colors text-center ${graphicPeriod === item.val
-                          ? "bg-primary text-white shadow-sm"
-                          : "bg-gray-50 text-gray-600 hover:bg-gray-100"
-                          }`}
+                        className={`px-3 py-2 text-sm font-medium rounded-md transition-colors text-center ${
+                          graphicPeriod === item.val
+                            ? "bg-primary text-white shadow-sm"
+                            : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+                        }`}
                         onClick={() => {
                           setGraphicPeriod(item.val as Periode);
                           setGraphicIntervalMode(item.interval as any);
@@ -2018,10 +2047,11 @@ export default function Home() {
                           return (
                             <button
                               key={mode}
-                              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${graphicIntervalMode === mode
-                                ? "bg-primary text-white shadow-sm"
-                                : "bg-gray-50 text-gray-600 hover:bg-gray-100"
-                                }`}
+                              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                                graphicIntervalMode === mode
+                                  ? "bg-primary text-white shadow-sm"
+                                  : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+                              }`}
                               onClick={() => setGraphicIntervalMode(mode)}
                             >
                               {mode}
