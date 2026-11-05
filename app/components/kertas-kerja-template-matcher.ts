@@ -86,16 +86,17 @@ export function isEmptyKertasKerjaIdentity(value: unknown): boolean {
 }
 
 const MODA_ALIASES: Record<string, string> = {
-  truck: "truck",
-  trucking: "truck",
-  truk: "truck",
+  truck: "trucking",
+  trucking: "trucking",
+  truk: "trucking",
   tanker: "tanker",
   "mobil tangki": "tanker",
   ship: "shipping",
   shipping: "shipping",
   kapal: "shipping",
-  pipeline: "pipeline",
-  pipa: "pipeline",
+  pipeline: "piping",
+  piping: "piping",
+  pipa: "piping",
 };
 
 export function normalizeKertasKerjaModa(value: unknown): string {
@@ -107,16 +108,16 @@ export function defaultKertasKerjaModaName(value: unknown): string {
   const source = String(value ?? "")
     .normalize("NFKC")
     .trim();
-  return source || "Truck";
+  return canonicalKertasKerjaModaName(source || "Trucking");
 }
 
 export function canonicalKertasKerjaModaName(value: unknown): string {
   const normalized = normalizeKertasKerjaModa(value);
   const labels: Record<string, string> = {
-    truck: "Truck",
+    trucking: "Trucking",
     tanker: "Tanker",
     shipping: "Shipping",
-    pipeline: "Pipeline",
+    piping: "Piping",
   };
   return (
     labels[normalized] ??

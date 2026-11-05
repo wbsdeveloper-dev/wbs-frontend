@@ -7,7 +7,6 @@ import {
   CheckCircle2,
   AlertTriangle,
   Trash2,
-  ArrowLeft,
   Database,
   FileSpreadsheet,
   Loader2,
@@ -15,6 +14,7 @@ import {
 import * as XLSX from "xlsx";
 import { useCreateBbmMonthlyBulk } from "@/hooks/service/bbm-api";
 import { useSites } from "@/hooks/service/site-api";
+import { canonicalKertasKerjaModaName } from "./kertas-kerja-template-matcher";
 
 type Props = {
   setOpenModal: (value: boolean) => void;
@@ -507,9 +507,9 @@ export default function BulkUploadBbmModal({ setOpenModal, onSuccess }: Props) {
                   }
                 }
 
-                const rawModa = row[modaColIdx]
-                  ? String(row[modaColIdx]).trim()
-                  : "Trucking";
+                const rawModa = canonicalKertasKerjaModaName(
+                  row[modaColIdx] || "Trucking",
+                );
 
                 allRows.push({
                   id: `${sheetName}-${r}-${monthDate}-${pembangkitStr}`,
@@ -595,7 +595,7 @@ export default function BulkUploadBbmModal({ setOpenModal, onSuccess }: Props) {
         siteId: row.siteId,
         supplierId: row.supplierId,
         product: row.product,
-        moda: undefined,
+        moda: canonicalKertasKerjaModaName(row.moda),
         unit: "KILOLITER",
         nomination: row.nomination ?? undefined,
         usage: row.usage ?? undefined,

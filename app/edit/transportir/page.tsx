@@ -1,25 +1,26 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { Plus, Loader2, FileText } from "lucide-react";
+import { Plus, Loader2 } from "lucide-react";
 import { useAuth } from "@/components/providers/auth-provider";
 import { usePrivilege } from "@/hooks/usePrivilege";
 import { useRouter } from "next/navigation";
 import UploadKonfigurasiModal from "./components/UploadKonfigurasiModal";
-import InputBAValidasiModal from "../../components/InputBAValidasiModal";
 import TransportirTable from "./components/TransportirTable";
-import { useTransportirResume, TransportirResumeParams } from "@/hooks/service/transportir-api";
+import {
+  useTransportirResume,
+  TransportirResumeParams,
+} from "@/hooks/service/transportir-api";
 
 export default function DataTransportirPage() {
   const router = useRouter();
   const { hasPrivilege } = usePrivilege();
   const { isLoading: isAuthLoading } = useAuth();
-  
+
   const canRead = hasPrivilege("data_transportir_gas", "READ");
   const canCreate = hasPrivilege("data_transportir_gas", "CREATE");
 
   const [openModal, setOpenModal] = useState(false);
-  const [openBAModal, setOpenBAModal] = useState(false);
   const [params, setParams] = useState<TransportirResumeParams>({
     page: 1,
     limit: 10,
@@ -31,9 +32,12 @@ export default function DataTransportirPage() {
     setParams((prev) => ({ ...prev, page: newPage, limit: newLimit }));
   }, []);
 
-  const handleFilterChange = useCallback((newFilters: Omit<TransportirResumeParams, "page" | "limit">) => {
-    setParams((prev) => ({ ...prev, ...newFilters, page: 1 }));
-  }, []);
+  const handleFilterChange = useCallback(
+    (newFilters: Omit<TransportirResumeParams, "page" | "limit">) => {
+      setParams((prev) => ({ ...prev, ...newFilters, page: 1 }));
+    },
+    [],
+  );
 
   // Redirect if unauthorized
   useEffect(() => {
@@ -61,7 +65,9 @@ export default function DataTransportirPage() {
                 <span className="text-gray-400">/</span>
                 <span>Manajemen Data</span>
                 <span className="text-gray-400">/</span>
-                <span className="text-primary font-medium">Data Transportir</span>
+                <span className="text-primary font-medium">
+                  Data Transportir
+                </span>
               </div>
               <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
                 Data Transportir
@@ -72,30 +78,33 @@ export default function DataTransportirPage() {
             </div>
             <div className="flex gap-3">
               {canCreate && (
-                <>
-                  <button
-                    onClick={() => setOpenBAModal(true)}
-                    className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg flex items-center gap-2 hover:bg-gray-50 text-sm font-medium transition-colors cursor-pointer shadow-sm"
-                  >
-                    <FileText size={16} /> Input BA & Validasi
-                  </button>
-                  <button
-                    onClick={() => setOpenModal(true)}
-                    className="px-4 py-2 bg-primary text-white rounded-lg flex items-center gap-2 text-sm font-medium hover:bg-[#0d4a5c] transition-colors cursor-pointer shadow-sm"
-                  >
-                    <Plus size={16} /> Input Data Transportir
-                  </button>
-                </>
+                <button
+                  onClick={() => setOpenModal(true)}
+                  className="px-4 py-2 bg-primary text-white rounded-lg flex items-center gap-2 text-sm font-medium hover:bg-[#0d4a5c] transition-colors cursor-pointer shadow-sm"
+                >
+                  <Plus size={16} /> Input Data Transportir
+                </button>
               )}
             </div>
           </div>
 
           <div className="mb-6 md:mb-8">
-            <TransportirTable 
-              data={resumeResponse?.data || []} 
-              pagination={resumeResponse?.pagination || { page: 1, limit: 10, total: 0, totalPages: 1 }}
-              isLoading={isLoading} 
-              filters={{ shipper: params.shipper, start_date: params.start_date, end_date: params.end_date }}
+            <TransportirTable
+              data={resumeResponse?.data || []}
+              pagination={
+                resumeResponse?.pagination || {
+                  page: 1,
+                  limit: 10,
+                  total: 0,
+                  totalPages: 1,
+                }
+              }
+              isLoading={isLoading}
+              filters={{
+                shipper: params.shipper,
+                start_date: params.start_date,
+                end_date: params.end_date,
+              }}
               onPageChange={handlePageChange}
               onFilterChange={handleFilterChange}
             />
@@ -103,12 +112,7 @@ export default function DataTransportirPage() {
         </div>
       </main>
 
-      {openModal && (
-        <UploadKonfigurasiModal setOpenModal={setOpenModal} />
-      )}
-      {openBAModal && (
-        <InputBAValidasiModal setOpenModal={setOpenBAModal} />
-      )}
+      {openModal && <UploadKonfigurasiModal setOpenModal={setOpenModal} />}
     </div>
   );
 }

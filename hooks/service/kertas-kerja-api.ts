@@ -97,6 +97,33 @@ export interface MasterGeneric {
   updated_at?: string;
 }
 
+export interface KertasKerjaMapSite {
+  id: string;
+  name: string;
+  siteType: "PEMBANGKIT" | "PEMASOK";
+  lat: string | null;
+  lng: string | null;
+  region: string;
+  isEnabled: boolean;
+  capacity?: string;
+  owner?: string;
+  commodity?: string | null;
+}
+
+export interface KertasKerjaMapRelation {
+  id: string;
+  sourceSiteId: string;
+  targetSiteId: string;
+  relationType: string;
+  status: string;
+  commodity: string;
+}
+
+export interface KertasKerjaMapData {
+  sites: KertasKerjaMapSite[];
+  relations: KertasKerjaMapRelation[];
+}
+
 export interface TemplateKertasKerja {
   id: string;
   site_id: string;
@@ -165,6 +192,7 @@ export interface RecordKertasKerja {
 
 export const kertasKerjaKeys = {
   all: ["kertasKerja"] as const,
+  mapSites: () => [...kertasKerjaKeys.all, "map-sites"] as const,
   masters: () => [...kertasKerjaKeys.all, "master"] as const,
   masterTable: (table: string) =>
     [...kertasKerjaKeys.masters(), table] as const,
@@ -177,6 +205,10 @@ export const kertasKerjaKeys = {
 // ---------------------------------------------------------------------------
 // API Functions
 // ---------------------------------------------------------------------------
+
+export function getKertasKerjaMapSites() {
+  return apiFetchData<KertasKerjaMapData>("/kertas-kerja/map-sites");
+}
 
 export function getMasterData(table: string, comodityFilter?: string) {
   const queryParam = comodityFilter
@@ -270,6 +302,16 @@ export function bulkUpsertRecords(
 // ---------------------------------------------------------------------------
 // React Query Hooks
 // ---------------------------------------------------------------------------
+
+export function useKertasKerjaMapSites(
+  options?: Partial<UseQueryOptions<KertasKerjaMapData>>,
+) {
+  return useQuery({
+    queryKey: kertasKerjaKeys.mapSites(),
+    queryFn: getKertasKerjaMapSites,
+    ...options,
+  });
+}
 
 export function useKertasKerjaMaster(
   table: string,

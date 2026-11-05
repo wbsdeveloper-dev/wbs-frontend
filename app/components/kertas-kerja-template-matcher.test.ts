@@ -44,17 +44,25 @@ test("maps controlled Biosolar aliases to B40", () => {
   assert.equal(normalizeKertasKerjaProduct("MFO"), "mfo");
 });
 
-test("defaults an empty transport mode to Truck", () => {
-  assert.equal(defaultKertasKerjaModaName(undefined), "Truck");
-  assert.equal(defaultKertasKerjaModaName("   "), "Truck");
+test("defaults an empty transport mode to Trucking", () => {
+  assert.equal(defaultKertasKerjaModaName(undefined), "Trucking");
+  assert.equal(defaultKertasKerjaModaName("   "), "Trucking");
   assert.equal(defaultKertasKerjaModaName("Shipping"), "Shipping");
 });
 
-test("maps controlled transport aliases to canonical master names", () => {
-  assert.equal(normalizeKertasKerjaModa("Trucking"), "truck");
-  assert.equal(normalizeKertasKerjaModa("Truk"), "truck");
-  assert.equal(canonicalKertasKerjaModaName("Trucking"), "Truck");
+test("normalizes transport aliases to upload canonical names", () => {
+  assert.equal(normalizeKertasKerjaModa("Truck"), "trucking");
+  assert.equal(normalizeKertasKerjaModa("Truk"), "trucking");
+  assert.equal(canonicalKertasKerjaModaName("Truck"), "Trucking");
+  assert.equal(canonicalKertasKerjaModaName("Trucking"), "Trucking");
+
   assert.equal(normalizeKertasKerjaModa("Kapal"), "shipping");
+  assert.equal(normalizeKertasKerjaModa("Ship"), "shipping");
+  assert.equal(canonicalKertasKerjaModaName("Kapal"), "Shipping");
+
+  assert.equal(normalizeKertasKerjaModa("Pipeline"), "piping");
+  assert.equal(normalizeKertasKerjaModa("Pipa"), "piping");
+  assert.equal(canonicalKertasKerjaModaName("Pipeline"), "Piping");
 });
 
 test("ignores optional PERTAMINA token in supplier identity", () => {
