@@ -347,14 +347,6 @@ export default function Map() {
 
   // ---- API data -----------------------------------------------------------
   const { data, isLoading: isMapLoading, isError, error } = useMapLocations();
-  const {
-    data: kertasKerjaMapData,
-    isLoading: isKertasKerjaMapLoading,
-    isError: isKertasKerjaMapError,
-    error: kertasKerjaMapError,
-  } = useKertasKerjaMapSites();
-  const mapSites = kertasKerjaMapData?.sites ?? [];
-  const mapRelations = kertasKerjaMapData?.relations ?? [];
 
   // ---- UI state -----------------------------------------------------------
   const [legendExpanded, setLegendExpanded] = useState(false);
@@ -396,6 +388,26 @@ export default function Map() {
 
   const [selectedModes, setSelectedModes] = useState<string[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
+
+  const {
+    data: kertasKerjaMapData,
+    isLoading: isKertasKerjaMapLoading,
+    isError: isKertasKerjaMapError,
+    error: kertasKerjaMapError,
+  } = useKertasKerjaMapSites({
+    moda: selectedModes.length > 0 ? selectedModes.join(",") : undefined,
+    product:
+      selectedProducts.length > 0 ? selectedProducts.join(",") : undefined,
+  });
+  const mapSites = useMemo(
+    () => kertasKerjaMapData?.sites ?? [],
+    [kertasKerjaMapData?.sites],
+  );
+  const mapRelations = useMemo(
+    () => kertasKerjaMapData?.relations ?? [],
+    [kertasKerjaMapData?.relations],
+  );
+
   const [selectedPeriod, setSelectedPeriod] = useState(() => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;

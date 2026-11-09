@@ -61,6 +61,30 @@ test("parses attached column layout and ignores kode_sentral", () => {
   );
 });
 
+test("ignores prefilled site rows whose latitude and longitude are both empty", () => {
+  const rows = parseBbmCoordinateMatrix([
+    ["jenis_site", "nama_sentral", "latitude", "longitude", "status_koordinat"],
+    ["TBBM/Pemasok", "TBBM Tanpa Koordinat", "", "", "Belum terisi"],
+    ["Pembangkit", "PLTD Terisi", -6.2, 106.8, "Sudah terisi"],
+  ]);
+
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].sourceName, "PLTD Terisi");
+  assert.equal(rows[0].latitude, -6.2);
+  assert.equal(rows[0].longitude, 106.8);
+});
+
+test("still rejects a prefilled site row with only one coordinate", () => {
+  assert.throws(
+    () =>
+      parseBbmCoordinateMatrix([
+        ["nama_sentral", "latitude", "longitude"],
+        ["TBBM Tidak Lengkap", -6.2, ""],
+      ]),
+    /longitude wajib diisi/,
+  );
+});
+
 test("accepts aliases and requires valid coordinate ranges", () => {
   assert.equal(
     parseBbmCoordinateMatrix([

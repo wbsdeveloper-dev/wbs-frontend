@@ -190,9 +190,15 @@ export interface RecordKertasKerja {
 // Query Keys
 // ---------------------------------------------------------------------------
 
+export interface KertasKerjaMapFilters {
+  product?: string;
+  moda?: string;
+}
+
 export const kertasKerjaKeys = {
   all: ["kertasKerja"] as const,
-  mapSites: () => [...kertasKerjaKeys.all, "map-sites"] as const,
+  mapSites: (filters?: KertasKerjaMapFilters) =>
+    [...kertasKerjaKeys.all, "map-sites", filters] as const,
   masters: () => [...kertasKerjaKeys.all, "master"] as const,
   masterTable: (table: string) =>
     [...kertasKerjaKeys.masters(), table] as const,
@@ -206,8 +212,15 @@ export const kertasKerjaKeys = {
 // API Functions
 // ---------------------------------------------------------------------------
 
-export function getKertasKerjaMapSites() {
-  return apiFetchData<KertasKerjaMapData>("/kertas-kerja/map-sites");
+export function getKertasKerjaMapSites(filters?: KertasKerjaMapFilters) {
+  const params = new URLSearchParams();
+  if (filters?.product) params.set("product", filters.product);
+  if (filters?.moda) params.set("moda", filters.moda);
+  const query = params.toString();
+
+  return apiFetchData<KertasKerjaMapData>(
+    `/kertas-kerja/map-sites${query ? `?${query}` : ""}`,
+  );
 }
 
 export function getMasterData(table: string, comodityFilter?: string) {
@@ -304,11 +317,12 @@ export function bulkUpsertRecords(
 // ---------------------------------------------------------------------------
 
 export function useKertasKerjaMapSites(
+  filters?: KertasKerjaMapFilters,
   options?: Partial<UseQueryOptions<KertasKerjaMapData>>,
 ) {
   return useQuery({
-    queryKey: kertasKerjaKeys.mapSites(),
-    queryFn: getKertasKerjaMapSites,
+    queryKey: kertasKerjaKeys.mapSites(filters),
+    queryFn: () => getKertasKerjaMapSites(filters),
     ...options,
   });
 }

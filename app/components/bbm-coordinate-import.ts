@@ -161,12 +161,15 @@ export function parseBbmCoordinateMatrix(
     const rawName = source[nameIndex];
     const rawLatitude = source[latitudeIndex];
     const rawLongitude = source[longitudeIndex];
+    const isBlank = (value: unknown) =>
+      value === null || value === undefined || displayText(value) === "";
     if (
-      [rawName, rawLatitude, rawLongitude].every(
-        (value) =>
-          value === null || value === undefined || displayText(value) === "",
-      )
+      [rawName, rawLatitude, rawLongitude].every(isBlank) ||
+      (!isBlank(rawName) && isBlank(rawLatitude) && isBlank(rawLongitude))
     ) {
+      // The downloaded template contains all BBM sites, including sites whose
+      // coordinates are still empty. Leave those untouched until both values
+      // are supplied by the user.
       continue;
     }
 
