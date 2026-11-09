@@ -1,8 +1,14 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useBaFiles } from "@/hooks/service/monitoring-api";
+import {
+  useBaFiles,
+  useDeleteBaFile,
+  type BaFileRow,
+} from "@/hooks/service/monitoring-api";
 import { DASHBOARD_API_HOST } from "@/hooks/service/dashboard-api";
+import { usePrivilege } from "@/hooks/usePrivilege";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 import {
   Download,
   ExternalLink,
@@ -15,10 +21,64 @@ import {
   ChevronRight,
   Menu,
   FileText,
+  Trash2,
 } from "lucide-react";
+
+function FilterTag({
+  label,
+  onRemove,
+}: {
+  label: string;
+  onRemove: () => void;
+}) {
+  return (
+    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-primary/10 text-primary">
+      {label}
+      <button
+        type="button"
+        onClick={onRemove}
+        className="p-0.5 hover:bg-primary/20 rounded-full transition-colors"
+        aria-label={`Hapus filter ${label}`}
+      >
+        <X size={12} />
+      </button>
+    </span>
+  );
+}
 
 export default function BaFilesPage() {
   const { data: files, isLoading, error } = useBaFiles();
+  const { hasPrivilege } = usePrivilege();
+  const canDelete = hasPrivilege("file_berita_acara_gas", "DELETE");
+  const [deleteTarget, setDeleteTarget] = useState<{
+    id: string;
+    filename: string;
+  } | null>(null);
+  const [deleteMessage, setDeleteMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
+  const deleteMutation = useDeleteBaFile({
+    onSuccess: (deleted) => {
+      setDeleteTarget(null);
+      setDeleteMessage({
+        type: "success",
+        text: `File ${deleted.filename} berhasil dihapus.`,
+      });
+    },
+    onError: (deleteError) => {
+      setDeleteMessage({
+        type: "error",
+        text: deleteError.message || "File BA gagal dihapus.",
+      });
+    },
+  });
+
+  const handleConfirmDelete = () => {
+    if (!deleteTarget || deleteMutation.isPending) return;
+    setDeleteMessage(null);
+    deleteMutation.mutate(deleteTarget.id);
+  };
 
   // Pagination state
   const [page, setPage] = useState(1);
@@ -67,24 +127,6 @@ export default function BaFilesPage() {
     setPage(1);
   };
 
-  const FilterTag = ({
-    label,
-    onRemove,
-  }: {
-    label: string;
-    onRemove: () => void;
-  }) => (
-    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-primary/10 text-primary">
-      {label}
-      <button
-        onClick={onRemove}
-        className="p-0.5 hover:bg-primary/20 rounded-full transition-colors"
-      >
-        <X size={12} />
-      </button>
-    </span>
-  );
-
   // Client-side filtering
   const filteredFiles = useMemo(() => {
     if (!files) return [];
@@ -132,7 +174,9 @@ export default function BaFilesPage() {
               <span className="text-gray-400">/</span>
               <span>Manajemen Data</span>
               <span className="text-gray-400">/</span>
-              <span className="text-primary font-medium">File Berita Acara</span>
+              <span className="text-primary font-medium">
+                File Berita Acara
+              </span>
             </div>
             <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
               File Berita Acara
@@ -142,6 +186,27 @@ export default function BaFilesPage() {
               sistem.
             </p>
           </div>
+
+          {deleteMessage && (
+            <div
+              role="alert"
+              className={`mb-4 flex items-center justify-between gap-3 rounded-lg border px-4 py-3 text-sm ${
+                deleteMessage.type === "success"
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                  : "border-red-200 bg-red-50 text-red-700"
+              }`}
+            >
+              <span>{deleteMessage.text}</span>
+              <button
+                type="button"
+                onClick={() => setDeleteMessage(null)}
+                className="rounded p-0.5 hover:bg-black/5"
+                aria-label="Tutup pesan"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          )}
 
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
             {/* Table Header & Toggle Filter */}
@@ -154,10 +219,11 @@ export default function BaFilesPage() {
               </div>
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-all duration-200 ${showFilters || activeFilterCount > 0
+                className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-all duration-200 ${
+                  showFilters || activeFilterCount > 0
                     ? "bg-primary text-white border-primary"
                     : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                  }`}
+                }`}
               >
                 <Filter size={16} />
                 Filter
@@ -328,7 +394,12 @@ export default function BaFilesPage() {
                     paginatedFiles.map((file, index) => {
                       return (
                         <tr
-                          key={file.supplier_id + file.site_id + file.report_month + index}
+                          key={
+                            file.supplier_id +
+                            file.site_id +
+                            file.report_month +
+                            index
+                          }
                           className="hover:bg-gray-50 transition-colors"
                         >
                           <td className="px-6 py-4 text-gray-700">
@@ -346,39 +417,76 @@ export default function BaFilesPage() {
                           <td className="px-6 py-4">
                             <div className="flex flex-col gap-3">
                               {file.files && file.files.length > 0 ? (
-                                file.files.map((f: any) => {
-                                  const rootUrl = DASHBOARD_API_HOST.replace(/\/api$/, "");
-                                  const cleanFilePath = f.file_path.replace(/^\//, "");
-                                  const fileUrl = `${rootUrl}/${cleanFilePath}`;
+                                file.files.map(
+                                  (f: BaFileRow["files"][number]) => {
+                                    const rootUrl = DASHBOARD_API_HOST.replace(
+                                      /\/api$/,
+                                      "",
+                                    );
+                                    const cleanFilePath = f.file_path.replace(
+                                      /^\//,
+                                      "",
+                                    );
+                                    const fileUrl = `${rootUrl}/${cleanFilePath}`;
 
-                                  return (
-                                    <div key={f.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-white border border-gray-200 rounded-lg shadow-sm">
-                                      <div className="flex items-center gap-2 overflow-hidden">
-                                        <FileText size={16} className="text-gray-400 shrink-0" />
-                                        <span className="text-gray-600 font-mono text-xs truncate" title={f.filename}>{f.filename}</span>
+                                    return (
+                                      <div
+                                        key={f.id}
+                                        className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-white border border-gray-200 rounded-lg shadow-sm"
+                                      >
+                                        <div className="flex items-center gap-2 overflow-hidden">
+                                          <FileText
+                                            size={16}
+                                            className="text-gray-400 shrink-0"
+                                          />
+                                          <span
+                                            className="text-gray-600 font-mono text-xs truncate"
+                                            title={f.filename}
+                                          >
+                                            {f.filename}
+                                          </span>
+                                        </div>
+                                        <div className="flex items-center gap-2 shrink-0">
+                                          <a
+                                            href={fileUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary bg-blue-50 border border-blue-100 rounded-md hover:bg-blue-100 transition-colors"
+                                          >
+                                            <ExternalLink size={14} /> Preview
+                                          </a>
+                                          <a
+                                            href={fileUrl}
+                                            download={f.filename}
+                                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-primary rounded-md hover:bg-[#0d4a5c] shadow-sm transition-colors"
+                                          >
+                                            <Download size={14} /> Unduh
+                                          </a>
+                                          {canDelete && (
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                setDeleteMessage(null);
+                                                setDeleteTarget({
+                                                  id: f.id,
+                                                  filename: f.filename,
+                                                });
+                                              }}
+                                              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 border border-red-200 rounded-md hover:bg-red-100 transition-colors"
+                                              aria-label={`Hapus file ${f.filename}`}
+                                            >
+                                              <Trash2 size={14} /> Hapus
+                                            </button>
+                                          )}
+                                        </div>
                                       </div>
-                                      <div className="flex items-center gap-2 shrink-0">
-                                        <a
-                                          href={fileUrl}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary bg-blue-50 border border-blue-100 rounded-md hover:bg-blue-100 transition-colors"
-                                        >
-                                          <ExternalLink size={14} /> Preview
-                                        </a>
-                                        <a
-                                          href={fileUrl}
-                                          download={f.filename}
-                                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-primary rounded-md hover:bg-[#0d4a5c] shadow-sm transition-colors"
-                                        >
-                                          <Download size={14} /> Unduh
-                                        </a>
-                                      </div>
-                                    </div>
-                                  );
-                                })
+                                    );
+                                  },
+                                )
                               ) : (
-                                <div className="text-sm text-gray-500 italic">Tidak ada file</div>
+                                <div className="text-sm text-gray-500 italic">
+                                  Tidak ada file
+                                </div>
                               )}
                             </div>
                           </td>
@@ -425,7 +533,10 @@ export default function BaFilesPage() {
                     data
                   </span>
                   <div className="flex items-center gap-1.5">
-                    <label htmlFor="page-size-ba" className="text-sm text-gray-500">
+                    <label
+                      htmlFor="page-size-ba"
+                      className="text-sm text-gray-500"
+                    >
                       Baris:
                     </label>
                     <select
@@ -495,7 +606,9 @@ export default function BaFilesPage() {
                     })()}
 
                     <button
-                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                      onClick={() =>
+                        setPage((p) => Math.min(totalPages, p + 1))
+                      }
                       disabled={page >= totalPages}
                       className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                     >
@@ -508,6 +621,20 @@ export default function BaFilesPage() {
           </div>
         </div>
       </main>
+
+      <ConfirmModal
+        open={deleteTarget !== null}
+        title="Hapus File Berita Acara?"
+        description={`File “${deleteTarget?.filename || ""}” akan dihapus permanen dari sistem dan tidak dapat dipulihkan.`}
+        confirmLabel="Hapus File"
+        cancelLabel="Batal"
+        variant="danger"
+        loading={deleteMutation.isPending}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => {
+          if (!deleteMutation.isPending) setDeleteTarget(null);
+        }}
+      />
     </div>
   );
 }

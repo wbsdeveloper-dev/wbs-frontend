@@ -221,16 +221,6 @@ export default function Sidebar() {
           resource: "users_bbm",
         },
         {
-          title: "Template Data",
-          path: "/konfigurasi-bbm/template-grup",
-          resource: "template_group_bbm",
-        },
-        {
-          title: "Spreadsheet",
-          path: "/konfigurasi-bbm/spreadsheet-source",
-          resource: "spreadsheet_source_bbm",
-        },
-        {
           title: "Data Master",
           path: "/konfigurasi-bbm/data-master",
           resource: "system_config",

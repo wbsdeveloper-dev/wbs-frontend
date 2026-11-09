@@ -16,6 +16,7 @@ import {
 import * as XLSX from "xlsx";
 import {
   type BbmCoordinateCommitResult,
+  type Site,
   useCommitBbmCoordinates,
   useSites,
 } from "../../hooks/service/site-api";
@@ -51,6 +52,102 @@ const STATUS_LABEL: Record<ClassifiedBbmCoordinateRow["status"], string> = {
   CREATE: "Akan dibuat · Pembangkit BBM",
   AMBIGUOUS: "Ambigu · dilewati",
 };
+
+function downloadBbmCoordinateTemplate(sites: Site[]): void {
+  const bbmSites = sites
+    .filter(
+      (site) =>
+        ["PEMBANGKIT", "PEMASOK"].includes(site.site_type) &&
+        site.commodity?.trim().toLocaleUpperCase("en-US") === "BBM",
+    )
+    .sort((left, right) => {
+      const typeComparison = left.site_type.localeCompare(right.site_type);
+      return typeComparison || left.name.localeCompare(right.name, "id-ID");
+    });
+  const templateRows = bbmSites.map((site) => {
+    const latitude = site.lat?.trim() ?? "";
+    const longitude = site.long?.trim() ?? "";
+    const coordinateStatus =
+      latitude && longitude
+        ? "Sudah terisi"
+        : latitude || longitude
+          ? "Belum lengkap"
+          : "Belum terisi";
+
+    return [
+      site.site_type === "PEMASOK" ? "TBBM/Pemasok" : "Pembangkit",
+      site.name,
+      latitude,
+      longitude,
+      coordinateStatus,
+    ];
+  });
+
+  const workbook = XLSX.utils.book_new();
+  const templateSheet = XLSX.utils.aoa_to_sheet([
+    ["jenis_site", "nama_sentral", "latitude", "longitude", "status_koordinat"],
+    ...templateRows,
+  ]);
+  templateSheet["!cols"] = [
+    { wch: 18 },
+    { wch: 45 },
+    { wch: 18 },
+    { wch: 18 },
+    { wch: 20 },
+  ];
+  templateSheet["!autofilter"] = {
+    ref: `A1:E${Math.max(templateRows.length + 1, 1)}`,
+  };
+
+  const instructionSheet = XLSX.utils.aoa_to_sheet([
+    ["PETUNJUK TEMPLATE UPDATE KOORDINAT BBM"],
+    [],
+    ["Kolom", "Keterangan"],
+    [
+      "jenis_site",
+      "Informasi jenis site. Kolom ini tidak diproses saat upload.",
+    ],
+    [
+      "nama_sentral",
+      "Wajib. Daftar TBBM/Pemasok dan Pembangkit diambil dari data sistem saat template di-download.",
+    ],
+    [
+      "latitude",
+      "Isi atau ubah dengan angka desimal pada rentang -90 sampai 90.",
+    ],
+    [
+      "longitude",
+      "Isi atau ubah dengan angka desimal pada rentang -180 sampai 180.",
+    ],
+    [
+      "status_koordinat",
+      "Informasi kelengkapan koordinat saat template di-download. Kolom ini tidak diproses saat upload.",
+    ],
+    [],
+    ["Catatan"],
+    [
+      "1.",
+      "Template sudah berisi seluruh TBBM/Pemasok dan Pembangkit BBM beserta koordinat saat ini.",
+    ],
+    [
+      "2.",
+      "Isi koordinat yang masih kosong atau ubah koordinat yang perlu diperbarui. Baris dengan latitude dan longitude kosong akan dilewati.",
+    ],
+    [
+      "3.",
+      "Koordinat yang nilainya tidak berubah akan dikenali sebagai Sudah Sama dan tidak di-update ke database.",
+    ],
+    [
+      "4.",
+      "Jangan mengubah nama_sentral. Nama baru yang ditambahkan akan dibuat sebagai Pembangkit BBM.",
+    ],
+  ]);
+  instructionSheet["!cols"] = [{ wch: 22 }, { wch: 95 }];
+
+  XLSX.utils.book_append_sheet(workbook, templateSheet, "Template Koordinat");
+  XLSX.utils.book_append_sheet(workbook, instructionSheet, "Petunjuk");
+  XLSX.writeFile(workbook, "template-update-koordinat-bbm.xlsx");
+}
 
 export default function BulkUpdateBbmCoordinateModal({
   setOpenModal,
@@ -231,13 +328,35 @@ export default function BulkUpdateBbmCoordinateModal({
             />
           ) : step === "upload" ? (
             <div className="mx-auto max-w-3xl space-y-5">
-              <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
-                <strong>Format Excel</strong>
-                <p className="mt-1 text-xs">
-                  Kolom wajib: <code>nama_sentral</code>, <code>latitude</code>,
-                  dan <code>longitude</code>. Kolom <code>kode_sentral</code>{" "}
-                  diabaikan. Nama dicocokkan ke <code>site_dim.name</code>.
-                </p>
+              <div className="flex flex-col gap-4 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <strong>Format Excel</strong>
+                  <p className="mt-1 text-xs">
+                    Download berisi seluruh TBBM/Pemasok dan Pembangkit BBM
+                    beserta koordinat saat ini. Saat di-upload, hanya koordinat
+                    yang berubah yang akan diperbarui.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  disabled={sitesLoading || sitesLoadFailed}
+                  onClick={() => downloadBbmCoordinateTemplate(sites)}
+                  className="flex shrink-0 items-center justify-center gap-2 rounded-lg border border-blue-300 bg-white px-4 py-2 font-semibold text-blue-800 shadow-sm transition-colors hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  title={
+                    sitesLoadFailed
+                      ? "Data site gagal dimuat"
+                      : sitesLoading
+                        ? "Data site sedang dimuat"
+                        : undefined
+                  }
+                >
+                  {sitesLoading ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <Download size={16} />
+                  )}{" "}
+                  Download Template
+                </button>
               </div>
               <div
                 onDragOver={(event) => event.preventDefault()}

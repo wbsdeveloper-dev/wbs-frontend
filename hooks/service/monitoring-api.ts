@@ -683,3 +683,48 @@ export function useBaFiles(params?: {
     queryFn: () => fetchBaFiles(params),
   });
 }
+
+export async function deleteBaFile(
+  id: string,
+): Promise<{ id: string; filename: string; deleted: boolean }> {
+  const url = `${DASHBOARD_API_HOST}/reconciliation-input/ba-files/${encodeURIComponent(id)}`;
+  const accessToken = getAccessToken();
+  const res = await fetch(url, {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
+  });
+
+  const body = await res.json().catch(() => null);
+  if (!res.ok || !body?.success) {
+    throw new Error(
+      body?.message || `Gagal menghapus file BA: ${res.statusText}`,
+    );
+  }
+
+  return body.data;
+}
+
+export function useDeleteBaFile(
+  options?: Partial<
+    UseMutationOptions<
+      { id: string; filename: string; deleted: boolean },
+      Error,
+      string
+    >
+  >,
+) {
+  const queryClient = useQueryClient();
+  const externalOnSuccess = options?.onSuccess;
+
+  return useMutation({
+    ...options,
+    mutationFn: (id: string) => deleteBaFile(id),
+    onSuccess: (data, variables, onMutateResult, context) => {
+      queryClient.invalidateQueries({ queryKey: ["ba-files"] });
+      externalOnSuccess?.(data, variables, onMutateResult, context);
+    },
+  });
+}

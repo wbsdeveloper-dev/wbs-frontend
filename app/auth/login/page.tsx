@@ -89,14 +89,20 @@ export default function LoginPage() {
         <div className="p-6 pr-20 md:p-8 md:pr-24 lg:p-10 lg:pr-24 flex justify-center">
           <div className="flex items-center justify-center lg:justify-start gap-6 md:gap-8 lg:gap-12 flex-nowrap">
             <Image
-              src={isDark ? "/logos/danantara-putih.png" : "/logos/danantara.png"}
+              src={
+                isDark ? "/logos/danantara-putih.png" : "/logos/danantara.png"
+              }
               alt="Danantara logo"
               width={120}
               height={36}
               className="theme-logo-surface object-contain h-[20px] md:h-[26px] lg:h-[34px] w-auto"
             />
             <Image
-              src={isDark ? "/logos/sucofindo-putih.png" : "/logos/SucofindoIdSurvey.png"}
+              src={
+                isDark
+                  ? "/logos/sucofindo-putih.png"
+                  : "/logos/SucofindoIdSurvey.png"
+              }
               alt="Sucofindo logo"
               width={100}
               height={45}
@@ -249,11 +255,11 @@ export default function LoginPage() {
           backgroundPosition: "center",
         }}
       >
-        {/* Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/90 via-primary/70 to-slate-900/50" />
+        {/* Use a flat dark overlay in dark mode so the image has no bright gradient. */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/90 via-primary/70 to-slate-900/50 dark:bg-none dark:bg-slate-950/80" />
 
         {/* Animated Pattern Overlay */}
-        <div className="absolute inset-0 opacity-10">
+        <div className="absolute inset-0 opacity-10 dark:hidden">
           <div className="absolute top-20 left-20 w-72 h-72 bg-white/20 rounded-full blur-3xl animate-pulse" />
           <div
             className="absolute bottom-20 right-20 w-96 h-96 bg-secondary/20 rounded-full blur-3xl animate-pulse"
@@ -280,7 +286,7 @@ export default function LoginPage() {
         </div>
 
         {/* Bottom Gradient */}
-        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-slate-900/50 to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-slate-900/50 to-transparent dark:hidden" />
       </div>
     </div>
   );

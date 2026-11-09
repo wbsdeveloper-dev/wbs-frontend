@@ -51,11 +51,9 @@ export function AddSiteModal({
     undefined,
     { enabled: open },
   );
-  const { data: regions = [] } = useKertasKerjaMaster(
-    "master_region",
-    undefined,
-    { enabled: open },
-  );
+  const { data: regions = [] } = useKertasKerjaMaster("master_region", "BBM", {
+    enabled: open,
+  });
   const { data: units = [] } = useKertasKerjaMaster("master_unit", undefined, {
     enabled: open,
   });
