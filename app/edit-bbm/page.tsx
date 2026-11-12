@@ -1,10 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Upload } from "lucide-react";
+import { Plus } from "lucide-react";
 import EditBbmDataTable from "../components/EditBbmDataTable";
 import AddBbmModal from "../components/AddBbmModal";
-import BulkUploadBbmModal from "../components/BulkUploadBbmModal";
 import { useBbmMonthly } from "@/hooks/service/bbm-api";
 import { usePrivilege } from "@/hooks/usePrivilege";
 import { useAuth } from "@/components/providers/auth-provider";
@@ -20,7 +19,6 @@ export default function Home() {
   const canCreate = hasPrivilege("data_management", "CREATE");
 
   const [openAddModal, setOpenAddModal] = useState(false);
-  const [openBulkModal, setOpenBulkModal] = useState(false);
 
   const { data, isLoading } = useBbmMonthly();
 
@@ -61,20 +59,12 @@ export default function Home() {
             </div>
             <div className="flex gap-3">
               {canCreate && (
-                <>
-                  <button
-                    onClick={() => setOpenAddModal(true)}
-                    className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg flex items-center gap-2 hover:bg-gray-50 text-sm font-medium transition-colors cursor-pointer shadow-sm"
-                  >
-                    <Plus size={16} /> Input Data
-                  </button>
-                  <button
-                    onClick={() => setOpenBulkModal(true)}
-                    className="px-4 py-2 bg-primary text-white rounded-lg flex items-center gap-2 text-sm font-medium hover:brightness-90 transition-colors cursor-pointer shadow-sm"
-                  >
-                    <Upload size={16} /> Upload Kertas Kerja Rakor BBM
-                  </button>
-                </>
+                <button
+                  onClick={() => setOpenAddModal(true)}
+                  className="px-4 py-2 bg-primary text-white rounded-lg flex items-center gap-2 text-sm font-medium hover:brightness-90 transition-colors cursor-pointer shadow-sm"
+                >
+                  <Plus size={16} /> Input Data Tunggal
+                </button>
               )}
             </div>
           </div>
@@ -88,7 +78,6 @@ export default function Home() {
       </main>
 
       {openAddModal && <AddBbmModal setOpenModal={setOpenAddModal} />}
-      {openBulkModal && <BulkUploadBbmModal setOpenModal={setOpenBulkModal} />}
     </div>
   );
 }
