@@ -2,7 +2,12 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 // Define public and protected routes
-const publicRoutes = ["/auth/login", "/landingpage"];
+const publicRoutes = [
+  "/auth/login",
+  "/landingpage",
+  "/privacy-policy",
+  "/terms-of-service",
+];
 const protectedRoutes = ["/dashboard", "/konfigurasi", "/edit", "/whatsappbot"];
 
 export function middleware(request: NextRequest) {
@@ -10,8 +15,12 @@ export function middleware(request: NextRequest) {
   const accessToken = request.cookies.get("wbs_access_token")?.value;
 
   // Check if the current path is a protected route
-  const isProtectedRoute = protectedRoutes.some((route) => pathname.startsWith(route));
-  const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route));
+  const isProtectedRoute = protectedRoutes.some((route) =>
+    pathname.startsWith(route),
+  );
+  const isPublicRoute = publicRoutes.some((route) =>
+    pathname.startsWith(route),
+  );
 
   // Redirect to login if trying to access protected route without token
   if (isProtectedRoute && !accessToken) {
