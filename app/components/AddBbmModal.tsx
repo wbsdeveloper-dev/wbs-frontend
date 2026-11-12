@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { X, CheckCircle2, AlertCircle } from "lucide-react";
 import { Autocomplete, TextField } from "@mui/material";
 import { useCreateBbmMonthly } from "@/hooks/service/bbm-api";
+import { useKertasKerjaMaster } from "@/hooks/service/kertas-kerja-api";
 import { useSites } from "@/hooks/service/site-api";
 
 type Props = {
@@ -9,12 +10,15 @@ type Props = {
   onSuccess?: () => void;
 };
 
+const UNIT_OPTIONS = ["KILOLITER", "LITER"];
+const MODA_OPTIONS = ["Truck", "Pipa", "Kapal"];
+
 export default function AddBbmModal({ setOpenModal, onSuccess }: Props) {
   const [formData, setFormData] = useState({
     monthDate: "",
     siteId: "",
     supplierId: "",
-    product: "B40",
+    product: "",
     moda: "Truck",
     unit: "KILOLITER",
     nomination: "",
@@ -34,6 +38,8 @@ export default function AddBbmModal({ setOpenModal, onSuccess }: Props) {
     type: "PEMBANGKIT",
     commodity: "BBM",
   });
+  const { data: productData = [], isLoading: isProductLoading } =
+    useKertasKerjaMaster("master_product", "BBM");
 
   const tbbmData = rawTbbmData?.filter((p) => p.commodity === "BBM") || [];
   const pembangkitData =
@@ -56,12 +62,10 @@ export default function AddBbmModal({ setOpenModal, onSuccess }: Props) {
         payload.nomination = Number(formData.nomination);
       if (formData.realization !== "")
         payload.realization = Number(formData.realization);
-      if (formData.receipt !== "")
-        payload.receipt = Number(formData.receipt);
+      if (formData.receipt !== "") payload.receipt = Number(formData.receipt);
       if (formData.renomination !== "")
         payload.renomination = Number(formData.renomination);
-      if (formData.usage !== "") 
-        payload.usage = Number(formData.usage);
+      if (formData.usage !== "") payload.usage = Number(formData.usage);
 
       await createRecord.mutateAsync(payload);
 
@@ -215,34 +219,80 @@ export default function AddBbmModal({ setOpenModal, onSuccess }: Props) {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Produk <span className="text-red-500">*</span>
             </label>
-            <select
-              value={formData.product}
-              onChange={(e) =>
-                setFormData({ ...formData, product: e.target.value })
+            <Autocomplete
+              options={productData}
+              loading={isProductLoading}
+              disabled={isProductLoading || productData.length === 0}
+              getOptionLabel={(option) => option.name}
+              value={
+                productData.find(
+                  (product) => product.name === formData.product,
+                ) || null
               }
-              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all"
-            >
-              <option value="B40">B40</option>
-              <option value="B35">B35</option>
-              <option value="HSD">HSD</option>
-              <option value="MFO">MFO</option>
-            </select>
+              onChange={(_, newValue) =>
+                setFormData({
+                  ...formData,
+                  product: newValue?.name || "",
+                })
+              }
+              isOptionEqualToValue={(option, value) => option.id === value.id}
+              noOptionsText="Data Master Product BBM kosong"
+              loadingText="Memuat produk..."
+              renderOption={(props, option) => {
+                const { key, ...otherProps } = props as any;
+                return (
+                  <li key={option.id} {...otherProps}>
+                    {option.name}
+                  </li>
+                );
+              }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  placeholder="Pilih atau cari Produk"
+                  variant="outlined"
+                  size="small"
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: "0.75rem",
+                      backgroundColor: "var(--surface)",
+                    },
+                  }}
+                />
+              )}
+              className="w-full"
+            />
           </div>
 
           <div className="col-span-2 sm:col-span-1">
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Unit <span className="text-red-500">*</span>
             </label>
-            <select
-              value={formData.unit}
-              onChange={(e) =>
-                setFormData({ ...formData, unit: e.target.value })
+            <Autocomplete
+              options={UNIT_OPTIONS}
+              value={formData.unit || null}
+              onChange={(_, newValue) =>
+                setFormData({ ...formData, unit: newValue || "" })
               }
-              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all"
-            >
-              <option value="KILOLITER">KILO LITER</option>
-              <option value="LITER">LITER</option>
-            </select>
+              getOptionLabel={(option) =>
+                option === "KILOLITER" ? "KILO LITER" : option
+              }
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  placeholder="Pilih atau cari Unit"
+                  variant="outlined"
+                  size="small"
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: "0.75rem",
+                      backgroundColor: "var(--surface)",
+                    },
+                  }}
+                />
+              )}
+              className="w-full"
+            />
           </div>
         </div>
 
@@ -258,17 +308,28 @@ export default function AddBbmModal({ setOpenModal, onSuccess }: Props) {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Moda <span className="text-red-500">*</span>
               </label>
-              <select
-                value={formData.moda}
-                onChange={(e) =>
-                  setFormData({ ...formData, moda: e.target.value })
+              <Autocomplete
+                options={MODA_OPTIONS}
+                value={formData.moda || null}
+                onChange={(_, newValue) =>
+                  setFormData({ ...formData, moda: newValue || "" })
                 }
-                className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all"
-              >
-                <option value="Truck">Truck</option>
-                <option value="Pipa">Pipa</option>
-                <option value="Kapal">Kapal</option>
-              </select>
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    placeholder="Pilih atau cari Moda"
+                    variant="outlined"
+                    size="small"
+                    sx={{
+                      "& .MuiOutlinedInput-root": {
+                        borderRadius: "0.75rem",
+                        backgroundColor: "var(--surface)",
+                      },
+                    }}
+                  />
+                )}
+                className="w-full"
+              />
             </div>
 
             <div>
@@ -284,7 +345,7 @@ export default function AddBbmModal({ setOpenModal, onSuccess }: Props) {
                 className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all"
               />
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Penerimaan
@@ -319,7 +380,7 @@ export default function AddBbmModal({ setOpenModal, onSuccess }: Props) {
                 className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all"
               />
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Renominasi
