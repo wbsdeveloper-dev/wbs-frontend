@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Eye, EyeOff, LogIn, Loader2, AlertCircle } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { useAuth } from "@/components/providers/auth-provider";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import { useAppTheme } from "@/components/providers/ThemeProvider";
@@ -239,9 +240,23 @@ export default function LoginPage() {
             </form>
 
             {/* Footer Text */}
-            <p className="text-center text-gray-500 dark:text-slate-400 text-xs mt-8">
-              © 2026 Sucofindo. All rights reserved.
-            </p>
+            <div className="mt-8 text-center text-xs text-gray-500 dark:text-slate-400">
+              <div className="mb-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
+                <Link
+                  href="/privacy-policy"
+                  className="font-medium transition-colors hover:text-primary dark:hover:text-cyan-300"
+                >
+                  Kebijakan Privasi
+                </Link>
+                <Link
+                  href="/terms-of-service"
+                  className="font-medium transition-colors hover:text-primary dark:hover:text-cyan-300"
+                >
+                  Ketentuan Layanan
+                </Link>
+              </div>
+              <p>© 2026 Sucofindo. All rights reserved.</p>
+            </div>
           </div>
         </div>
       </div>
