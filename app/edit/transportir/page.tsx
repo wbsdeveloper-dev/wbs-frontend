@@ -34,7 +34,11 @@ export default function DataTransportirPage() {
 
   const handleFilterChange = useCallback(
     (newFilters: Omit<TransportirResumeParams, "page" | "limit">) => {
-      setParams((prev) => ({ ...prev, ...newFilters, page: 1 }));
+      setParams((prev) => ({
+        page: 1,
+        limit: prev.limit,
+        ...newFilters,
+      }));
     },
     [],
   );

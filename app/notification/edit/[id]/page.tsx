@@ -113,16 +113,34 @@ export default function EditNotificationPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      await updateMutation.mutateAsync({ id: recordId, payload: form });
+    if (!record) return;
 
-      const currentStatus = form.status || record?.status;
-      if (currentStatus === "DI_BAWAH_TOP" && form.notes?.trim()) {
+    // PATCH hanya field yang berubah. Mengirim kembali seluruh record dapat
+    // memicu validasi backend pada field generated (misalnya finalValue = 0)
+    // dan menyebabkan perubahan isRead ikut gagal disimpan.
+    const payload: UpdateNotificationPayload = {};
+    if (form.finalValue !== record.finalValue) payload.finalValue = form.finalValue;
+    if (form.status !== record.status) payload.status = form.status;
+    if (form.notes !== record.notes) payload.notes = form.notes;
+    if (form.isRead !== record.isRead) payload.isRead = form.isRead;
+
+    if (Object.keys(payload).length === 0) {
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 3000);
+      return;
+    }
+
+    try {
+      await updateMutation.mutateAsync({ id: recordId, payload });
+
+      const currentStatus = form.status || record.status;
+      const notesChanged = payload.notes !== undefined;
+      if (currentStatus === "DI_BAWAH_TOP" && notesChanged && form.notes?.trim()) {
         try {
           await createEventMutation.mutateAsync({
-            siteId: record?.siteId || undefined,
-            siteName: record?.siteName || record?.supplierName || "Unknown",
-            occurredAt: record?.reportDate ? new Date(record.reportDate).toISOString() : new Date().toISOString(),
+            siteId: record.siteId || undefined,
+            siteName: record.siteName || record.supplierName || "Unknown",
+            occurredAt: record.reportDate ? new Date(record.reportDate).toISOString() : new Date().toISOString(),
             title: `Catatan Notifikasi - Di Bawah TOP`,
             description: form.notes.trim(),
             severity: "INFO",
