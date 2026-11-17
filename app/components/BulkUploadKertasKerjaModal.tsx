@@ -262,11 +262,11 @@ function buildInitialResolution(
     siteId: siteMatched ? site.reference.id : "",
     siteMatch: siteMatched
       ? formatAutoMatch(
-          issue.siteName,
-          site.reference.name,
-          site.strategy,
-          site.score,
-        )
+        issue.siteName,
+        site.reference.name,
+        site.strategy,
+        site.score,
+      )
       : site.status === "missing" && siteNameToCreate
         ? `${issue.siteName} → akan dibuat sebagai ${siteNameToCreate}`
         : issue.siteName || "-",
@@ -274,11 +274,11 @@ function buildInitialResolution(
     supplierId: supplierMatched ? supplier.reference.id : "",
     supplierMatch: supplierMatched
       ? formatAutoMatch(
-          issue.supplierName,
-          supplier.reference.name,
-          supplier.strategy,
-          supplier.score,
-        )
+        issue.supplierName,
+        supplier.reference.name,
+        supplier.strategy,
+        supplier.score,
+      )
       : supplier.status === "missing" && supplierNameToCreate
         ? `${issue.supplierName} → akan dibuat sebagai ${supplierNameToCreate}`
         : issue.supplierName || "-",
@@ -286,11 +286,11 @@ function buildInitialResolution(
     productId: productMatched ? product.reference.id : "",
     productMatch: productMatched
       ? formatAutoMatch(
-          issue.productName,
-          product.reference.name,
-          product.strategy,
-          product.score,
-        )
+        issue.productName,
+        product.reference.name,
+        product.strategy,
+        product.score,
+      )
       : product.status === "missing" && productNameToCreate
         ? `${issue.productName || "-"} → akan dibuat sebagai ${productNameToCreate}`
         : issue.productName || "-",
@@ -300,11 +300,11 @@ function buildInitialResolution(
     modaId: modaMatched ? moda.reference.id : "",
     modaMatch: modaMatched
       ? formatAutoMatch(
-          issue.modaName,
-          moda.reference.name,
-          moda.strategy,
-          moda.score,
-        )
+        issue.modaName,
+        moda.reference.name,
+        moda.strategy,
+        moda.score,
+      )
       : moda.status === "missing" && modaNameToCreate
         ? `${issue.modaName || "-"} → akan dibuat sebagai ${modaNameToCreate}`
         : issue.modaName || "-",
@@ -398,8 +398,8 @@ export default function BulkUploadKertasKerjaModal({
   }
   const visibleUnmatchedCombinations = resolutionFilter
     ? unmatchedCombinations.filter(
-        (issue) => resolutions[issue.key]?.action === resolutionFilter,
-      )
+      (issue) => resolutions[issue.key]?.action === resolutionFilter,
+    )
     : unmatchedCombinations;
   const hasPendingResolutions = resolutionCounts.pending > 0;
 
@@ -834,7 +834,7 @@ export default function BulkUploadKertasKerjaModal({
                       if (
                         row4[k] &&
                         String(row4[k]).toUpperCase().includes(row4Match) ===
-                          false
+                        false
                       )
                         break;
                       cols.push(k);
@@ -985,17 +985,17 @@ export default function BulkUploadKertasKerjaModal({
               const mappedTemplateId = options.templateMappings?.[identityKey];
               const mappedTemplate = mappedTemplateId
                 ? candidateTemplates.find(
-                    (candidate) => candidate.id === mappedTemplateId,
-                  )
+                  (candidate) => candidate.id === mappedTemplateId,
+                )
                 : undefined;
               const templateMatch = mappedTemplate
                 ? ({ status: "matched", template: mappedTemplate } as const)
                 : matchKertasKerjaTemplate(candidateTemplates, {
-                    siteName,
-                    productName,
-                    supplierName,
-                    modaName,
-                  });
+                  siteName,
+                  productName,
+                  supplierName,
+                  modaName,
+                });
 
               if (
                 templateMatch.status === "unmatched" ||
@@ -1434,19 +1434,19 @@ export default function BulkUploadKertasKerjaModal({
       const savedTemplates =
         templatePayloads.length > 0
           ? await bulkTemplateSave.mutateAsync({
-              templates: templatePayloads.map((payload) => ({
-                site_id: payload.site_id,
-                supplier_id: payload.supplier_id,
-                product_id: payload.product_id,
-                moda_id: payload.moda_id,
-                hop_minimum: payload.hop_minimum,
-                distance: payload.distance,
-                estimated_delivery_time: payload.estimated_delivery_time,
-                average_usage: payload.average_usage,
-                freight_costs: payload.freight_costs,
-                is_active: payload.is_active,
-              })),
-            })
+            templates: templatePayloads.map((payload) => ({
+              site_id: payload.site_id,
+              supplier_id: payload.supplier_id,
+              product_id: payload.product_id,
+              moda_id: payload.moda_id,
+              hop_minimum: payload.hop_minimum,
+              distance: payload.distance,
+              estimated_delivery_time: payload.estimated_delivery_time,
+              average_usage: payload.average_usage,
+              freight_costs: payload.freight_costs,
+              is_active: payload.is_active,
+            })),
+          })
           : [];
 
       const loadedTemplates = await getTemplates();
@@ -1459,17 +1459,17 @@ export default function BulkUploadKertasKerjaModal({
         const savedTemplate = savedTemplates[index];
         const createdTemplate =
           savedTemplate &&
-          savedTemplate.site_id === payload.site_id &&
-          savedTemplate.supplier_id === payload.supplier_id &&
-          savedTemplate.product_id === payload.product_id &&
-          savedTemplate.moda_id === payload.moda_id
+            savedTemplate.site_id === payload.site_id &&
+            savedTemplate.supplier_id === payload.supplier_id &&
+            savedTemplate.product_id === payload.product_id &&
+            savedTemplate.moda_id === payload.moda_id
             ? savedTemplate
             : findKertasKerjaTemplateByReferences(refreshedTemplates, {
-                site_id: payload.site_id,
-                supplier_id: payload.supplier_id,
-                product_id: payload.product_id,
-                moda_id: payload.moda_id,
-              });
+              site_id: payload.site_id,
+              supplier_id: payload.supplier_id,
+              product_id: payload.product_id,
+              moda_id: payload.moda_id,
+            });
         if (!createdTemplate?.id) {
           throw new Error(
             "Template tidak mengembalikan ID setelah proses penyimpanan.",
@@ -1812,11 +1812,10 @@ export default function BulkUploadKertasKerjaModal({
                     type="button"
                     aria-pressed={resolutionFilter === null}
                     onClick={() => setResolutionFilter(null)}
-                    className={`rounded-full border px-3 py-1 transition-all ${
-                      resolutionFilter === null
+                    className={`rounded-full border px-3 py-1 transition-all ${resolutionFilter === null
                         ? "border-blue-500 bg-blue-600 text-white shadow-sm ring-2 ring-blue-200"
                         : "border-blue-200 bg-white text-blue-800 hover:bg-blue-100"
-                    }`}
+                      }`}
                   >
                     {unmatchedCombinations.length} semua
                   </button>
@@ -1824,11 +1823,10 @@ export default function BulkUploadKertasKerjaModal({
                     type="button"
                     aria-pressed={resolutionFilter === "create"}
                     onClick={() => toggleResolutionFilter("create")}
-                    className={`rounded-full border px-3 py-1 transition-all ${
-                      resolutionFilter === "create"
+                    className={`rounded-full border px-3 py-1 transition-all ${resolutionFilter === "create"
                         ? "border-green-600 bg-green-600 text-white shadow-sm ring-2 ring-green-200"
                         : "border-green-200 bg-green-100 text-green-800 hover:bg-green-200"
-                    }`}
+                      }`}
                   >
                     {resolutionCounts.create} siap diproses
                   </button>
@@ -1836,11 +1834,10 @@ export default function BulkUploadKertasKerjaModal({
                     type="button"
                     aria-pressed={resolutionFilter === "pending"}
                     onClick={() => toggleResolutionFilter("pending")}
-                    className={`rounded-full border px-3 py-1 transition-all ${
-                      resolutionFilter === "pending"
+                    className={`rounded-full border px-3 py-1 transition-all ${resolutionFilter === "pending"
                         ? "border-amber-600 bg-amber-600 text-white shadow-sm ring-2 ring-amber-200"
                         : "border-amber-200 bg-amber-100 text-amber-800 hover:bg-amber-200"
-                    }`}
+                      }`}
                   >
                     {resolutionCounts.pending} perlu dipilih
                   </button>
@@ -1848,11 +1845,10 @@ export default function BulkUploadKertasKerjaModal({
                     type="button"
                     aria-pressed={resolutionFilter === "skip"}
                     onClick={() => toggleResolutionFilter("skip")}
-                    className={`rounded-full border px-3 py-1 transition-all ${
-                      resolutionFilter === "skip"
+                    className={`rounded-full border px-3 py-1 transition-all ${resolutionFilter === "skip"
                         ? "border-red-600 bg-red-600 text-white shadow-sm ring-2 ring-red-200"
                         : "border-red-200 bg-red-100 text-red-800 hover:bg-red-200"
-                    }`}
+                      }`}
                   >
                     {resolutionCounts.skip} dilewati
                   </button>
@@ -1896,27 +1892,27 @@ export default function BulkUploadKertasKerjaModal({
                     value: string;
                     candidates: Array<Plant | Supplier | MasterGeneric>;
                   }> = [
-                    {
-                      field: "site",
-                      value: resolution.siteId,
-                      candidates: resolution.siteCandidates,
-                    },
-                    {
-                      field: "supplier",
-                      value: resolution.supplierId,
-                      candidates: resolution.supplierCandidates,
-                    },
-                    {
-                      field: "product",
-                      value: resolution.productId,
-                      candidates: resolution.productCandidates,
-                    },
-                    {
-                      field: "moda",
-                      value: resolution.modaId,
-                      candidates: resolution.modaCandidates,
-                    },
-                  ];
+                      {
+                        field: "site",
+                        value: resolution.siteId,
+                        candidates: resolution.siteCandidates,
+                      },
+                      {
+                        field: "supplier",
+                        value: resolution.supplierId,
+                        candidates: resolution.supplierCandidates,
+                      },
+                      {
+                        field: "product",
+                        value: resolution.productId,
+                        candidates: resolution.productCandidates,
+                      },
+                      {
+                        field: "moda",
+                        value: resolution.modaId,
+                        candidates: resolution.modaCandidates,
+                      },
+                    ];
                   const ambiguousFields = allAmbiguousFields.filter(
                     (item) => item.candidates.length > 0,
                   );
@@ -2249,7 +2245,7 @@ export default function BulkUploadKertasKerjaModal({
                 selectedSheets.length === 0 ||
                 isParsing
               }
-              className="flex items-center justify-center min-w-[140px] px-5 py-2.5 text-sm font-medium text-white bg-primary rounded-lg hover:bg-[#0d4a5c] focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all shadow-md active:scale-95 disabled:opacity-50 disabled:active:scale-100"
+              className="flex items-center justify-center min-w-[140px] px-5 py-2.5 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all shadow-md active:scale-95 disabled:opacity-50 disabled:active:scale-100"
             >
               {isParsing ? (
                 <>
