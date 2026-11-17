@@ -54,6 +54,17 @@ import {
   mergeSavedKertasKerjaTemplates,
   resolveNamedReference,
 } from "./kertas-kerja-auto-resolution";
+import {
+  normalizeKertasKerjaMonth,
+  reconcileKertasKerjaMonthTimeline,
+  type KertasKerjaMonthCorrection,
+} from "./kertas-kerja-month-normalizer";
+import { roundKertasKerjaDayValue } from "./kertas-kerja-day-values";
+import {
+  buildKertasKerjaHeaderGroups,
+  findKertasKerjaMonthColumn,
+  getKertasKerjaSubcategoryColumns,
+} from "./kertas-kerja-header-mapper";
 
 type Props = {
   templates: TemplateKertasKerja[];
@@ -141,6 +152,10 @@ interface ParseOptions {
   candidateTemplates?: TemplateKertasKerja[];
   templateMappings?: Record<string, string>;
   allowResolution?: boolean;
+}
+
+interface WorkbookMonthCorrection extends KertasKerjaMonthCorrection {
+  sheetName: string;
 }
 
 type ConfirmedSiteReference =
@@ -355,6 +370,9 @@ export default function BulkUploadKertasKerjaModal({
   const [sheetNames, setSheetNames] = useState<string[]>([]);
   const [selectedSheets, setSelectedSheets] = useState<string[]>([]);
   const [parsedRows, setParsedRows] = useState<ParsedKertasKerjaRow[]>([]);
+  const [monthCorrections, setMonthCorrections] = useState<
+    WorkbookMonthCorrection[]
+  >([]);
   const [step, setStep] = useState<"upload" | "resolve" | "preview">("upload");
   const [resolutionFilter, setResolutionFilter] =
     useState<UnmatchedResolutionAction | null>(null);
@@ -565,89 +583,8 @@ export default function BulkUploadKertasKerjaModal({
     return s;
   };
 
-  const normalizeMonthWork = (rawLabel: string): string => {
-    if (!rawLabel) return "";
-
-    const s = rawLabel.toLowerCase().trim();
-
-    const monthMap: Record<string, string> = {
-      jan: "Jan",
-      janu: "Jan",
-      january: "Jan",
-      januari: "Jan",
-      feb: "Feb",
-      peb: "Feb",
-      february: "Feb",
-      februari: "Feb",
-      pebruari: "Feb",
-      mar: "Mar",
-      maret: "Mar",
-      march: "Mar",
-      apr: "Apr",
-      april: "Apr",
-      mei: "Mei",
-      may: "Mei",
-      jun: "Jun",
-      juni: "Jun",
-      june: "Jun",
-      jul: "Jul",
-      juli: "Jul",
-      july: "Jul",
-      agu: "Agu",
-      agus: "Agu",
-      agustus: "Agu",
-      aug: "Agu",
-      august: "Agu",
-      sep: "Sep",
-      sept: "Sep",
-      september: "Sep",
-      okt: "Okt",
-      oct: "Okt",
-      oktober: "Okt",
-      october: "Okt",
-      nov: "Nov",
-      nop: "Nov",
-      november: "Nov",
-      nopember: "Nov",
-      des: "Des",
-      dec: "Des",
-      desember: "Des",
-      december: "Des",
-    };
-
-    let foundMonth = "";
-    const words = s
-      .replace(/[^a-z0-9]/gi, " ")
-      .split(" ")
-      .filter(Boolean);
-    for (const w of words) {
-      if (/^\d+$/.test(w)) continue; // skip numbers
-      for (const key of Object.keys(monthMap)) {
-        if (w.startsWith(key)) {
-          foundMonth = monthMap[key];
-          break;
-        }
-      }
-      if (foundMonth) break;
-    }
-
-    let foundYear = "";
-    const yearMatch4 = s.match(/\b(20\d{2})\b/);
-    if (yearMatch4) {
-      foundYear = yearMatch4[1].substring(2);
-    } else {
-      const nums = s.match(/\b\d{2}\b/g);
-      if (nums && nums.length > 0) {
-        foundYear = nums[nums.length - 1];
-      }
-    }
-
-    if (foundMonth && foundYear) {
-      return `${foundMonth} '${foundYear}`;
-    }
-
-    return rawLabel;
-  };
+  const normalizeMonthWork = (rawLabel: string): string =>
+    normalizeKertasKerjaMonth(rawLabel);
 
   const parseSelectedWorkbook = (options: ParseOptions = {}) => {
     if (!selectedRegionId) {
@@ -673,6 +610,7 @@ export default function BulkUploadKertasKerjaModal({
 
           const candidateTemplates = options.candidateTemplates ?? templates;
           const results: ParsedKertasKerjaRow[] = [];
+          const detectedCorrections: WorkbookMonthCorrection[] = [];
           const errorMessages: string[] = [];
           const identityIssues = new Map<string, UnmatchedCombination>();
 
@@ -704,7 +642,7 @@ export default function BulkUploadKertasKerjaModal({
                   (cell) =>
                     cell !== null &&
                     cell !== undefined &&
-                    String(cell).match(/^STOK\s+(.+?)\s*\([kK][lL]\)$/i),
+                    String(cell).match(/^STOK\s+([\s\S]+?)\s*\([kK][lL]\)$/i),
                 )
               ) {
                 headerRowIndex = r;
@@ -745,7 +683,9 @@ export default function BulkUploadKertasKerjaModal({
               const cell = headerRow[i];
               if (cell !== undefined && cell !== null) {
                 const cellStr = String(cell).trim();
-                const match = cellStr.match(/^STOK\s+(.+?)\s*\([kK][lL]\)$/i);
+                const match = cellStr.match(
+                  /^STOK\s+([\s\S]+?)\s*\([kK][lL]\)$/i,
+                );
                 if (match) {
                   if (firstMonthColIndex === -1) firstMonthColIndex = i;
                   const m = match[1].trim();
@@ -788,98 +728,79 @@ export default function BulkUploadKertasKerjaModal({
             const row3 = jsonData[headerRowIndex];
             const row4 = jsonData[headerRowIndex + 1] || [];
             const row5 = jsonData[headerRowIndex + 2] || [];
+            const reconciledTimeline = reconcileKertasKerjaMonthTimeline(
+              detectedMonths,
+              [...row3, ...row4, ...row5],
+            );
+            const canonicalMonths = reconciledTimeline.months;
+            detectedCorrections.push(
+              ...reconciledTimeline.corrections.map((correction) => ({
+                ...correction,
+                sheetName,
+              })),
+            );
 
-            type HeaderGroup = { name: string; start: number; end: number };
-            const row3Map: HeaderGroup[] = [];
-            let lastRow3: HeaderGroup | null = null;
-            for (let c = 0; c < 300; c++) {
-              if (row3[c]) {
-                if (lastRow3) lastRow3.end = c - 1;
-                lastRow3 = {
-                  name: String(row3[c]).trim().toUpperCase(),
-                  start: c,
-                  end: 300,
-                };
-                row3Map.push(lastRow3);
-              }
-            }
-
+            const columnCount = Math.max(row3.length, row4.length, row5.length);
+            const headerGroups = buildKertasKerjaHeaderGroups(
+              row3,
+              columnCount,
+            );
             const getSubCategoryCols = (
-              row3Match: string,
-              row4Match: string,
-            ): number[] => {
-              const cols: number[] = [];
-              const cats = row3Map.filter((x) => x.name.includes(row3Match));
-              if (cats.length === 0) return cols;
-              for (const cat of cats) {
-                let inSubCat = false;
-                for (let c = cat.start; c <= cat.end; c++) {
-                  if (row4[c]) {
-                    if (String(row4[c]).toUpperCase().includes(row4Match)) {
-                      inSubCat = true;
-                    } else {
-                      inSubCat = false;
-                    }
-                  }
-                  if (inSubCat) cols.push(c);
-                }
-              }
-              if (cols.length === 0) {
-                for (let c = 0; c < 300; c++) {
-                  if (
-                    row4[c] &&
-                    String(row4[c]).toUpperCase().includes(row4Match)
-                  ) {
-                    for (let k = c; k < c + 30; k++) {
-                      if (
-                        row4[k] &&
-                        String(row4[k]).toUpperCase().includes(row4Match) ===
-                          false
-                      )
-                        break;
-                      cols.push(k);
-                    }
-                    break;
-                  }
-                }
-              }
-              return cols;
-            };
-
+              groupAliases: string[],
+              subcategoryName: string,
+            ): number[] =>
+              getKertasKerjaSubcategoryColumns(
+                headerGroups,
+                row4,
+                groupAliases,
+                subcategoryName,
+              );
             const findColForMonth = (
               cols: number[],
               targetMonth: string,
-            ): number => {
-              const target = normalizeMonthWork(targetMonth);
-              for (const c of cols) {
-                if (row5[c] && normalizeMonthWork(String(row5[c])) === target)
-                  return c;
-                if (row4[c] && normalizeMonthWork(String(row4[c])) === target)
-                  return c;
-              }
-              for (let c = 70; c < 300; c++) {
-                if (row5[c] && normalizeMonthWork(String(row5[c])) === target)
-                  return c;
-              }
-              return -1;
-            };
+            ): number =>
+              findKertasKerjaMonthColumn(
+                cols,
+                row5,
+                row4,
+                targetMonth,
+                normalizeMonthWork,
+              );
 
-            const terimaCols = getSubCategoryCols("REALISASI", "TERIMA");
-            const pemakaianCols = getSubCategoryCols("REALISASI", "PEMAKAIAN");
+            const terimaCols = getSubCategoryCols(["REALISASI"], "TERIMA");
+            const pemakaianCols = getSubCategoryCols(
+              ["REALISASI"],
+              "PEMAKAIAN",
+            );
             const stockAkhirCols = getSubCategoryCols(
-              "REALISASI",
+              ["REALISASI"],
               "STOK AKHIR",
             );
-            const shopAkhirCols = getSubCategoryCols("REALISASI", "SHOP AKHIR");
-            const renoPesanCols = getSubCategoryCols("RENOMINASI", "PESAN");
+            const shopAkhirCols = getSubCategoryCols(
+              ["REALISASI"],
+              "SHOP AKHIR",
+            );
+            const renoPesanCols = getSubCategoryCols(["RENOMINASI"], "PESAN");
             const renoProyeksiCols = getSubCategoryCols(
-              "RENOMINASI",
+              ["RENOMINASI"],
               "PROYEKSI",
             );
-            const deltaTerimaCols = getSubCategoryCols("DELTA", "DELTA TERIMA");
-            const pencapaianCols = getSubCategoryCols("DELTA", "PENCAPAIAN");
-            const rencanaPesanCols = getSubCategoryCols("RENCANA", "PESAN");
-            const rencanaHopCols = getSubCategoryCols("RENCANA", "HOP");
+            const deltaTerimaCols = getSubCategoryCols(["DELTA"], "TERIMA");
+            const pencapaianCols = getSubCategoryCols(["DELTA"], "PENCAPAIAN");
+            const rencanaPesanCols = getSubCategoryCols(
+              ["NOMINASI", "RENCANA"],
+              "PESAN",
+            );
+            const rencanaHopCols = getSubCategoryCols(
+              ["NOMINASI", "RENCANA"],
+              "HOP",
+            );
+
+            if (rencanaPesanCols.length === 0 || rencanaHopCols.length === 0) {
+              errorMessages.push(
+                `Sheet "${sheetName}": grup NOMINASI harus memiliki subkolom PESAN dan HOP; nilai NOMINASI tidak akan diambil dari grup lain`,
+              );
+            }
 
             const findKeteranganCol = (targetMonth: string): number => {
               const target = normalizeMonthWork(targetMonth);
@@ -910,7 +831,7 @@ export default function BulkUploadKertasKerjaModal({
             };
             const monthColMap: Record<number, MonthColumnMap> = {};
             for (let i = 0; i < numMonths; i++) {
-              const m = detectedMonths[i];
+              const m = canonicalMonths[i];
               monthColMap[i] = {
                 terima: findColForMonth(terimaCols, m),
                 pemakaian: findColForMonth(pemakaianCols, m),
@@ -1097,19 +1018,20 @@ export default function BulkUploadKertasKerjaModal({
 
                 results.push({
                   template_kertas_kerja_id: template.id,
-                  month_work: normalizeMonthWork(detectedMonths[i]),
+                  month_work: canonicalMonths[i],
                   stock,
-                  hop,
+                  hop: roundKertasKerjaDayValue(hop),
                   terima,
                   pemakaian,
                   stock_akhir_bulan: stockAkhir,
-                  shop_akhir_bulan: shopAkhir,
+                  shop_akhir_bulan: roundKertasKerjaDayValue(shopAkhir),
                   renominasi_pesan: renoPesan,
-                  renominaso_proyeksi_akhir_bulan: renoProyeksi,
+                  renominaso_proyeksi_akhir_bulan:
+                    roundKertasKerjaDayValue(renoProyeksi),
                   delta_terima: deltaTerima,
                   pencapaian,
                   rencana_pesan: rencanaPesan,
-                  rencana_hop: rencanaHop,
+                  rencana_hop: roundKertasKerjaDayValue(rencanaHop),
                   keterangan,
                   // display and organization data
                   sheetName,
@@ -1141,6 +1063,7 @@ export default function BulkUploadKertasKerjaModal({
               ]),
             );
             setParsedRows(results);
+            setMonthCorrections(detectedCorrections);
             setUnmatchedCombinations(issueList);
             setResolutions(initialResolutions);
             setResolutionFilter(null);
@@ -1186,6 +1109,7 @@ export default function BulkUploadKertasKerjaModal({
 
           setUnmatchedCombinations(issueList);
           setParsedRows(results);
+          setMonthCorrections(detectedCorrections);
           setStep("preview");
         } catch (err) {
           console.error("Parse error:", err);
@@ -1597,6 +1521,7 @@ export default function BulkUploadKertasKerjaModal({
     setSheetNames([]);
     setSelectedSheets([]);
     setParsedRows([]);
+    setMonthCorrections([]);
     setUnmatchedCombinations([]);
     setResolutions({});
     setResolutionFilter(null);
@@ -1610,6 +1535,7 @@ export default function BulkUploadKertasKerjaModal({
   const resetToUpload = () => {
     setStep("upload");
     setParsedRows([]);
+    setMonthCorrections([]);
     setUnmatchedCombinations([]);
     setResolutions({});
     setResolutionFilter(null);
@@ -2128,6 +2054,47 @@ export default function BulkUploadKertasKerjaModal({
                   <ArrowLeft size={16} /> Kembali
                 </button>
               </div>
+
+              {monthCorrections.length > 0 && (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle
+                      size={20}
+                      className="mt-0.5 shrink-0 text-amber-600"
+                    />
+                    <div className="min-w-0">
+                      <h4 className="font-bold">
+                        {monthCorrections.length} typo periode dikoreksi
+                        otomatis
+                      </h4>
+                      <p className="mt-1 text-sm text-amber-800">
+                        Koreksi memakai konsensus header pada periode yang sama
+                        dan urutan bulan kronologis. Data akan disimpan memakai
+                        periode hasil koreksi berikut.
+                      </p>
+                      <ul className="mt-3 space-y-2 text-sm">
+                        {monthCorrections.map((correction) => (
+                          <li
+                            key={`${correction.sheetName}-${correction.index}-${correction.correctedMonth}`}
+                            className="rounded-lg border border-amber-200 bg-white/70 px-3 py-2"
+                          >
+                            <span className="font-semibold">
+                              {correction.sheetName}
+                            </span>
+                            : {correction.originalLabel.replace(/\s+/g, " ")} →{" "}
+                            <span className="font-bold text-green-700">
+                              {correction.correctedMonth}
+                            </span>
+                            <span className="ml-2 text-xs text-amber-700">
+                              ({correction.supportingHeaders} header mendukung)
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm">
                 <div className="max-h-[400px] overflow-auto">

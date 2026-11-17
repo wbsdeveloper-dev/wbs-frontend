@@ -22,6 +22,11 @@ import {
   useKertasKerjaMaster,
   RecordKertasKerja,
 } from "@/hooks/service/kertas-kerja-api";
+import {
+  isKertasKerjaDayField,
+  roundKertasKerjaDayFields,
+  roundKertasKerjaDayValue,
+} from "./kertas-kerja-day-values";
 
 interface KertasKerjaTableProps {
   selectedRegion: string;
@@ -93,7 +98,8 @@ export default function KertasKerjaTable({
     if (records.length > 0) {
       const initial: Record<string, RecordKertasKerja> = {};
       records.forEach((r) => {
-        initial[`${r.template_kertas_kerja_id}_${r.month_work}`] = r;
+        initial[`${r.template_kertas_kerja_id}_${r.month_work}`] =
+          roundKertasKerjaDayFields(r);
       });
       setLocalRecords(initial);
       setDirtyRecords({}); // clear dirty state when fresh data loads
@@ -114,8 +120,11 @@ export default function KertasKerjaTable({
         month_work: month,
       };
 
-      const parsedVal =
+      const parsedValue =
         val === "" ? null : isNaN(Number(val)) ? val : Number(val);
+      const parsedVal = isKertasKerjaDayField(field)
+        ? roundKertasKerjaDayValue(parsedValue)
+        : parsedValue;
 
       // If the value hasn't changed, don't do anything
       if (existing[field] === parsedVal) {
@@ -192,17 +201,20 @@ export default function KertasKerjaTable({
     className = "",
     readOnly = !canUpdate,
     bgColorClass,
+    roundToInteger = false,
   }: {
     defaultValue: any;
     onBlur?: (val: string) => void;
     className?: string;
     readOnly?: boolean;
     bgColorClass?: string;
+    roundToInteger?: boolean;
   }) => {
     const formatValue = (v: any) => {
       if (v == null || v === "") return "";
       const num = Number(v);
-      return isNaN(num) ? String(v) : String(num);
+      if (isNaN(num)) return String(v);
+      return String(roundToInteger ? Math.round(num) : num);
     };
 
     const [val, setVal] = useState(formatValue(defaultValue));
@@ -216,7 +228,11 @@ export default function KertasKerjaTable({
         type="text"
         value={val}
         onChange={(e) => setVal(e.target.value)}
-        onBlur={() => onBlur?.(val as string)}
+        onBlur={() => {
+          const normalizedValue = formatValue(val);
+          setVal(normalizedValue);
+          onBlur?.(normalizedValue);
+        }}
         readOnly={readOnly}
         placeholder="-"
         className={`w-full min-w-[60px] px-1 py-1 text-xs font-medium border border-transparent hover:border-slate-400 focus:border-primary focus:ring-1 focus:ring-primary rounded outline-none transition-all ${className} ${bgColorClass ? bgColorClass : readOnly ? "!bg-transparent cursor-default hover:border-transparent focus:border-transparent focus:ring-0 text-gray-700" : "!bg-transparent focus:!bg-white dark:focus:!bg-slate-800 text-gray-900"}`}
@@ -278,7 +294,7 @@ export default function KertasKerjaTable({
       for (let i = 1; i < 2 * numMonths; i++) row1.push("");
       row1.push("DELTA (REAL - KONF)");
       for (let i = 1; i < 2 * numMonths; i++) row1.push("");
-      row1.push("RENCANA (PROGNOSA)");
+      row1.push("NOMINASI");
       for (let i = 1; i < 2 * numMonths; i++) row1.push("");
       row1.push("POLA OPERASI");
       row1.push("KETERANGAN");
@@ -381,9 +397,11 @@ export default function KertasKerjaTable({
             (s, t) => s + (Number(localRecords[`${t.id}_${m}`]?.[field]) || 0),
             0,
           );
-          return arr.length === 0 || sum === 0
-            ? "-"
-            : Number((sum / arr.length).toFixed(2));
+          if (arr.length === 0 || sum === 0) return "-";
+          const average = sum / arr.length;
+          return isKertasKerjaDayField(field)
+            ? Math.round(average)
+            : Number(average.toFixed(2));
         };
 
         const productsInSite = Array.from(
@@ -419,7 +437,7 @@ export default function KertasKerjaTable({
                 ? Math.round(template.site_capacity / template.average_usage)
                 : "-";
             trData.push(calcHop);
-            trData.push(template.hop_minimum ?? "-");
+            trData.push(roundKertasKerjaDayValue(template.hop_minimum) ?? "-");
 
             displayedMonths.forEach((m) => {
               const rec = localRecords[`${template.id}_${m}`];
@@ -695,7 +713,7 @@ export default function KertasKerjaTable({
         styles: { halign: "center", fillColor: [244, 67, 54] },
       });
       row1.push({
-        content: "RENCANA (PROGNOSA)",
+        content: "NOMINASI",
         colSpan: 2 * numMonths,
         styles: { halign: "center", fillColor: [3, 169, 244] },
       });
@@ -934,9 +952,11 @@ export default function KertasKerjaTable({
             (s, t) => s + (Number(localRecords[`${t.id}_${m}`]?.[field]) || 0),
             0,
           );
-          return arr.length === 0 || sum === 0
-            ? "-"
-            : Number((sum / arr.length).toFixed(2));
+          if (arr.length === 0 || sum === 0) return "-";
+          const average = sum / arr.length;
+          return isKertasKerjaDayField(field)
+            ? Math.round(average)
+            : Number(average.toFixed(2));
         };
 
         const productsInSite = Array.from(
@@ -972,7 +992,7 @@ export default function KertasKerjaTable({
                 ? Math.round(template.site_capacity / template.average_usage)
                 : "-";
             trData.push(calcHop);
-            trData.push(template.hop_minimum ?? "-");
+            trData.push(roundKertasKerjaDayValue(template.hop_minimum) ?? "-");
 
             displayedMonths.forEach((m) => {
               const rec = localRecords[`${template.id}_${m}`];
@@ -1460,7 +1480,7 @@ export default function KertasKerjaTable({
                 className="border border-slate-300 dark:border-slate-600 p-2 font-extrabold bg-sky-100 text-sky-950 dark:bg-sky-950 dark:text-sky-200 border-t-2 border-t-sky-500 uppercase text-[10px]"
                 colSpan={2 * numMonths}
               >
-                RENCANA (PROGNOSA)
+                NOMINASI
               </th>
               <th
                 className="border border-slate-200 p-2 font-bold uppercase text-[10px]"
@@ -1765,9 +1785,11 @@ export default function KertasKerjaTable({
                     s + (Number(localRecords[`${t.id}_${m}`]?.[field]) || 0),
                   0,
                 );
-                return arr.length === 0 || sum === 0
-                  ? "-"
-                  : Number((sum / arr.length).toFixed(2));
+                if (arr.length === 0 || sum === 0) return "-";
+                const average = sum / arr.length;
+                return isKertasKerjaDayField(field)
+                  ? Math.round(average)
+                  : Number(average.toFixed(2));
               };
 
               return (
@@ -1912,8 +1934,11 @@ export default function KertasKerjaTable({
                           className={`border border-gray-200 p-1 ${template.is_active === false ? "" : "bg-green-50"}`}
                         >
                           <InputCell
-                            defaultValue={template.hop_minimum}
+                            defaultValue={roundKertasKerjaDayValue(
+                              template.hop_minimum,
+                            )}
                             readOnly
+                            roundToInteger
                             className="text-center font-bold text-green-700 bg-transparent"
                           />
                         </td>
@@ -1959,6 +1984,7 @@ export default function KertasKerjaTable({
                                   }
                                   className="text-right"
                                   bgColorClass={getHopColor(rec?.hop)}
+                                  roundToInteger
                                 />
                               </td>
                               <td className="border border-gray-200 p-1 bg-amber-50/50 dark:bg-amber-950/20">
@@ -2060,6 +2086,7 @@ export default function KertasKerjaTable({
                                 localRecords[`${template.id}_${m}`]
                                   ?.shop_akhir_bulan,
                               )}
+                              roundToInteger
                             />
                           </td>
                         ))}
@@ -2105,6 +2132,7 @@ export default function KertasKerjaTable({
                                 )
                               }
                               className="text-right"
+                              roundToInteger
                             />
                           </td>
                         ))}
@@ -2197,6 +2225,7 @@ export default function KertasKerjaTable({
                                 localRecords[`${template.id}_${m}`]
                                   ?.rencana_hop,
                               )}
+                              roundToInteger
                             />
                           </td>
                         ))}
