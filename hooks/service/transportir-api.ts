@@ -40,6 +40,19 @@ export interface TransportirExcelConfig {
   };
 }
 
+export type TransportirUploadError =
+  | string
+  | {
+    sheet?: string;
+    row?: number;
+    group?: "stock" | "hulu" | "hilir" | string;
+    keyword?: string;
+    reason?: string;
+    message?: string;
+    error?: string;
+    [key: string]: unknown;
+  };
+
 export interface UploadTransportirExcelResponse {
   success: boolean;
   message?: string;
@@ -47,13 +60,32 @@ export interface UploadTransportirExcelResponse {
     sheets_processed: number;
     transportir_resume_upserted: number;
     reconciliation_inserted: number;
-    errors: any[];
+    errors: TransportirUploadError[];
   };
+}
+
+function getUploadErrorMessage(body: unknown, fallback: string): string {
+  if (!body || typeof body !== "object") return fallback;
+
+  const responseBody = body as {
+    message?: unknown;
+    error?: unknown;
+  };
+
+  if (typeof responseBody.message === "string") return responseBody.message;
+  if (typeof responseBody.error === "string") return responseBody.error;
+
+  if (responseBody.error && typeof responseBody.error === "object") {
+    const nestedMessage = (responseBody.error as { message?: unknown }).message;
+    if (typeof nestedMessage === "string") return nestedMessage;
+  }
+
+  return fallback;
 }
 
 export async function uploadTransportirExcel(
   file: File,
-  config: TransportirExcelConfig
+  config: TransportirExcelConfig,
 ): Promise<UploadTransportirExcelResponse> {
   const url = `${DASHBOARD_API_HOST}/excel/upload`;
   const accessToken = getAccessToken();
@@ -70,13 +102,23 @@ export async function uploadTransportirExcel(
     body: formData,
   });
 
-  if (!res.ok) {
-    throw new Error(`Upload failed: ${res.statusText}`);
+  let body: UploadTransportirExcelResponse | undefined;
+  try {
+    body = (await res.json()) as UploadTransportirExcelResponse;
+  } catch {
+    // A non-JSON response is handled below using the HTTP status text.
   }
 
-  const body = await res.json();
-  if (!body.success) {
-    throw new Error(body.message || "Unknown error during upload");
+  if (!res.ok) {
+    throw new Error(
+      getUploadErrorMessage(body, `Upload gagal (${res.status}): ${res.statusText}`),
+    );
+  }
+
+  if (!body?.success) {
+    throw new Error(
+      getUploadErrorMessage(body, "Terjadi kesalahan saat memproses file Excel"),
+    );
   }
 
   return body;
@@ -112,7 +154,7 @@ export function useTransportirResume(params: TransportirResumeParams = {}) {
       if (params.shipper) queryParams.append("shipper", params.shipper);
       if (params.start_date) queryParams.append("start_date", params.start_date);
       if (params.end_date) queryParams.append("end_date", params.end_date);
-      
+
       const url = `${DASHBOARD_API_HOST}/transportir/resume?${queryParams.toString()}`;
       const accessToken = getAccessToken();
       const res = await fetch(url, {
