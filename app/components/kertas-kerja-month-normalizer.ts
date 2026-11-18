@@ -84,13 +84,54 @@ function canonicalMonth(monthIndex: number, year: number): string {
   return `${MONTH_NAMES[monthIndex]} '${String(year).slice(-2)}`;
 }
 
+function parsedMonth(monthIndex: number, year: number): ParsedMonthWork {
+  return {
+    monthIndex,
+    year,
+    canonical: canonicalMonth(monthIndex, year),
+  };
+}
+
+function parseExcelDateSerial(rawLabel: unknown): ParsedMonthWork | null {
+  if (typeof rawLabel !== "number" || !Number.isFinite(rawLabel)) return null;
+
+  // Keep ordinary numeric headers from being interpreted as dates. Current
+  // Kertas Kerja workbooks use modern Excel date serials (for example 46023
+  // for 1 January 2026).
+  const serial = Math.floor(rawLabel);
+  if (serial < 20_000 || serial > 100_000) return null;
+
+  const excelEpoch = Date.UTC(1899, 11, 30);
+  const date = new Date(excelEpoch + serial * 86_400_000);
+  if (Number.isNaN(date.getTime())) return null;
+
+  return parsedMonth(date.getUTCMonth(), date.getUTCFullYear());
+}
+
 export function parseKertasKerjaMonth(
   rawLabel: unknown,
 ): ParsedMonthWork | null {
   if (rawLabel === undefined || rawLabel === null) return null;
 
+  const excelSerial = parseExcelDateSerial(rawLabel);
+  if (excelSerial) return excelSerial;
+
+  if (rawLabel instanceof Date && !Number.isNaN(rawLabel.getTime())) {
+    return parsedMonth(rawLabel.getUTCMonth(), rawLabel.getUTCFullYear());
+  }
+
   const normalized = String(rawLabel).toLowerCase().trim();
   if (!normalized) return null;
+
+  const isoDate = normalized.match(
+    /^(20\d{2})-(\d{1,2})-(\d{1,2})(?:[t\s].*)?$/,
+  );
+  if (isoDate) {
+    const monthIndex = Number(isoDate[2]) - 1;
+    const year = Number(isoDate[1]);
+    if (monthIndex >= 0 && monthIndex < 12)
+      return parsedMonth(monthIndex, year);
+  }
 
   const words = normalized
     .replace(/[^a-z0-9]/gi, " ")
@@ -123,11 +164,7 @@ export function parseKertasKerjaMonth(
 
   if (monthIndex === undefined || year === undefined) return null;
 
-  return {
-    monthIndex,
-    year,
-    canonical: canonicalMonth(monthIndex, year),
-  };
+  return parsedMonth(monthIndex, year);
 }
 
 export function normalizeKertasKerjaMonth(rawLabel: unknown): string {
@@ -247,7 +284,15 @@ export function reconcileKertasKerjaMonthTimeline(
 
     const supportingHeaders = supportCounts.get(expected) ?? 0;
     const conflictingHeaders = supportCounts.get(month.canonical) ?? 0;
-    if (supportingHeaders < 2 || supportingHeaders <= conflictingHeaders) {
+    const duplicatesAnotherPrimaryPeriod = parsedPrimary.some(
+      (candidate, candidateIndex) =>
+        candidateIndex !== index && candidate.canonical === month.canonical,
+    );
+    if (
+      supportingHeaders < 2 ||
+      (supportingHeaders <= conflictingHeaders &&
+        !duplicatesAnotherPrimaryPeriod)
+    ) {
       hasUnresolvedConflict = true;
       return month.canonical;
     }

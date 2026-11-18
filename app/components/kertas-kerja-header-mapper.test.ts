@@ -155,3 +155,69 @@ test("prefers NOMINASI over RENCANA when both groups exist", () => {
     [4, 5],
   );
 });
+
+test("maps Jamali HOP AKHIR and keeps only the simple DELTA TERIMA block", () => {
+  const groupHeader: unknown[] = [];
+  const subcategoryHeader: unknown[] = [];
+  const monthHeader: unknown[] = [];
+
+  groupHeader[10] = "REALISASI (SAP)";
+  groupHeader[22] = "DELTA (REAL-KONF)";
+  groupHeader[34] = "RENCANA (kL)";
+  groupHeader[50] = "KETERANGAN";
+
+  subcategoryHeader[10] = "TERIMA (kL)";
+  subcategoryHeader[14] = "HOP AKHIR BULAN (Hari)";
+  subcategoryHeader[22] = "DELTA TERIMA (kL)";
+  subcategoryHeader[26] = "DELTA TERIMA TERHADAP NOMINASI (kL)";
+  subcategoryHeader[30] = "PENCAPAIAN (%)";
+  // Jamali starts the PESAN merge before the RENCANA parent group cell.
+  subcategoryHeader[32] = "PESAN (kL)";
+  subcategoryHeader[40] = "HOP (Hari)";
+
+  monthHeader[14] = 46023;
+  monthHeader[15] = 46054;
+  monthHeader[22] = 46023;
+  monthHeader[23] = 46054;
+  monthHeader[26] = 46023;
+  monthHeader[27] = 46054;
+  monthHeader[32] = "JAN '26";
+  monthHeader[33] = "FEB '26";
+  monthHeader[40] = "JAN '26";
+  monthHeader[41] = "FEB '26";
+
+  const groups = buildKertasKerjaHeaderGroups(groupHeader, 52);
+  const hopAkhirColumns = getKertasKerjaSubcategoryColumns(
+    groups,
+    subcategoryHeader,
+    ["REALISASI"],
+    "HOP AKHIR",
+  );
+  const deltaTerimaColumns = getKertasKerjaSubcategoryColumns(
+    groups,
+    subcategoryHeader,
+    ["DELTA"],
+    "DELTA TERIMA",
+    { exact: true },
+  );
+  const rencanaPesanColumns = getKertasKerjaSubcategoryColumns(
+    groups,
+    subcategoryHeader,
+    ["NOMINASI", "RENCANA"],
+    "PESAN",
+  );
+
+  assert.deepEqual(hopAkhirColumns, [14, 15, 16, 17, 18, 19, 20, 21]);
+  assert.deepEqual(deltaTerimaColumns, [22, 23, 24, 25]);
+  assert.deepEqual(rencanaPesanColumns, [32, 33, 34, 35, 36, 37, 38, 39]);
+  assert.equal(
+    findKertasKerjaMonthColumn(
+      deltaTerimaColumns,
+      monthHeader,
+      subcategoryHeader,
+      "Jan '26",
+      normalizeKertasKerjaMonth,
+    ),
+    22,
+  );
+});

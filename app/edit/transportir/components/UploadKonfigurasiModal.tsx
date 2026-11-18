@@ -1,4 +1,5 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import * as XLSX from "xlsx";
 import {
   X,
   Upload,
@@ -11,12 +12,56 @@ import {
 import { useSites } from "@/hooks/service/site-api";
 import {
   useUploadTransportirExcel,
-  TransportirExcelConfig,
+  type TransportirExcelConfig,
+  type TransportirUploadError,
+  type UploadTransportirExcelResponse,
 } from "@/hooks/service/transportir-api";
 import FilterAutocomplete from "@/app/components/FilterAutocomplete";
 
 type Props = {
   setOpenModal: (value: boolean) => void;
+};
+
+type InspectedColumn = {
+  column: string;
+  hasData: boolean;
+  samples: string[];
+};
+
+type KeywordInspection = {
+  group: "Hulu" | "Hilir" | "Stock";
+  keyword: string;
+  searchColumn: string;
+  startRow: number;
+  cells: string[];
+  cellsOutsideSearchRange: string[];
+};
+
+type WorkbookColumnInspection = {
+  requestedSheet: string;
+  actualSheet: string | null;
+  exists: boolean;
+  hulu: {
+    search: InspectedColumn;
+    mmscf: InspectedColumn;
+    mmbtu: InspectedColumn;
+  };
+  hilir: {
+    search: InspectedColumn;
+    mmscf: InspectedColumn;
+    mmbtu: InspectedColumn;
+  };
+  stock: {
+    search: InspectedColumn;
+    values: InspectedColumn[];
+  };
+  keywords: KeywordInspection[];
+};
+
+type WorkbookInspection = {
+  sheetNames: string[];
+  configSignature: string;
+  sheets: WorkbookColumnInspection[];
 };
 
 const DEFAULT_CONFIG: TransportirExcelConfig = {
@@ -88,66 +133,654 @@ const DEFAULT_CONFIG: TransportirExcelConfig = {
   },
 };
 
+const EXCEL_FILE_PATTERN = /\.(xlsx|xls)$/i;
+const EXCEL_COLUMN_PATTERN = /^[A-Z]+$/i;
+
+function cloneConfig(config: TransportirExcelConfig): TransportirExcelConfig {
+  return {
+    ...config,
+    sheets: [...config.sheets],
+    hulu: {
+      ...config.hulu,
+      keywords: config.hulu.keywords.map((keyword) => ({ ...keyword })),
+    },
+    hilir: {
+      ...config.hilir,
+      keywords: config.hilir.keywords.map((keyword) => ({ ...keyword })),
+    },
+    stock: {
+      ...config.stock,
+      key_mapping: [...config.stock.key_mapping],
+    },
+  };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function isStoredConfig(value: unknown): value is TransportirExcelConfig {
+  if (!isRecord(value) || !Array.isArray(value.sheets)) return false;
+  if (!isRecord(value.hulu) || !isRecord(value.hilir) || !isRecord(value.stock)) {
+    return false;
+  }
+
+  const hasStringFields = (record: Record<string, unknown>, fields: string[]) =>
+    fields.every((field) => typeof record[field] === "string");
+  const hasOptionalBoolean = (record: Record<string, unknown>, field: string) =>
+    record[field] === undefined || typeof record[field] === "boolean";
+
+  return (
+    value.sheets.every((sheet) => typeof sheet === "string") &&
+    hasStringFields(value.hulu, ["search_column", "col_mmscf", "col_mmbtu"]) &&
+    Number.isInteger(value.hulu.start_row) &&
+    Array.isArray(value.hulu.keywords) &&
+    value.hulu.keywords.every(
+      (keyword) =>
+        isRecord(keyword) &&
+        typeof keyword.label === "string" &&
+        typeof keyword.upstream_id === "string",
+    ) &&
+    hasOptionalBoolean(value.hulu, "convert_mmscf") &&
+    hasOptionalBoolean(value.hulu, "convert_mmbtu") &&
+    hasStringFields(value.hilir, ["search_column", "col_mmscf", "col_mmbtu"]) &&
+    Number.isInteger(value.hilir.start_row) &&
+    Array.isArray(value.hilir.keywords) &&
+    value.hilir.keywords.every(
+      (keyword) =>
+        isRecord(keyword) &&
+        typeof keyword.label === "string" &&
+        typeof keyword.upstream_id === "string" &&
+        typeof keyword.downstream_id === "string",
+    ) &&
+    hasOptionalBoolean(value.hilir, "convert_mmscf") &&
+    hasOptionalBoolean(value.hilir, "convert_mmbtu") &&
+    hasStringFields(value.stock, [
+      "search_column",
+      "keyword",
+      "col_start",
+      "col_end",
+    ]) &&
+    Array.isArray(value.stock.key_mapping) &&
+    value.stock.key_mapping.every((key) => typeof key === "string") &&
+    hasOptionalBoolean(value.stock, "convert_bbtu") &&
+    (value.report_date_prefix === undefined ||
+      typeof value.report_date_prefix === "string")
+  );
+}
+
+function readSavedConfig(): TransportirExcelConfig {
+  if (typeof window === "undefined") return cloneConfig(DEFAULT_CONFIG);
+
+  const saved = localStorage.getItem("excel_upload_config_default");
+  if (!saved) return cloneConfig(DEFAULT_CONFIG);
+
+  try {
+    const parsed: unknown = JSON.parse(saved);
+    if (isStoredConfig(parsed)) return cloneConfig(parsed);
+  } catch (error) {
+    console.error("Failed to parse saved config", error);
+  }
+
+  localStorage.removeItem("excel_upload_config_default");
+  return cloneConfig(DEFAULT_CONFIG);
+}
+
+function normalizeConfig(config: TransportirExcelConfig): TransportirExcelConfig {
+  return {
+    ...cloneConfig(config),
+    report_date_prefix: config.report_date_prefix?.trim(),
+    sheets: Array.from(
+      new Set(config.sheets.map((sheet) => sheet.trim()).filter(Boolean)),
+    ),
+    hulu: {
+      ...config.hulu,
+      search_column: config.hulu.search_column.trim().toUpperCase(),
+      col_mmscf: config.hulu.col_mmscf.trim().toUpperCase(),
+      col_mmbtu: config.hulu.col_mmbtu.trim().toUpperCase(),
+      keywords: config.hulu.keywords.map((keyword) => ({
+        ...keyword,
+        label: keyword.label.trim(),
+      })),
+    },
+    hilir: {
+      ...config.hilir,
+      search_column: config.hilir.search_column.trim().toUpperCase(),
+      col_mmscf: config.hilir.col_mmscf.trim().toUpperCase(),
+      col_mmbtu: config.hilir.col_mmbtu.trim().toUpperCase(),
+      keywords: config.hilir.keywords.map((keyword) => ({
+        ...keyword,
+        label: keyword.label.trim(),
+      })),
+    },
+    stock: {
+      ...config.stock,
+      search_column: config.stock.search_column.trim().toUpperCase(),
+      keyword: config.stock.keyword.trim(),
+      col_start: config.stock.col_start.trim().toUpperCase(),
+      col_end: config.stock.col_end.trim().toUpperCase(),
+      key_mapping: config.stock.key_mapping
+        .map((key) => key.trim())
+        .filter(Boolean),
+    },
+  };
+}
+
+function validateConfig(config: TransportirExcelConfig) {
+  if (config.sheets.length === 0) return "Tambahkan minimal satu nama sheet.";
+
+  const columns = [
+    ["kolom pencarian Hulu", config.hulu.search_column],
+    ["kolom FLOWRATE Hulu", config.hulu.col_mmscf],
+    ["kolom ENERGY Hulu", config.hulu.col_mmbtu],
+    ["kolom pencarian Hilir", config.hilir.search_column],
+    ["kolom FLOWRATE Hilir", config.hilir.col_mmscf],
+    ["kolom ENERGY Hilir", config.hilir.col_mmbtu],
+    ["kolom pencarian Stock", config.stock.search_column],
+    ["kolom awal Stock", config.stock.col_start],
+    ["kolom akhir Stock", config.stock.col_end],
+  ] as const;
+  const invalidColumn = columns.find(([, column]) =>
+    !EXCEL_COLUMN_PATTERN.test(column),
+  );
+  if (invalidColumn) {
+    return `${invalidColumn[0]} harus berupa huruf kolom Excel, misalnya A atau AA.`;
+  }
+
+  if (!Number.isInteger(config.hulu.start_row) || config.hulu.start_row < 1) {
+    return "Baris awal Hulu harus berupa bilangan bulat minimal 1.";
+  }
+  if (!Number.isInteger(config.hilir.start_row) || config.hilir.start_row < 1) {
+    return "Baris awal Hilir harus berupa bilangan bulat minimal 1.";
+  }
+  if (!config.stock.keyword) return "Keyword Stock tidak boleh kosong.";
+
+  const stockStart = XLSX.utils.decode_col(config.stock.col_start);
+  const stockEnd = XLSX.utils.decode_col(config.stock.col_end);
+  if (stockEnd < stockStart) {
+    return "Kolom akhir Stock tidak boleh berada sebelum kolom awal.";
+  }
+
+  const stockColumnCount = stockEnd - stockStart + 1;
+  if (config.stock.key_mapping.length !== stockColumnCount) {
+    return `Mapping Stock harus berisi ${stockColumnCount} key untuk rentang ${config.stock.col_start}–${config.stock.col_end}.`;
+  }
+
+  if (
+    config.report_date_prefix &&
+    !/^\d{4}-(0[1-9]|1[0-2])-$/.test(config.report_date_prefix)
+  ) {
+    return "Prefix tanggal laporan harus berformat YYYY-MM-, misalnya 2026-06-.";
+  }
+
+  return null;
+}
+
+function normalizeExcelText(value: unknown) {
+  return String(value ?? "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
+function getCellText(cell: XLSX.CellObject | undefined) {
+  if (!cell || cell.v === undefined || cell.v === null) return "";
+  return String(cell.v).trim();
+}
+
+function inspectColumn(
+  sheet: XLSX.WorkSheet | undefined,
+  column: string,
+  startRow: number,
+  limit = 8,
+): InspectedColumn {
+  const normalizedColumn = column.trim().toUpperCase();
+  if (!sheet?.["!ref"] || !EXCEL_COLUMN_PATTERN.test(normalizedColumn)) {
+    return { column: normalizedColumn, hasData: false, samples: [] };
+  }
+
+  const range = XLSX.utils.decode_range(sheet["!ref"]);
+  const columnIndex = XLSX.utils.decode_col(normalizedColumn);
+  const samples: string[] = [];
+  let hasData = false;
+
+  if (columnIndex < range.s.c || columnIndex > range.e.c) {
+    return { column: normalizedColumn, hasData: false, samples: [] };
+  }
+
+  for (let row = Math.max(startRow - 1, range.s.r); row <= range.e.r; row += 1) {
+    const text = getCellText(
+      sheet[XLSX.utils.encode_cell({ r: row, c: columnIndex })],
+    );
+    if (!text) continue;
+
+    hasData = true;
+    if (samples.length < limit && !samples.includes(text)) samples.push(text);
+  }
+
+  return { column: normalizedColumn, hasData, samples };
+}
+
+function isKeywordMatch(value: unknown, keyword: string) {
+  const normalizedValue = normalizeExcelText(value);
+  const normalizedKeyword = normalizeExcelText(keyword);
+
+  // The workbook may prefix labels with row numbers (for example "4. ..."),
+  // but a short cell value such as "TSB" must not match a longer keyword.
+  return Boolean(
+    normalizedValue &&
+    normalizedKeyword &&
+    normalizedValue.includes(normalizedKeyword),
+  );
+}
+
+function hasWorksheetData(sheet: XLSX.WorkSheet | undefined) {
+  if (!sheet) return false;
+
+  return Object.entries(sheet).some(
+    ([address, cell]) =>
+      !address.startsWith("!") &&
+      cell.v !== undefined &&
+      String(cell.v).trim() !== "",
+  );
+}
+
+function findKeywordCells(
+  sheet: XLSX.WorkSheet,
+  keyword: string,
+  options: { column?: string; startRow?: number; limit?: number } = {},
+) {
+  const normalizedKeyword = keyword.trim();
+  if (!sheet["!ref"] || !normalizedKeyword) return [];
+
+  const range = XLSX.utils.decode_range(sheet["!ref"]);
+  const limit = options.limit ?? 3;
+  const requestedColumn = options.column?.trim().toUpperCase();
+  const columnIndex = requestedColumn
+    ? XLSX.utils.decode_col(requestedColumn)
+    : undefined;
+  const startColumn = columnIndex ?? range.s.c;
+  const endColumn = columnIndex ?? range.e.c;
+  const startRow = Math.max((options.startRow ?? 1) - 1, range.s.r);
+  const matches: string[] = [];
+
+  if (startColumn < range.s.c || startColumn > range.e.c) return [];
+
+  for (let row = startRow; row <= range.e.r; row += 1) {
+    for (let column = startColumn; column <= endColumn; column += 1) {
+      const address = XLSX.utils.encode_cell({ r: row, c: column });
+      if (isKeywordMatch(sheet[address]?.v, normalizedKeyword)) {
+        matches.push(address);
+        if (matches.length >= limit) return matches;
+      }
+    }
+  }
+
+  return matches;
+}
+
+function normalizeSheetName(value: string) {
+  return value.trim().toLocaleLowerCase().replace(/\s+/g, " ");
+}
+
+function resolveSheetName(sheetNames: string[], requestedSheet: string) {
+  if (sheetNames.includes(requestedSheet)) return requestedSheet;
+
+  const normalizedRequested = normalizeSheetName(requestedSheet);
+  return (
+    sheetNames.find(
+      (sheetName) => normalizeSheetName(sheetName) === normalizedRequested,
+    ) ?? null
+  );
+}
+
+function inspectKeyword(
+  sheet: XLSX.WorkSheet,
+  group: KeywordInspection["group"],
+  keyword: string,
+  searchColumn: string,
+  startRow: number,
+): KeywordInspection {
+  const normalizedSearchColumn = searchColumn.trim().toUpperCase();
+  const searchColumnIndex = XLSX.utils.decode_col(normalizedSearchColumn);
+  const cells = findKeywordCells(sheet, keyword, {
+    column: normalizedSearchColumn,
+    startRow,
+  });
+  const cellsOutsideSearchRange = findKeywordCells(sheet, keyword, { limit: 20 })
+    .filter((address) => {
+      const cell = XLSX.utils.decode_cell(address);
+      return cell.c !== searchColumnIndex || cell.r < startRow - 1;
+    })
+    .slice(0, 3);
+
+  return {
+    group,
+    keyword,
+    searchColumn,
+    startRow,
+    cells,
+    cellsOutsideSearchRange,
+  };
+}
+
+function findKeywordValueInColumn(
+  sheet: XLSX.WorkSheet,
+  column: string,
+  startRow: number,
+  keyword: string,
+) {
+  if (!sheet["!ref"]) return null;
+
+  const range = XLSX.utils.decode_range(sheet["!ref"]);
+  const columnIndex = XLSX.utils.decode_col(column.toUpperCase());
+
+  for (let row = Math.max(startRow - 1, range.s.r); row <= range.e.r; row += 1) {
+    const value = sheet[XLSX.utils.encode_cell({ r: row, c: columnIndex })]?.v;
+    if (isKeywordMatch(value, keyword)) return String(value).trim();
+  }
+
+  return null;
+}
+
+function formatUploadError(error: TransportirUploadError, index: number) {
+  if (typeof error === "string") return error;
+
+  const context = [
+    error.sheet ? `Sheet ${error.sheet}` : "",
+    error.row ? `baris ${error.row}` : "",
+    error.group ? `kelompok ${error.group.toUpperCase()}` : "",
+    error.keyword ? `keyword “${error.keyword}”` : "",
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  const reason = error.reason === "keyword not found"
+    ? "keyword tidak ditemukan pada kolom pencarian"
+    : error.reason === "Stock keyword not found"
+      ? "keyword stock tidak ditemukan"
+      : error.reason;
+  const message = error.message || error.error || reason;
+
+  if (context && message) return `${context}: ${message}`;
+  if (message) return message;
+  if (context) return context;
+
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return `Kesalahan pemrosesan ke-${index + 1}`;
+  }
+}
+
 export default function UploadKonfigurasiModal({ setOpenModal }: Props) {
   const { data: sitesData } = useSites();
   const sites = sitesData || [];
-  
+
   // Filter sites for dropdowns: only show GAS PIPA or LNG
   const filteredSites = sites.filter(s => s.commodity === 'GAS PIPA' || s.commodity === 'LNG');
-  
+
   // For Hilir dropdown: only show if site_type is PEMBANGKIT
   const filteredHilirSites = filteredSites.filter(s => s.site_type === 'PEMBANGKIT');
 
-  const [config, setConfig] = useState<TransportirExcelConfig>(DEFAULT_CONFIG);
+  const [config, setConfig] = useState<TransportirExcelConfig>(() =>
+    cloneConfig(DEFAULT_CONFIG),
+  );
   const [newSheet, setNewSheet] = useState("");
   const [newHuluKw, setNewHuluKw] = useState("");
   const [newHilirKw, setNewHilirKw] = useState("");
 
   const [file, setFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const inspectionRequestRef = useRef(0);
 
   const uploadMutation = useUploadTransportirExcel();
   const [successMsg, setSuccessMsg] = useState("");
+  const [uploadResult, setUploadResult] =
+    useState<UploadTransportirExcelResponse | null>(null);
+  const [workbookInspection, setWorkbookInspection] =
+    useState<WorkbookInspection | null>(null);
+  const [inspectionError, setInspectionError] = useState("");
+  const [isInspecting, setIsInspecting] = useState(false);
   const [isDebugMode, setIsDebugMode] = useState(false);
 
   useEffect(() => {
-    const saved = localStorage.getItem("excel_upload_config_default");
-    if (saved) {
-      try {
-        setConfig(JSON.parse(saved));
-      } catch (e) {
-        console.error("Failed to parse saved config", e);
-      }
-    }
+    setConfig(readSavedConfig());
+
+    return () => {
+      inspectionRequestRef.current += 1;
+    };
   }, []);
 
   const handleSaveDefault = () => {
-    localStorage.setItem("excel_upload_config_default", JSON.stringify(config));
+    const normalizedConfig = normalizeConfig(config);
+    const validationError = validateConfig(normalizedConfig);
+    if (validationError) {
+      alert(validationError);
+      return;
+    }
+
+    setConfig(normalizedConfig);
+    localStorage.setItem(
+      "excel_upload_config_default",
+      JSON.stringify(normalizedConfig),
+    );
     alert("Konfigurasi berhasil disimpan sebagai default!");
   };
 
   const handleResetDefault = () => {
-    const saved = localStorage.getItem("excel_upload_config_default");
-    if (saved) {
-      try {
-        setConfig(JSON.parse(saved));
-      } catch (e) {}
-    } else {
-      setConfig(DEFAULT_CONFIG);
+    setConfig(readSavedConfig());
+    setSuccessMsg("");
+    setUploadResult(null);
+    setWorkbookInspection(null);
+    setInspectionError("");
+  };
+
+  const inspectWorkbook = async (
+    selectedFile: File,
+    sourceConfig: TransportirExcelConfig = config,
+  ) => {
+    const requestId = inspectionRequestRef.current + 1;
+    inspectionRequestRef.current = requestId;
+    const inspectionConfig = normalizeConfig(sourceConfig);
+    const validationError = validateConfig(inspectionConfig);
+
+    setWorkbookInspection(null);
+    setInspectionError("");
+    if (validationError) {
+      setInspectionError(`Konfigurasi tidak valid: ${validationError}`);
+      setIsInspecting(false);
+      return;
     }
+
+    setIsInspecting(true);
+
+    try {
+      const workbook = XLSX.read(await selectedFile.arrayBuffer(), {
+        type: "array",
+      });
+      const emptyColumn = (column: string): InspectedColumn => ({
+        column,
+        hasData: false,
+        samples: [],
+      });
+      const stockStartColumn = XLSX.utils.decode_col(
+        inspectionConfig.stock.col_start,
+      );
+      const stockEndColumn = XLSX.utils.decode_col(inspectionConfig.stock.col_end);
+      const stockColumns = Array.from(
+        { length: stockEndColumn - stockStartColumn + 1 },
+        (_, index) => XLSX.utils.encode_col(stockStartColumn + index),
+      );
+
+      const sheets = inspectionConfig.sheets.map((requestedSheet) => {
+        const actualSheet = resolveSheetName(
+          workbook.SheetNames,
+          requestedSheet,
+        );
+        const sheet = actualSheet ? workbook.Sheets[actualSheet] : undefined;
+
+        if (!sheet) {
+          return {
+            requestedSheet,
+            actualSheet: null,
+            exists: false,
+            hulu: {
+              search: emptyColumn(inspectionConfig.hulu.search_column),
+              mmscf: emptyColumn(inspectionConfig.hulu.col_mmscf),
+              mmbtu: emptyColumn(inspectionConfig.hulu.col_mmbtu),
+            },
+            hilir: {
+              search: emptyColumn(inspectionConfig.hilir.search_column),
+              mmscf: emptyColumn(inspectionConfig.hilir.col_mmscf),
+              mmbtu: emptyColumn(inspectionConfig.hilir.col_mmbtu),
+            },
+            stock: {
+              search: emptyColumn(inspectionConfig.stock.search_column),
+              values: stockColumns.map(emptyColumn),
+            },
+            keywords: [],
+          } satisfies WorkbookColumnInspection;
+        }
+
+        const keywords = [
+          ...inspectionConfig.hulu.keywords
+            .filter((keyword) => keyword.label)
+            .map((keyword) =>
+              inspectKeyword(
+                sheet,
+                "Hulu",
+                keyword.label,
+                inspectionConfig.hulu.search_column,
+                inspectionConfig.hulu.start_row,
+              ),
+            ),
+          ...inspectionConfig.hilir.keywords
+            .filter((keyword) => keyword.label)
+            .map((keyword) =>
+              inspectKeyword(
+                sheet,
+                "Hilir",
+                keyword.label,
+                inspectionConfig.hilir.search_column,
+                inspectionConfig.hilir.start_row,
+              ),
+            ),
+          inspectKeyword(
+            sheet,
+            "Stock",
+            inspectionConfig.stock.keyword,
+            inspectionConfig.stock.search_column,
+            1,
+          ),
+        ];
+
+        return {
+          requestedSheet,
+          actualSheet,
+          exists: true,
+          hulu: {
+            search: inspectColumn(
+              sheet,
+              inspectionConfig.hulu.search_column,
+              inspectionConfig.hulu.start_row,
+            ),
+            mmscf: inspectColumn(
+              sheet,
+              inspectionConfig.hulu.col_mmscf,
+              inspectionConfig.hulu.start_row,
+            ),
+            mmbtu: inspectColumn(
+              sheet,
+              inspectionConfig.hulu.col_mmbtu,
+              inspectionConfig.hulu.start_row,
+            ),
+          },
+          hilir: {
+            search: inspectColumn(
+              sheet,
+              inspectionConfig.hilir.search_column,
+              inspectionConfig.hilir.start_row,
+            ),
+            mmscf: inspectColumn(
+              sheet,
+              inspectionConfig.hilir.col_mmscf,
+              inspectionConfig.hilir.start_row,
+            ),
+            mmbtu: inspectColumn(
+              sheet,
+              inspectionConfig.hilir.col_mmbtu,
+              inspectionConfig.hilir.start_row,
+            ),
+          },
+          stock: {
+            search: inspectColumn(
+              sheet,
+              inspectionConfig.stock.search_column,
+              1,
+            ),
+            values: stockColumns.map((column) =>
+              inspectColumn(sheet, column, 1, 3),
+            ),
+          },
+          keywords,
+        } satisfies WorkbookColumnInspection;
+      });
+
+      if (inspectionRequestRef.current === requestId) {
+        setWorkbookInspection({
+          sheetNames: workbook.SheetNames,
+          configSignature: JSON.stringify(inspectionConfig),
+          sheets,
+        });
+      }
+    } catch (error) {
+      if (inspectionRequestRef.current === requestId) {
+        setWorkbookInspection(null);
+        setInspectionError(
+          error instanceof Error
+            ? error.message
+            : "File Excel tidak dapat dianalisis",
+        );
+      }
+    } finally {
+      if (inspectionRequestRef.current === requestId) {
+        setIsInspecting(false);
+      }
+    }
+  };
+
+  const selectFile = (selectedFile: File) => {
+    if (!EXCEL_FILE_PATTERN.test(selectedFile.name)) {
+      inspectionRequestRef.current += 1;
+      setFile(null);
+      setSuccessMsg("");
+      setUploadResult(null);
+      setWorkbookInspection(null);
+      setInspectionError("Pilih file Excel dengan format .xlsx atau .xls.");
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+
+    setFile(selectedFile);
+    setSuccessMsg("");
+    setUploadResult(null);
+    setWorkbookInspection(null);
+    void inspectWorkbook(selectedFile);
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      setFile(e.dataTransfer.files[0]);
+      selectFile(e.dataTransfer.files[0]);
     }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
+      selectFile(e.target.files[0]);
     }
+    e.target.value = "";
   };
 
   const handleSubmit = async () => {
@@ -156,29 +789,157 @@ export default function UploadKonfigurasiModal({ setOpenModal }: Props) {
       return;
     }
 
-    // Quick validation
-    // Skip global upstream_id validation, since it's now per keyword.
-    // However, we could validate that every hulu keyword has an upstream_id.
-    // For simplicity, we just submit.
+    if (!EXCEL_FILE_PATTERN.test(file.name)) {
+      alert("File harus berformat .xlsx atau .xls.");
+      return;
+    }
+
+    const normalizedConfig = normalizeConfig(config);
+    const validationError = validateConfig(normalizedConfig);
+    if (validationError) {
+      alert(validationError);
+      return;
+    }
+
+    const mappedHuluKeywords = normalizedConfig.hulu.keywords.filter(
+      (keyword) => keyword.label && keyword.upstream_id,
+    );
+    const mappedHilirKeywords = normalizedConfig.hilir.keywords.filter(
+      (keyword) =>
+        keyword.label && keyword.upstream_id && keyword.downstream_id,
+    );
+    const skippedKeywordCount =
+      normalizedConfig.hulu.keywords.filter((keyword) => keyword.label).length -
+      mappedHuluKeywords.length +
+      normalizedConfig.hilir.keywords.filter((keyword) => keyword.label).length -
+      mappedHilirKeywords.length;
+
+    if (mappedHuluKeywords.length + mappedHilirKeywords.length === 0) {
+      alert(
+        "Belum ada mapping rekonsiliasi yang lengkap. Isi minimal satu mapping Hulu atau satu pasangan mapping Hulu–Hilir.",
+      );
+      return;
+    }
+
+    let workbook: XLSX.WorkBook;
+    try {
+      workbook = XLSX.read(await file.arrayBuffer(), { type: "array" });
+    } catch (error) {
+      alert(
+        error instanceof Error
+          ? `File Excel tidak dapat dibaca: ${error.message}`
+          : "File Excel tidak dapat dibaca",
+      );
+      return;
+    }
+
+    const populatedSheets = normalizedConfig.sheets.filter((sheetName) =>
+      hasWorksheetData(workbook.Sheets[sheetName]),
+    );
+    const skippedSheetCount =
+      normalizedConfig.sheets.length - populatedSheets.length;
+
+    if (populatedSheets.length === 0) {
+      alert(
+        "Tidak ada sheet konfigurasi yang berisi data. Periksa daftar sheet atau isi file Excel.",
+      );
+      return;
+    }
+
+    const resolveKeywordLabel = (
+      keyword: string,
+      column: string,
+      startRow: number,
+    ) => {
+      for (const sheetName of populatedSheets) {
+        const matchedValue = findKeywordValueInColumn(
+          workbook.Sheets[sheetName],
+          column,
+          startRow,
+          keyword,
+        );
+        if (matchedValue) return matchedValue;
+      }
+      return keyword;
+    };
+
+    const resolvedHuluKeywords = mappedHuluKeywords.map((keyword) => ({
+      ...keyword,
+      label: resolveKeywordLabel(
+        keyword.label,
+        normalizedConfig.hulu.search_column,
+        normalizedConfig.hulu.start_row,
+      ),
+    }));
+    const resolvedHilirKeywords = mappedHilirKeywords.map((keyword) => ({
+      ...keyword,
+      label: resolveKeywordLabel(
+        keyword.label,
+        normalizedConfig.hilir.search_column,
+        normalizedConfig.hilir.start_row,
+      ),
+    }));
+
+    const uploadConfig: TransportirExcelConfig = {
+      ...normalizedConfig,
+      sheets: populatedSheets,
+      hulu: {
+        ...normalizedConfig.hulu,
+        keywords: resolvedHuluKeywords,
+      },
+      hilir: {
+        ...normalizedConfig.hilir,
+        keywords: resolvedHilirKeywords,
+      },
+    };
 
     if (isDebugMode) {
       console.log("=== DEBUG MODE: PAYLOAD ===");
       console.log("File:", file.name, "size:", file.size);
-      console.log("Config JSON:", JSON.stringify(config, null, 2));
+      console.log("Config JSON:", JSON.stringify(uploadConfig, null, 2));
+      console.log("Keyword tidak lengkap yang dilewati:", skippedKeywordCount);
+      console.log("Sheet kosong/tidak tersedia yang dilewati:", skippedSheetCount);
       alert(
-        `Mode Debug aktif.\nPayload JSON dicetak ke console (F12).\n\nConfig:\n${JSON.stringify(config, null, 2).slice(0, 500)}...`,
+        `Mode Debug aktif.\nPayload JSON dicetak ke console (F12).\n${skippedKeywordCount} keyword tanpa mapping lengkap dilewati.\n${skippedSheetCount} sheet kosong/tidak tersedia dilewati.\n\nConfig:\n${JSON.stringify(uploadConfig, null, 2).slice(0, 500)}...`,
       );
       return;
     }
 
     try {
       setSuccessMsg("");
-      const res = await uploadMutation.mutateAsync({ file, config });
+      setUploadResult(null);
+      const res = await uploadMutation.mutateAsync({
+        file,
+        config: uploadConfig,
+      });
+      const sheetsProcessed = res.summary?.sheets_processed ?? 0;
+      const reconciliationInserted = res.summary?.reconciliation_inserted ?? 0;
+      const errorCount = res.summary?.errors?.length ?? 0;
+
+      const skippedMessage = [
+        skippedKeywordCount
+          ? `${skippedKeywordCount} keyword tanpa mapping lengkap dilewati`
+          : "",
+        skippedSheetCount
+          ? `${skippedSheetCount} sheet kosong/tidak tersedia dilewati`
+          : "",
+      ]
+        .filter(Boolean)
+        .join(". ");
+      const skippedSuffix = skippedMessage ? ` ${skippedMessage}.` : "";
+
+      setUploadResult(res);
       setSuccessMsg(
-        `Berhasil! ${res.summary?.sheets_processed} sheet diproses. ${res.summary?.reconciliation_inserted} data direkonsiliasi.`,
+        reconciliationInserted > 0
+          ? `Berhasil! ${sheetsProcessed} sheet diproses. ${reconciliationInserted} data direkonsiliasi${errorCount ? `, dengan ${errorCount} kesalahan` : ""}.${skippedSuffix}`
+          : `${sheetsProcessed} sheet selesai diproses, tetapi tidak ada data rekonsiliasi yang tersimpan.${skippedSuffix} Periksa kecocokan keyword, kolom, nilai Excel, dan detail kesalahan di bawah.`,
       );
-    } catch (err: any) {
-      alert(err.message || "Terjadi kesalahan saat memproses data");
+    } catch (err: unknown) {
+      alert(
+        err instanceof Error
+          ? err.message
+          : "Terjadi kesalahan saat memproses data",
+      );
     }
   };
 
@@ -212,8 +973,25 @@ export default function UploadKonfigurasiModal({ setOpenModal }: Props) {
         {/* Body */}
         <div className="p-5 sm:p-6 overflow-y-auto flex-1 space-y-6">
           {successMsg && (
-            <div className="bg-green-50 text-green-700 p-4 rounded-lg border border-green-200 font-medium">
-              {successMsg}
+            <div
+              className={`p-4 rounded-lg border font-medium ${(uploadResult?.summary?.reconciliation_inserted ?? 0) > 0
+                ? "bg-green-50 text-green-700 border-green-200"
+                : "bg-amber-50 text-amber-800 border-amber-200"
+                }`}
+            >
+              <p>{successMsg}</p>
+              {(uploadResult?.summary?.errors?.length ?? 0) > 0 && (
+                <div className="mt-3 border-t border-current/20 pt-3">
+                  <p className="text-xs font-bold uppercase tracking-wide">
+                    Detail kesalahan ({uploadResult?.summary?.errors.length})
+                  </p>
+                  <ul className="mt-2 max-h-40 list-disc space-y-1 overflow-y-auto pl-5 text-xs font-normal">
+                    {uploadResult?.summary?.errors.map((error, index) => (
+                      <li key={index}>{formatUploadError(error, index)}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           )}
 
@@ -253,6 +1031,174 @@ export default function UploadKonfigurasiModal({ setOpenModal }: Props) {
               </p>
             )}
           </div>
+
+          {file && (
+            <div className="rounded-xl border border-blue-200 bg-blue-50/60 p-4 text-sm text-gray-700">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="font-bold text-blue-900">Analisis isi Excel</p>
+                  <p className="mt-0.5 text-xs text-blue-700">
+                    Membandingkan isi file dengan sheet, kolom, dan keyword pada konfigurasi saat ini.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void inspectWorkbook(file)}
+                  disabled={isInspecting}
+                  className="rounded-lg border border-blue-300 bg-white px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-50 disabled:opacity-50"
+                >
+                  {isInspecting ? "Menganalisis..." : "Analisis ulang"}
+                </button>
+              </div>
+
+              {inspectionError && (
+                <p className="mt-3 rounded-lg bg-red-50 p-3 text-xs text-red-700">
+                  {inspectionError}
+                </p>
+              )}
+
+              {workbookInspection && (
+                <div className="mt-3 space-y-3">
+                  {workbookInspection.configSignature !==
+                    JSON.stringify(normalizeConfig(config)) && (
+                      <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+                        Konfigurasi berubah setelah analisis terakhir. Klik{" "}
+                        <span className="font-semibold">Analisis ulang</span> untuk
+                        memperbarui hasil.
+                      </div>
+                    )}
+
+                  <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-3">
+                    <div className="rounded-lg bg-white p-2.5">
+                      <p className="text-gray-500">Sheet dikonfigurasi</p>
+                      <p className="mt-0.5 font-bold text-gray-900">
+                        {workbookInspection.sheets.length}
+                      </p>
+                    </div>
+                    <div className="rounded-lg bg-emerald-50 p-2.5">
+                      <p className="text-emerald-700">Sheet ditemukan</p>
+                      <p className="mt-0.5 font-bold text-emerald-900">
+                        {workbookInspection.sheets.filter((sheet) => sheet.exists).length}
+                      </p>
+                    </div>
+                    <div className="rounded-lg bg-red-50 p-2.5">
+                      <p className="text-red-700">Sheet tidak ditemukan</p>
+                      <p className="mt-0.5 font-bold text-red-900">
+                        {workbookInspection.sheets.filter((sheet) => !sheet.exists).length}
+                      </p>
+                    </div>
+                  </div>
+
+                  <details className="text-xs">
+                    <summary className="cursor-pointer font-semibold text-blue-800">
+                      Lihat semua sheet dalam file ({workbookInspection.sheetNames.length})
+                    </summary>
+                    <p className="mt-2 max-h-24 overflow-y-auto rounded-lg bg-white p-2 text-gray-600">
+                      {workbookInspection.sheetNames.join(", ") || "Tidak ada sheet"}
+                    </p>
+                  </details>
+
+                  <div className="max-h-96 space-y-2 overflow-y-auto pr-1">
+                    {workbookInspection.sheets.map((sheet) => (
+                      <div
+                        key={sheet.requestedSheet}
+                        className={`rounded-lg border bg-white p-3 text-xs ${sheet.exists ? "border-blue-100" : "border-red-200"
+                          }`}
+                      >
+                        <p className="font-bold text-gray-900">
+                          Sheet {sheet.requestedSheet}{" "}
+                          {!sheet.exists ? (
+                            <span className="font-normal text-red-600">
+                              — tidak ditemukan
+                            </span>
+                          ) : sheet.actualSheet !== sheet.requestedSheet ? (
+                            <span className="font-normal text-amber-700">
+                              — cocok dengan “{sheet.actualSheet}”
+                            </span>
+                          ) : (
+                            <span className="font-normal text-emerald-700">
+                              — ditemukan
+                            </span>
+                          )}
+                        </p>
+
+                        {sheet.exists && (
+                          <div className="mt-3 space-y-3">
+                            <div>
+                              <p className="mb-1.5 font-semibold text-gray-700">
+                                Pemeriksaan kolom
+                              </p>
+                              <div className="grid gap-1.5 sm:grid-cols-2">
+                                {[
+                                  { label: "Hulu · pencarian", info: sheet.hulu.search },
+                                  { label: "Hulu · FLOWRATE", info: sheet.hulu.mmscf },
+                                  { label: "Hulu · ENERGY", info: sheet.hulu.mmbtu },
+                                  { label: "Hilir · pencarian", info: sheet.hilir.search },
+                                  { label: "Hilir · FLOWRATE", info: sheet.hilir.mmscf },
+                                  { label: "Hilir · ENERGY", info: sheet.hilir.mmbtu },
+                                  { label: "Stock · pencarian", info: sheet.stock.search },
+                                  ...sheet.stock.values.map((info) => ({
+                                    label: "Stock · nilai",
+                                    info,
+                                  })),
+                                ].map(({ label, info }) => (
+                                  <div
+                                    key={`${label}-${info.column}`}
+                                    className={`rounded-md px-2 py-1.5 ${info.hasData
+                                        ? "bg-emerald-50 text-emerald-800"
+                                        : "bg-red-50 text-red-700"
+                                      }`}
+                                    title={info.samples.join(" | ")}
+                                  >
+                                    <span className="font-semibold">{label} {info.column}</span>
+                                    {info.hasData ? " — ada data" : " — kosong/tidak ditemukan"}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            <div>
+                              <p className="mb-1.5 font-semibold text-gray-700">
+                                Pemeriksaan keyword
+                              </p>
+                              <div className="space-y-1.5">
+                                {sheet.keywords.map((match) => {
+                                  const found = match.cells.length > 0;
+                                  const foundElsewhere =
+                                    !found && match.cellsOutsideSearchRange.length > 0;
+
+                                  return (
+                                    <div
+                                      key={`${match.group}-${match.keyword}`}
+                                      className={`rounded-md px-2 py-1.5 ${found
+                                          ? "bg-emerald-50 text-emerald-800"
+                                          : foundElsewhere
+                                            ? "bg-amber-50 text-amber-800"
+                                            : "bg-red-50 text-red-700"
+                                        }`}
+                                    >
+                                      <span className="font-semibold">
+                                        {match.group} “{match.keyword}”
+                                      </span>{" "}
+                                      {found
+                                        ? `— ditemukan di ${match.cells.join(", ")}`
+                                        : foundElsewhere
+                                          ? `— ditemukan di ${match.cellsOutsideSearchRange.join(", ")}, tetapi bukan pada kolom ${match.searchColumn} mulai baris ${match.startRow}`
+                                          : `— tidak ditemukan pada kolom ${match.searchColumn} mulai baris ${match.startRow}`}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Sheet yang diproses */}
           <div>
@@ -385,12 +1331,17 @@ export default function UploadKonfigurasiModal({ setOpenModal }: Props) {
                           type="text"
                           value={kw.label}
                           onChange={(e) => {
-                            const newKws = [...config.hulu.keywords];
-                            newKws[i].label = e.target.value;
-                            setConfig({
-                              ...config,
-                              hulu: { ...config.hulu, keywords: newKws },
-                            });
+                            const label = e.target.value;
+                            setConfig((current) => ({
+                              ...current,
+                              hulu: {
+                                ...current.hulu,
+                                keywords: current.hulu.keywords.map(
+                                  (keyword, index) =>
+                                    index === i ? { ...keyword, label } : keyword,
+                                ),
+                              },
+                            }));
                           }}
                           className="text-gray-900 flex-1 px-3 py-1.5 bg-white border border-gray-300 focus:ring-2 focus:ring-primary/20 focus:border-primary rounded text-sm outline-none transition-all"
                         />
@@ -418,12 +1369,19 @@ export default function UploadKonfigurasiModal({ setOpenModal }: Props) {
                           value={filteredSites.find(s => s.id === kw.upstream_id)?.name || ""}
                           onChange={(val) => {
                             const site = filteredSites.find(s => s.name === val);
-                            const newKws = [...config.hulu.keywords];
-                            newKws[i].upstream_id = site ? site.id : "";
-                            setConfig({
-                              ...config,
-                              hulu: { ...config.hulu, keywords: newKws },
-                            });
+                            const upstreamId = site?.id ?? "";
+                            setConfig((current) => ({
+                              ...current,
+                              hulu: {
+                                ...current.hulu,
+                                keywords: current.hulu.keywords.map(
+                                  (keyword, index) =>
+                                    index === i
+                                      ? { ...keyword, upstream_id: upstreamId }
+                                      : keyword,
+                                ),
+                              },
+                            }));
                           }}
                           placeholder="-- Pilih Hulu --"
                         />
@@ -601,12 +1559,17 @@ export default function UploadKonfigurasiModal({ setOpenModal }: Props) {
                           type="text"
                           value={kw.label}
                           onChange={(e) => {
-                            const newKws = [...config.hilir.keywords];
-                            newKws[i].label = e.target.value;
-                            setConfig({
-                              ...config,
-                              hilir: { ...config.hilir, keywords: newKws },
-                            });
+                            const label = e.target.value;
+                            setConfig((current) => ({
+                              ...current,
+                              hilir: {
+                                ...current.hilir,
+                                keywords: current.hilir.keywords.map(
+                                  (keyword, index) =>
+                                    index === i ? { ...keyword, label } : keyword,
+                                ),
+                              },
+                            }));
                           }}
                           className="text-gray-900 flex-1 px-3 py-1.5 bg-white border border-gray-300 focus:ring-2 focus:ring-primary/20 focus:border-primary rounded text-sm outline-none transition-all"
                         />
@@ -635,12 +1598,19 @@ export default function UploadKonfigurasiModal({ setOpenModal }: Props) {
                             value={filteredSites.find(s => s.id === kw.upstream_id)?.name || ""}
                             onChange={(val) => {
                               const site = filteredSites.find(s => s.name === val);
-                              const newKws = [...config.hilir.keywords];
-                              newKws[i].upstream_id = site ? site.id : "";
-                              setConfig({
-                                ...config,
-                                hilir: { ...config.hilir, keywords: newKws },
-                              });
+                              const upstreamId = site?.id ?? "";
+                              setConfig((current) => ({
+                                ...current,
+                                hilir: {
+                                  ...current.hilir,
+                                  keywords: current.hilir.keywords.map(
+                                    (keyword, index) =>
+                                      index === i
+                                        ? { ...keyword, upstream_id: upstreamId }
+                                        : keyword,
+                                  ),
+                                },
+                              }));
                             }}
                             placeholder="-- Pilih Hulu --"
                           />
@@ -652,12 +1622,19 @@ export default function UploadKonfigurasiModal({ setOpenModal }: Props) {
                             value={filteredHilirSites.find(s => s.id === kw.downstream_id)?.name || ""}
                             onChange={(val) => {
                               const site = filteredHilirSites.find(s => s.name === val);
-                              const newKws = [...config.hilir.keywords];
-                              newKws[i].downstream_id = site ? site.id : "";
-                              setConfig({
-                                ...config,
-                                hilir: { ...config.hilir, keywords: newKws },
-                              });
+                              const downstreamId = site?.id ?? "";
+                              setConfig((current) => ({
+                                ...current,
+                                hilir: {
+                                  ...current.hilir,
+                                  keywords: current.hilir.keywords.map(
+                                    (keyword, index) =>
+                                      index === i
+                                        ? { ...keyword, downstream_id: downstreamId }
+                                        : keyword,
+                                  ),
+                                },
+                              }));
                             }}
                             placeholder="-- Pilih Hilir --"
                           />

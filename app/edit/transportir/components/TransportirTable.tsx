@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { ChevronDown, ChevronRight, Loader2, Search, ChevronLeft, Menu, Filter, X } from "lucide-react";
 
 type Reconciliation = {
@@ -42,28 +42,21 @@ interface TransportirTableProps {
   onFilterChange?: (filters: { shipper?: string; start_date?: string; end_date?: string }) => void;
 }
 
-export default function TransportirTable({ 
-  data, 
-  isLoading, 
-  pagination, 
-  filters, 
-  onPageChange, 
-  onFilterChange 
+export default function TransportirTable({
+  data,
+  isLoading,
+  pagination,
+  filters,
+  onPageChange,
+  onFilterChange
 }: TransportirTableProps) {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [showFilters, setShowFilters] = useState(false);
-  
+
   // Local state for filters
   const [localShipper, setLocalShipper] = useState(filters?.shipper || "");
   const [localStartDate, setLocalStartDate] = useState(filters?.start_date || "");
   const [localEndDate, setLocalEndDate] = useState(filters?.end_date || "");
-
-  // Sync external filters to local state if they change
-  useEffect(() => {
-    setLocalShipper(filters?.shipper || "");
-    setLocalStartDate(filters?.start_date || "");
-    setLocalEndDate(filters?.end_date || "");
-  }, [filters]);
 
   const handleApplyFilters = () => {
     if (onFilterChange) {
@@ -116,11 +109,10 @@ export default function TransportirTable({
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-all duration-200 ${
-              showFilters
+            className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-all duration-200 ${showFilters
                 ? "bg-primary text-white border-primary"
                 : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-            }`}
+              }`}
           >
             <Filter size={16} />
             Filter
@@ -136,64 +128,64 @@ export default function TransportirTable({
       {showFilters && (
         <div className="px-4 py-4 border-b border-gray-200 bg-gray-50/50">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
-                  Shipper
-                </label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
-                    type="text"
-                    value={localShipper}
-                    onChange={(e) => setLocalShipper(e.target.value)}
-                    placeholder="Cari shipper..."
-                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
-                  Tanggal Mulai
-                </label>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
+                Shipper
+              </label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
-                  type="date"
-                  value={localStartDate}
-                  onChange={(e) => setLocalStartDate(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
-                  Tanggal Akhir
-                </label>
-                <input
-                  type="date"
-                  value={localEndDate}
-                  onChange={(e) => setLocalEndDate(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
+                  type="text"
+                  value={localShipper}
+                  onChange={(e) => setLocalShipper(e.target.value)}
+                  placeholder="Cari shipper..."
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
                 />
               </div>
             </div>
-            
-            {/* Filter actions */}
-            <div className="flex items-center justify-end gap-2 mt-4">
-              <button
-                onClick={handleResetFilters}
-                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200"
-              >
-                <X size={14} />
-                Reset
-              </button>
-              <button
-                onClick={handleApplyFilters}
-                className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
-              >
-                <Search size={14} />
-                Terapkan Filter
-              </button>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
+                Tanggal Mulai
+              </label>
+              <input
+                type="date"
+                value={localStartDate}
+                onChange={(e) => setLocalStartDate(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
+                Tanggal Akhir
+              </label>
+              <input
+                type="date"
+                value={localEndDate}
+                onChange={(e) => setLocalEndDate(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-200"
+              />
             </div>
           </div>
-        )}
+
+          {/* Filter actions */}
+          <div className="flex items-center justify-end gap-2 mt-4">
+            <button
+              onClick={handleResetFilters}
+              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200"
+            >
+              <X size={14} />
+              Reset
+            </button>
+            <button
+              onClick={handleApplyFilters}
+              className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-[#0d4a5c] transition-all duration-200 hover:shadow-md active:scale-95"
+            >
+              <Search size={14} />
+              Terapkan Filter
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Table */}
       <div className="overflow-x-auto relative min-h-[400px]">
@@ -230,7 +222,7 @@ export default function TransportirTable({
             <tbody className="divide-y divide-gray-100">
               {data.map((row) => (
                 <React.Fragment key={row.id}>
-                  <tr 
+                  <tr
                     className={`hover:bg-gray-50 transition-colors cursor-pointer ${expandedRows.has(row.id) ? 'bg-blue-50/50' : ''}`}
                     onClick={() => toggleRow(row.id)}
                   >
@@ -341,7 +333,7 @@ export default function TransportirTable({
           </table>
         )}
       </div>
-      
+
       {/* Pagination Footer */}
       {!isLoading && pagination && (
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-4 py-3 border-t border-gray-200 gap-3 bg-white mt-auto">
@@ -368,7 +360,7 @@ export default function TransportirTable({
                 id="page-size"
                 value={pagination.limit}
                 onChange={(e) => {
-                  onPageChange && onPageChange(1, Number(e.target.value));
+                  onPageChange?.(1, Number(e.target.value));
                 }}
                 className="px-2 py-1 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all duration-200"
               >
@@ -398,7 +390,7 @@ export default function TransportirTable({
                 const pages: (number | "...")[] = [];
                 const displayPage = pagination.page;
                 const totalPages = pagination.totalPages;
-                
+
                 if (totalPages <= 7) {
                   for (let i = 1; i <= totalPages; i++) pages.push(i);
                 } else {
@@ -410,7 +402,7 @@ export default function TransportirTable({
                   if (displayPage < totalPages - 2) pages.push("...");
                   pages.push(totalPages);
                 }
-                
+
                 return pages.map((p, idx) =>
                   p === "..." ? (
                     <span
@@ -423,11 +415,10 @@ export default function TransportirTable({
                     <button
                       key={p}
                       onClick={() => onPageChange && onPageChange(p as number, pagination.limit)}
-                      className={`min-w-[2rem] h-8 rounded-lg text-sm font-medium transition-all duration-200 ${
-                        p === displayPage
+                      className={`min-w-[2rem] h-8 rounded-lg text-sm font-medium transition-all duration-200 ${p === displayPage
                           ? "bg-primary text-white shadow-sm"
                           : "text-gray-700 hover:bg-gray-100"
-                      }`}
+                        }`}
                     >
                       {p}
                     </button>

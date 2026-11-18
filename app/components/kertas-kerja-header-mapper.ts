@@ -54,6 +54,7 @@ export function getKertasKerjaSubcategoryColumns(
   subcategoryHeader: unknown[],
   groupAliases: string[],
   subcategoryName: string,
+  options: { exact?: boolean } = {},
 ): number[] {
   const matchedGroups =
     groupAliases
@@ -63,13 +64,30 @@ export function getKertasKerjaSubcategoryColumns(
       .find((matches) => matches.length > 0) ?? [];
   const normalizedSubcategory = normalizeHeader(subcategoryName);
   const columns: number[] = [];
+  const matchesSubcategory = (header: string): boolean => {
+    if (!options.exact) return header.includes(normalizedSubcategory);
+
+    const withoutUnit = header.replace(/\s*\((?:KL|HARI|%)\)\s*$/i, "");
+    return withoutUnit === normalizedSubcategory;
+  };
 
   for (const group of matchedGroups) {
+    // Some source workbooks start a merged parent group a few columns after
+    // its first subcategory (Jamali RENCANA starts at MEI while PESAN starts at
+    // JAN). Include that immediately preceding subcategory when it matches.
+    let effectiveStart = group.start;
+    for (let column = group.start; column >= 0; column--) {
+      const precedingHeader = normalizeHeader(subcategoryHeader[column]);
+      if (!precedingHeader) continue;
+      if (matchesSubcategory(precedingHeader)) effectiveStart = column;
+      break;
+    }
+
     let isInsideSubcategory = false;
-    for (let column = group.start; column <= group.end; column++) {
+    for (let column = effectiveStart; column <= group.end; column++) {
       const currentHeader = normalizeHeader(subcategoryHeader[column]);
       if (currentHeader) {
-        isInsideSubcategory = currentHeader.includes(normalizedSubcategory);
+        isInsideSubcategory = matchesSubcategory(currentHeader);
       }
       if (isInsideSubcategory) columns.push(column);
     }
@@ -83,7 +101,7 @@ export function findKertasKerjaMonthColumn(
   primaryMonthHeader: unknown[],
   secondaryMonthHeader: unknown[],
   targetMonth: string,
-  normalizeMonth: (value: string) => string,
+  normalizeMonth: (value: unknown) => string,
 ): number {
   const target = normalizeMonth(targetMonth);
 
@@ -92,7 +110,7 @@ export function findKertasKerjaMonthColumn(
     if (
       primary !== undefined &&
       primary !== null &&
-      normalizeMonth(String(primary)) === target
+      normalizeMonth(primary) === target
     ) {
       return column;
     }
@@ -101,7 +119,7 @@ export function findKertasKerjaMonthColumn(
     if (
       secondary !== undefined &&
       secondary !== null &&
-      normalizeMonth(String(secondary)) === target
+      normalizeMonth(secondary) === target
     ) {
       return column;
     }
