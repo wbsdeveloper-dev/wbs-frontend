@@ -2234,7 +2234,7 @@ export default function BulkUploadKertasKerjaModal({
                 selectedSheets.length === 0 ||
                 isParsing
               }
-              className="flex items-center justify-center min-w-[140px] px-5 py-2.5 text-sm font-medium text-white bg-primary rounded-lg hover:bg-[#0d4a5c] focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all shadow-md active:scale-95 disabled:opacity-50 disabled:active:scale-100"
+              className="flex items-center justify-center min-w-[140px] px-5 py-2.5 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all shadow-md active:scale-95 disabled:opacity-50 disabled:active:scale-100"
             >
               {isParsing ? (
                 <>
