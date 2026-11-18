@@ -51,6 +51,17 @@ test("normalizes Indonesian and English month aliases", () => {
   });
 });
 
+test("normalizes Jamali Excel serial, ISO, and Date month headers", () => {
+  assert.equal(normalizeKertasKerjaMonth(46023), "Jan '26");
+  assert.equal(normalizeKertasKerjaMonth(46357), "Des '26");
+  assert.equal(normalizeKertasKerjaMonth("2027-01-01"), "Jan '27");
+  assert.equal(
+    normalizeKertasKerjaMonth(new Date("2026-08-01T00:00:00.000Z")),
+    "Agu '26",
+  );
+  assert.equal(normalizeKertasKerjaMonth(12), "12");
+});
+
 test("corrects isolated year typos using header consensus and chronology", () => {
   const supportingHeaders = [
     ...canonicalTimeline,
@@ -78,6 +89,49 @@ test("corrects isolated year typos using header consensus and chronology", () =>
   );
   assert.ok(
     result.corrections.every((correction) => correction.supportingHeaders >= 3),
+  );
+});
+
+test("corrects the duplicated final January in the Jamali primary timeline", () => {
+  const jamaliPrimaryTimeline = [
+    "04 DES 2025",
+    "04 JAN 2026",
+    "4 FEB 2026",
+    "2 MAR 2026",
+    "01 APR 2026",
+    "03 MEI 2026",
+    "02 JUNI 2026",
+    "02 JULI 2026",
+    "3 AGUSTUS 2026",
+    "1 SEPT 2026",
+    "4 OKT 2026",
+    "4 NOV 2026",
+    "03 DES 2026",
+    "05 JAN 2026",
+  ];
+  const excelMonthHeaders = [
+    46023, 46054, 46082, 46113, 46143, 46174, 46204, 46235, 46266, 46296, 46327,
+    46357,
+  ];
+  const supportingHeaders = [
+    ...excelMonthHeaders,
+    ...excelMonthHeaders,
+    ...canonicalTimeline,
+    ...canonicalTimeline,
+  ];
+
+  const result = reconcileKertasKerjaMonthTimeline(
+    jamaliPrimaryTimeline,
+    supportingHeaders,
+  );
+
+  assert.deepEqual(result.months, canonicalTimeline);
+  assert.ok(
+    result.corrections.some(
+      (correction) =>
+        correction.originalMonth === "Jan '26" &&
+        correction.correctedMonth === "Jan '27",
+    ),
   );
 });
 

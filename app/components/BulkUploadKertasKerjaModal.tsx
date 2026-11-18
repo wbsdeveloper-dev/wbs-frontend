@@ -583,7 +583,7 @@ export default function BulkUploadKertasKerjaModal({
     return s;
   };
 
-  const normalizeMonthWork = (rawLabel: string): string =>
+  const normalizeMonthWork = (rawLabel: unknown): string =>
     normalizeKertasKerjaMonth(rawLabel);
 
   const parseSelectedWorkbook = (options: ParseOptions = {}) => {
@@ -776,16 +776,34 @@ export default function BulkUploadKertasKerjaModal({
               ["REALISASI"],
               "STOK AKHIR",
             );
-            const shopAkhirCols = getSubCategoryCols(
-              ["REALISASI"],
-              "SHOP AKHIR",
-            );
+            const shopAkhirCols = Array.from(
+              new Set([
+                ...getSubCategoryCols(["REALISASI"], "SHOP AKHIR"),
+                ...getSubCategoryCols(["REALISASI"], "HOP AKHIR"),
+              ]),
+            ).sort((left, right) => left - right);
             const renoPesanCols = getSubCategoryCols(["RENOMINASI"], "PESAN");
             const renoProyeksiCols = getSubCategoryCols(
               ["RENOMINASI"],
               "PROYEKSI",
             );
-            const deltaTerimaCols = getSubCategoryCols(["DELTA"], "TERIMA");
+            const jamaliDeltaTerimaCols = getKertasKerjaSubcategoryColumns(
+              headerGroups,
+              row4,
+              ["DELTA"],
+              "DELTA TERIMA",
+              { exact: true },
+            );
+            const deltaTerimaCols =
+              jamaliDeltaTerimaCols.length > 0
+                ? jamaliDeltaTerimaCols
+                : getKertasKerjaSubcategoryColumns(
+                    headerGroups,
+                    row4,
+                    ["DELTA"],
+                    "TERIMA",
+                    { exact: true },
+                  );
             const pencapaianCols = getSubCategoryCols(["DELTA"], "PENCAPAIAN");
             const rencanaPesanCols = getSubCategoryCols(
               ["NOMINASI", "RENCANA"],
