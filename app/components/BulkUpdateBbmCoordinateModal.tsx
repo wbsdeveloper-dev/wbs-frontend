@@ -46,12 +46,21 @@ const STATUS_STYLE: Record<ClassifiedBbmCoordinateRow["status"], string> = {
   AMBIGUOUS: "bg-orange-100 text-orange-800",
 };
 
-const STATUS_LABEL: Record<ClassifiedBbmCoordinateRow["status"], string> = {
+const STATUS_LABEL: Record<
+  Exclude<ClassifiedBbmCoordinateRow["status"], "CREATE">,
+  string
+> = {
   CHANGED: "Akan diperbarui",
   UNCHANGED: "Sudah sama",
-  CREATE: "Akan dibuat · Pembangkit BBM",
   AMBIGUOUS: "Ambigu · dilewati",
 };
+
+function getCoordinateStatusLabel(item: ClassifiedBbmCoordinateRow): string {
+  if (item.status !== "CREATE") return STATUS_LABEL[item.status];
+  return item.row.sourceSiteType === "PEMASOK"
+    ? "Akan dibuat · TBBM/Pemasok BBM"
+    : "Akan dibuat · Pembangkit BBM";
+}
 
 function downloadBbmCoordinateTemplate(sites: Site[]): void {
   const bbmSites = sites
@@ -105,7 +114,7 @@ function downloadBbmCoordinateTemplate(sites: Site[]): void {
     ["Kolom", "Keterangan"],
     [
       "jenis_site",
-      "Informasi jenis site. Kolom ini tidak diproses saat upload.",
+      "Wajib untuk template baru. Digunakan bersama nama_sentral agar Pembangkit dan TBBM/Pemasok dengan nama sama dapat dicocokkan secara tepat.",
     ],
     [
       "nama_sentral",
@@ -139,7 +148,7 @@ function downloadBbmCoordinateTemplate(sites: Site[]): void {
     ],
     [
       "4.",
-      "Jangan mengubah nama_sentral. Nama baru yang ditambahkan akan dibuat sebagai Pembangkit BBM.",
+      "Jangan mengubah jenis_site atau nama_sentral. Nama baru akan dibuat mengikuti jenis_site; file lama tanpa jenis_site tetap dibuat sebagai Pembangkit BBM.",
     ],
   ]);
   instructionSheet["!cols"] = [{ wch: 22 }, { wch: 95 }];
@@ -458,9 +467,10 @@ export default function BulkUpdateBbmCoordinateModal({
               <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
                 <strong>Konfirmasi update koordinat</strong>
                 <p className="mt-1 text-xs">
-                  Server akan mencocokkan ulang nama. Nama yang belum ada dibuat
-                  sebagai Pembangkit BBM, sedangkan nama ambigu tetap dilewati.
-                  Seluruh perubahan diproses secara transaksional.
+                  Server akan mencocokkan ulang kombinasi jenis site dan nama.
+                  Nama yang belum ada dibuat mengikuti jenis site, sedangkan
+                  kombinasi yang masih ambigu tetap dilewati. Seluruh perubahan
+                  diproses secara transaksional.
                 </p>
               </div>
               <SummaryGrid summary={summary} />
@@ -528,7 +538,7 @@ function CoordinateTable({ rows }: { rows: ClassifiedBbmCoordinateRow[] }) {
           <tr>
             {[
               "Baris",
-              "Nama Excel",
+              "Jenis / Nama Excel",
               "Site Server / Jenis",
               "Koordinat Lama",
               "Koordinat Baru",
@@ -548,6 +558,13 @@ function CoordinateTable({ rows }: { rows: ClassifiedBbmCoordinateRow[] }) {
             >
               <td className="px-3 py-3 font-semibold">#{item.row.rowNumber}</td>
               <td className="px-3 py-3">
+                <p className="text-gray-500">
+                  {item.row.sourceSiteType === "PEMASOK"
+                    ? "TBBM/Pemasok"
+                    : item.row.sourceSiteType === "PEMBANGKIT"
+                      ? "Pembangkit"
+                      : "Jenis tidak tersedia (template lama)"}
+                </p>
                 <strong>{item.row.sourceName}</strong>
                 {item.row.sourceCode && (
                   <p className="text-gray-400">
@@ -585,7 +602,7 @@ function CoordinateTable({ rows }: { rows: ClassifiedBbmCoordinateRow[] }) {
                 <span
                   className={`rounded-full px-2.5 py-1 font-semibold ${STATUS_STYLE[item.status]}`}
                 >
-                  {STATUS_LABEL[item.status]}
+                  {getCoordinateStatusLabel(item)}
                 </span>
                 <p className="mt-2 max-w-[240px] text-gray-500">
                   {item.reason}

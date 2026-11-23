@@ -6,10 +6,13 @@ export type BbmCoordinateMatchStatus =
   | "CREATE"
   | "AMBIGUOUS";
 
+export type BbmCoordinateSiteType = "PEMBANGKIT" | "PEMASOK";
+
 export interface ParsedBbmCoordinateRow {
   rowNumber: number;
   sourceCode: string;
   sourceName: string;
+  sourceSiteType: BbmCoordinateSiteType | null;
   normalizedName: string;
   latitude: number;
   longitude: number;
@@ -64,6 +67,7 @@ const NOTE_CATEGORY_LABEL: Record<BbmCoordinateNoteCategory, string> = {
 
 const HEADER_ALIASES = {
   code: new Set(["kode_sentral", "kode sentral"]),
+  siteType: new Set(["jenis_site", "jenis site", "site_type", "site type"]),
   name: new Set(["nama_sentral", "nama sentral", "site_name", "site name"]),
   latitude: new Set(["latitude", "lat"]),
   longitude: new Set(["longitude", "long", "lng"]),
@@ -90,6 +94,28 @@ function displayText(value: unknown): string {
     .normalize("NFKC")
     .trim()
     .replace(/\s+/g, " ");
+}
+
+export function parseBbmCoordinateSiteType(
+  value: unknown,
+): BbmCoordinateSiteType | null {
+  const normalized = displayText(value)
+    .toLocaleLowerCase("id-ID")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+  if (!normalized) return null;
+  if (["pembangkit", "plant"].includes(normalized)) return "PEMBANGKIT";
+  if (["tbbm", "pemasok", "supplier", "tbbm pemasok"].includes(normalized)) {
+    return "PEMASOK";
+  }
+  return null;
+}
+
+function coordinateRowKey(row: {
+  sourceSiteType: BbmCoordinateSiteType | null;
+  normalizedName: string;
+}): string {
+  return `${row.sourceSiteType ?? "ANY"}:${row.normalizedName}`;
 }
 
 function parseCoordinate(
@@ -119,6 +145,7 @@ function parseCoordinate(
 function findHeader(matrix: unknown[][]): {
   rowIndex: number;
   codeIndex?: number;
+  siteTypeIndex?: number;
   nameIndex: number;
   latitudeIndex: number;
   longitudeIndex: number;
@@ -129,6 +156,7 @@ function findHeader(matrix: unknown[][]): {
     const find = (aliases: Set<string>) =>
       headers.findIndex((header) => aliases.has(header));
     const codeIndex = find(HEADER_ALIASES.code);
+    const siteTypeIndex = find(HEADER_ALIASES.siteType);
     const nameIndex = find(HEADER_ALIASES.name);
     const latitudeIndex = find(HEADER_ALIASES.latitude);
     const longitudeIndex = find(HEADER_ALIASES.longitude);
@@ -136,6 +164,7 @@ function findHeader(matrix: unknown[][]): {
       return {
         rowIndex,
         ...(codeIndex >= 0 ? { codeIndex } : {}),
+        ...(siteTypeIndex >= 0 ? { siteTypeIndex } : {}),
         nameIndex,
         latitudeIndex,
         longitudeIndex,
@@ -150,8 +179,14 @@ function findHeader(matrix: unknown[][]): {
 export function parseBbmCoordinateMatrix(
   matrix: unknown[][],
 ): ParsedBbmCoordinateRow[] {
-  const { rowIndex, codeIndex, nameIndex, latitudeIndex, longitudeIndex } =
-    findHeader(matrix);
+  const {
+    rowIndex,
+    codeIndex,
+    siteTypeIndex,
+    nameIndex,
+    latitudeIndex,
+    longitudeIndex,
+  } = findHeader(matrix);
   const parsedRows: ParsedBbmCoordinateRow[] = [];
   const errors: string[] = [];
 
@@ -178,11 +213,20 @@ export function parseBbmCoordinateMatrix(
       if (!sourceName) {
         throw new Error(`Baris ${rowNumber}: nama_sentral wajib diisi`);
       }
+      const rawSiteType =
+        siteTypeIndex === undefined ? "" : displayText(source[siteTypeIndex]);
+      const sourceSiteType = parseBbmCoordinateSiteType(rawSiteType);
+      if (rawSiteType && !sourceSiteType) {
+        throw new Error(
+          `Baris ${rowNumber}: jenis_site "${rawSiteType}" tidak valid; gunakan Pembangkit atau TBBM/Pemasok`,
+        );
+      }
       parsedRows.push({
         rowNumber,
         sourceCode:
           codeIndex === undefined ? "" : displayText(source[codeIndex]),
         sourceName,
+        sourceSiteType,
         normalizedName: normalizeCoordinateSiteName(sourceName),
         latitude: parseCoordinate(rawLatitude, "latitude", rowNumber),
         longitude: parseCoordinate(rawLongitude, "longitude", rowNumber),
@@ -202,15 +246,16 @@ export function parseBbmCoordinateMatrix(
 
   const uniqueRows = new Map<string, ParsedBbmCoordinateRow>();
   for (const row of parsedRows) {
-    const previous = uniqueRows.get(row.normalizedName);
+    const key = coordinateRowKey(row);
+    const previous = uniqueRows.get(key);
     if (previous) {
       row.overriddenRowNumbers = [
         ...previous.overriddenRowNumbers,
         previous.rowNumber,
       ];
     }
-    // Baris paling bawah dianggap sebagai nilai terbaru.
-    uniqueRows.set(row.normalizedName, row);
+    // Baris paling bawah untuk kombinasi jenis site dan nama dianggap terbaru.
+    uniqueRows.set(key, row);
   }
   return [...uniqueRows.values()];
 }
@@ -248,14 +293,18 @@ export function classifyBbmCoordinateRows(
   }
 
   return rows.map((row) => {
-    const candidates = sitesByName.get(row.normalizedName) ?? [];
+    const nameCandidates = sitesByName.get(row.normalizedName) ?? [];
+    const candidates = row.sourceSiteType
+      ? nameCandidates.filter((site) => site.site_type === row.sourceSiteType)
+      : nameCandidates;
     if (candidates.length === 0) {
+      const createType = row.sourceSiteType ?? "PEMBANGKIT";
       return {
         row,
         status: "CREATE",
         site: null,
         candidates,
-        reason: "Site baru akan dibuat sebagai Pembangkit BBM",
+        reason: `Site baru akan dibuat sebagai ${createType === "PEMASOK" ? "TBBM/Pemasok" : "Pembangkit"} BBM`,
       };
     }
     if (candidates.length > 1) {
@@ -391,6 +440,7 @@ export function toBbmCoordinateCommitRows(
   return classifications.map(({ row }) => ({
     rowNumber: row.rowNumber,
     sourceName: row.sourceName,
+    sourceSiteType: row.sourceSiteType ?? undefined,
     latitude: row.latitude,
     longitude: row.longitude,
     overriddenRowNumbers: row.overriddenRowNumbers,

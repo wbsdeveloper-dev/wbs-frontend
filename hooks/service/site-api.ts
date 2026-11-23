@@ -350,6 +350,7 @@ export interface BbmCoordinateCommitPayload {
   rows: Array<{
     rowNumber: number;
     sourceName: string;
+    sourceSiteType?: "PEMBANGKIT" | "PEMASOK";
     latitude: number;
     longitude: number;
     overriddenRowNumbers: number[];

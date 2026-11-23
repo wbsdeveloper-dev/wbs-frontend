@@ -49,6 +49,7 @@ test("parses attached column layout and ignores kode_sentral", () => {
       rowNumber: 3,
       sourceCode: "21443040102",
       sourceName: "PLTD Tanah Merah",
+      sourceSiteType: null,
       normalizedName: "pltd tanah merah",
       latitude: 3.727528,
       longitude: 117.568111,
@@ -70,6 +71,7 @@ test("ignores prefilled site rows whose latitude and longitude are both empty", 
 
   assert.equal(rows.length, 1);
   assert.equal(rows[0].sourceName, "PLTD Terisi");
+  assert.equal(rows[0].sourceSiteType, "PEMBANGKIT");
   assert.equal(rows[0].latitude, -6.2);
   assert.equal(rows[0].longitude, 106.8);
 });
@@ -124,6 +126,48 @@ test("bottom-most duplicate wins and records overridden rows", () => {
   assert.deepEqual(rows[0].overriddenRowNumbers, [2, 3]);
 });
 
+test("keeps equal names with different site types distinct and matches each type", () => {
+  const sameNamePlant: Site = {
+    ...plant,
+    id: "33333333-3333-4333-8333-333333333333",
+    name: "Site Bersama",
+  };
+  const sameNameSupplier: Site = {
+    ...supplier,
+    id: "44444444-4444-4444-8444-444444444444",
+    name: "Site Bersama",
+  };
+  const rows = parseBbmCoordinateMatrix([
+    ["jenis_site", "nama_sentral", "latitude", "longitude"],
+    ["Pembangkit", "Site Bersama", -6.1, 106.1],
+    ["TBBM/Pemasok", "Site Bersama", -6.2, 106.2],
+  ]);
+
+  assert.equal(rows.length, 2);
+  assert.deepEqual(
+    rows.map((row) => row.sourceSiteType),
+    ["PEMBANGKIT", "PEMASOK"],
+  );
+
+  const classifications = classifyBbmCoordinateRows(rows, [
+    sameNamePlant,
+    sameNameSupplier,
+  ]);
+  assert.deepEqual(
+    classifications.map((item) => item.status),
+    ["CHANGED", "CHANGED"],
+  );
+  assert.deepEqual(
+    classifications.map((item) => item.site?.id),
+    [sameNamePlant.id, sameNameSupplier.id],
+  );
+
+  assert.deepEqual(
+    toBbmCoordinateCommitRows(classifications).map((row) => row.sourceSiteType),
+    ["PEMBANGKIT", "PEMASOK"],
+  );
+});
+
 test("classifies changed, unchanged, create, and ambiguous across both BBM site types", () => {
   const rows = parseBbmCoordinateMatrix([
     ["nama_sentral", "latitude", "longitude"],
@@ -162,6 +206,7 @@ test("classifies changed, unchanged, create, and ambiguous across both BBM site 
   assert.deepEqual(payload[0], {
     rowNumber: 2,
     sourceName: "pltd tanah merah",
+    sourceSiteType: undefined,
     latitude: 3.727528,
     longitude: 117.568111,
     overriddenRowNumbers: [],
