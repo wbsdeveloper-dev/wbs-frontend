@@ -14,6 +14,7 @@ import {
   CheckCircle2,
   AlertCircle,
   Info,
+  Lock,
   MoreVertical,
   ChevronDown,
   Cloud,
@@ -128,7 +129,7 @@ export default function KertasKerjaTable({
   selectedUnit,
   selectedUnitPelaksana,
   selectedPembangkit,
-  canUpdate = true,
+  canUpdate = false,
 }: KertasKerjaTableProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showInactive, setShowInactive] = useState(false);
@@ -222,11 +223,19 @@ export default function KertasKerjaTable({
 
   useEffect(() => {
     if (
-      saveInFlightRef.current ||
-      Object.keys(dirtyRecordsRef.current).length > 0 ||
-      tableRef.current?.contains(document.activeElement)
+      canUpdate &&
+      (saveInFlightRef.current ||
+        Object.keys(dirtyRecordsRef.current).length > 0 ||
+        tableRef.current?.contains(document.activeElement))
     ) {
       return;
+    }
+
+    if (!canUpdate) {
+      // Discard any pending local edit if UPDATE access is revoked at runtime.
+      dirtyRecordsRef.current = {};
+      setDirtyRecords({});
+      setAutoSyncStatus("idle");
     }
 
     const initial: Record<string, RecordKertasKerja> = {};
@@ -235,7 +244,7 @@ export default function KertasKerjaTable({
         withCalculatedKertasKerjaDelta(roundKertasKerjaDayFields(r));
     });
     setLocalRecords(initial);
-  }, [records]);
+  }, [canUpdate, records]);
 
   useEffect(() => {
     const handleOnline = () => {
@@ -356,6 +365,8 @@ export default function KertasKerjaTable({
     field: keyof RecordKertasKerja,
     val: string,
   ) => {
+    if (!canUpdate) return;
+
     const key = `${templateId}_${month}`;
 
     setLocalRecords((prev) => {
@@ -415,6 +426,19 @@ export default function KertasKerjaTable({
   const performSave = async ({
     automatic = false,
   }: { automatic?: boolean } = {}) => {
+    if (!canUpdate) {
+      if (!automatic) {
+        setModalState({
+          type: "message",
+          status: "info",
+          title: "Mode Baca Saja",
+          message:
+            "Anda tidak memiliki hak UPDATE untuk mengubah atau menyimpan Kertas Kerja BBM.",
+        });
+      }
+      return;
+    }
+
     if (saveInFlightRef.current) return;
 
     const snapshot = dirtyRecordsRef.current;
@@ -559,6 +583,7 @@ export default function KertasKerjaTable({
   }, [isOnline, isPageVisible]);
 
   const autoSyncLabel = (() => {
+    if (!canUpdate) return "Mode baca saja — tanpa hak UPDATE";
     if (!isOnline || autoSyncStatus === "offline") {
       return "Offline — perubahan tertunda";
     }
@@ -602,6 +627,7 @@ export default function KertasKerjaTable({
     event: React.KeyboardEvent<HTMLTableElement>,
   ) => {
     if (
+      !canUpdate ||
       event.key !== "Enter" ||
       event.shiftKey ||
       event.nativeEvent.isComposing
@@ -668,7 +694,7 @@ export default function KertasKerjaTable({
     defaultValue,
     onBlur,
     className = "",
-    readOnly = !canUpdate,
+    readOnly = false,
     bgColorClass,
     roundToInteger = false,
     valueType = "number",
@@ -700,6 +726,7 @@ export default function KertasKerjaTable({
       }`;
     };
 
+    const effectiveReadOnly = !canUpdate || readOnly;
     const [val, setVal] = useState(formatValue(defaultValue));
 
     useEffect(() => {
@@ -712,14 +739,16 @@ export default function KertasKerjaTable({
         inputMode={valueType === "number" ? "decimal" : "text"}
         pattern={valueType === "number" ? "-?[0-9]*[.,]?[0-9]*" : undefined}
         value={val}
-        onChange={(e) =>
+        onChange={(e) => {
+          if (effectiveReadOnly) return;
           setVal(
             valueType === "number"
               ? sanitizeNumericValue(e.target.value)
               : e.target.value,
-          )
-        }
+          );
+        }}
         onBlur={() => {
+          if (effectiveReadOnly) return;
           const incompleteNumber = ["-", ".", "-."].includes(val);
           const normalizedValue = formatValue(
             valueType === "number" && incompleteNumber ? "" : val,
@@ -727,15 +756,15 @@ export default function KertasKerjaTable({
           setVal(normalizedValue);
           onBlur?.(normalizedValue);
         }}
-        readOnly={readOnly}
-        aria-readonly={readOnly}
+        readOnly={effectiveReadOnly}
+        aria-readonly={effectiveReadOnly}
         placeholder="-"
         className={`w-full min-w-[60px] px-1 py-1 text-xs font-medium border border-transparent hover:border-slate-400 focus:border-primary focus:ring-1 focus:ring-primary rounded outline-none transition-all ${className} ${
-          bgColorClass
-            ? bgColorClass
-            : readOnly
-              ? "!bg-transparent cursor-default hover:border-transparent focus:border-transparent focus:ring-0 text-gray-700"
-              : "!bg-transparent focus:!bg-white dark:focus:!bg-slate-800 text-gray-900"
+          bgColorClass || "!bg-transparent"
+        } ${
+          effectiveReadOnly
+            ? "cursor-default hover:border-transparent focus:border-transparent focus:ring-0 text-gray-700"
+            : "focus:!bg-white dark:focus:!bg-slate-800 text-gray-900"
         }`}
       />
     );
@@ -1801,18 +1830,26 @@ export default function KertasKerjaTable({
           <div
             role="status"
             aria-live="polite"
-            title="Auto-save 3 detik setelah edit; auto-refresh setiap 5 detik saat tabel tidak sedang digunakan"
+            title={
+              canUpdate
+                ? "Auto-save 3 detik setelah edit; auto-refresh setiap 5 detik saat tabel tidak sedang digunakan"
+                : "Seluruh data hanya dapat dilihat karena Anda tidak memiliki hak UPDATE"
+            }
             className={`flex items-center gap-1.5 rounded-md border px-3 py-2 text-xs font-semibold shadow-sm ${
-              !isOnline || autoSyncStatus === "offline"
-                ? "border-amber-200 bg-amber-50 text-amber-700"
-                : autoSyncStatus === "error"
-                  ? "border-red-200 bg-red-50 text-red-700"
-                  : autoSyncStatus === "saved"
-                    ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                    : "border-white/30 bg-white/15 text-white"
+              !canUpdate
+                ? "border-amber-200 bg-amber-50 text-amber-800"
+                : !isOnline || autoSyncStatus === "offline"
+                  ? "border-amber-200 bg-amber-50 text-amber-700"
+                  : autoSyncStatus === "error"
+                    ? "border-red-200 bg-red-50 text-red-700"
+                    : autoSyncStatus === "saved"
+                      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                      : "border-white/30 bg-white/15 text-white"
             }`}
           >
-            {!isOnline || autoSyncStatus === "offline" ? (
+            {!canUpdate ? (
+              <Lock size={15} aria-hidden="true" />
+            ) : !isOnline || autoSyncStatus === "offline" ? (
               <CloudOff size={15} aria-hidden="true" />
             ) : autoSyncStatus === "saving" ||
               autoSyncStatus === "refreshing" ? (
@@ -1961,6 +1998,7 @@ export default function KertasKerjaTable({
           ref={tableRef}
           className="w-full border-collapse text-xs text-center min-w-max"
           onKeyDown={handleTableEnterNavigation}
+          aria-readonly={!canUpdate}
         >
           <thead className="sticky top-0 z-30 shadow-sm">
             {/* Row 1 */}
@@ -2825,7 +2863,9 @@ export default function KertasKerjaTable({
 
                         <td className="border border-gray-200 p-1 text-center">
                           <select
-                            className="w-full min-w-[100px] px-1 py-1 text-xs font-medium border border-transparent hover:border-gray-300 focus:border-primary focus:ring-1 focus:ring-primary rounded outline-none transition-all bg-transparent focus:bg-white text-gray-900"
+                            aria-label={`Pola operasi ${template.site_name || template.id}`}
+                            aria-disabled={!canUpdate}
+                            className="w-full min-w-[100px] px-1 py-1 text-xs font-medium border border-transparent hover:border-gray-300 focus:border-primary focus:ring-1 focus:ring-primary rounded outline-none transition-all bg-transparent focus:bg-white text-gray-900 disabled:cursor-default disabled:text-gray-700 disabled:hover:border-transparent"
                             value={
                               localRecords[
                                 `${template.id}_${displayedMonths[0]}`
@@ -2872,6 +2912,7 @@ export default function KertasKerjaTable({
                                 )
                               }
                               disabled={!canUpdate}
+                              aria-disabled={!canUpdate}
                               aria-label={`Keterangan ${template.site_name || template.id} ${m}`}
                               className="w-full min-w-[150px] rounded border border-transparent bg-transparent px-1 py-1 text-left text-xs font-medium text-gray-900 outline-none transition-all hover:border-gray-300 focus:border-primary focus:bg-white focus:ring-1 focus:ring-primary disabled:cursor-default disabled:text-gray-700"
                             >
