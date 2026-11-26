@@ -175,8 +175,8 @@ export interface RecordKertasKerja {
   pemakaian?: number;
   stock_akhir_bulan?: number;
   shop_akhir_bulan?: number;
-  delta_terima?: number;
-  pencapaian?: number;
+  delta_terima?: number | null;
+  pencapaian?: number | null;
   renominasi_pesan?: number;
   renominaso_proyeksi_akhir_bulan?: number;
   rencana_pesan?: number;

@@ -18,6 +18,7 @@ interface RingkasanTableProps {
   selectedYear: number;
   selectedUnit?: string;
   selectedUnitPelaksana?: string;
+  selectedPembangkit?: string;
 }
 
 type GroupingType = "Regional" | "TBBM" | "Pembangkit";
@@ -27,6 +28,7 @@ export default function RingkasanTable({
   selectedYear,
   selectedUnit,
   selectedUnitPelaksana,
+  selectedPembangkit,
 }: RingkasanTableProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeSubTab, setActiveSubTab] = useState<GroupingType>("Regional");
@@ -42,10 +44,19 @@ export default function RingkasanTable({
     return templates.filter((t) => {
       if (selectedRegion && t.site_region !== selectedRegion) return false;
       if (selectedUnit && t.unit_name !== selectedUnit) return false;
-      if (selectedUnitPelaksana && t.upk_name !== selectedUnitPelaksana) return false;
+      if (selectedUnitPelaksana && t.upk_name !== selectedUnitPelaksana)
+        return false;
+      if (selectedPembangkit && t.site_name !== selectedPembangkit)
+        return false;
       return true;
     });
-  }, [templates, selectedRegion, selectedUnit, selectedUnitPelaksana]);
+  }, [
+    templates,
+    selectedRegion,
+    selectedUnit,
+    selectedUnitPelaksana,
+    selectedPembangkit,
+  ]);
 
   const shortYear = String(selectedYear).slice(-2);
   const allMonths = [
@@ -167,20 +178,26 @@ export default function RingkasanTable({
 
   const getColSpan = () => displayedMonths.length;
 
-
   const handleExportRingkasanPdf = () => {
-    const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a1" });
+    const doc = new jsPDF({
+      orientation: "landscape",
+      unit: "pt",
+      format: "a1",
+    });
     let isFirst = true;
 
     const recordMap: Record<string, any> = {};
-    records.forEach(r => {
+    records.forEach((r) => {
       recordMap[`${r.template_kertas_kerja_id}_${r.month_work}`] = r;
     });
 
-    const buildPdfPage = (groupType: "Regional" | "TBBM" | "Pembangkit", pageTitle: string) => {
+    const buildPdfPage = (
+      groupType: "Regional" | "TBBM" | "Pembangkit",
+      pageTitle: string,
+    ) => {
       const groups: Record<string, any> = {};
 
-      filteredTemplates.forEach(t => {
+      filteredTemplates.forEach((t) => {
         let groupKey = "Unknown";
         if (groupType === "Regional") {
           groupKey = t.unit_name || "Tanpa Unit";
@@ -194,17 +211,22 @@ export default function RingkasanTable({
           groups[groupKey] = {
             name: groupKey,
             count: 0,
-            months: {}
+            months: {},
           };
         }
-        
+
         groups[groupKey].count += 1;
 
-        allMonths.forEach(m => {
+        allMonths.forEach((m) => {
           if (!groups[groupKey].months[m]) {
             groups[groupKey].months[m] = {
-              terima: 0, pemakaian: 0, renominasi_pesan: 0, delta_terima: 0,
-              pencapaian_sum: 0, pencapaian_count: 0, rencana_pesan: 0
+              terima: 0,
+              pemakaian: 0,
+              renominasi_pesan: 0,
+              delta_terima: 0,
+              pencapaian_sum: 0,
+              pencapaian_count: 0,
+              rencana_pesan: 0,
             };
           }
 
@@ -212,82 +234,215 @@ export default function RingkasanTable({
           if (rec) {
             groups[groupKey].months[m].terima += Number(rec.terima) || 0;
             groups[groupKey].months[m].pemakaian += Number(rec.pemakaian) || 0;
-            groups[groupKey].months[m].renominasi_pesan += Number(rec.renominasi_pesan) || 0;
-            groups[groupKey].months[m].delta_terima += Number(rec.delta_terima) || 0;
-            groups[groupKey].months[m].rencana_pesan += Number(rec.rencana_pesan) || 0;
+            groups[groupKey].months[m].renominasi_pesan +=
+              Number(rec.renominasi_pesan) || 0;
+            groups[groupKey].months[m].delta_terima +=
+              Number(rec.delta_terima) || 0;
+            groups[groupKey].months[m].rencana_pesan +=
+              Number(rec.rencana_pesan) || 0;
 
             if (rec.pencapaian != null && !isNaN(Number(rec.pencapaian))) {
-              groups[groupKey].months[m].pencapaian_sum += Number(rec.pencapaian);
+              groups[groupKey].months[m].pencapaian_sum += Number(
+                rec.pencapaian,
+              );
               groups[groupKey].months[m].pencapaian_count += 1;
             }
           }
         });
       });
 
-      const aggregatedDataLocal = Object.values(groups).sort((a: any, b: any) => a.name.localeCompare(b.name));
+      const aggregatedDataLocal = Object.values(groups).sort((a: any, b: any) =>
+        a.name.localeCompare(b.name),
+      );
       const numMonths = displayedMonths.length;
 
       // Row 1
       const row1: any[] = [
         { content: "No.", rowSpan: 3 },
-        { content: groupType === "Regional" ? "Unit" : groupType === "TBBM" ? "TBBM (Supplier)" : "Pembangkit", rowSpan: 3 },
-        { content: "Realisasi SAP (kL)", colSpan: 2 * numMonths, styles: { halign: 'center', fillColor: [0, 150, 136] } },
-        { content: "Konfirmasi (kL)", colSpan: numMonths, styles: { halign: 'center', fillColor: [63, 81, 181] } },
-        { content: "Delta (kL)", colSpan: numMonths, styles: { halign: 'center', fillColor: [244, 67, 54] } },
-        { content: "Pencapaian (%)", colSpan: numMonths, styles: { halign: 'center', fillColor: [156, 39, 176] } },
-        { content: "Rencana (kL)", colSpan: numMonths, styles: { halign: 'center', fillColor: [3, 169, 244] } }
+        {
+          content:
+            groupType === "Regional"
+              ? "Unit"
+              : groupType === "TBBM"
+                ? "TBBM (Supplier)"
+                : "Pembangkit",
+          rowSpan: 3,
+        },
+        {
+          content: "Realisasi SAP (kL)",
+          colSpan: 2 * numMonths,
+          styles: { halign: "center", fillColor: [0, 150, 136] },
+        },
+        {
+          content: "Konfirmasi (kL)",
+          colSpan: numMonths,
+          styles: { halign: "center", fillColor: [63, 81, 181] },
+        },
+        {
+          content: "Delta (kL)",
+          colSpan: numMonths,
+          styles: { halign: "center", fillColor: [244, 67, 54] },
+        },
+        {
+          content: "Pencapaian (%)",
+          colSpan: numMonths,
+          styles: { halign: "center", fillColor: [156, 39, 176] },
+        },
+        {
+          content: "Rencana (kL)",
+          colSpan: numMonths,
+          styles: { halign: "center", fillColor: [3, 169, 244] },
+        },
       ];
 
       // Row 2
       const row2: any[] = [
-        { content: "Terima (kL)", colSpan: numMonths, styles: { halign: 'center', fillColor: [0, 150, 136] } },
-        { content: "Pemakaian (kL)", colSpan: numMonths, styles: { halign: 'center', fillColor: [0, 150, 136] } },
-        { content: "Renominasi/Konfirmasi (kL)", colSpan: numMonths, styles: { halign: 'center', fillColor: [63, 81, 181] } },
-        { content: "Delta (kL)", colSpan: numMonths, styles: { halign: 'center', fillColor: [244, 67, 54] } },
-        { content: "Pencapaian (%)", colSpan: numMonths, styles: { halign: 'center', fillColor: [156, 39, 176] } },
-        { content: "Nominasi (kL)", colSpan: numMonths, styles: { halign: 'center', fillColor: [3, 169, 244] } }
+        {
+          content: "Terima (kL)",
+          colSpan: numMonths,
+          styles: { halign: "center", fillColor: [0, 150, 136] },
+        },
+        {
+          content: "Pemakaian (kL)",
+          colSpan: numMonths,
+          styles: { halign: "center", fillColor: [0, 150, 136] },
+        },
+        {
+          content: "Renominasi/Konfirmasi (kL)",
+          colSpan: numMonths,
+          styles: { halign: "center", fillColor: [63, 81, 181] },
+        },
+        {
+          content: "Delta (kL)",
+          colSpan: numMonths,
+          styles: { halign: "center", fillColor: [244, 67, 54] },
+        },
+        {
+          content: "Pencapaian (%)",
+          colSpan: numMonths,
+          styles: { halign: "center", fillColor: [156, 39, 176] },
+        },
+        {
+          content: "Nominasi (kL)",
+          colSpan: numMonths,
+          styles: { halign: "center", fillColor: [3, 169, 244] },
+        },
       ];
 
       // Row 3
       const row3: any[] = [];
-      displayedMonths.forEach(m => row3.push({ content: m, styles: { halign: 'center', fillColor: [200, 200, 200], textColor: [0,0,0] } })); // Terima
-      displayedMonths.forEach(m => row3.push({ content: m, styles: { halign: 'center', fillColor: [200, 200, 200], textColor: [0,0,0] } })); // Pemakaian
-      displayedMonths.forEach(m => row3.push({ content: m, styles: { halign: 'center', fillColor: [200, 200, 200], textColor: [0,0,0] } })); // Renominasi
-      displayedMonths.forEach(m => row3.push({ content: m, styles: { halign: 'center', fillColor: [200, 200, 200], textColor: [0,0,0] } })); // Delta
-      displayedMonths.forEach(m => row3.push({ content: m, styles: { halign: 'center', fillColor: [200, 200, 200], textColor: [0,0,0] } })); // Pencapaian
-      displayedMonths.forEach(m => row3.push({ content: m, styles: { halign: 'center', fillColor: [200, 200, 200], textColor: [0,0,0] } })); // Rencana
+      displayedMonths.forEach((m) =>
+        row3.push({
+          content: m,
+          styles: {
+            halign: "center",
+            fillColor: [200, 200, 200],
+            textColor: [0, 0, 0],
+          },
+        }),
+      ); // Terima
+      displayedMonths.forEach((m) =>
+        row3.push({
+          content: m,
+          styles: {
+            halign: "center",
+            fillColor: [200, 200, 200],
+            textColor: [0, 0, 0],
+          },
+        }),
+      ); // Pemakaian
+      displayedMonths.forEach((m) =>
+        row3.push({
+          content: m,
+          styles: {
+            halign: "center",
+            fillColor: [200, 200, 200],
+            textColor: [0, 0, 0],
+          },
+        }),
+      ); // Renominasi
+      displayedMonths.forEach((m) =>
+        row3.push({
+          content: m,
+          styles: {
+            halign: "center",
+            fillColor: [200, 200, 200],
+            textColor: [0, 0, 0],
+          },
+        }),
+      ); // Delta
+      displayedMonths.forEach((m) =>
+        row3.push({
+          content: m,
+          styles: {
+            halign: "center",
+            fillColor: [200, 200, 200],
+            textColor: [0, 0, 0],
+          },
+        }),
+      ); // Pencapaian
+      displayedMonths.forEach((m) =>
+        row3.push({
+          content: m,
+          styles: {
+            halign: "center",
+            fillColor: [200, 200, 200],
+            textColor: [0, 0, 0],
+          },
+        }),
+      ); // Rencana
 
       const bodyData: any[][] = [];
       let idx = 0;
       aggregatedDataLocal.forEach((row: any) => {
         idx++;
         const trData = [idx, row.name];
-        
-        displayedMonths.forEach(m => trData.push(row.months[m].terima.toLocaleString("en-US")));
-        displayedMonths.forEach(m => trData.push(row.months[m].pemakaian.toLocaleString("en-US")));
-        displayedMonths.forEach(m => trData.push(row.months[m].renominasi_pesan.toLocaleString("en-US")));
-        displayedMonths.forEach(m => trData.push(row.months[m].delta_terima.toLocaleString("en-US")));
-        
-        displayedMonths.forEach(m => {
-          const avg = row.months[m].pencapaian_count > 0 ? (row.months[m].pencapaian_sum / row.months[m].pencapaian_count).toFixed(2) : "-";
+
+        displayedMonths.forEach((m) =>
+          trData.push(row.months[m].terima.toLocaleString("en-US")),
+        );
+        displayedMonths.forEach((m) =>
+          trData.push(row.months[m].pemakaian.toLocaleString("en-US")),
+        );
+        displayedMonths.forEach((m) =>
+          trData.push(row.months[m].renominasi_pesan.toLocaleString("en-US")),
+        );
+        displayedMonths.forEach((m) =>
+          trData.push(row.months[m].delta_terima.toLocaleString("en-US")),
+        );
+
+        displayedMonths.forEach((m) => {
+          const avg =
+            row.months[m].pencapaian_count > 0
+              ? (
+                  row.months[m].pencapaian_sum / row.months[m].pencapaian_count
+                ).toFixed(2)
+              : "-";
           trData.push(avg);
         });
 
-        displayedMonths.forEach(m => trData.push(row.months[m].rencana_pesan.toLocaleString("en-US")));
+        displayedMonths.forEach((m) =>
+          trData.push(row.months[m].rencana_pesan.toLocaleString("en-US")),
+        );
         bodyData.push(trData);
       });
 
       // Total row
       const tot: Record<string, any> = {};
-      allMonths.forEach(m => {
+      allMonths.forEach((m) => {
         tot[m] = {
-          terima: 0, pemakaian: 0, renominasi_pesan: 0, delta_terima: 0,
-          pencapaian_sum: 0, pencapaian_count: 0, rencana_pesan: 0
+          terima: 0,
+          pemakaian: 0,
+          renominasi_pesan: 0,
+          delta_terima: 0,
+          pencapaian_sum: 0,
+          pencapaian_count: 0,
+          rencana_pesan: 0,
         };
       });
 
       aggregatedDataLocal.forEach((g: any) => {
-        allMonths.forEach(m => {
+        allMonths.forEach((m) => {
           tot[m].terima += g.months[m].terima;
           tot[m].pemakaian += g.months[m].pemakaian;
           tot[m].renominasi_pesan += g.months[m].renominasi_pesan;
@@ -298,16 +453,35 @@ export default function RingkasanTable({
         });
       });
 
-      const totData: any[] = [{ content: "TOTAL", colSpan: 2, styles: { halign: 'center', fontStyle: 'bold' } }];
-      displayedMonths.forEach(m => totData.push(tot[m].terima.toLocaleString("en-US")));
-      displayedMonths.forEach(m => totData.push(tot[m].pemakaian.toLocaleString("en-US")));
-      displayedMonths.forEach(m => totData.push(tot[m].renominasi_pesan.toLocaleString("en-US")));
-      displayedMonths.forEach(m => totData.push(tot[m].delta_terima.toLocaleString("en-US")));
-      displayedMonths.forEach(m => {
-        const avg = tot[m].pencapaian_count > 0 ? (tot[m].pencapaian_sum / tot[m].pencapaian_count).toFixed(2) : "-";
+      const totData: any[] = [
+        {
+          content: "TOTAL",
+          colSpan: 2,
+          styles: { halign: "center", fontStyle: "bold" },
+        },
+      ];
+      displayedMonths.forEach((m) =>
+        totData.push(tot[m].terima.toLocaleString("en-US")),
+      );
+      displayedMonths.forEach((m) =>
+        totData.push(tot[m].pemakaian.toLocaleString("en-US")),
+      );
+      displayedMonths.forEach((m) =>
+        totData.push(tot[m].renominasi_pesan.toLocaleString("en-US")),
+      );
+      displayedMonths.forEach((m) =>
+        totData.push(tot[m].delta_terima.toLocaleString("en-US")),
+      );
+      displayedMonths.forEach((m) => {
+        const avg =
+          tot[m].pencapaian_count > 0
+            ? (tot[m].pencapaian_sum / tot[m].pencapaian_count).toFixed(2)
+            : "-";
         totData.push(avg);
       });
-      displayedMonths.forEach(m => totData.push(tot[m].rencana_pesan.toLocaleString("en-US")));
+      displayedMonths.forEach((m) =>
+        totData.push(tot[m].rencana_pesan.toLocaleString("en-US")),
+      );
       bodyData.push(totData);
 
       if (!isFirst) doc.addPage();
@@ -320,9 +494,14 @@ export default function RingkasanTable({
         startY: 50,
         head: [row1, row2, row3],
         body: bodyData,
-        theme: 'grid',
-        styles: { fontSize: 7, cellPadding: 2, halign: 'center', textColor: [50, 50, 50] },
-        headStyles: { textColor: 255, fontStyle: 'bold' },
+        theme: "grid",
+        styles: {
+          fontSize: 7,
+          cellPadding: 2,
+          halign: "center",
+          textColor: [50, 50, 50],
+        },
+        headStyles: { textColor: 255, fontStyle: "bold" },
         margin: { top: 50, left: 20, right: 20 },
       });
     };
@@ -332,7 +511,9 @@ export default function RingkasanTable({
     buildPdfPage("Pembangkit", "Ringkasan Pembangkit");
 
     const today = new Date().toISOString().split("T")[0];
-    const regionName = selectedRegion ? selectedRegion.replace(/\s+/g, "_") : "All_Region";
+    const regionName = selectedRegion
+      ? selectedRegion.replace(/\s+/g, "_")
+      : "All_Region";
     doc.save(`Ringkasan_BBM_${regionName}_${today}.pdf`);
   };
 
