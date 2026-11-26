@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Maximize2,
   Minimize2,
@@ -10,6 +10,12 @@ import {
   Upload,
   Eye,
   EyeOff,
+  RefreshCw,
+  CheckCircle2,
+  AlertCircle,
+  Info,
+  MoreVertical,
+  ChevronDown,
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
@@ -22,6 +28,7 @@ import {
   useKertasKerjaMaster,
   RecordKertasKerja,
 } from "@/hooks/service/kertas-kerja-api";
+import Modal from "./ui/Modal";
 import {
   isKertasKerjaDayField,
   roundKertasKerjaDayFields,
@@ -36,6 +43,16 @@ interface KertasKerjaTableProps {
   canUpdate?: boolean;
 }
 
+type KertasKerjaModalState =
+  | {
+      type: "message";
+      status: "success" | "error" | "info";
+      title: string;
+      message: string;
+    }
+  | { type: "refresh-confirm" }
+  | null;
+
 export default function KertasKerjaTable({
   selectedRegion,
   selectedYear,
@@ -45,6 +62,10 @@ export default function KertasKerjaTable({
 }: KertasKerjaTableProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showInactive, setShowInactive] = useState(false);
+  const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false);
+  const [refreshError, setRefreshError] = useState("");
+  const [modalState, setModalState] = useState<KertasKerjaModalState>(null);
+  const actionsMenuRef = useRef<HTMLDivElement>(null);
   const [localRecords, setLocalRecords] = useState<
     Record<string, RecordKertasKerja>
   >({});
@@ -52,17 +73,24 @@ export default function KertasKerjaTable({
     Record<string, Partial<RecordKertasKerja>>
   >({});
 
-  const { data: templates = [], isLoading: templatesLoading } =
-    useKertasKerjaTemplates();
+  const {
+    data: templates = [],
+    isLoading: templatesLoading,
+    isRefetching: templatesRefetching,
+    refetch: refetchTemplates,
+  } = useKertasKerjaTemplates();
   const {
     data: records = [],
     isLoading: recordsLoading,
+    isRefetching: recordsRefetching,
     refetch: refetchRecords,
   } = useKertasKerjaRecords();
   const upsertMutation = useBulkUpsertKertasKerjaRecords();
-  const { data: polaOperasiList = [] } = useKertasKerjaMaster(
-    "master_pola_operasi",
-  );
+  const {
+    data: polaOperasiList = [],
+    isRefetching: polaOperasiRefetching,
+    refetch: refetchPolaOperasi,
+  } = useKertasKerjaMaster("master_pola_operasi");
 
   const filteredTemplates = templates.filter((t) => {
     if (selectedRegion && t.site_region !== selectedRegion) return false;
@@ -93,18 +121,86 @@ export default function KertasKerjaTable({
 
   const isLoading = templatesLoading || recordsLoading;
   const isDirty = Object.keys(dirtyRecords).length > 0;
+  const isRefreshing =
+    templatesRefetching || recordsRefetching || polaOperasiRefetching;
 
   useEffect(() => {
-    if (records.length > 0) {
-      const initial: Record<string, RecordKertasKerja> = {};
-      records.forEach((r) => {
-        initial[`${r.template_kertas_kerja_id}_${r.month_work}`] =
-          roundKertasKerjaDayFields(r);
-      });
-      setLocalRecords(initial);
-      setDirtyRecords({}); // clear dirty state when fresh data loads
-    }
+    const initial: Record<string, RecordKertasKerja> = {};
+    records.forEach((r) => {
+      initial[`${r.template_kertas_kerja_id}_${r.month_work}`] =
+        roundKertasKerjaDayFields(r);
+    });
+    setLocalRecords(initial);
+    setDirtyRecords({}); // clear dirty state when fresh data loads
   }, [records]);
+
+  useEffect(() => {
+    if (!isActionsMenuOpen) return;
+
+    const handleMenuClose = (event: MouseEvent | KeyboardEvent) => {
+      if (event instanceof KeyboardEvent && event.key !== "Escape") return;
+      if (
+        event instanceof MouseEvent &&
+        actionsMenuRef.current?.contains(event.target as Node)
+      ) {
+        return;
+      }
+      setIsActionsMenuOpen(false);
+    };
+
+    document.addEventListener("mousedown", handleMenuClose);
+    document.addEventListener("keydown", handleMenuClose);
+    return () => {
+      document.removeEventListener("mousedown", handleMenuClose);
+      document.removeEventListener("keydown", handleMenuClose);
+    };
+  }, [isActionsMenuOpen]);
+
+  const performRefresh = async () => {
+    setRefreshError("");
+
+    try {
+      const results = await Promise.all([
+        refetchTemplates(),
+        refetchRecords(),
+        refetchPolaOperasi(),
+      ]);
+      const failedResult = results.find((result) => result.isError);
+
+      if (failedResult) {
+        throw failedResult.error ?? new Error("Data gagal dimuat ulang.");
+      }
+
+      const refreshedRecords = results[1].data ?? [];
+      const refreshedLocalRecords: Record<string, RecordKertasKerja> = {};
+      refreshedRecords.forEach((record) => {
+        refreshedLocalRecords[
+          `${record.template_kertas_kerja_id}_${record.month_work}`
+        ] = roundKertasKerjaDayFields(record);
+      });
+      setLocalRecords(refreshedLocalRecords);
+      setDirtyRecords({});
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Data gagal dimuat ulang.";
+      setRefreshError(message);
+      setModalState({
+        type: "message",
+        status: "error",
+        title: "Refresh Data Gagal",
+        message,
+      });
+    }
+  };
+
+  const handleRefresh = () => {
+    if (isDirty) {
+      setModalState({ type: "refresh-confirm" });
+      return;
+    }
+
+    void performRefresh();
+  };
 
   const handleRecordChange = (
     templateId: string,
@@ -159,7 +255,12 @@ export default function KertasKerjaTable({
   const handleSave = async () => {
     const payload = Object.values(dirtyRecords);
     if (payload.length === 0) {
-      alert("Tidak ada data untuk disimpan.");
+      setModalState({
+        type: "message",
+        status: "info",
+        title: "Tidak Ada Perubahan",
+        message: "Tidak ada data untuk disimpan.",
+      });
       return;
     }
     try {
@@ -167,9 +268,22 @@ export default function KertasKerjaTable({
         records: payload as RecordKertasKerja[],
       });
       setDirtyRecords({});
-      alert("Perubahan berhasil disimpan!");
-    } catch (e: any) {
-      alert("Gagal menyimpan: " + e.message);
+      setModalState({
+        type: "message",
+        status: "success",
+        title: "Perubahan Tersimpan",
+        message: "Perubahan data Kertas Kerja BBM berhasil disimpan.",
+      });
+    } catch (error) {
+      setModalState({
+        type: "message",
+        status: "error",
+        title: "Gagal Menyimpan",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Terjadi kesalahan saat menyimpan perubahan.",
+      });
     }
   };
 
@@ -1297,25 +1411,75 @@ export default function KertasKerjaTable({
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowInactive(!showInactive)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-white text-gray-600 hover:bg-gray-50 border border-gray-200 rounded-md transition-colors shadow-sm font-semibold"
-          >
-            {showInactive ? <EyeOff size={14} /> : <Eye size={14} />}
-            {showInactive ? "Sembunyikan Non-Aktif" : "Tampilkan Non-Aktif"}
-          </button>
-          <button
-            onClick={handleExportPdf}
-            className="flex items-center gap-2 px-4 py-2 text-sm bg-white text-rose-400 hover:bg-rose-50 border border-gray-200 rounded-md transition-colors shadow-sm font-bold"
-          >
-            <FileText size={16} /> Export PDF
-          </button>
-          <button
-            onClick={handleExportExcel}
-            className="flex items-center gap-2 px-4 py-2 text-sm bg-white text-emerald-500 hover:bg-emerald-50 border border-gray-200 rounded-md transition-colors shadow-sm font-bold"
-          >
-            <Download size={16} /> Export Excel
-          </button>
+          <div className="relative order-last" ref={actionsMenuRef}>
+            <button
+              type="button"
+              onClick={() => setIsActionsMenuOpen((isOpen) => !isOpen)}
+              aria-expanded={isActionsMenuOpen}
+              aria-haspopup="menu"
+              aria-label="Buka menu lainnya"
+              className="flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm transition-colors hover:bg-gray-50"
+            >
+              <MoreVertical size={17} aria-hidden="true" />
+              Lainnya
+              <ChevronDown
+                size={14}
+                aria-hidden="true"
+                className={`transition-transform ${isActionsMenuOpen ? "rotate-180" : ""}`}
+              />
+            </button>
+
+            {isActionsMenuOpen && (
+              <div
+                role="menu"
+                className="absolute right-0 top-full z-50 mt-2 w-60 overflow-hidden rounded-xl border border-gray-200 bg-white p-1.5 shadow-xl"
+              >
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setShowInactive((isVisible) => !isVisible);
+                    setIsActionsMenuOpen(false);
+                  }}
+                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100"
+                >
+                  {showInactive ? (
+                    <EyeOff size={17} className="text-gray-500" />
+                  ) : (
+                    <Eye size={17} className="text-gray-500" />
+                  )}
+                  {showInactive
+                    ? "Sembunyikan Non-Aktif"
+                    : "Tampilkan Non-Aktif"}
+                </button>
+                <div className="my-1 border-t border-gray-100" />
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setIsActionsMenuOpen(false);
+                    handleExportPdf();
+                  }}
+                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-rose-500 transition-colors hover:bg-rose-50"
+                >
+                  <FileText size={17} aria-hidden="true" />
+                  Export PDF
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setIsActionsMenuOpen(false);
+                    handleExportExcel();
+                  }}
+                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-emerald-600 transition-colors hover:bg-emerald-50"
+                >
+                  <Download size={17} aria-hidden="true" />
+                  Export Excel
+                </button>
+              </div>
+            )}
+          </div>
           <button
             onClick={handleSave}
             disabled={
@@ -1333,6 +1497,25 @@ export default function KertasKerjaTable({
               : isDirty
                 ? "Simpan Perubahan*"
                 : "Simpan Perubahan"}
+          </button>
+          <button
+            type="button"
+            onClick={handleRefresh}
+            disabled={isLoading || isRefreshing || upsertMutation.isPending}
+            title={refreshError || "Muat ulang data tabel dari server"}
+            aria-label="Refresh data tabel"
+            className={`flex items-center gap-2 px-4 py-2 text-sm bg-white hover:bg-slate-50 rounded-md transition-colors shadow-sm font-semibold disabled:cursor-not-allowed disabled:opacity-70 ${refreshError ? "text-red-600" : "text-primary"}`}
+          >
+            {isRefreshing ? (
+              <Loader2 size={16} className="animate-spin" aria-hidden="true" />
+            ) : (
+              <RefreshCw size={16} aria-hidden="true" />
+            )}
+            {isRefreshing
+              ? "Memuat..."
+              : refreshError
+                ? "Coba Lagi"
+                : "Refresh Data"}
           </button>
           <button
             onClick={() => setIsExpanded(!isExpanded)}
@@ -2663,6 +2846,91 @@ export default function KertasKerjaTable({
           })}
         </div>
       )}
+
+      <Modal
+        isOpen={modalState !== null}
+        onClose={() => {
+          if (!isRefreshing) setModalState(null);
+        }}
+        maxWidth="max-w-md"
+        showCloseButton={modalState?.type !== "refresh-confirm"}
+        title={
+          modalState?.type === "refresh-confirm"
+            ? "Refresh Data Kertas Kerja"
+            : modalState?.title
+        }
+      >
+        {modalState?.type === "refresh-confirm" ? (
+          <div>
+            <div className="flex items-start gap-3 rounded-xl bg-amber-50 p-4 text-amber-900">
+              <AlertCircle
+                className="mt-0.5 h-6 w-6 shrink-0 text-amber-600"
+                aria-hidden="true"
+              />
+              <p className="text-sm leading-6">
+                Perubahan yang belum disimpan akan dibuang. Tetap refresh data
+                dari server?
+              </p>
+            </div>
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setModalState(null)}
+                disabled={isRefreshing}
+                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-60"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  setModalState(null);
+                  await performRefresh();
+                }}
+                disabled={isRefreshing}
+                className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:brightness-90 disabled:opacity-60"
+              >
+                <RefreshCw size={16} aria-hidden="true" />
+                Refresh Data
+              </button>
+            </div>
+          </div>
+        ) : modalState?.type === "message" ? (
+          <div>
+            <div className="flex flex-col items-center px-2 py-3 text-center">
+              <div
+                className={`mb-4 flex h-14 w-14 items-center justify-center rounded-full ${
+                  modalState.status === "success"
+                    ? "bg-emerald-100 text-emerald-600"
+                    : modalState.status === "error"
+                      ? "bg-red-100 text-red-600"
+                      : "bg-blue-100 text-blue-600"
+                }`}
+              >
+                {modalState.status === "success" ? (
+                  <CheckCircle2 className="h-8 w-8" aria-hidden="true" />
+                ) : modalState.status === "error" ? (
+                  <AlertCircle className="h-8 w-8" aria-hidden="true" />
+                ) : (
+                  <Info className="h-8 w-8" aria-hidden="true" />
+                )}
+              </div>
+              <p className="text-sm leading-6 text-gray-600">
+                {modalState.message}
+              </p>
+            </div>
+            <div className="mt-3 flex justify-center">
+              <button
+                type="button"
+                onClick={() => setModalState(null)}
+                className="min-w-28 rounded-lg bg-primary px-5 py-2 text-sm font-semibold text-white transition-colors hover:brightness-90"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        ) : null}
+      </Modal>
     </div>
   );
 }

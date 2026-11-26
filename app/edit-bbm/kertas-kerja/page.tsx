@@ -14,6 +14,7 @@ import {
   Upload,
   Maximize2,
   Minimize2,
+  SlidersHorizontal,
 } from "lucide-react";
 import Link from "next/link";
 import BulkUploadKertasKerjaModal from "@/app/components/BulkUploadKertasKerjaModal";
@@ -30,6 +31,7 @@ import { useRouter } from "next/navigation";
 
 export default function KertasKerjaPage() {
   const [activeTab, setActiveTab] = useState("kertas-kerja");
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [selectedRegion, setSelectedRegion] = useState("");
   const [selectedUnit, setSelectedUnit] = useState("");
   const [selectedUnitPelaksana, setSelectedUnitPelaksana] = useState("");
@@ -231,8 +233,11 @@ export default function KertasKerjaPage() {
 
           <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col flex-1 overflow-hidden min-h-0">
             {/* Controls Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 border-b border-gray-100 pb-4 shrink-0">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+            <div className="flex flex-wrap items-center gap-3 mb-4 border-b border-gray-100 pb-4 shrink-0">
+              <div
+                id="kertas-kerja-filters"
+                className={`${isFiltersOpen ? "flex" : "hidden"} order-2 basis-full flex-col gap-4 rounded-xl border border-gray-200 bg-gray-50/80 p-4 sm:flex-row sm:flex-wrap sm:items-center`}
+              >
                 {/* Year Filter */}
                 <div className="flex items-center gap-3">
                   <span className="text-sm font-medium text-gray-700 whitespace-nowrap">
@@ -512,7 +517,7 @@ export default function KertasKerjaPage() {
               </div>
 
               {/* Tabs */}
-              <div className="flex bg-gray-100 p-1 rounded-lg w-fit">
+              <div className="order-1 flex bg-gray-100 p-1 rounded-lg w-fit">
                 <button
                   onClick={() => setActiveTab("kertas-kerja")}
                   className={`flex items-center gap-2 px-6 py-2.5 rounded-md text-sm font-medium transition-all ${
@@ -536,6 +541,35 @@ export default function KertasKerjaPage() {
                   Ringkasan
                 </button>
               </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIsFiltersOpen((isOpen) => {
+                    if (isOpen) {
+                      setIsRegionDropdownOpen(false);
+                      setIsUnitDropdownOpen(false);
+                      setIsUpkDropdownOpen(false);
+                    }
+                    return !isOpen;
+                  });
+                }}
+                aria-expanded={isFiltersOpen}
+                aria-controls="kertas-kerja-filters"
+                className={`order-1 ml-auto flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-semibold shadow-sm transition-colors ${
+                  isFiltersOpen
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+                }`}
+              >
+                <SlidersHorizontal size={16} aria-hidden="true" />
+                {isFiltersOpen ? "Sembunyikan Filter" : "Tampilkan Filter"}
+                <ChevronDown
+                  size={16}
+                  aria-hidden="true"
+                  className={`transition-transform ${isFiltersOpen ? "rotate-180" : ""}`}
+                />
+              </button>
             </div>
 
             {activeTab === "kertas-kerja" && (
