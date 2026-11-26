@@ -35,6 +35,7 @@ export default function KertasKerjaPage() {
   const [selectedRegion, setSelectedRegion] = useState("");
   const [selectedUnit, setSelectedUnit] = useState("");
   const [selectedUnitPelaksana, setSelectedUnitPelaksana] = useState("");
+  const [selectedPembangkit, setSelectedPembangkit] = useState("");
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
   const { data: regions = [] } = useKertasKerjaMaster("master_region", "BBM");
@@ -69,6 +70,11 @@ export default function KertasKerjaPage() {
   const [isUpkDropdownOpen, setIsUpkDropdownOpen] = useState(false);
   const [upkSearch, setUpkSearch] = useState("");
   const upkRef = useRef<HTMLDivElement>(null);
+
+  const [isPembangkitDropdownOpen, setIsPembangkitDropdownOpen] =
+    useState(false);
+  const [pembangkitSearch, setPembangkitSearch] = useState("");
+  const pembangkitRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -107,6 +113,12 @@ export default function KertasKerjaPage() {
       if (upkRef.current && !upkRef.current.contains(event.target as Node)) {
         setIsUpkDropdownOpen(false);
       }
+      if (
+        pembangkitRef.current &&
+        !pembangkitRef.current.contains(event.target as Node)
+      ) {
+        setIsPembangkitDropdownOpen(false);
+      }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -133,6 +145,43 @@ export default function KertasKerjaPage() {
 
   const filteredUpks = upks.filter((u: MasterGeneric) =>
     u.name.toLowerCase().includes(upkSearch.toLowerCase()),
+  );
+
+  const availablePembangkit = useMemo(() => {
+    return Array.from(
+      new Set(
+        templates
+          .filter((template) => {
+            if (template.is_active === false) return false;
+            if (
+              effectiveSelectedRegion &&
+              template.site_region !== effectiveSelectedRegion
+            ) {
+              return false;
+            }
+            if (selectedUnit && template.unit_name !== selectedUnit)
+              return false;
+            if (
+              selectedUnitPelaksana &&
+              template.upk_name !== selectedUnitPelaksana
+            ) {
+              return false;
+            }
+            return Boolean(template.site_name?.trim());
+          })
+          .map((template) => template.site_name?.trim() || ""),
+      ),
+    ).sort((first, second) => first.localeCompare(second, "id"));
+  }, [templates, effectiveSelectedRegion, selectedUnit, selectedUnitPelaksana]);
+
+  const effectiveSelectedPembangkit = availablePembangkit.includes(
+    selectedPembangkit,
+  )
+    ? selectedPembangkit
+    : "";
+
+  const filteredPembangkit = availablePembangkit.filter((pembangkit) =>
+    pembangkit.toLowerCase().includes(pembangkitSearch.toLowerCase()),
   );
 
   // Redirect if unauthorized
@@ -514,6 +563,101 @@ export default function KertasKerjaPage() {
                     )}
                   </div>
                 </div>
+
+                {/* Pembangkit Filter */}
+                <div
+                  className="flex items-center gap-3 relative"
+                  ref={pembangkitRef}
+                >
+                  <span className="text-sm font-medium text-gray-700 whitespace-nowrap">
+                    Pembangkit:
+                  </span>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setIsPembangkitDropdownOpen(!isPembangkitDropdownOpen)
+                      }
+                      className="flex items-center justify-between pl-3 pr-2 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 min-w-[190px]"
+                    >
+                      <span
+                        className={
+                          effectiveSelectedPembangkit
+                            ? "text-gray-900"
+                            : "text-gray-500"
+                        }
+                      >
+                        {effectiveSelectedPembangkit || "Semua Pembangkit"}
+                      </span>
+                      <ChevronDown
+                        size={16}
+                        className={`text-gray-500 transition-transform ${isPembangkitDropdownOpen ? "rotate-180" : ""}`}
+                      />
+                    </button>
+
+                    {isPembangkitDropdownOpen && (
+                      <div className="absolute top-full left-0 mt-1 w-full min-w-[260px] bg-white rounded-lg shadow-lg border border-gray-100 z-50 overflow-hidden flex flex-col">
+                        <div className="p-2 border-b border-gray-100 sticky top-0 bg-white">
+                          <div className="relative">
+                            <Search
+                              size={14}
+                              className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400"
+                            />
+                            <input
+                              type="text"
+                              placeholder="Cari pembangkit..."
+                              value={pembangkitSearch}
+                              onChange={(event) =>
+                                setPembangkitSearch(event.target.value)
+                              }
+                              className="w-full pl-8 pr-3 py-1.5 text-sm text-gray-900 placeholder:text-gray-500 bg-white border border-gray-300 focus:border-primary focus:ring-1 focus:ring-primary rounded-md outline-none transition-all shadow-sm"
+                              autoFocus
+                            />
+                          </div>
+                        </div>
+                        <div className="max-h-[240px] overflow-y-auto p-1 custom-scrollbar">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedPembangkit("");
+                              setIsPembangkitDropdownOpen(false);
+                              setPembangkitSearch("");
+                            }}
+                            className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-md transition-colors ${!effectiveSelectedPembangkit ? "bg-primary/10 text-primary font-medium" : "text-gray-700 hover:bg-gray-100"}`}
+                          >
+                            Semua Pembangkit
+                            {!effectiveSelectedPembangkit && (
+                              <Check size={14} />
+                            )}
+                          </button>
+                          {filteredPembangkit.length === 0 ? (
+                            <div className="px-3 py-4 text-center text-sm text-gray-500">
+                              Pembangkit tidak ditemukan
+                            </div>
+                          ) : (
+                            filteredPembangkit.map((pembangkit) => (
+                              <button
+                                type="button"
+                                key={pembangkit}
+                                onClick={() => {
+                                  setSelectedPembangkit(pembangkit);
+                                  setIsPembangkitDropdownOpen(false);
+                                  setPembangkitSearch("");
+                                }}
+                                className={`w-full flex items-center justify-between px-3 py-2 text-left text-sm rounded-md transition-colors ${effectiveSelectedPembangkit === pembangkit ? "bg-primary/10 text-primary font-medium" : "text-gray-700 hover:bg-gray-100"}`}
+                              >
+                                {pembangkit}
+                                {effectiveSelectedPembangkit === pembangkit && (
+                                  <Check size={14} />
+                                )}
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
 
               {/* Tabs */}
@@ -550,6 +694,7 @@ export default function KertasKerjaPage() {
                       setIsRegionDropdownOpen(false);
                       setIsUnitDropdownOpen(false);
                       setIsUpkDropdownOpen(false);
+                      setIsPembangkitDropdownOpen(false);
                     }
                     return !isOpen;
                   });
@@ -577,6 +722,7 @@ export default function KertasKerjaPage() {
                 selectedRegion={effectiveSelectedRegion}
                 selectedUnit={selectedUnit}
                 selectedUnitPelaksana={selectedUnitPelaksana}
+                selectedPembangkit={effectiveSelectedPembangkit}
                 selectedYear={selectedYear}
                 canUpdate={canUpdate}
               />
@@ -586,6 +732,7 @@ export default function KertasKerjaPage() {
                 selectedRegion={effectiveSelectedRegion}
                 selectedUnit={selectedUnit}
                 selectedUnitPelaksana={selectedUnitPelaksana}
+                selectedPembangkit={effectiveSelectedPembangkit}
                 selectedYear={selectedYear}
               />
             )}

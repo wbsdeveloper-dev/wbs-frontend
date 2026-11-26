@@ -16,6 +16,9 @@ import {
   Info,
   MoreVertical,
   ChevronDown,
+  Cloud,
+  CloudOff,
+  Clock3,
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
@@ -34,12 +37,17 @@ import {
   roundKertasKerjaDayFields,
   roundKertasKerjaDayValue,
 } from "./kertas-kerja-day-values";
+import {
+  calculateKertasKerjaDelta,
+  withCalculatedKertasKerjaDelta,
+} from "./kertas-kerja-calculations";
 
 interface KertasKerjaTableProps {
   selectedRegion: string;
   selectedYear: number;
   selectedUnit?: string;
   selectedUnitPelaksana?: string;
+  selectedPembangkit?: string;
   canUpdate?: boolean;
 }
 
@@ -53,11 +61,73 @@ type KertasKerjaModalState =
   | { type: "refresh-confirm" }
   | null;
 
+type AutoSyncStatus =
+  | "idle"
+  | "pending"
+  | "saving"
+  | "refreshing"
+  | "saved"
+  | "error"
+  | "offline";
+
+type DirtyKertasKerjaRecords = Record<string, Partial<RecordKertasKerja>>;
+
+type EditableTableControl =
+  | HTMLInputElement
+  | HTMLSelectElement
+  | HTMLTextAreaElement;
+
+const EDITABLE_TABLE_CONTROL_SELECTOR = [
+  "input:not([readonly]):not([disabled])",
+  "select:not([disabled])",
+  "textarea:not([readonly]):not([disabled])",
+].join(", ");
+
+function getTableCellVisualColumn(cell: HTMLTableCellElement): number {
+  const row = cell.parentElement as HTMLTableRowElement | null;
+  if (!row) return cell.cellIndex;
+
+  return Array.from(row.cells)
+    .slice(0, cell.cellIndex)
+    .reduce((column, previousCell) => column + previousCell.colSpan, 0);
+}
+
+function findEditableControlBelow(
+  tableBody: HTMLTableSectionElement,
+  sourceRowIndex: number,
+  visualColumn: number,
+): EditableTableControl | null {
+  const rows = Array.from(tableBody.rows);
+
+  for (let rowIndex = sourceRowIndex + 1; rowIndex < rows.length; rowIndex++) {
+    let columnStart = 0;
+
+    for (const cell of Array.from(rows[rowIndex].cells)) {
+      const columnEnd = columnStart + cell.colSpan;
+      const containsColumn =
+        visualColumn >= columnStart && visualColumn < columnEnd;
+
+      if (containsColumn) {
+        const control = cell.querySelector<EditableTableControl>(
+          EDITABLE_TABLE_CONTROL_SELECTOR,
+        );
+        if (control) return control;
+        break;
+      }
+
+      columnStart = columnEnd;
+    }
+  }
+
+  return null;
+}
+
 export default function KertasKerjaTable({
   selectedRegion,
   selectedYear,
   selectedUnit,
   selectedUnitPelaksana,
+  selectedPembangkit,
   canUpdate = true,
 }: KertasKerjaTableProps) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -65,13 +135,26 @@ export default function KertasKerjaTable({
   const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false);
   const [refreshError, setRefreshError] = useState("");
   const [modalState, setModalState] = useState<KertasKerjaModalState>(null);
+  const [autoSyncStatus, setAutoSyncStatus] = useState<AutoSyncStatus>("idle");
+  const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
+  const [isOnline, setIsOnline] = useState(
+    () => typeof navigator === "undefined" || navigator.onLine,
+  );
+  const [isPageVisible, setIsPageVisible] = useState(
+    () => typeof document === "undefined" || !document.hidden,
+  );
   const actionsMenuRef = useRef<HTMLDivElement>(null);
+  const tableRef = useRef<HTMLTableElement>(null);
+  const saveInFlightRef = useRef(false);
+  const autoRefreshInFlightRef = useRef(false);
+  const isRefreshingRef = useRef(false);
+  const autoSaveCallbackRef = useRef<() => void>(() => undefined);
+  const autoRefreshCallbackRef = useRef<() => void>(() => undefined);
   const [localRecords, setLocalRecords] = useState<
     Record<string, RecordKertasKerja>
   >({});
-  const [dirtyRecords, setDirtyRecords] = useState<
-    Record<string, Partial<RecordKertasKerja>>
-  >({});
+  const [dirtyRecords, setDirtyRecords] = useState<DirtyKertasKerjaRecords>({});
+  const dirtyRecordsRef = useRef<DirtyKertasKerjaRecords>({});
 
   const {
     data: templates = [],
@@ -97,6 +180,7 @@ export default function KertasKerjaTable({
     if (selectedUnit && t.unit_name !== selectedUnit) return false;
     if (selectedUnitPelaksana && t.upk_name !== selectedUnitPelaksana)
       return false;
+    if (selectedPembangkit && t.site_name !== selectedPembangkit) return false;
     if (!showInactive && t.is_active === false) return false;
     return true;
   });
@@ -123,16 +207,58 @@ export default function KertasKerjaTable({
   const isDirty = Object.keys(dirtyRecords).length > 0;
   const isRefreshing =
     templatesRefetching || recordsRefetching || polaOperasiRefetching;
+  isRefreshingRef.current = isRefreshing;
+
+  const updateDirtyRecords = (
+    updater:
+      | DirtyKertasKerjaRecords
+      | ((current: DirtyKertasKerjaRecords) => DirtyKertasKerjaRecords),
+  ) => {
+    const current = dirtyRecordsRef.current;
+    const next = typeof updater === "function" ? updater(current) : updater;
+    dirtyRecordsRef.current = next;
+    setDirtyRecords(next);
+  };
 
   useEffect(() => {
+    if (
+      saveInFlightRef.current ||
+      Object.keys(dirtyRecordsRef.current).length > 0 ||
+      tableRef.current?.contains(document.activeElement)
+    ) {
+      return;
+    }
+
     const initial: Record<string, RecordKertasKerja> = {};
     records.forEach((r) => {
       initial[`${r.template_kertas_kerja_id}_${r.month_work}`] =
-        roundKertasKerjaDayFields(r);
+        withCalculatedKertasKerjaDelta(roundKertasKerjaDayFields(r));
     });
     setLocalRecords(initial);
-    setDirtyRecords({}); // clear dirty state when fresh data loads
   }, [records]);
+
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOnline(true);
+      setAutoSyncStatus((status) => (status === "offline" ? "idle" : status));
+    };
+    const handleOffline = () => {
+      setIsOnline(false);
+      setAutoSyncStatus("offline");
+    };
+    const handleVisibilityChange = () => {
+      setIsPageVisible(!document.hidden);
+    };
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, []);
 
   useEffect(() => {
     if (!isActionsMenuOpen) return;
@@ -156,40 +282,62 @@ export default function KertasKerjaTable({
     };
   }, [isActionsMenuOpen]);
 
-  const performRefresh = async () => {
+  const performRefresh = async ({
+    automatic = false,
+    discardUnsaved = false,
+  }: { automatic?: boolean; discardUnsaved?: boolean } = {}) => {
+    if (autoRefreshInFlightRef.current || isRefreshingRef.current) return;
+
+    if (discardUnsaved) updateDirtyRecords({});
+    autoRefreshInFlightRef.current = true;
     setRefreshError("");
+    if (automatic) setAutoSyncStatus("refreshing");
 
     try {
-      const results = await Promise.all([
-        refetchTemplates(),
-        refetchRecords(),
-        refetchPolaOperasi(),
-      ]);
-      const failedResult = results.find((result) => result.isError);
+      const recordResult = automatic
+        ? await refetchRecords()
+        : (
+            await Promise.all([
+              refetchTemplates(),
+              refetchRecords(),
+              refetchPolaOperasi(),
+            ])
+          )[1];
 
-      if (failedResult) {
-        throw failedResult.error ?? new Error("Data gagal dimuat ulang.");
+      if (recordResult.isError) {
+        throw recordResult.error ?? new Error("Data gagal dimuat ulang.");
       }
 
-      const refreshedRecords = results[1].data ?? [];
-      const refreshedLocalRecords: Record<string, RecordKertasKerja> = {};
-      refreshedRecords.forEach((record) => {
-        refreshedLocalRecords[
-          `${record.template_kertas_kerja_id}_${record.month_work}`
-        ] = roundKertasKerjaDayFields(record);
-      });
-      setLocalRecords(refreshedLocalRecords);
-      setDirtyRecords({});
+      // Never replace local edits that appeared while refresh was in flight.
+      if (Object.keys(dirtyRecordsRef.current).length === 0) {
+        const refreshedRecords = recordResult.data ?? [];
+        const refreshedLocalRecords: Record<string, RecordKertasKerja> = {};
+        refreshedRecords.forEach((record) => {
+          refreshedLocalRecords[
+            `${record.template_kertas_kerja_id}_${record.month_work}`
+          ] = withCalculatedKertasKerjaDelta(roundKertasKerjaDayFields(record));
+        });
+        setLocalRecords(refreshedLocalRecords);
+        setLastSyncedAt(new Date());
+      }
+
+      if (automatic) setAutoSyncStatus("idle");
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Data gagal dimuat ulang.";
       setRefreshError(message);
-      setModalState({
-        type: "message",
-        status: "error",
-        title: "Refresh Data Gagal",
-        message,
-      });
+      setAutoSyncStatus("error");
+
+      if (!automatic) {
+        setModalState({
+          type: "message",
+          status: "error",
+          title: "Refresh Data Gagal",
+          message,
+        });
+      }
+    } finally {
+      autoRefreshInFlightRef.current = false;
     }
   };
 
@@ -227,8 +375,21 @@ export default function KertasKerjaTable({
         return prev;
       }
 
-      // Mark as dirty
-      setDirtyRecords((dirtyPrev) => {
+      const updatedRecord = {
+        ...existing,
+        [field]: parsedVal,
+      } as RecordKertasKerja;
+      const shouldRecalculateDelta =
+        field === "terima" || field === "rencana_pesan";
+      const calculatedValues = shouldRecalculateDelta
+        ? calculateKertasKerjaDelta(updatedRecord)
+        : null;
+      const nextRecord = calculatedValues
+        ? { ...updatedRecord, ...calculatedValues }
+        : updatedRecord;
+
+      // Mark the changed value and its same-month calculated fields as dirty.
+      updateDirtyRecords((dirtyPrev) => {
         const dirtyExisting = dirtyPrev[key] || {};
         return {
           ...dirtyPrev,
@@ -238,54 +399,182 @@ export default function KertasKerjaTable({
             template_kertas_kerja_id: templateId,
             month_work: month,
             [field]: parsedVal,
+            ...(calculatedValues ?? {}),
           },
         };
       });
+      setAutoSyncStatus(isOnline ? "pending" : "offline");
 
       return {
         ...prev,
-        [key]: {
-          ...existing,
-          [field]: parsedVal,
-        },
+        [key]: nextRecord,
       };
     });
   };
 
-  const handleSave = async () => {
-    const payload = Object.values(dirtyRecords);
+  const performSave = async ({
+    automatic = false,
+  }: { automatic?: boolean } = {}) => {
+    if (saveInFlightRef.current) return;
+
+    const snapshot = dirtyRecordsRef.current;
+    const payload = Object.values(snapshot);
     if (payload.length === 0) {
-      setModalState({
-        type: "message",
-        status: "info",
-        title: "Tidak Ada Perubahan",
-        message: "Tidak ada data untuk disimpan.",
-      });
+      if (!automatic) {
+        setModalState({
+          type: "message",
+          status: "info",
+          title: "Tidak Ada Perubahan",
+          message: "Tidak ada data untuk disimpan.",
+        });
+      }
       return;
     }
+
+    if (!navigator.onLine) {
+      setIsOnline(false);
+      setAutoSyncStatus("offline");
+      if (!automatic) {
+        setModalState({
+          type: "message",
+          status: "error",
+          title: "Tidak Ada Koneksi",
+          message:
+            "Perubahan belum disimpan dan akan dicoba kembali saat online.",
+        });
+      }
+      return;
+    }
+
+    saveInFlightRef.current = true;
+    setAutoSyncStatus("saving");
+
     try {
       await upsertMutation.mutateAsync({
         records: payload as RecordKertasKerja[],
       });
-      setDirtyRecords({});
-      setModalState({
-        type: "message",
-        status: "success",
-        title: "Perubahan Tersimpan",
-        message: "Perubahan data Kertas Kerja BBM berhasil disimpan.",
-      });
+
+      // Clear only records that are still identical to the saved snapshot.
+      // Any edits made while this request was running remain dirty.
+      const currentDirtyRecords = dirtyRecordsRef.current;
+      const remainingDirtyRecords = Object.fromEntries(
+        Object.entries(currentDirtyRecords).filter(([key, currentRecord]) => {
+          const savedRecord = snapshot[key];
+          if (!savedRecord) return true;
+
+          const currentEntries = Object.entries(currentRecord);
+          const savedEntries = Object.entries(savedRecord);
+          return (
+            currentEntries.length !== savedEntries.length ||
+            currentEntries.some(
+              ([field, value]) =>
+                !Object.is(
+                  value,
+                  savedRecord[field as keyof RecordKertasKerja],
+                ),
+            )
+          );
+        }),
+      ) as DirtyKertasKerjaRecords;
+
+      updateDirtyRecords(remainingDirtyRecords);
+      setLastSyncedAt(new Date());
+      setAutoSyncStatus(
+        Object.keys(remainingDirtyRecords).length > 0 ? "pending" : "saved",
+      );
+
+      if (!automatic) {
+        setModalState({
+          type: "message",
+          status: "success",
+          title: "Perubahan Tersimpan",
+          message: "Perubahan data Kertas Kerja BBM berhasil disimpan.",
+        });
+      }
     } catch (error) {
-      setModalState({
-        type: "message",
-        status: "error",
-        title: "Gagal Menyimpan",
-        message:
-          error instanceof Error
-            ? error.message
-            : "Terjadi kesalahan saat menyimpan perubahan.",
-      });
+      setAutoSyncStatus("error");
+      if (!automatic) {
+        setModalState({
+          type: "message",
+          status: "error",
+          title: "Gagal Menyimpan",
+          message:
+            error instanceof Error
+              ? error.message
+              : "Terjadi kesalahan saat menyimpan perubahan.",
+        });
+      }
+    } finally {
+      saveInFlightRef.current = false;
     }
   };
+
+  const handleSave = () => {
+    void performSave();
+  };
+
+  autoSaveCallbackRef.current = () => {
+    void performSave({ automatic: true });
+  };
+  autoRefreshCallbackRef.current = () => {
+    const hasActiveTableEditor =
+      tableRef.current?.contains(document.activeElement) ?? false;
+    if (
+      !isOnline ||
+      !isPageVisible ||
+      modalState !== null ||
+      hasActiveTableEditor ||
+      saveInFlightRef.current ||
+      autoRefreshInFlightRef.current ||
+      isRefreshingRef.current ||
+      Object.keys(dirtyRecordsRef.current).length > 0
+    ) {
+      return;
+    }
+
+    void performRefresh({ automatic: true });
+  };
+
+  // Auto-save once, 3 seconds after the latest committed cell change.
+  useEffect(() => {
+    if (!canUpdate || !isOnline || !isPageVisible || !isDirty) return;
+
+    setAutoSyncStatus("pending");
+    const timeoutId = window.setTimeout(() => {
+      autoSaveCallbackRef.current();
+    }, 3_000);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [canUpdate, dirtyRecords, isDirty, isOnline, isPageVisible]);
+
+  // Poll for fresh records every 5 seconds, but only while the table is idle.
+  useEffect(() => {
+    if (!isOnline || !isPageVisible) return;
+
+    const intervalId = window.setInterval(() => {
+      autoRefreshCallbackRef.current();
+    }, 5_000);
+
+    return () => window.clearInterval(intervalId);
+  }, [isOnline, isPageVisible]);
+
+  const autoSyncLabel = (() => {
+    if (!isOnline || autoSyncStatus === "offline") {
+      return "Offline — perubahan tertunda";
+    }
+    if (autoSyncStatus === "saving") return "Menyimpan otomatis...";
+    if (autoSyncStatus === "refreshing") return "Memuat data terbaru...";
+    if (autoSyncStatus === "pending") return "Auto-save dalam 3 detik";
+    if (autoSyncStatus === "error") return "Sinkronisasi gagal";
+    if (autoSyncStatus === "saved" && lastSyncedAt) {
+      return `Tersimpan ${lastSyncedAt.toLocaleTimeString("id-ID", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      })}`;
+    }
+    return "Auto-sync aktif";
+  })();
 
   const shortYear = String(selectedYear).slice(-2);
   const allMonths = [
@@ -309,6 +598,72 @@ export default function KertasKerjaTable({
   const displayedMonths = isExpanded ? allMonths : [currentMonth];
   const numMonths = displayedMonths.length;
 
+  const handleTableEnterNavigation = (
+    event: React.KeyboardEvent<HTMLTableElement>,
+  ) => {
+    if (
+      event.key !== "Enter" ||
+      event.shiftKey ||
+      event.nativeEvent.isComposing
+    ) {
+      return;
+    }
+
+    const control = event.target;
+    if (
+      !(
+        control instanceof HTMLInputElement ||
+        control instanceof HTMLSelectElement ||
+        control instanceof HTMLTextAreaElement
+      ) ||
+      control.disabled ||
+      ("readOnly" in control && control.readOnly)
+    ) {
+      return;
+    }
+
+    const sourceCell = control.closest("td");
+    const sourceRow = sourceCell?.parentElement as HTMLTableRowElement | null;
+    const tableBody =
+      sourceRow?.parentElement as HTMLTableSectionElement | null;
+    if (!sourceCell || !sourceRow || !tableBody) return;
+
+    const sourceRowIndex = Array.from(tableBody.rows).indexOf(sourceRow);
+    const tableBodyIndex = Array.from(event.currentTarget.tBodies).indexOf(
+      tableBody,
+    );
+    if (sourceRowIndex < 0 || tableBodyIndex < 0) return;
+
+    const visualColumn = getTableCellVisualColumn(sourceCell);
+    const nextControl = findEditableControlBelow(
+      tableBody,
+      sourceRowIndex,
+      visualColumn,
+    );
+    if (!nextControl) return;
+
+    event.preventDefault();
+    const table = event.currentTarget;
+    control.blur();
+
+    requestAnimationFrame(() => {
+      const currentTableBody = table.tBodies[tableBodyIndex];
+      if (!currentTableBody) return;
+
+      const currentNextControl = findEditableControlBelow(
+        currentTableBody,
+        sourceRowIndex,
+        visualColumn,
+      );
+      if (!currentNextControl) return;
+
+      currentNextControl.focus();
+      if (currentNextControl instanceof HTMLInputElement) {
+        currentNextControl.select();
+      }
+    });
+  };
+
   const InputCell = ({
     defaultValue,
     onBlur,
@@ -316,6 +671,7 @@ export default function KertasKerjaTable({
     readOnly = !canUpdate,
     bgColorClass,
     roundToInteger = false,
+    valueType = "number",
   }: {
     defaultValue: any;
     onBlur?: (val: string) => void;
@@ -323,12 +679,25 @@ export default function KertasKerjaTable({
     readOnly?: boolean;
     bgColorClass?: string;
     roundToInteger?: boolean;
+    valueType?: "number" | "text";
   }) => {
     const formatValue = (v: any) => {
       if (v == null || v === "") return "";
       const num = Number(v);
-      if (isNaN(num)) return String(v);
+      if (valueType === "text" || isNaN(num)) return String(v);
       return String(roundToInteger ? Math.round(num) : num);
+    };
+
+    const sanitizeNumericValue = (value: string) => {
+      const normalized = value.replace(/,/g, ".").replace(/[^\d.-]/g, "");
+      const isNegative = normalized.startsWith("-");
+      const unsignedValue = normalized.replace(/-/g, "");
+      const [integerPart = "", ...decimalParts] = unsignedValue.split(".");
+      const decimalPart = decimalParts.join("");
+
+      return `${isNegative ? "-" : ""}${integerPart}${
+        decimalParts.length > 0 ? `.${decimalPart}` : ""
+      }`;
     };
 
     const [val, setVal] = useState(formatValue(defaultValue));
@@ -340,16 +709,34 @@ export default function KertasKerjaTable({
     return (
       <input
         type="text"
+        inputMode={valueType === "number" ? "decimal" : "text"}
+        pattern={valueType === "number" ? "-?[0-9]*[.,]?[0-9]*" : undefined}
         value={val}
-        onChange={(e) => setVal(e.target.value)}
+        onChange={(e) =>
+          setVal(
+            valueType === "number"
+              ? sanitizeNumericValue(e.target.value)
+              : e.target.value,
+          )
+        }
         onBlur={() => {
-          const normalizedValue = formatValue(val);
+          const incompleteNumber = ["-", ".", "-."].includes(val);
+          const normalizedValue = formatValue(
+            valueType === "number" && incompleteNumber ? "" : val,
+          );
           setVal(normalizedValue);
           onBlur?.(normalizedValue);
         }}
         readOnly={readOnly}
+        aria-readonly={readOnly}
         placeholder="-"
-        className={`w-full min-w-[60px] px-1 py-1 text-xs font-medium border border-transparent hover:border-slate-400 focus:border-primary focus:ring-1 focus:ring-primary rounded outline-none transition-all ${className} ${bgColorClass ? bgColorClass : readOnly ? "!bg-transparent cursor-default hover:border-transparent focus:border-transparent focus:ring-0 text-gray-700" : "!bg-transparent focus:!bg-white dark:focus:!bg-slate-800 text-gray-900"}`}
+        className={`w-full min-w-[60px] px-1 py-1 text-xs font-medium border border-transparent hover:border-slate-400 focus:border-primary focus:ring-1 focus:ring-primary rounded outline-none transition-all ${className} ${
+          bgColorClass
+            ? bgColorClass
+            : readOnly
+              ? "!bg-transparent cursor-default hover:border-transparent focus:border-transparent focus:ring-0 text-gray-700"
+              : "!bg-transparent focus:!bg-white dark:focus:!bg-slate-800 text-gray-900"
+        }`}
       />
     );
   };
@@ -1410,7 +1797,37 @@ export default function KertasKerjaTable({
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <div
+            role="status"
+            aria-live="polite"
+            title="Auto-save 3 detik setelah edit; auto-refresh setiap 5 detik saat tabel tidak sedang digunakan"
+            className={`flex items-center gap-1.5 rounded-md border px-3 py-2 text-xs font-semibold shadow-sm ${
+              !isOnline || autoSyncStatus === "offline"
+                ? "border-amber-200 bg-amber-50 text-amber-700"
+                : autoSyncStatus === "error"
+                  ? "border-red-200 bg-red-50 text-red-700"
+                  : autoSyncStatus === "saved"
+                    ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                    : "border-white/30 bg-white/15 text-white"
+            }`}
+          >
+            {!isOnline || autoSyncStatus === "offline" ? (
+              <CloudOff size={15} aria-hidden="true" />
+            ) : autoSyncStatus === "saving" ||
+              autoSyncStatus === "refreshing" ? (
+              <Loader2 size={15} className="animate-spin" aria-hidden="true" />
+            ) : autoSyncStatus === "pending" ? (
+              <Clock3 size={15} aria-hidden="true" />
+            ) : autoSyncStatus === "error" ? (
+              <AlertCircle size={15} aria-hidden="true" />
+            ) : autoSyncStatus === "saved" ? (
+              <CheckCircle2 size={15} aria-hidden="true" />
+            ) : (
+              <Cloud size={15} aria-hidden="true" />
+            )}
+            {autoSyncLabel}
+          </div>
           <div className="relative order-last" ref={actionsMenuRef}>
             <button
               type="button"
@@ -1540,7 +1957,11 @@ export default function KertasKerjaTable({
             <Loader2 className="w-8 h-8 text-primary animate-spin" />
           </div>
         ) : null}
-        <table className="w-full border-collapse text-xs text-center min-w-max">
+        <table
+          ref={tableRef}
+          className="w-full border-collapse text-xs text-center min-w-max"
+          onKeyDown={handleTableEnterNavigation}
+        >
           <thead className="sticky top-0 z-30 shadow-sm">
             {/* Row 1 */}
             <tr className="bg-slate-50 text-slate-700">
@@ -2173,6 +2594,7 @@ export default function KertasKerjaTable({
                               <td className="border border-gray-200 p-1 bg-amber-50/50 dark:bg-amber-950/20">
                                 <InputCell
                                   defaultValue={rec?.keterangan_hop_less_than_5}
+                                  valueType="text"
                                   onBlur={(v) =>
                                     handleRecordChange(
                                       template.id,
@@ -2324,21 +2746,15 @@ export default function KertasKerjaTable({
                           <td
                             key={`d-t-${m}`}
                             className="border border-gray-200 p-1 bg-rose-50/50 dark:bg-rose-950/20"
+                            title="Otomatis: Realisasi Terima dikurangi Nominasi Pesan pada bulan yang sama"
                           >
                             <InputCell
                               defaultValue={
                                 localRecords[`${template.id}_${m}`]
                                   ?.delta_terima
                               }
-                              onBlur={(v) =>
-                                handleRecordChange(
-                                  template.id,
-                                  m,
-                                  "delta_terima",
-                                  v,
-                                )
-                              }
-                              className="text-right"
+                              readOnly
+                              className="text-right font-semibold text-rose-700"
                             />
                           </td>
                         ))}
@@ -2346,20 +2762,14 @@ export default function KertasKerjaTable({
                           <td
                             key={`d-p-${m}`}
                             className="border border-gray-200 p-1 bg-rose-50/50 dark:bg-rose-950/20"
+                            title="Otomatis: Realisasi Terima dibagi Nominasi Pesan pada bulan yang sama, dikali 100%"
                           >
                             <InputCell
                               defaultValue={
                                 localRecords[`${template.id}_${m}`]?.pencapaian
                               }
-                              onBlur={(v) =>
-                                handleRecordChange(
-                                  template.id,
-                                  m,
-                                  "pencapaian",
-                                  v,
-                                )
-                              }
-                              className="text-right"
+                              readOnly
+                              className="text-right font-semibold text-rose-700"
                             />
                           </td>
                         ))}
@@ -2448,20 +2858,29 @@ export default function KertasKerjaTable({
                             key={`k-k-${m}`}
                             className="border border-gray-200 p-1"
                           >
-                            <InputCell
-                              defaultValue={
-                                localRecords[`${template.id}_${m}`]?.keterangan
+                            <select
+                              value={
+                                localRecords[`${template.id}_${m}`]
+                                  ?.keterangan || ""
                               }
-                              onBlur={(v) =>
+                              onChange={(event) =>
                                 handleRecordChange(
                                   template.id,
                                   m,
                                   "keterangan",
-                                  v,
+                                  event.target.value,
                                 )
                               }
-                              className="text-left w-full min-w-[120px]"
-                            />
+                              disabled={!canUpdate}
+                              aria-label={`Keterangan ${template.site_name || template.id} ${m}`}
+                              className="w-full min-w-[150px] rounded border border-transparent bg-transparent px-1 py-1 text-left text-xs font-medium text-gray-900 outline-none transition-all hover:border-gray-300 focus:border-primary focus:bg-white focus:ring-1 focus:ring-primary disabled:cursor-default disabled:text-gray-700"
+                            >
+                              <option value="">-</option>
+                              <option value="Keterbatasan BBM">
+                                Keterbatasan BBM
+                              </option>
+                              <option value="Lainnya">Lainnya</option>
+                            </select>
                           </td>
                         ))}
                         {displayedMonths.map((m) => (
@@ -2474,6 +2893,7 @@ export default function KertasKerjaTable({
                                 localRecords[`${template.id}_${m}`]
                                   ?.detail_keterangan
                               }
+                              valueType="text"
                               onBlur={(v) =>
                                 handleRecordChange(
                                   template.id,
@@ -2885,7 +3305,7 @@ export default function KertasKerjaTable({
                 type="button"
                 onClick={async () => {
                   setModalState(null);
-                  await performRefresh();
+                  await performRefresh({ discardUnsaved: true });
                 }}
                 disabled={isRefreshing}
                 className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:brightness-90 disabled:opacity-60"
